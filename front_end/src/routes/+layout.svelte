@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
@@ -9,11 +10,14 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-{@render children()}
-<div style="display:none">
-	{#each locales as locale}
-		<a href={localizeHref(page.url.pathname, { locale })}>
+<nav>
+	<a href={resolve('/')}>Home</a>
+	{#each locales as locale (locale)}
+		<!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
+		<a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
 			{locale}
 		</a>
 	{/each}
-</div>
+</nav>
+
+{@render children()}
