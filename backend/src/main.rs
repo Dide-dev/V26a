@@ -17,7 +17,7 @@ async fn main() {
 
 fn static_frontend() -> Router {
     use tower_http::services::ServeDir;
-    let static_frontend_dir = ServeDir::new("../front_end/build");
+    let static_frontend_dir = ServeDir::new("../frontend/build");
 
     Router::new().fallback_service(static_frontend_dir)
 }
