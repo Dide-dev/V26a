@@ -12,6 +12,7 @@
 
 <nav>
 	<a href={resolve('/')}>Home</a>
+	<a href={resolve('/api-testing')}>Api testing</a>
 	{#each locales as locale (locale)}
 		<!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
 		<a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
