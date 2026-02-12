@@ -6,6 +6,7 @@ use log::{info};
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().expect(".env file missing.");
     env_logger::init();
 
     // build our application with a route
