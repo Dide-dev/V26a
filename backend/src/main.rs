@@ -1,7 +1,11 @@
 use axum::{Router, response::Html, routing::get};
+use log::{info};
+
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     // build our application with a route
     let app = Router::new()
         .merge(static_frontend())
@@ -11,7 +15,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
+    info!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
 
