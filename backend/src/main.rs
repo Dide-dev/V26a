@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use axum::{Router, response::Html, routing::get};
 use log::{info};
 
