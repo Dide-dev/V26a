@@ -1,8 +1,12 @@
 #![warn(clippy::pedantic)]
 
 mod api_v1;
+mod db;
 
-use axum::{Router};
+use std::env;
+use axum::{Extension, Router};
+use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::api_v1::v1_api;
@@ -19,10 +23,19 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    let db = PgPoolOptions::new()
+        .max_connections(20)
+        .connect(&database_url)
+        .await
+        .expect("failed to connect to DATABASE_URL.");
+    sqlx::migrate!().run(&db).await.expect("failed to run database migrations.");
+
     // build our application with a route
     let app = Router::new()
         .merge(static_frontend())
-        .nest("/api", backend());
+        .nest("/api", backend(db));
 
     // run it
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -39,7 +52,8 @@ fn static_frontend() -> Router {
     Router::new().fallback_service(static_frontend_dir)
 }
 
-fn backend() -> Router {
+fn backend(db: PgPool) -> Router {
     Router::new()
         .nest("/v1", v1_api())
+        .layer(Extension(db))
 }

@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE counters\n         SET counter_value = (\n             (SELECT counter_value\n              FROM counters\n              WHERE id = 0\n             ) + 1\n        )\n         WHERE id = 0\n         RETURNING counter_value",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "counter_value",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b98708b68d68999e2e031040080ff389407a77fcbd6e26e21f39f00b19d4983b"
+}
