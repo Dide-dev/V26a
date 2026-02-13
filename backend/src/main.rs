@@ -1,13 +1,21 @@
 #![warn(clippy::pedantic)]
 
 use axum::{Router, response::Html, routing::get};
-use log::{info};
+use tracing::log::info;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().expect(".env file missing.");
-    env_logger::init();
+    // set up logging
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| format!("{}=info", env!("CARGO_CRATE_NAME")).into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     // build our application with a route
     let app = Router::new()
