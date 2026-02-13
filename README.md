@@ -12,11 +12,12 @@ For this you need rust installed.
 # TODO's
 For the backbone:
 - Postgresql setup, comminucating with backend
-- Front-end do an api call
-- Front-end actual translation testing
-- Check if Axum docs are working
+- Getting started with tailwindcss
+- Some kind of OpenAPI specification for backend, to create bindings for frontend
+- backend versioning api endpoints
 
 For later:
-- Back-end logging
 - Authentication
+- 404 page, rate limiting, compresssion, loading directory in memory?
+- browser side caching
 - ...
