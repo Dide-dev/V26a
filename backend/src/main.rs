@@ -1,9 +1,11 @@
 #![warn(clippy::pedantic)]
 
-use axum::{Router, response::Html, routing::get};
+mod api_v1;
+
+use axum::{Router};
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
+use crate::api_v1::v1_api;
 
 #[tokio::main]
 async fn main() {
@@ -39,25 +41,5 @@ fn static_frontend() -> Router {
 
 fn backend() -> Router {
     Router::new()
-        .route("/html", get(backend_html_test))
-        .route("/json", get(backend_json_test))
-}
-
-async fn backend_html_test() -> Html<&'static str> {
-    Html("<h1>Hello from axum!</h1>")
-}
-
-#[derive(serde::Serialize)]
-struct JsonTestStruct {
-    a: String,
-    b: i32,
-}
-
-async fn backend_json_test() -> axum::Json<JsonTestStruct> {
-    let test_struct = JsonTestStruct {
-        a: "Hello, from rust struct!".to_owned(),
-        b: 42,
-    };
-
-    axum::Json(test_struct)
+        .nest("/v1", v1_api())
 }

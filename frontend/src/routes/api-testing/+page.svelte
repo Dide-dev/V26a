@@ -2,7 +2,7 @@
 	async function get_something_from_api() {
 		// TODO: probably want some function to make the api calls,
 		// so that we don't hardcode '/api/' everywhere
-		let api_response = await fetch('/api/json');
+		let api_response = await fetch('/api/v1/demo/json');
 		let content = await api_response.json();
 		return content;
 	}
