@@ -10,7 +10,9 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav>
+<nav
+	class="m-1 flex justify-end gap-2 bg-sky-400 p-1 *:rounded-sm *:border-zinc-900 *:bg-sky-600 *:p-1"
+>
 	<a href={resolve('/')}>Home</a>
 	<a href={resolve('/api-testing')}>Api testing</a>
 	{#each locales as locale (locale)}

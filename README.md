@@ -12,9 +12,10 @@ For this you need rust installed.
 # TODO's
 For the backbone:
 - Postgresql setup, comminucating with backend
-- Getting started with tailwindcss
+- instructions for `.env` file creation
 - Some kind of OpenAPI specification for backend, to create bindings for frontend
 - backend versioning api endpoints
+- investigating possible instant reloading with sveltekit
 
 For later:
 - Authentication
