@@ -1,6 +1,7 @@
 use axum::response::Html;
 use axum::{Extension, Router};
-use axum::routing::{get, post};
+use axum::http::StatusCode;
+use axum::routing::{get};
 use sqlx::{PgPool};
 use crate::db::demo::{fetch_counter_value, increment_counter_value};
 
@@ -21,24 +22,28 @@ pub struct JsonTestStruct {
     b: i32,
 }
 
-async fn backend_json_test(db: Extension<PgPool>) -> axum::Json<JsonTestStruct> {
-    let counter_value = fetch_counter_value(&db).await.unwrap(); // TODO: return error?
+async fn backend_json_test(db: Extension<PgPool>) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
+    let counter_value = fetch_counter_value(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let test_struct = JsonTestStruct {
         a: "Hello, from rust struct!".to_owned(),
         b: counter_value,
     };
 
-    axum::Json(test_struct)
+    Ok(axum::Json(test_struct))
 }
 
-async fn increment_counter_test(db: Extension<PgPool>) -> axum::Json<JsonTestStruct> {
-    let counter_value = increment_counter_value(&db).await.unwrap(); // TODO: return error?
+async fn increment_counter_test(db: Extension<PgPool>) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
+    let counter_value = increment_counter_value(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let test_struct = JsonTestStruct {
         a: "Incremented counter!".to_owned(),
         b: counter_value,
     };
 
-    axum::Json(test_struct)
+    Ok(axum::Json(test_struct))
 }
