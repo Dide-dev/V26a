@@ -3,13 +3,13 @@
 mod api_v1;
 mod db;
 
-use std::env;
+use crate::api_v1::v1_api;
 use axum::{Extension, Router};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use std::env;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use crate::api_v1::v1_api;
 
 #[tokio::main]
 async fn main() {
@@ -23,14 +23,16 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db = PgPoolOptions::new()
         .max_connections(20)
         .connect(&database_url)
         .await
         .expect("failed to connect to DATABASE_URL.");
-    sqlx::migrate!().run(&db).await.expect("failed to run database migrations.");
+    sqlx::migrate!()
+        .run(&db)
+        .await
+        .expect("failed to run database migrations.");
 
     // build our application with a route
     let app = Router::new()
@@ -53,7 +55,5 @@ fn static_frontend() -> Router {
 }
 
 fn backend(db: PgPool) -> Router {
-    Router::new()
-        .nest("/v1", v1_api())
-        .layer(Extension(db))
+    Router::new().nest("/v1", v1_api()).layer(Extension(db))
 }
