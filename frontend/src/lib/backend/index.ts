@@ -17,5 +17,8 @@ export async function api_call_post(path: string, body: unknown) {
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body)
 	});
-	return await response.json();
+
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`);
+	}
 }
