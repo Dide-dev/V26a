@@ -17,6 +17,9 @@ While the database is running, run `cargo sqlx migrate run` to initialize the da
 Finally run `cargo run`.
 
 # Developing
+When working on the front end, the command `npm run dev` in the `frontend` directory can be used.
+This will spin up a frontend-only server that automatically reloads pages as source files are saved.
+
 If any new queries were added in the backend, then run `cargo sqlx prepare` in the `backend` directory, before making a pull request.
 This will create files in the `backend/.sqlx` directory which contains the types for the new query.
 
@@ -24,7 +27,6 @@ This will create files in the `backend/.sqlx` directory which contains the types
 # TODO's
 For the backbone:
 - Backend bindings for the frontend
-- investigating possible instant reloading with sveltekit
 
 For later:
 - Authentication
