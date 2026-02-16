@@ -9,6 +9,3 @@ services:
     env_file: ".env"
     volumes:
       - postgres_dir:/var/lib/postgresql
-
-    # TODO:
-    # Should migrations be automatically run/checked here?
