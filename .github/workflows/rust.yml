@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-#    branches: [ "main" ]
+    branches: [ "main" ]
   pull_request:
-#    branches: [ "main" ]
+    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,10 +34,25 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+#     https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+#     This seems to be ignoring the working-directory flag above.. Having added the "backend/" made building faster
+    - name: Cache Rust artifacts for faster CI
+      id: cache-cargo
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          backend/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Format
       run: cargo fmt --check --verbose
     - name: Install sqlx-cli
-      run: cargo install sqlx-cli --no-default-features --features postgres
+      if: steps.cache-cargo.outputs.cache-hit != 'true'
+      run: cargo install sqlx-cli --no-default-features --features postgres --locked --force
     - name: Run database migrations
       run: cargo sqlx migrate run
     - name: Check offline SQLx queries
