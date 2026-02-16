@@ -1,15 +1,9 @@
 <script lang="ts">
-	async function get_something_from_api() {
-		// TODO: probably want some function to make the api calls,
-		// so that we don't hardcode '/api/' everywhere
-		let api_response = await fetch('/api/v1/demo/json');
-		let content = await api_response.json();
-		return content;
-	}
+	import { get_json_test } from '$lib/backend/demo';
 </script>
 
 <div class="flex h-32 items-center justify-center">
-	{#await get_something_from_api()}
+	{#await get_json_test()}
 		<p>waiting on api...</p>
 	{:then json_object}
 		<p>Received: {JSON.stringify(json_object)}</p>

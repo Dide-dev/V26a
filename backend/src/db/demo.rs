@@ -9,7 +9,7 @@ pub async fn fetch_counter_value(db: &PgPool) -> Result<i32, Error> {
         .counter_value)
 }
 
-pub async fn increment_counter_value(db: &PgPool) -> Result<i32, Error> {
+pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, Error> {
     ensure_counter_exists(db).await?;
 
     let new_counter_value = query!(
@@ -18,10 +18,11 @@ pub async fn increment_counter_value(db: &PgPool) -> Result<i32, Error> {
              (SELECT counter_value
               FROM counters
               WHERE id = 0
-             ) + 1
+             ) + $1
         )
          WHERE id = 0
-         RETURNING counter_value"
+         RETURNING counter_value",
+        amount
     )
     .fetch_one(db)
     .await?
