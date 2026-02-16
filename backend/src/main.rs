@@ -28,7 +28,7 @@ async fn main() {
         .max_connections(20)
         .connect(&database_url)
         .await
-        .expect("failed to connect to DATABASE_URL.");
+        .expect("failed to connect to database.");
     sqlx::migrate!()
         .run(&db)
         .await
