@@ -1,9 +1,14 @@
+volumes:
+  postgres_data:
+
 services:
   db:
     image: postgres:18
     ports:
-      - 5432:5432
+      - "5432:5432"
     env_file: ".env"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
     # TODO:
     # Should migrations be automatically run/checked here?
