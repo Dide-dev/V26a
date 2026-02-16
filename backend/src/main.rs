@@ -13,7 +13,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().expect(".env file missing.");
+    dotenvy::dotenv().expect(".env file missing."); // TODO: this .expect() needs to be replaced when deployed
     // set up logging
     tracing_subscriber::registry()
         .with(
