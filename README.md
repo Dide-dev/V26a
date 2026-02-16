@@ -1,20 +1,22 @@
 
 # Running this application
-First compile the svelte front end.
-In the `front_end` directory, run `npm install` and then `npm run build`.
-For this you need nodejs installed.
+Create an `.env` file in the root directory.
+You can copy the `.env.example`, and possibly edit some values
+You can take a look at `.env.example` file to see the required environment variables.
 
-Then compile & run the backend.
-In the `back_end` directory, run `cargo run`.
-For this you need rust installed.
+Setup and run the database, for this you need docker installed.
+In the root directory, run `docker compose up`.
+
+Compile the svelte front end, for this you need nodejs installed.
+In the `frontend` directory, run `npm install` and then `npm run build`.
+
+Compile and run the backend, for this you need rust installed.
+In the `backend` directory, run `cargo run`.
 
 
 # TODO's
 For the backbone:
-- Postgresql setup, comminucating with backend
-- instructions for `.env` file creation
-- Some kind of OpenAPI specification for backend, to create bindings for frontend
-- backend versioning api endpoints
+- Backend bindings for the frontend
 - investigating possible instant reloading with sveltekit
 
 For later:
