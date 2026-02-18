@@ -16,33 +16,26 @@ CREATE TABLE users
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
 
+-- the current database has a `plaatje` field that seems to only be used to check if an image exists? This won't work with multiple images anyway, so has been excluded.
 CREATE TABLE trees
 (
-    id            SERIAL PRIMARY KEY,
-    owner_id      INTEGER      NOT NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
-    published     BOOLEAN      NOT NULL DEFAULT FALSE,
-    times_visited BIGINT       NOT NULL DEFAULT 0,
-    last_visited  TIMESTAMP             DEFAULT NULL,
-    title         VARCHAR(128) NOT NULL,
-    description   VARCHAR(256)          DEFAULT NULL,
-    book_name     VARCHAR(192)          DEFAULT NULL,
-    book_edition  VARCHAR(32)           DEFAULT NULL,
-    book_isbn     VARCHAR(13)           DEFAULT NULL,
-    book_chapter  VARCHAR(32)           DEFAULT NULL,
-    book_exercise VARCHAR(32)           DEFAULT NULL,
-    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
-);
-
--- the current database has a `plaatje` field that seems to only be used to check if an image exists? This won't work with multiple images anyway, so has been excluded.
-CREATE TABLE tree_versions
-(
-    id              BIGSERIAL PRIMARY KEY,
-    tree_id         INTEGER   NOT NULL,
-    edited_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    structure       JSON      NOT NULL,                           -- TODO: default?
-    assignment_text VARCHAR(5000)      DEFAULT NULL,              -- currently stored as HTML with images in BASE64. We might want to consider Markdown or some other way of storing this (JSON?).
-    FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree should delete its history
+    id              SERIAL PRIMARY KEY,
+    owner_id        INTEGER      NOT NULL,
+    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
+    last_edited     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published       BOOLEAN      NOT NULL DEFAULT FALSE,
+    times_visited   BIGINT       NOT NULL DEFAULT 0,
+    last_visited    TIMESTAMP             DEFAULT NULL,
+    title           VARCHAR(128) NOT NULL,
+    description     VARCHAR(256)          DEFAULT NULL,
+    book_name       VARCHAR(192)          DEFAULT NULL,
+    book_edition    VARCHAR(32)           DEFAULT NULL,
+    book_isbn       VARCHAR(13)           DEFAULT NULL,
+    book_chapter    VARCHAR(32)           DEFAULT NULL,
+    book_exercise   VARCHAR(32)           DEFAULT NULL,
+    assignment_text VARCHAR(5000)         DEFAULT NULL,              -- currently stored as HTML with images in BASE64. We might want to consider Markdown or some other way of storing this (JSON?).
+    structure       JSON         NOT NULL,                           -- TODO: default?
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
 
 CREATE TABLE hints
