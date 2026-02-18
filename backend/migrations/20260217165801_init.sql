@@ -24,7 +24,9 @@ CREATE TABLE trees (
     last_visited TIMESTAMP DEFAULT NULL,
     title VARCHAR(128) NOT NULL,
     description VARCHAR(256) DEFAULT NULL,
-    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
+    exercise INTEGER DEFAULT NULL,
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE, -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
+    FOREIGN KEY (exercise) REFERENCES exercises (id) ON DELETE SET NULL
 );
 
 -- the current database has a `plaatje` field that seems to only be used to check if an image exists? This won't work with multiple images anyway, so has been excluded.
@@ -37,6 +39,7 @@ CREATE TABLE tree_versions (
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree should delete its history
 );
 
+-- these unique constraints might make a moderation issue later, might want to reconsider
 CREATE TABLE books (
     id SERIAL PRIMARY KEY,
     name VARCHAR(192) DEFAULT NULL, -- contains the part (i.e. "Deel 1)
@@ -45,6 +48,7 @@ CREATE TABLE books (
     UNIQUE(name, edition)
 );
 
+-- these unique constraints might make a moderation issue later, might want to reconsider
 CREATE TABLE chapters (
     id SERIAL PRIMARY KEY,
     chapter VARCHAR(32) DEFAULT NULL,
@@ -53,18 +57,23 @@ CREATE TABLE chapters (
     FOREIGN KEY (book) REFERENCES books (id) ON DELETE CASCADE -- deleting a book deletes its chapters
 );
 
+-- these unique constraints might make a moderation issue later, might want to reconsider
 CREATE TABLE exercises (
     id SERIAL PRIMARY KEY,
+    owner_id INTEGER NOT NULL,
     exercise VARCHAR(32) DEFAULT NULL,
     chapter INTEGER NOT NULL,
     UNIQUE(exercise, chapter),
-    FOREIGN KEY (chapter) REFERENCES chapters (id) ON DELETE CASCADE -- deleting a chapter deletes its exercises
+    FOREIGN KEY (chapter) REFERENCES chapters (id) ON DELETE CASCADE, -- deleting a chapter deletes its exercises
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE hints (
     id SERIAL PRIMARY KEY,
+    owner_id INTEGER NOT NULL,
     front VARCHAR(1024) DEFAULT NULL,
-    back VARCHAR(5000) DEFAULT NULL
+    back VARCHAR(5000) DEFAULT NULL,
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE -- deleting a user deletes their cards
 );
 
 CREATE TABLE tree_hint (
