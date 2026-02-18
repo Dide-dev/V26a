@@ -20,9 +20,11 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     defaults:
+      uses:
+        working-directory: ./frontend
       run:
         shell: bash
-        working-directory: ./fontend
+        working-directory: ./frontend
 
     steps:
       - uses: actions/checkout@v4
