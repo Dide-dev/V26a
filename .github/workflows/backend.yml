@@ -1,0 +1,63 @@
+name: Backend Rust CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: ht_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - "5432:5432"
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ht_ci
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      #     https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+      #     This seems to be ignoring the working-directory flag above.. Having added the "backend/" made building faster
+      - name: Cache Rust artifacts for faster CI
+        id: cache-cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            backend/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format
+        run: cargo fmt --check
+      - name: Install sqlx-cli
+        if: steps.cache-cargo.outputs.cache-hit != 'true'
+        run: cargo install sqlx-cli --no-default-features --features postgres --locked --force
+      - name: Run database migrations
+        run: cargo sqlx migrate run
+      - name: Check offline SQLx queries
+        run: cargo sqlx prepare --check
+      - name: Clippy
+        run: cargo clippy -- -Dwarnings
+      - name: Run tests
+        run: cargo test
