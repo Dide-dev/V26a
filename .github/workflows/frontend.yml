@@ -22,7 +22,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./fontend
+        working-directory: ./frontend
 
     steps:
       - uses: actions/checkout@v4
