@@ -16,51 +16,22 @@ CREATE TABLE users
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
 
--- these unique constraints might make a moderation issue later, might want to reconsider
-CREATE TABLE books
-(
-    id      SERIAL PRIMARY KEY,
-    name    VARCHAR(192)       DEFAULT NULL, -- contains the part (i.e. "Deel 1)
-    edition VARCHAR(32)        DEFAULT NULL,
-    isbn    VARCHAR(13) UNIQUE DEFAULT NULL, -- NULL should get treated as distinct, didn't test.
-    UNIQUE (name, edition)
-);
-
--- these unique constraints might make a moderation issue later, might want to reconsider
-CREATE TABLE chapters
-(
-    id      SERIAL PRIMARY KEY,
-    chapter VARCHAR(32) DEFAULT NULL,
-    book    INTEGER NOT NULL,
-    UNIQUE (chapter, book),
-    FOREIGN KEY (book) REFERENCES books (id) ON DELETE CASCADE -- deleting a book deletes its chapters
-);
-
--- these unique constraints might make a moderation issue later, might want to reconsider
-CREATE TABLE exercises
-(
-    id       SERIAL PRIMARY KEY,
-    owner_id INTEGER NOT NULL,
-    exercise VARCHAR(32) DEFAULT NULL,
-    chapter  INTEGER NOT NULL,
-    UNIQUE (exercise, chapter),
-    FOREIGN KEY (chapter) REFERENCES chapters (id) ON DELETE CASCADE, -- deleting a chapter deletes its exercises
-    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
 CREATE TABLE trees
 (
     id            SERIAL PRIMARY KEY,
     owner_id      INTEGER      NOT NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- `timestamp` in prototype
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
     published     BOOLEAN      NOT NULL DEFAULT FALSE,
     times_visited BIGINT       NOT NULL DEFAULT 0,
     last_visited  TIMESTAMP             DEFAULT NULL,
     title         VARCHAR(128) NOT NULL,
     description   VARCHAR(256)          DEFAULT NULL,
-    exercise      INTEGER               DEFAULT NULL,
-    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE, -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
-    FOREIGN KEY (exercise) REFERENCES exercises (id) ON DELETE SET NULL
+    book_name     VARCHAR(192)          DEFAULT NULL,
+    book_edition  VARCHAR(32)           DEFAULT NULL,
+    book_isbn     VARCHAR(13)           DEFAULT NULL,
+    book_chapter  VARCHAR(32)           DEFAULT NULL,
+    book_exercise VARCHAR(32)           DEFAULT NULL,
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
 
 -- the current database has a `plaatje` field that seems to only be used to check if an image exists? This won't work with multiple images anyway, so has been excluded.
