@@ -10,7 +10,7 @@ Setup and run the database, for this you need docker installed.
 In the directory containing `docker-compose.yml`, run `docker compose up`.
 
 Compile and run the backend, for this you need rust installed.
-First install the `sqlx` utility command, by running `cargo install sqlx-cli`.
+First install the `sqlx` utility command, by running `cargo install sqlx-cli --no-default-features --features postgres`.
 Go to the `backend` directory.
 While the database is running, run `cargo sqlx migrate run` to initialize the database tables.
 Finally run `cargo run`.
