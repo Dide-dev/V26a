@@ -14,6 +14,7 @@ First install the `sqlx` utility command, by running `cargo install sqlx-cli`.
 Go to the `backend` directory.
 While the database is running, run `cargo sqlx migrate run` to initialize the database tables.
 Finally run `cargo run`.
+The website can now be visited locally in a web browser on `http://localhost:3000/`.
 
 # Developing
 When working on the front end, the command `npm run dev` in the `frontend` directory can be used.
