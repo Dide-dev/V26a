@@ -43,6 +43,23 @@ export const example_tree: HeuristicTree = {
 								{
 									card: 'Dan is het makkelijk op te lossen!',
 									children: []
+								},
+								{
+									card: 'abc',
+									children: [
+										{
+											card: '123',
+											children: []
+										},
+										{
+											card: '456',
+											children: []
+										}
+									]
+								},
+								{
+									card: 'def',
+									children: []
 								}
 							]
 						},
