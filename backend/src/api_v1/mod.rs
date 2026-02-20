@@ -1,5 +1,7 @@
 mod demo;
 
+mod trees;
+
 use crate::api_v1::demo::demo;
 use axum::Router;
 
