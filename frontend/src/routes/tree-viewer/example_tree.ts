@@ -1,21 +1,25 @@
 // For now just an example, TODO: getting tree from database
-type Tree = {
+export type HeuristicTree = {
 	name: string;
 	// assignment, meta data, ...
-	roots: { root_text: string; root_nodes: Node[] }[];
+	roots: RootNode[];
 };
-type Node = {
+export type RootNode = {
+	label: string;
+	children: Node[];
+};
+export type Node = {
 	card: Card;
 	children: Node[];
 };
-type Card = string;
+export type Card = string;
 
-export const example_tree: Tree = {
+export const example_tree: HeuristicTree = {
 	name: 'Testing 123',
 	roots: [
 		{
-			root_text: 'Oriënteren',
-			root_nodes: [
+			label: 'Oriënteren',
+			children: [
 				{
 					card: 'Lees de opdracht helemaal door!',
 					children: []
@@ -27,8 +31,8 @@ export const example_tree: Tree = {
 			]
 		},
 		{
-			root_text: 'Plan maken en uitvoeren',
-			root_nodes: [
+			label: 'Plan maken en uitvoeren',
+			children: [
 				{
 					card: 'Zoek het verband tussen x en y, bijvoorbeeld delers',
 					children: [
