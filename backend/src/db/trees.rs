@@ -1,15 +1,17 @@
 use anyhow::{Error, Ok};
 use sqlx::{PgPool, query};
 
-/// TODO: Returns the index assigned to the new tree
-pub async fn add_tree(db: &PgPool) -> Result<(), Error> {
-    // FIX: unknown if this query is working, for it compiles
-    query!(
+/// Returns the index assigned to the new tree
+pub async fn add_tree(db: &PgPool, owner_id: i32, title: &str) -> Result<i32, Error> {
+    let id_record = query!(
         "INSERT INTO trees (owner_id, title, structure)
-        VALUES (0, 'test_value', '{}')"
+        VALUES ($1, $2, '{}')
+        RETURNING id",
+        owner_id,
+        title
     )
-    .execute(db)
+    .fetch_one(db)
     .await?;
 
-    Ok(())
+    Ok(id_record.id)
 }
