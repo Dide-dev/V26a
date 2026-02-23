@@ -7,8 +7,21 @@
 
 <h1>{tree.name}</h1>
 
-<div class="flex h-full flex-col gap-7 overflow-auto">
+<div class="flex grow flex-col gap-7 overflow-auto">
 	{#each tree.roots as root (root)}
 		<NodeViewer node={root} />
 	{/each}
 </div>
+
+<!--
+    Here we add a few css classes to the body,
+    to make sure that the element above here with the `overflow-auto` class can be
+    growing in height until the scroll bar is at the bottom of the screen.
+-->
+<style>
+	:global(body) {
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+</style>
