@@ -1,4 +1,4 @@
-import { api_call_post, api_call_get } from './index';
+import { api_call_post } from './index';
 import type { Option } from './types';
 
 const prefix = 'trees/';
