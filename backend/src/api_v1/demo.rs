@@ -1,8 +1,9 @@
+use crate::api_v1::session::{AuthError, Claims};
 use crate::db::demo::{add_counter_value, fetch_counter_value};
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
-use axum::{Extension, Router};
+use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the demo category, combining its endpoints.
@@ -12,6 +13,11 @@ pub fn demo() -> Router {
         .route("/json", get(backend_json_test))
         .route("/increment", get(increment_counter_test))
         .route("/add-to-counter", post(add_counter_test))
+        .route("/protected", get(protected_test))
+}
+
+async fn protected_test(claims: Claims) -> Result<String, AuthError> {
+    Ok("".to_string())
 }
 
 /// A test endpoint that returns a basic HTML response.
@@ -80,7 +86,7 @@ pub struct AddCounterBody {
 /// Nothing if successful, or a specified [`StatusCode`] if not.
 async fn add_counter_test(
     db: Extension<PgPool>,
-    axum::Json(body): axum::Json<AddCounterBody>,
+    Json(body): Json<AddCounterBody>,
 ) -> Result<(), StatusCode> {
     add_counter_value(&db, body.add)
         .await
