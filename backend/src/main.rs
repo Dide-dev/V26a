@@ -2,6 +2,8 @@
 
 mod api_v1;
 mod db;
+mod errors;
+mod users;
 
 use crate::api_v1::v1_api;
 use axum::{Extension, Router};
