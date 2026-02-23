@@ -1,4 +1,4 @@
-import { api_call_get, api_call_post } from './index';
+import { apiCallGet, apiCallPost } from './index';
 
 type JsonTestStruct = {
 	a: string;
@@ -6,13 +6,13 @@ type JsonTestStruct = {
 	b: number;
 };
 
-export function get_json_test(): Promise<JsonTestStruct> {
-	return api_call_get('demo/json');
+export function getJsonTest(): Promise<JsonTestStruct> {
+	return apiCallGet('demo/json');
 }
 
 /** Increases the counter by 1 */
-export function counter_increment(): Promise<void> {
-	return api_call_get('demo/increment');
+export function counterIncrement(): Promise<void> {
+	return apiCallGet('demo/increment');
 }
 
 export type AddCounterBody = {
@@ -20,6 +20,6 @@ export type AddCounterBody = {
 };
 
 /** Increases the counter by arbitrary amount */
-export function counter_add(body: AddCounterBody): Promise<void> {
-	return api_call_post('demo/add-to-counter', body);
+export function counterAdd(body: AddCounterBody): Promise<void> {
+	return apiCallPost('demo/add-to-counter', body);
 }
