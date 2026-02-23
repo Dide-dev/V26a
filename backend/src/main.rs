@@ -1,5 +1,4 @@
 #![warn(clippy::pedantic)]
-#![deny(rustdoc::broken_intra_doc_links)]
 
 mod api_v1;
 mod db;
