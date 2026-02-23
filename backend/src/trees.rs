@@ -1,6 +1,6 @@
 // use chrono::prelude::*;
 
-/// The tree structure with the cards
+// /// The tree structure with the cards
 // #[derive(serde::Deserialize, serde::Serialize)]
 // pub struct TreeStructure {
 //     pub structure: serde_json::Value,
