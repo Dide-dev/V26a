@@ -5,6 +5,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Router};
 use sqlx::PgPool;
 
+/// Creates an `Axum` [`Router`] for the demo category, combining its endpoints.
 pub fn demo() -> Router {
     Router::new()
         .route("/html", get(backend_html_test))
@@ -13,16 +14,23 @@ pub fn demo() -> Router {
         .route("/add-to-counter", post(add_counter_test))
 }
 
+/// A test endpoint that returns a basic HTML response.
 async fn backend_html_test() -> Html<&'static str> {
     Html("<h1>Hello from axum!</h1>")
 }
 
+/// A test struct, containing some example fields to later be converted to JSON.
 #[derive(serde::Serialize)]
 pub struct JsonTestStruct {
     a: String,
     b: i32,
 }
 
+/// A test endpoint that returns the value of a counter in the database as JSON.
+///
+/// # Returns
+/// A [`Result`] containing the counter value in a [`JsonTestStruct`] if successful,
+/// or a [`StatusCode`] if not.
 async fn backend_json_test(
     db: Extension<PgPool>,
 ) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
@@ -38,6 +46,12 @@ async fn backend_json_test(
     Ok(axum::Json(test_struct))
 }
 
+/// A test endpoint that increments the value of a counter in the database,
+/// and returns the updated value as JSON.
+///
+/// # Returns
+/// A [`Result`] containing the updated counter value in a [`JsonTestStruct`] if successful,
+/// or a [`StatusCode`] if not.
 async fn increment_counter_test(
     db: Extension<PgPool>,
 ) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
@@ -53,11 +67,17 @@ async fn increment_counter_test(
     Ok(axum::Json(test_struct))
 }
 
+/// A struct representing the body of an HTTP request to add to a counter.
 #[derive(serde::Deserialize)]
 pub struct AddCounterBody {
     add: i32,
 }
 
+/// A test endpoint that adds a given value in the request body to a counter in the database.
+/// This reads the given request body and tries to parse it as [`AddCounterBody`].
+///
+/// # Returns
+/// Nothing if successful, or a specified [`StatusCode`] if not.
 async fn add_counter_test(
     db: Extension<PgPool>,
     axum::Json(body): axum::Json<AddCounterBody>,

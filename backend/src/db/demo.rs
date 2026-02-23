@@ -1,6 +1,11 @@
 use anyhow::Error;
 use sqlx::{PgPool, query};
 
+/// Fetches the counter value from the given database. Returning the value if successful,
+/// or an error if not.
+///
+/// # Arguments
+/// `db` - a reference to the database connection to use for the query.
 pub async fn fetch_counter_value(db: &PgPool) -> Result<i32, Error> {
     ensure_counter_exists(db).await?;
     Ok(query!("SELECT counter_value FROM counters WHERE id = 0")
@@ -9,6 +14,12 @@ pub async fn fetch_counter_value(db: &PgPool) -> Result<i32, Error> {
         .counter_value)
 }
 
+/// Adds a number to the counter value from the given database. Returning the updated value
+/// if successful, or an error if not.
+///
+/// # Arguments
+/// `db` - a reference to the database connection to use for the query.
+/// `amount` - the amount to add to the counter.
 pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, Error> {
     ensure_counter_exists(db).await?;
 
@@ -31,6 +42,11 @@ pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, Error> {
     Ok(new_counter_value)
 }
 
+/// Checks if the counter exists in the database, creating it if it doesn't. Returning nothing if
+/// successful, or an error if not.
+///
+/// # Arguments
+/// `db` - a reference to the database connection to use for the query.
 async fn ensure_counter_exists(db: &PgPool) -> Result<(), Error> {
     let exists = query!("SELECT EXISTS(SELECT 1 FROM counters WHERE id = 0)")
         .fetch_one(db)

@@ -26,6 +26,8 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/ht_ci
+      RUSTFLAGS: -D warnings
+      RUSTDOCFLAGS: -D warnings
 
     defaults:
       run:
@@ -58,6 +60,8 @@ jobs:
       - name: Check offline SQLx queries
         run: cargo sqlx prepare --check
       - name: Clippy
-        run: cargo clippy -- -Dwarnings
+        run: cargo clippy
       - name: Run tests
         run: cargo test
+      - name: Check documentation
+        run: cargo doc --no-deps
