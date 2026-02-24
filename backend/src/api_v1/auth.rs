@@ -1,11 +1,13 @@
+use crate::Config;
 use crate::api_v1::session::{AuthError, Claims, KEYS};
+use crate::db::auth::get_user_id_and_password;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
+use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::Deserialize;
-use chrono::Utc;
-use crate::Config;
+use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router {
@@ -21,20 +23,28 @@ struct LoginRequestBody {
 
 /// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
 /// with an encoded JWT.
-async fn login(jar: CookieJar, config: Extension<Config>, Json(body): Json<LoginRequestBody>) -> Result<CookieJar, AuthError> {
+async fn login(
+    jar: CookieJar,
+    db: Extension<PgPool>,
+    config: Extension<Config>,
+    Json(body): Json<LoginRequestBody>,
+) -> Result<CookieJar, AuthError> {
     // Check if the user sent the credentials
     if body.email.is_empty() || body.password.is_empty() {
         return Err(AuthError::MissingCredentials);
     }
 
-    // TODO: Check the user credentials
-    if body.email != "foo" || body.password != "bar" {
+    let (user_id, password_hash) = get_user_id_and_password(&db, body.email).await?;
+    let password_valid =
+        bcrypt::verify(body.password, password_hash.as_str()).map_err(|_| AuthError::HashError)?;
+
+    if !password_valid {
         return Err(AuthError::WrongCredentials);
     }
 
     let claims = Claims {
-        sub: 1, // TODO: get user id out of db
-        exp: Utc::now().timestamp() + config.session_duration
+        sub: user_id,
+        exp: Utc::now().timestamp() + config.session_duration,
     };
 
     // Create the authorization token

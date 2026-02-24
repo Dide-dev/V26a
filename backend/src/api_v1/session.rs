@@ -72,6 +72,7 @@ pub enum AuthError {
     MissingToken,
     InvalidToken,
     ExpiredToken,
+    HashError,
 }
 
 impl IntoResponse for AuthError {
@@ -85,6 +86,7 @@ impl IntoResponse for AuthError {
             AuthError::MissingToken => (StatusCode::UNAUTHORIZED, "Missing authorisation"),
             AuthError::ExpiredToken => (StatusCode::UNAUTHORIZED, "Expired authorisation"),
             AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid authorisation"),
+            AuthError::HashError => (StatusCode::INTERNAL_SERVER_ERROR, "Please try again"),
         };
         let body = Json(json!({
             "error": error_message,
