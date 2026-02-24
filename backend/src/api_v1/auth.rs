@@ -4,6 +4,7 @@ use axum::{Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use jsonwebtoken::{Header, encode};
 use serde::Deserialize;
+use std::env;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
@@ -32,10 +33,12 @@ async fn login(jar: CookieJar, Json(body): Json<LoginRequestBody>) -> Result<Coo
     }
 
     // The token expires in 7 days
-    const DURATION_SECONDS: u32 = 7 * 24 * 3600;
+    let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
+        .unwrap_or("604800".to_string()) // 7 days
+        .parse::<i64>().map_err(|_| AuthError::ServerFormatError)?;
     let claims = Claims {
         sub: 1, // TODO: get user id out of db
-        exp: (SystemTime::now() + Duration::from_secs(DURATION_SECONDS.into()))
+        exp: (SystemTime::now() + Duration::from_secs(session_duration as u64))
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs(),
@@ -48,7 +51,7 @@ async fn login(jar: CookieJar, Json(body): Json<LoginRequestBody>) -> Result<Coo
     let cookie = Cookie::build(("session", token))
         .path("/")
         .secure(true)
-        .max_age(time::Duration::new(DURATION_SECONDS.into(), 0))
+        .max_age(time::Duration::new(session_duration, 0))
         .http_only(true);
 
     Ok(jar.add(cookie))

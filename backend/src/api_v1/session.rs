@@ -72,6 +72,7 @@ pub enum AuthError {
     MissingToken,
     InvalidToken,
     ExpiredToken,
+    ServerFormatError,
 }
 
 impl IntoResponse for AuthError {
