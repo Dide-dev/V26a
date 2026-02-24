@@ -8,7 +8,7 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router {
-    Router::new().route("/add_new_tree", post(add_new_tree))
+    Router::new().route("/add-new-tree", post(add_new_tree))
 }
 
 /// Add a tree to the database
