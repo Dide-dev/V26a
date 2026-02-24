@@ -34,7 +34,7 @@ impl Keys {
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
     pub(crate) sub: i32, // Subject (whom token refers to)
-    pub(crate) exp: u64, // Expiration time (as UTC timestamp)
+    pub(crate) exp: i64, // Expiration time (as UTC timestamp)
 }
 
 impl<S> FromRequestParts<S> for Claims
@@ -72,7 +72,6 @@ pub enum AuthError {
     MissingToken,
     InvalidToken,
     ExpiredToken,
-    ServerFormatError,
 }
 
 impl IntoResponse for AuthError {

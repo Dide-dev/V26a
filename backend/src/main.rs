@@ -12,6 +12,11 @@ use std::env;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+#[derive(Clone)]
+pub struct Config {
+    session_duration: i64,
+}
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().expect(".env file missing."); // TODO: this .expect() needs to be replaced when deployed
@@ -35,10 +40,17 @@ async fn main() {
         .await
         .expect("failed to run database migrations.");
 
+    let config = Config {
+        session_duration: env::var("SESSION_EXPIRATION_SECONDS")
+            .unwrap_or("604800".to_string())
+            .parse()
+            .expect("Failed to parse SESSION_EXPIRATION_SECONDS"),
+    };
+
     // build our application with a route
     let app = Router::new()
         .merge(static_frontend())
-        .nest("/api", backend(db));
+        .nest("/api", backend(db, config));
 
     // run it
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -61,6 +73,6 @@ fn static_frontend() -> Router {
 /// # Arguments
 /// `db` - An `SQLx` [`PgPool`] that represents the connection to a Postgres database,
 /// to be passed as an extension to the Routers.
-fn backend(db: PgPool) -> Router {
-    Router::new().nest("/v1", v1_api()).layer(Extension(db))
+fn backend(db: PgPool, config: Config) -> Router {
+    Router::new().nest("/v1", v1_api()).layer(Extension(db)).layer(Extension(config))
 }

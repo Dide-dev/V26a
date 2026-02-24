@@ -1,11 +1,11 @@
 use crate::api_v1::session::{AuthError, Claims, KEYS};
 use axum::routing::post;
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use jsonwebtoken::{Header, encode};
 use serde::Deserialize;
-use std::env;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use chrono::Utc;
+use crate::Config;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router {
@@ -21,28 +21,22 @@ struct LoginRequestBody {
 
 /// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
 /// with an encoded JWT.
-async fn login(jar: CookieJar, Json(body): Json<LoginRequestBody>) -> Result<CookieJar, AuthError> {
+async fn login(jar: CookieJar, config: Extension<Config>, Json(body): Json<LoginRequestBody>) -> Result<CookieJar, AuthError> {
     // Check if the user sent the credentials
     if body.email.is_empty() || body.password.is_empty() {
         return Err(AuthError::MissingCredentials);
     }
 
-    // Check the user credentials
+    // TODO: Check the user credentials
     if body.email != "foo" || body.password != "bar" {
         return Err(AuthError::WrongCredentials);
     }
 
-    // The token expires in 7 days
-    let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
-        .unwrap_or("604800".to_string()) // 7 days
-        .parse::<i64>().map_err(|_| AuthError::ServerFormatError)?;
     let claims = Claims {
         sub: 1, // TODO: get user id out of db
-        exp: (SystemTime::now() + Duration::from_secs(session_duration as u64))
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs(),
+        exp: Utc::now().timestamp() + config.session_duration
     };
+
     // Create the authorization token
     let token = encode(&Header::default(), &claims, &KEYS.encoding)
         .map_err(|_| AuthError::TokenCreation)?;
@@ -51,7 +45,7 @@ async fn login(jar: CookieJar, Json(body): Json<LoginRequestBody>) -> Result<Coo
     let cookie = Cookie::build(("session", token))
         .path("/")
         .secure(true)
-        .max_age(time::Duration::new(session_duration, 0))
+        .max_age(time::Duration::new(config.session_duration, 0))
         .http_only(true);
 
     Ok(jar.add(cookie))
