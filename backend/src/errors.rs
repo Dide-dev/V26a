@@ -2,6 +2,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use std::fmt::Display;
 
+// This currently serves as an example, remove the allow statement when we have an error type that contains a string
+#[allow(dead_code)]
 pub enum ApiError {
     UserAlreadyExistsError,
     DatabaseException,
@@ -22,6 +24,7 @@ impl Display for ApiError {
 }
 
 impl ApiError {
+    /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::UserAlreadyExistsError => StatusCode::BAD_REQUEST,
@@ -31,6 +34,7 @@ impl ApiError {
 }
 
 impl IntoResponse for ApiError {
+    /// Convert our [`ApiError`] into an `Axum` [`Response`].
     fn into_response(self) -> Response {
         let message = self.to_string();
         let status = self.to_status_code();

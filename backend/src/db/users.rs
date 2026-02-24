@@ -16,7 +16,7 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
 
     if exists {
         return Err(ApiError::UserAlreadyExistsError);
-    };
+    }
 
     let id_record = query!(
         "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language)

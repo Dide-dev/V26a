@@ -2,10 +2,8 @@ use crate::db::users::add_user;
 use crate::errors::ApiError;
 use crate::users::UserData;
 
-use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 pub fn users() -> Router {
