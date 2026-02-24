@@ -8,8 +8,6 @@ use crate::Config;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::env;
-use std::sync::LazyLock;
 
 #[derive(Clone)]
 pub struct Keys {
