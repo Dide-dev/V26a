@@ -1,5 +1,6 @@
 use crate::db::trees::add_tree;
 use crate::trees::TreeData;
+use crate::Config;
 
 use axum::http::StatusCode;
 use axum::routing::post;
@@ -7,7 +8,7 @@ use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the trees category.
-pub fn trees() -> Router {
+pub fn trees() -> Router<Config> {
     Router::new().route("/add-new-tree", post(add_new_tree))
 }
 

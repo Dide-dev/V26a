@@ -1,3 +1,4 @@
+use crate::Config;
 use crate::api_v1::session::{AuthError, Claims};
 use crate::db::demo::{add_counter_value, fetch_counter_value};
 use axum::http::StatusCode;
@@ -7,7 +8,7 @@ use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the demo category, combining its endpoints.
-pub fn demo() -> Router {
+pub fn demo() -> Router<Config> {
     Router::new()
         .route("/html", get(backend_html_test))
         .route("/json", get(backend_json_test))

@@ -1,6 +1,7 @@
 use crate::Config;
-use crate::api_v1::session::{AuthError, Claims, KEYS};
+use crate::api_v1::session::{AuthError, Claims};
 use crate::db::auth::get_user_id_and_password;
+use axum::extract::State;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
@@ -10,7 +11,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
-pub fn auth() -> Router {
+pub fn auth() -> Router<Config> {
     Router::new().route("/login", post(login))
 }
 
@@ -24,10 +25,10 @@ struct LoginRequestBody {
 /// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
 /// with an encoded JWT.
 async fn login(
-    jar: CookieJar,
-    db: Extension<PgPool>,
-    config: Extension<Config>,
-    Json(body): Json<LoginRequestBody>,
+    jar: CookieJar, 
+    db: Extension<PgPool>, 
+    State(config): State<Config>, 
+    Json(body): Json<LoginRequestBody>
 ) -> Result<CookieJar, AuthError> {
     // Check if the user sent the credentials
     if body.email.is_empty() || body.password.is_empty() {
@@ -48,7 +49,7 @@ async fn login(
     };
 
     // Create the authorization token
-    let token = encode(&Header::default(), &claims, &KEYS.encoding)
+    let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| AuthError::TokenCreation)?;
 
     // Create the authorized token as a cookie

@@ -4,7 +4,7 @@ mod api_v1;
 mod db;
 mod trees;
 
-use crate::api_v1::v1_api;
+use crate::api_v1::{v1_api, session::Keys};
 use axum::{Extension, Router};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -15,6 +15,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[derive(Clone)]
 pub struct Config {
     session_duration: i64,
+    jwt_keys: Keys,
 }
 
 #[tokio::main]
@@ -45,12 +46,14 @@ async fn main() {
             .unwrap_or("604800".to_string())
             .parse()
             .expect("Failed to parse SESSION_EXPIRATION_SECONDS"),
+        jwt_keys: Keys::new(env::var("JWT_SECRET").expect("JWT_SECRET must be set").as_bytes()),
     };
 
     // build our application with a route
     let app = Router::new()
         .merge(static_frontend())
-        .nest("/api", backend(db, config));
+        .nest("/api", backend(db))
+        .with_state(config);
 
     // run it
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -61,7 +64,7 @@ async fn main() {
 }
 
 /// Creates an `Axum` [`Router`] that serves the static frontend from the `frontend` folder.
-fn static_frontend() -> Router {
+fn static_frontend() -> Router<Config> {
     use tower_http::services::ServeDir;
     let static_frontend_dir = ServeDir::new("../frontend/build");
 
@@ -73,6 +76,6 @@ fn static_frontend() -> Router {
 /// # Arguments
 /// `db` - An `SQLx` [`PgPool`] that represents the connection to a Postgres database,
 /// to be passed as an extension to the Routers.
-fn backend(db: PgPool, config: Config) -> Router {
-    Router::new().nest("/v1", v1_api()).layer(Extension(db)).layer(Extension(config))
+fn backend(db: PgPool) -> Router<Config> {
+    Router::new().nest("/v1", v1_api()).layer(Extension(db))
 }
