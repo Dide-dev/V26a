@@ -51,7 +51,7 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
         user_data.nickname,
         user_data.about_me,
         user_data.email_visible,
-        user_data.language,
+        user_data.language.to_string(),
     )
     .fetch_one(db)
     .await
