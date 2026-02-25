@@ -11,8 +11,8 @@ pub fn trees() -> Router {
     Router::new().route("/add-new-tree", post(add_new_tree))
 }
 
-/// Add a tree to the database
-/// Returns the index assigned to the new tree
+/// Add a tree to the database.
+/// Returns the index assigned to the new tree.
 async fn add_new_tree(
     db: Extension<PgPool>,
     axum::Json(tree_data): axum::Json<TreeData>,
