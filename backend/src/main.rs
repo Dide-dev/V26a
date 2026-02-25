@@ -2,6 +2,9 @@
 
 mod api_v1;
 mod db;
+mod errors;
+mod trees;
+mod users;
 
 use crate::api_v1::v1_api;
 use axum::{Extension, Router};
@@ -47,6 +50,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
+/// Creates an `Axum` [`Router`] that serves the static frontend from the `frontend` folder.
 fn static_frontend() -> Router {
     use tower_http::services::ServeDir;
     let static_frontend_dir = ServeDir::new("../frontend/build");
@@ -54,6 +58,11 @@ fn static_frontend() -> Router {
     Router::new().fallback_service(static_frontend_dir)
 }
 
+/// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
+///
+/// # Arguments
+/// `db` - An `SQLx` [`PgPool`] that represents the connection to a Postgres database,
+/// to be passed as an extension to the Routers.
 fn backend(db: PgPool) -> Router {
     Router::new().nest("/v1", v1_api()).layer(Extension(db))
 }
