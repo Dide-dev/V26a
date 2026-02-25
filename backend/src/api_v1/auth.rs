@@ -1,6 +1,7 @@
 use crate::Config;
-use crate::api_v1::session::{AuthError, Claims};
+use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_id_and_password;
+use crate::errors::ApiError;
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
@@ -29,18 +30,18 @@ async fn login(
     db: Extension<PgPool>,
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
-) -> Result<CookieJar, AuthError> {
+) -> Result<CookieJar, ApiError> {
     // Check if the user sent the credentials
     if body.email.is_empty() || body.password.is_empty() {
-        return Err(AuthError::MissingCredentials);
+        return Err(ApiError::MissingCredentials);
     }
 
     let (user_id, password_hash) = get_user_id_and_password(&db, body.email).await?;
-    let password_valid =
-        bcrypt::verify(body.password, password_hash.as_str()).map_err(|_| AuthError::HashError)?;
+    let password_valid = bcrypt::verify(body.password, password_hash.as_str())
+        .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
-        return Err(AuthError::WrongCredentials);
+        return Err(ApiError::WrongCredentials);
     }
 
     let claims = Claims {
@@ -50,7 +51,7 @@ async fn login(
 
     // Create the authorization token
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
-        .map_err(|_| AuthError::TokenCreation)?;
+        .map_err(|_| ApiError::TokenCreation)?;
 
     // Create the authorized token as a cookie
     let cookie = Cookie::build(("session", token))

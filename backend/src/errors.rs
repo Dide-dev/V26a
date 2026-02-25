@@ -8,6 +8,12 @@ pub enum ApiError {
     EmailAlreadyUsedException,
     DatabaseException,
     HashException,
+    WrongCredentials,
+    MissingCredentials,
+    TokenCreation,
+    MissingToken,
+    InvalidToken,
+    ExpiredToken,
     Text(String),
 }
 
@@ -20,6 +26,12 @@ impl Display for ApiError {
             }
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
+            ApiError::WrongCredentials => write!(f, "Wrong credentials"),
+            ApiError::MissingCredentials => write!(f, "Missing credentials"),
+            ApiError::TokenCreation => write!(f, "Session creation error"),
+            ApiError::MissingToken => write!(f, "Missing authorisation"),
+            ApiError::ExpiredToken => write!(f, "Expired authorisation"),
+            ApiError::InvalidToken => write!(f, "Invalid authorisation"),
             ApiError::Text(s) => write!(f, "Error: {s}"),
         }
     }
@@ -30,9 +42,15 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsedException => StatusCode::BAD_REQUEST,
-            ApiError::DatabaseException | ApiError::HashException | ApiError::Text(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            ApiError::WrongCredentials => StatusCode::FORBIDDEN,
+            ApiError::DatabaseException
+            | ApiError::HashException
+            | ApiError::TokenCreation
+            | ApiError::Text(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::MissingCredentials
+            | ApiError::MissingToken
+            | ApiError::ExpiredToken
+            | ApiError::InvalidToken => StatusCode::UNAUTHORIZED,
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::api_v1::session::AuthError;
+use crate::errors::ApiError;
 use sqlx::{PgPool, query};
 
 /// Fetch a user's password from the given database, returning the password hash if successful,
@@ -11,14 +11,14 @@ use sqlx::{PgPool, query};
 pub async fn get_user_id_and_password(
     db: &PgPool,
     email: String,
-) -> Result<(i32, String), AuthError> {
+) -> Result<(i32, String), ApiError> {
     let record = query!(
         "SELECT id, password_hash FROM users WHERE email = $1",
         email
     )
     .fetch_one(db)
     .await
-    .map_err(|_| AuthError::WrongCredentials)?;
+    .map_err(|_| ApiError::WrongCredentials)?;
 
     let user_id = record.id;
     let password_hash = record.password_hash;

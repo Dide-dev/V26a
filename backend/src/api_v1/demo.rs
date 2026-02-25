@@ -1,6 +1,7 @@
 use crate::Config;
-use crate::api_v1::session::{AuthError, Claims};
+use crate::api_v1::session::Claims;
 use crate::db::demo::{add_counter_value, fetch_counter_value};
+use crate::errors::ApiError;
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
@@ -18,9 +19,9 @@ pub fn demo() -> Router<Config> {
 }
 
 /// A test endpoint that checks whether the user is logged in as user 1.
-async fn protected_test(claims: Claims) -> Result<String, AuthError> {
+async fn protected_test(claims: Claims) -> Result<String, ApiError> {
     if claims.sub != 1 {
-        Err(AuthError::WrongCredentials)?;
+        Err(ApiError::WrongCredentials)?;
     }
     Ok("Welcome, user 1!".to_string())
 }
