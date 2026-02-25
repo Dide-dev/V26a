@@ -24,7 +24,7 @@
     };
 
     onMount(() => {
-        if (node.children.length == 0) return;
+        if (node.children.length === 0) return;
 
         let top = domChildren.getBoundingClientRect().top;
 
@@ -78,7 +78,7 @@
         </div>
     {/if}
 
-    {#if node.children.length != 0}
+    {#if node.children.length !== 0}
         <svg width={svgWidth} height={svgHeight} class="shrink-0">
             {#each svgLines as line (line)}
                 <line
