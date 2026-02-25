@@ -1,30 +1,25 @@
 use crate::db::cards::add_card;
+use crate::db_structs::cards::CardData;
 
 use axum::http::StatusCode;
 use axum::routing::post;
-use axum::{Extension, Router};
+use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
-pub fn cards() -> Router {
-    Router::new()
-        .route("/add_new_card", post(add_new_card))
-}
+/// Creates an `Axum` [`Router`] for the cards category.
+pub fn cards() -> Router { Router::new().route("/add-new-card", post(add_new_card)) }
 
-#[derive(serde::Deserialize)]
-pub struct Card {
-    owner_id: i32,
-    front: String,
-    back: String,
-}
-
-/// Add a tree to the database
+/// Add a card to the database
 /// Returns the index assigned to the new tree
 async fn add_new_card(
     db: Extension<PgPool>,
-    axum::Json(card): axum::Json<Card>,
-) -> Result<(), StatusCode> {
-    let _id = add_card(&db, card.owner_id, &card.front, &card.back)
+    axum::Json(card_data): axum::Json<CardData>,
+) -> Result<Json<i32>, StatusCode> {
+    // TODO: Get owner_id from session
+    let id = add_card(&db, card_data, -1)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    Ok(())
+
+    let json_id = Json(id);
+    Ok(json_id)
 }

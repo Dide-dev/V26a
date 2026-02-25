@@ -38,20 +38,22 @@ CREATE TABLE trees
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
 
-CREATE TABLE hints
+CREATE TABLE cards
 (
     id       SERIAL PRIMARY KEY,
     owner_id INTEGER NOT NULL,
+    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
+    last_edited     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     front    VARCHAR(1024) DEFAULT NULL,
     back     VARCHAR(5000) DEFAULT NULL,
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE -- deleting a user deletes their cards
 );
 
-CREATE TABLE tree_hint
+CREATE TABLE tree_card
 (
     tree_id INTEGER NOT NULL,
     hint_id INTEGER NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE,
-    FOREIGN KEY (hint_id) REFERENCES hints (id) ON DELETE CASCADE,
-    CONSTRAINT tree_hint_pkey PRIMARY KEY (tree_id, hint_id)
+    FOREIGN KEY (hint_id) REFERENCES cards (id) ON DELETE CASCADE,
+    CONSTRAINT tree_card_pkey PRIMARY KEY (tree_id, hint_id)
 );

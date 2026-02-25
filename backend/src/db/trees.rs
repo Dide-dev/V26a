@@ -1,4 +1,4 @@
-use crate::trees::TreeData;
+use crate::db_structs::trees::TreeData;
 
 use anyhow::{Error, Ok};
 use sqlx::{PgPool, query};
@@ -27,8 +27,8 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
         tree_data.book_exercise,
         tree_data.assignment_text,
     )
-    .fetch_one(db)
-    .await?;
+        .fetch_one(db)
+        .await?;
 
     Ok(id_record.id)
 }
