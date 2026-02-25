@@ -5,9 +5,10 @@
 	let tree = example_tree;
 </script>
 
-<h1>{tree.name}</h1>
+<h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.name}</h1>
+<p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">{tree.assignment}</p>
 
-<div class="flex grow flex-col gap-7 overflow-auto">
+<div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
 	{#each tree.roots as root (root)}
 		<NodeViewer node={root} />
 	{/each}

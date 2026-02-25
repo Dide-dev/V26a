@@ -67,11 +67,11 @@
 
 <div class="flex">
 	{#if 'label' in node}
-		<div class="h-fit w-32 shrink-0 bg-fuchsia-300">
+		<div class="h-fit w-32 shrink-0">
 			<strong>{node.label}</strong>
 		</div>
 	{:else}
-		<div class="h-fit w-xl bg-purple-100 p-1">
+		<div class="h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
 			<p>{node.card}</p>
 		</div>
 	{/if}
@@ -79,7 +79,12 @@
 	{#if node.children.length != 0}
 		<svg width={svgWidth} height={svgHeight} class="shrink-0">
 			{#each svgLines as line}
-				<line {...line} stroke-linecap="round" stroke="black" stroke-width={strokeWidth} />
+				<line
+					{...line}
+					class="stroke-yellow-950"
+					stroke-linecap="round"
+					stroke-width={strokeWidth}
+				/>
 			{/each}
 		</svg>
 	{/if}
