@@ -12,7 +12,7 @@ type LoginData = {
 	password: string;
 };
 
-/** Add a user to the database */
-export function login(user: LoginData): Promise<void> {
-	return apiCallPostAuth('login', user);
+/** Log in with the provided credentials */
+export function login(credentials: LoginData): Promise<void> {
+	return apiCallPostAuth('login', credentials);
 }
