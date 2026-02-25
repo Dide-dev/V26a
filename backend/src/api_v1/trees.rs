@@ -1,4 +1,5 @@
 use crate::Config;
+use crate::api_v1::session::Claims;
 use crate::db::trees::add_tree;
 use crate::trees::TreeData;
 
@@ -15,11 +16,11 @@ pub fn trees() -> Router<Config> {
 /// Add a tree to the database.
 /// Returns the index assigned to the new tree.
 async fn add_new_tree(
+    claims: Claims,
     db: Extension<PgPool>,
     axum::Json(tree_data): axum::Json<TreeData>,
 ) -> Result<Json<i32>, StatusCode> {
-    // TODO: Get owner_id from session
-    let id = add_tree(&db, tree_data, -1)
+    let id = add_tree(&db, tree_data, claims.sub)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
