@@ -18,7 +18,10 @@ use sqlx::{PgPool, query};
 /// # Error
 /// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database
 pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError> {
-    // Check if email already exists
+    // Check if email already exists. This check is not strictly necessary,
+    // as a `UNIQUE` constraint is placed on the `password_hash` field.
+    // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
+    // will be returned instead of an `ApiError::EmailAlreadyUsedException`.
     let exists = query!(
         "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
         user_data.email,
@@ -30,10 +33,10 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
     .unwrap();
 
     if exists {
-        return Err(ApiError::EmailAlreadyUsed);
+        return Err(ApiError::EmailAlreadyUsedException);
     }
 
-    // Hash the password using bcrypt
+    // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated. Put a limit on password length.
     let hashed_password =
         hash(user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
 
