@@ -1,4 +1,4 @@
-use chrono::prelude::*;
+use sqlx::types::chrono::{DateTime, Utc};
 
 /// The tree structure with the cards
 #[allow(dead_code)]

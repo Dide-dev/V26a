@@ -21,11 +21,11 @@ CREATE TABLE trees
 (
     id              SERIAL PRIMARY KEY,
     owner_id        INTEGER      NOT NULL,
-    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
-    last_edited     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMPZ   NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
+    last_edited     TIMESTAMPZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     published       BOOLEAN      NOT NULL DEFAULT FALSE,
     times_visited   BIGINT       NOT NULL DEFAULT 0,
-    last_visited    TIMESTAMP             DEFAULT NULL,
+    last_visited    TIMESTAMPZ            DEFAULT NULL,
     title           VARCHAR(128) NOT NULL,
     description     VARCHAR(256)          DEFAULT NULL,
     book_name       VARCHAR(192)          DEFAULT NULL,
