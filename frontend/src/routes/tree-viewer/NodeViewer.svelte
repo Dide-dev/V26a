@@ -1,9 +1,9 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type {Node, RootNode} from './example_tree';
-    import {onMount} from 'svelte';
+    import type { Node, RootNode } from './example_tree';
+    import { onMount } from 'svelte';
 
-    let {node}: { node: Node | RootNode } = $props();
+    let { node }: { node: Node | RootNode } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -32,7 +32,9 @@
         // Vertical line from lineOffset to last child
         {
             let lastChildBounding =
-                domChildren.children[domChildren.children.length - 1].children[0].getBoundingClientRect();
+                domChildren.children[
+                    domChildren.children.length - 1
+                ].children[0].getBoundingClientRect();
             let childTop = lastChildBounding.top;
             svgLines.push({
                 x1: svgWidth / 2,
@@ -92,7 +94,7 @@
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node}/>
+            <NodeViewer node={child_node} />
         {/each}
     </div>
 </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import {example_tree} from './example_tree';
+    import { example_tree } from './example_tree';
 
     let tree = example_tree;
 </script>
@@ -10,7 +10,7 @@
 
 <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
     {#each tree.roots as root (root)}
-        <NodeViewer node={root}/>
+        <NodeViewer node={root} />
     {/each}
 </div>
 
