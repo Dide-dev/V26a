@@ -5,7 +5,7 @@ use std::fmt::Display;
 // This currently serves as an example, remove the allow statement when we have an error type that contains a string
 #[allow(dead_code)]
 pub enum ApiError {
-    UserAlreadyExistsError,
+    EmailAlreadyUsed,
     DatabaseException,
     Text(String),
 }
@@ -14,7 +14,7 @@ pub enum ApiError {
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            ApiError::UserAlreadyExistsError => {
+            ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
             }
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred"),
@@ -27,7 +27,7 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::UserAlreadyExistsError => StatusCode::BAD_REQUEST,
+            ApiError::EmailAlreadyUsed => StatusCode::BAD_REQUEST,
             ApiError::DatabaseException | ApiError::Text(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
