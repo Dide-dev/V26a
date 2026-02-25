@@ -32,3 +32,8 @@ type TreeId = number;
 export function addTree(tree: TreeData): Promise<TreeId> {
 	return apiCallPostTree('add-new-tree', tree);
 }
+
+/** Request data of a specific tree from the database */
+export function requestTreeData(tree_id: number): Promise<TreeData> {
+	return apiCallGetTree(`request-tree-data/${tree_id}`);
+}
