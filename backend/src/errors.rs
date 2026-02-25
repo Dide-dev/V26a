@@ -7,6 +7,7 @@ use std::fmt::Display;
 pub enum ApiError {
     EmailAlreadyUsed,
     DatabaseException,
+    HashException,
     Text(String),
 }
 
@@ -17,7 +18,8 @@ impl Display for ApiError {
             ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
             }
-            ApiError::DatabaseException => write!(f, "An unexpected database error occurred"),
+            ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
+            ApiError::HashException => write!(f, "An unexpected hash error occurred."),
             ApiError::Text(s) => write!(f, "Error: {s}"),
         }
     }
@@ -28,7 +30,9 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed => StatusCode::BAD_REQUEST,
-            ApiError::DatabaseException | ApiError::Text(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::DatabaseException | ApiError::HashException | ApiError::Text(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
 }

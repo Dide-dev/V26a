@@ -1,5 +1,8 @@
+extern crate bcrypt;
+
 use crate::errors::ApiError;
 use crate::users::UserData;
+use bcrypt::{DEFAULT_COST, hash};
 
 use sqlx::{PgPool, query};
 
@@ -30,13 +33,17 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
         return Err(ApiError::EmailAlreadyUsed);
     }
 
+    // Hash the password using bcrypt
+    let hashed_password =
+        hash(user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
+
     // Insert user into database
     let id_record = query!(
         "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id",
         user_data.email,
-        user_data.password,
+        hashed_password,
         user_data.name,
         user_data.nickname,
         user_data.about_me,
