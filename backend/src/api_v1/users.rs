@@ -17,7 +17,7 @@ pub fn users() -> Router {
 /// Returns the index assigned to the new user.
 ///
 /// # Error
-/// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database
+/// Returns an [`ApiError::EmailAlreadyUsedException`] if the email was already used in the database
 async fn add_new_user(
     db: Extension<PgPool>,
     Json(user_data): Json<UserData>,

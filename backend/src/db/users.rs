@@ -16,7 +16,7 @@ use sqlx::{PgPool, query};
 /// Returns the index assigned to the new tree.
 ///
 /// # Error
-/// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database
+/// Returns an [`ApiError::EmailAlreadyUsedException`] if the email was already used in the database
 pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError> {
     // Check if email already exists. This check is not strictly necessary,
     // as a `UNIQUE` constraint is placed on the `password_hash` field.
