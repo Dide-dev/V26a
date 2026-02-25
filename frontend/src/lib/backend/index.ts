@@ -5,10 +5,14 @@ const prefix = '/api/v1/';
 export async function apiCallGet(path: string) {
 	const response = await fetch(prefix + path, {
 		method: 'GET',
-		/* eslint-disable */
+		// eslint-disable-next-line
 		headers: { Accept: 'application/json' }
-		/* eslint-enable */
 	});
+
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`);
+	}
+
 	return await response.json();
 }
 
@@ -24,5 +28,10 @@ export async function apiCallPost(path: string, body: unknown) {
 
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`);
+	}
+
+	// Only return if some content is sent back
+	if (response.headers.get('Content-Type') === 'application/json') {
+		return await response.json();
 	}
 }
