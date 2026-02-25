@@ -18,7 +18,7 @@ async fn add_new_tree(
     axum::Json(tree_data): axum::Json<TreeData>,
 ) -> Result<Json<i32>, StatusCode> {
     // TODO: Get owner_id from session
-    let id = add_tree(&db, tree_data, 0)
+    let id = add_tree(&db, tree_data, -1)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
