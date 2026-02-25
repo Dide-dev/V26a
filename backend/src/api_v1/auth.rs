@@ -25,10 +25,10 @@ struct LoginRequestBody {
 /// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
 /// with an encoded JWT.
 async fn login(
-    jar: CookieJar, 
-    db: Extension<PgPool>, 
-    State(config): State<Config>, 
-    Json(body): Json<LoginRequestBody>
+    jar: CookieJar,
+    db: Extension<PgPool>,
+    State(config): State<Config>,
+    Json(body): Json<LoginRequestBody>,
 ) -> Result<CookieJar, AuthError> {
     // Check if the user sent the credentials
     if body.email.is_empty() || body.password.is_empty() {

@@ -4,7 +4,7 @@ mod api_v1;
 mod db;
 mod trees;
 
-use crate::api_v1::{v1_api, session::Keys};
+use crate::api_v1::{session::Keys, v1_api};
 use axum::{Extension, Router};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -46,7 +46,11 @@ async fn main() {
             .unwrap_or("604800".to_string())
             .parse()
             .expect("Failed to parse SESSION_EXPIRATION_SECONDS"),
-        jwt_keys: Keys::new(env::var("JWT_SECRET").expect("JWT_SECRET must be set").as_bytes()),
+        jwt_keys: Keys::new(
+            env::var("JWT_SECRET")
+                .expect("JWT_SECRET must be set")
+                .as_bytes(),
+        ),
     };
 
     // build our application with a route

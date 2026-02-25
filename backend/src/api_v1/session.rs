@@ -1,10 +1,10 @@
+use crate::Config;
 use axum::Json;
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
-use crate::Config;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -35,7 +35,10 @@ pub struct Claims {
 impl FromRequestParts<Config> for Claims {
     type Rejection = AuthError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &Config) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &Config,
+    ) -> Result<Self, Self::Rejection> {
         // Extract the token from the cookie jar
         let jar = CookieJar::from_request_parts(parts, state)
             .await
@@ -43,14 +46,18 @@ impl FromRequestParts<Config> for Claims {
         let auth_cookie = jar.get("session").ok_or(AuthError::MissingToken)?.value();
 
         // Decode the user data, this automatically validates the expiration time
-        let token_data = decode::<Claims>(auth_cookie, &state.jwt_keys.decoding, &Validation::default())
-            .map_err(|e| {
-                if let jsonwebtoken::errors::ErrorKind::ExpiredSignature = e.kind() {
-                    AuthError::ExpiredToken
-                } else {
-                    AuthError::InvalidToken
-                }
-            })?;
+        let token_data = decode::<Claims>(
+            auth_cookie,
+            &state.jwt_keys.decoding,
+            &Validation::default(),
+        )
+        .map_err(|e| {
+            if let jsonwebtoken::errors::ErrorKind::ExpiredSignature = e.kind() {
+                AuthError::ExpiredToken
+            } else {
+                AuthError::InvalidToken
+            }
+        })?;
 
         Ok(token_data.claims)
     }

@@ -1,6 +1,6 @@
+use crate::Config;
 use crate::db::trees::add_tree;
 use crate::trees::TreeData;
-use crate::Config;
 
 use axum::http::StatusCode;
 use axum::routing::post;
