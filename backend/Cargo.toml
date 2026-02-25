@@ -6,10 +6,11 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.101"
 axum = "0.8.8"
+chrono = { version = "0.4.43", features = ["serde"] }
 dotenvy = "0.15.7"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-sqlx = { version = "0.8", features = [ "runtime-tokio", "postgres"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres"] }
 tokio = { version = "1.49.0", features = ["full"] }
 tower-http = { version = "0.6.8", features = ["fs"] }
 tracing = "0.1"
