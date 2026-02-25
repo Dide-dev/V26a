@@ -80,7 +80,7 @@
 
     {#if node.children.length != 0}
         <svg width={svgWidth} height={svgHeight} class="shrink-0">
-            {#each svgLines as line}
+            {#each svgLines as line (line)}
                 <line
                     {...line}
                     class="stroke-yellow-950"

@@ -1,8 +1,8 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import { example_tree } from './example_tree';
+    import { exampleTree } from './example_tree';
 
-    let tree = example_tree;
+    let tree = exampleTree;
 </script>
 
 <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.name}</h1>
