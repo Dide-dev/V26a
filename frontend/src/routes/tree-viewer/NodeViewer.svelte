@@ -1,23 +1,84 @@
 <script lang="ts">
 	import NodeViewer from './NodeViewer.svelte';
 	import type { Node, RootNode } from './example_tree';
+	import { onMount } from 'svelte';
 	let { node }: { node: Node | RootNode } = $props();
+
+	let domChildren: Element;
+	let svgLines: SVGline[] = $state([]);
+
+	/** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
+	const svgWidth = 50;
+
+	/** Y-offset from the top of the nodecards, used for the horizontal lines connecting the nodes. */
+	const lineOffset = 15;
+
+	type SVGline = {
+		x1: number;
+		y1: number;
+		x2: number;
+		y2: number;
+	};
+
+	onMount(() => {
+		if (node.children.length == 0) return;
+
+		let top = domChildren.getBoundingClientRect().top;
+
+		// Vertical line from lineOffset to last child
+		{
+			let lastChildBounding =
+				domChildren.children[domChildren.children.length - 1].children[0].getBoundingClientRect();
+			let childTop = lastChildBounding.top;
+			svgLines.push({
+				x1: svgWidth / 2,
+				y1: lineOffset,
+				x2: svgWidth / 2,
+				y2: childTop - top + lineOffset
+			});
+		}
+
+		// Right horizontal line from vertical line to child
+		for (let child of domChildren.children) {
+			let childBounding = child.children[0].getBoundingClientRect();
+			let childTop = childBounding.top;
+
+			svgLines.push({
+				x1: svgWidth / 2,
+				y1: childTop + lineOffset - top,
+				x2: svgWidth,
+				y2: childTop + lineOffset - top
+			});
+		}
+
+		// Left horizontal line from parent to vertical line
+		svgLines.push({
+			x1: 0,
+			y1: lineOffset,
+			x2: svgWidth / 2,
+			y2: lineOffset
+		});
+	});
 </script>
 
-<div class="flex gap-10">
+<div class="flex">
 	{#if 'label' in node}
-		<div class="w-32 shrink-0 bg-fuchsia-300">
+		<div class="h-fit w-32 shrink-0 bg-fuchsia-300">
 			<strong>{node.label}</strong>
 		</div>
 	{:else}
-		<div class="h-12 w-xl bg-purple-100 p-1">
+		<div class="h-fit w-xl bg-purple-100 p-1">
 			<p>{node.card}</p>
 		</div>
 	{/if}
 
-	<!-- TODO: some kind of arrows -->
+	<svg width={svgWidth} class="shrink-0">
+		{#each svgLines as line}
+			<line {...line} stroke-linecap="round" stroke="black" stroke-width="4" />
+		{/each}
+	</svg>
 
-	<div class="flex flex-col gap-5">
+	<div bind:this={domChildren} class="flex flex-col gap-5">
 		{#each node.children as child_node (child_node)}
 			<NodeViewer node={child_node} />
 		{/each}
