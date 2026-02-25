@@ -4,16 +4,19 @@
 	import { onMount } from 'svelte';
 	let { node }: { node: Node | RootNode } = $props();
 
-	let domChildren: Element;
-	let svgLines: SVGline[] = $state([]);
-
 	/** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
 	const svgWidth = 50;
+	let svgHeight = $state(0);
 
 	/** Y-offset from the top of the nodecards, used for the horizontal lines connecting the nodes. */
 	const lineOffset = 15;
 
-	type SVGline = {
+	/** Stroke width to set the thickness of the lines connecting the nodes. Also used to calculate the svgHeight*/
+	const strokeWidth = 4;
+
+	let domChildren: Element;
+	let svgLines: SvgLine[] = $state([]);
+	type SvgLine = {
 		x1: number;
 		y1: number;
 		x2: number;
@@ -36,6 +39,7 @@
 				x2: svgWidth / 2,
 				y2: childTop - top + lineOffset
 			});
+			svgHeight = strokeWidth + childTop - top + lineOffset;
 		}
 
 		// Right horizontal line from vertical line to child
@@ -72,11 +76,13 @@
 		</div>
 	{/if}
 
-	<svg width={svgWidth} class="shrink-0">
-		{#each svgLines as line}
-			<line {...line} stroke-linecap="round" stroke="black" stroke-width="4" />
-		{/each}
-	</svg>
+	{#if node.children.length != 0}
+		<svg width={svgWidth} height={svgHeight} class="shrink-0">
+			{#each svgLines as line}
+				<line {...line} stroke-linecap="round" stroke="black" stroke-width={strokeWidth} />
+			{/each}
+		</svg>
+	{/if}
 
 	<div bind:this={domChildren} class="flex flex-col gap-5">
 		{#each node.children as child_node (child_node)}
