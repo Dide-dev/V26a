@@ -7,7 +7,7 @@ edition = "2024"
 anyhow = "1.0.101"
 axum = "0.8.8"
 axum-extra = { version = "0.12.5", features = ["typed-header", "cookie"] }
-bcrypt = "0.18.0"
+bcrypt = "0.18"
 chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }

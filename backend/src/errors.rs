@@ -11,9 +11,9 @@ pub enum ApiError {
     WrongCredentials,
     MissingCredentials,
     TokenCreation,
-    MissingToken,
-    InvalidToken,
-    ExpiredToken,
+    MissingAuthorisation,
+    InvalidSession,
+    ExpiredSession,
     Text(String),
 }
 
@@ -29,9 +29,9 @@ impl Display for ApiError {
             ApiError::WrongCredentials => write!(f, "Wrong credentials"),
             ApiError::MissingCredentials => write!(f, "Missing credentials"),
             ApiError::TokenCreation => write!(f, "Session creation error"),
-            ApiError::MissingToken => write!(f, "Missing authorisation"),
-            ApiError::ExpiredToken => write!(f, "Expired authorisation"),
-            ApiError::InvalidToken => write!(f, "Invalid authorisation"),
+            ApiError::MissingAuthorisation => write!(f, "Missing authorisation"),
+            ApiError::ExpiredSession => write!(f, "Expired authorisation"),
+            ApiError::InvalidSession => write!(f, "Invalid authorisation"),
             ApiError::Text(s) => write!(f, "Error: {s}"),
         }
     }
@@ -48,9 +48,9 @@ impl ApiError {
             | ApiError::TokenCreation
             | ApiError::Text(_) => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::MissingCredentials
-            | ApiError::MissingToken
-            | ApiError::ExpiredToken
-            | ApiError::InvalidToken => StatusCode::UNAUTHORIZED,
+            | ApiError::MissingAuthorisation
+            | ApiError::ExpiredSession
+            | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
         }
     }
 }

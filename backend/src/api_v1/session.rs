@@ -39,8 +39,8 @@ impl FromRequestParts<Config> for Claims {
         // Extract the token from the cookie jar
         let jar = CookieJar::from_request_parts(parts, state)
             .await
-            .map_err(|_| ApiError::MissingToken)?;
-        let auth_cookie = jar.get("session").ok_or(ApiError::MissingToken)?.value();
+            .map_err(|_| ApiError::MissingAuthorisation)?;
+        let auth_cookie = jar.get("session").ok_or(ApiError::MissingAuthorisation)?.value();
 
         // Decode the user data, this automatically validates the expiration time
         let token_data = decode::<Claims>(
@@ -50,9 +50,9 @@ impl FromRequestParts<Config> for Claims {
         )
         .map_err(|e| {
             if let jsonwebtoken::errors::ErrorKind::ExpiredSignature = e.kind() {
-                ApiError::ExpiredToken
+                ApiError::ExpiredSession
             } else {
-                ApiError::InvalidToken
+                ApiError::InvalidSession
             }
         })?;
 
