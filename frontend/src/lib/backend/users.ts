@@ -19,8 +19,8 @@ type UserData = {
 	password: string;
 	name: string;
 	nickname: Option<string>;
-	about_me: Option<string>;
-	email_visible: boolean;
+	aboutMe: Option<string>;
+	emailVisible: boolean;
 	language: string;
 };
 
