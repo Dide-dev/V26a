@@ -7,7 +7,7 @@ type JsonTestStruct = {
 };
 
 export function protectedTest(): Promise<JsonTestStruct> {
-	return apiCallGet('demo/protected');
+    return apiCallGet('demo/protected');
 }
 
 export function getJsonTest(): Promise<JsonTestStruct> {
