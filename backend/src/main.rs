@@ -44,9 +44,10 @@ async fn main() {
         .await
         .expect("failed to run database migrations.");
 
-    // Set up global configurations
+    // Set up global configurations.
     let config = Config {
         session_duration: env::var("SESSION_EXPIRATION_SECONDS")
+            // Defaults to a week.
             .unwrap_or("604800".to_string())
             .parse()
             .expect("Failed to parse SESSION_EXPIRATION_SECONDS"),
@@ -63,7 +64,7 @@ async fn main() {
         .nest("/api", backend(db))
         .with_state(config);
 
-    // Serve the application
+    // Serve the application.
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
