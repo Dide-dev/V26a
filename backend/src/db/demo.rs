@@ -1,5 +1,4 @@
 use crate::errors::ApiError;
-use anyhow::Error;
 use sqlx::{PgPool, query};
 
 /// Fetches the counter value from the given database. Returning the value if successful,

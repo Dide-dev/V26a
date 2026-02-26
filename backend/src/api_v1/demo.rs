@@ -42,11 +42,8 @@ pub struct JsonTestStruct {
 /// # Returns
 /// A [`Result`] containing the counter value in a [`JsonTestStruct`] if successful,
 /// or an [`ApiError`] if not.
-async fn backend_json_test(
-    db: Extension<PgPool>,
-) -> Result<Json<JsonTestStruct>, ApiError> {
-    let counter_value = fetch_counter_value(&db)
-        .await?;
+async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = fetch_counter_value(&db).await?;
 
     let test_struct = JsonTestStruct {
         a: "Hello, from rust struct!".to_owned(),
@@ -62,11 +59,8 @@ async fn backend_json_test(
 /// # Returns
 /// A [`Result`] containing the updated counter value in a [`JsonTestStruct`] if successful,
 /// or an [`ApiError`] if not.
-async fn increment_counter_test(
-    db: Extension<PgPool>,
-) -> Result<Json<JsonTestStruct>, ApiError> {
-    let counter_value = add_counter_value(&db, 1)
-        .await?;
+async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = add_counter_value(&db, 1).await?;
 
     let test_struct = JsonTestStruct {
         a: "Incremented counter!".to_owned(),
@@ -91,7 +85,6 @@ async fn add_counter_test(
     db: Extension<PgPool>,
     Json(body): Json<AddCounterBody>,
 ) -> Result<(), ApiError> {
-    add_counter_value(&db, body.add)
-        .await?;
+    add_counter_value(&db, body.add).await?;
     Ok(())
 }

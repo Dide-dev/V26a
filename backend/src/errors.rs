@@ -2,33 +2,33 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use std::fmt::Display;
 
-/// The Error type to be returned by our application. Converts to various HTTP status codes and 
+/// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
 #[allow(dead_code)]
 pub enum ApiError {
     /// An exception to throw when an e-mail has already been used and can not be used again.
     EmailAlreadyUsed,
-    /// Generic exception when the database fails on something unexpected. Do not use this in place 
+    /// Generic exception when the database fails on something unexpected. Do not use this in place
     /// of proper error handling.
     DatabaseException,
     /// An exception to throw when hashing fails (on creating or verifying a hash).
     HashException,
-    /// An exception to be given by the API if the user does not have the right permissions to 
+    /// An exception to be given by the API if the user does not have the right permissions to
     /// access something.
     WrongCredentials,
     /// An exception to be given when a user tries to log in with missing credentials.
     MissingCredentials,
-    /// An exception to be given by `jsonwebtoken` if the encoding of a token fails. 
+    /// An exception to be given by `jsonwebtoken` if the encoding of a token fails.
     TokenCreation,
-    /// An exception to be given by `Axum` when a protected endpoint is accessed without providing 
+    /// An exception to be given by `Axum` when a protected endpoint is accessed without providing
     /// a session.
     MissingAuthorisation,
     /// An exception to be given by `Axum` when a user provides a session that can not be decoded.
     InvalidSession,
-    /// An exception to be given by `Axum` when a user tries to access a protected endpoint with 
+    /// An exception to be given by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    // This currently serves as an example, remove the allow statement above when we have an 
+    // This currently serves as an example, remove the allow statement above when we have an
     // error type that contains a string
     Text(String),
 }
