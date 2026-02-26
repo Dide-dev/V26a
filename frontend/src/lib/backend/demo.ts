@@ -6,6 +6,10 @@ type JsonTestStruct = {
     b: number;
 };
 
+export function protectedTest(): Promise<JsonTestStruct> {
+    return apiCallGet('demo/protected');
+}
+
 export function getJsonTest(): Promise<JsonTestStruct> {
     return apiCallGet('demo/json');
 }

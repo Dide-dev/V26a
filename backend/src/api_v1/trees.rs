@@ -1,26 +1,28 @@
+use crate::Config;
+use crate::api_v1::session::Claims;
 use crate::db::trees::add_tree;
 use crate::trees::TreeData;
 
-use axum::http::StatusCode;
+use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the trees category.
-pub fn trees() -> Router {
+pub fn trees() -> Router<Config> {
     Router::new().route("/add-new-tree", post(add_new_tree))
 }
 
 /// Add a tree to the database.
-/// Returns the index assigned to the new tree.
+///
+/// # Returns
+/// The index assigned to the new tree as [`Json`] if successful, or an [`ApiError`] if not.
 async fn add_new_tree(
+    claims: Claims,
     db: Extension<PgPool>,
-    axum::Json(tree_data): axum::Json<TreeData>,
-) -> Result<Json<i32>, StatusCode> {
-    // TODO: Get owner_id from session
-    let id = add_tree(&db, tree_data, -1)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Json(tree_data): Json<TreeData>,
+) -> Result<Json<i32>, ApiError> {
+    let id = add_tree(&db, tree_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)

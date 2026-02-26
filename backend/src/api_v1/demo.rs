@@ -1,17 +1,28 @@
+use crate::Config;
+use crate::api_v1::session::Claims;
 use crate::db::demo::{add_counter_value, fetch_counter_value};
-use axum::http::StatusCode;
+use crate::errors::ApiError;
 use axum::response::Html;
 use axum::routing::{get, post};
-use axum::{Extension, Router};
+use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the demo category, combining its endpoints.
-pub fn demo() -> Router {
+pub fn demo() -> Router<Config> {
     Router::new()
         .route("/html", get(backend_html_test))
         .route("/json", get(backend_json_test))
         .route("/increment", get(increment_counter_test))
         .route("/add-to-counter", post(add_counter_test))
+        .route("/protected", get(protected_test))
+}
+
+/// A test endpoint that checks whether the user is logged in as user 1.
+async fn protected_test(claims: Claims) -> Result<String, ApiError> {
+    if claims.sub != 1 {
+        Err(ApiError::WrongCredentials)?;
+    }
+    Ok("Welcome, user 1!".to_string())
 }
 
 /// A test endpoint that returns a basic HTML response.
@@ -30,20 +41,16 @@ pub struct JsonTestStruct {
 ///
 /// # Returns
 /// A [`Result`] containing the counter value in a [`JsonTestStruct`] if successful,
-/// or a [`StatusCode`] if not.
-async fn backend_json_test(
-    db: Extension<PgPool>,
-) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
-    let counter_value = fetch_counter_value(&db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+/// or an [`ApiError`] if not.
+async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = fetch_counter_value(&db).await?;
 
     let test_struct = JsonTestStruct {
         a: "Hello, from rust struct!".to_owned(),
         b: counter_value,
     };
 
-    Ok(axum::Json(test_struct))
+    Ok(Json(test_struct))
 }
 
 /// A test endpoint that increments the value of a counter in the database,
@@ -51,20 +58,16 @@ async fn backend_json_test(
 ///
 /// # Returns
 /// A [`Result`] containing the updated counter value in a [`JsonTestStruct`] if successful,
-/// or a [`StatusCode`] if not.
-async fn increment_counter_test(
-    db: Extension<PgPool>,
-) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
-    let counter_value = add_counter_value(&db, 1)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+/// or an [`ApiError`] if not.
+async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = add_counter_value(&db, 1).await?;
 
     let test_struct = JsonTestStruct {
         a: "Incremented counter!".to_owned(),
         b: counter_value,
     };
 
-    Ok(axum::Json(test_struct))
+    Ok(Json(test_struct))
 }
 
 /// A struct representing the body of an HTTP request to add to a counter.
@@ -77,13 +80,11 @@ pub struct AddCounterBody {
 /// This reads the given request body and tries to parse it as [`AddCounterBody`].
 ///
 /// # Returns
-/// Nothing if successful, or a specified [`StatusCode`] if not.
+/// Nothing if successful, or an [`ApiError`] if not.
 async fn add_counter_test(
     db: Extension<PgPool>,
-    axum::Json(body): axum::Json<AddCounterBody>,
-) -> Result<(), StatusCode> {
-    add_counter_value(&db, body.add)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Json(body): Json<AddCounterBody>,
+) -> Result<(), ApiError> {
+    add_counter_value(&db, body.add).await?;
     Ok(())
 }

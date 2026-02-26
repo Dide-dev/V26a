@@ -1,18 +1,20 @@
 use crate::trees::TreeData;
 
-use anyhow::{Error, Ok};
+use crate::errors::ApiError;
 use sqlx::{PgPool, query};
 
 /// Add a new tree to the database, returning its assigned index.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
-/// `tree_data` - The data assigned to the new tree
+///
+/// `tree_data` - The data assigned to the new tree as [`TreeData`]
+///
 /// `owner_id` - The id of the owner of the tree
 ///
 /// # Returns
-/// Returns the index assigned to the new tree.
-pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, Error> {
+/// The index assigned to the new tree if successful, or an [`ApiError`] if not.
+pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
     let id_record = query!(
         "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{}')
@@ -28,7 +30,8 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
         tree_data.assignment_text,
     )
     .fetch_one(db)
-    .await?;
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(id_record.id)
 }

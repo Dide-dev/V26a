@@ -1,4 +1,4 @@
-use anyhow::Error;
+use crate::errors::ApiError;
 use sqlx::{PgPool, query};
 
 /// Fetches the counter value from the given database. Returning the value if successful,
@@ -6,11 +6,12 @@ use sqlx::{PgPool, query};
 ///
 /// # Arguments
 /// `db` - a reference to the database connection to use for the query.
-pub async fn fetch_counter_value(db: &PgPool) -> Result<i32, Error> {
+pub async fn fetch_counter_value(db: &PgPool) -> Result<i32, ApiError> {
     ensure_counter_exists(db).await?;
     Ok(query!("SELECT counter_value FROM counters WHERE id = 0")
         .fetch_one(db)
-        .await?
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
         .counter_value)
 }
 
@@ -19,8 +20,9 @@ pub async fn fetch_counter_value(db: &PgPool) -> Result<i32, Error> {
 ///
 /// # Arguments
 /// `db` - a reference to the database connection to use for the query.
+///
 /// `amount` - the amount to add to the counter.
-pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, Error> {
+pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, ApiError> {
     ensure_counter_exists(db).await?;
 
     let new_counter_value = query!(
@@ -36,7 +38,8 @@ pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, Error> {
         amount
     )
     .fetch_one(db)
-    .await?
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
     .counter_value;
 
     Ok(new_counter_value)
@@ -47,17 +50,19 @@ pub async fn add_counter_value(db: &PgPool, amount: i32) -> Result<i32, Error> {
 ///
 /// # Arguments
 /// `db` - a reference to the database connection to use for the query.
-async fn ensure_counter_exists(db: &PgPool) -> Result<(), Error> {
+async fn ensure_counter_exists(db: &PgPool) -> Result<(), ApiError> {
     let exists = query!("SELECT EXISTS(SELECT 1 FROM counters WHERE id = 0)")
         .fetch_one(db)
-        .await?
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
         .exists
         .unwrap();
 
     if !exists {
-        query!("INSERT INTO counters VALUES (0, $1)", 0) // pass variables like this to avoid SQL injection
+        query!("INSERT INTO counters VALUES (0, $1)", 0)
             .execute(db)
-            .await?;
+            .await
+            .map_err(|_| ApiError::DatabaseException)?;
     }
 
     Ok(())
