@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 /// `JsonWebToken`.
 #[derive(Clone)]
 pub struct Keys {
-    pub(crate) encoding: EncodingKey,
-    pub(crate) decoding: DecodingKey,
+    pub encoding: EncodingKey,
+    pub decoding: DecodingKey,
 }
 
 impl Keys {
@@ -29,9 +29,9 @@ impl Keys {
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
     /// The subject (whom the token refers to)
-    pub(crate) sub: i32,
+    pub sub: i32,
     /// The expiration time (as UTC timestamp)
-    pub(crate) exp: i64,
+    pub exp: i64,
 }
 
 impl FromRequestParts<Config> for Claims {
