@@ -6,6 +6,8 @@ use axum_extra::extract::CookieJar;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 
+/// A struct containing the [`EncodingKey`] and [`DecodingKey`] used for encoding and decoding the
+/// `JsonWebToken`.
 #[derive(Clone)]
 pub struct Keys {
     pub(crate) encoding: EncodingKey,
@@ -13,6 +15,7 @@ pub struct Keys {
 }
 
 impl Keys {
+    /// Creates a [`Keys`] from an array of bytes.
     pub fn new(secret: &[u8]) -> Self {
         Self {
             encoding: EncodingKey::from_secret(secret),
@@ -25,8 +28,10 @@ impl Keys {
 /// expiration time.
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
-    pub(crate) sub: i32, // Subject (whom token refers to)
-    pub(crate) exp: i64, // Expiration time (as UTC timestamp)
+    /// The subject (whom the token refers to)
+    pub(crate) sub: i32,
+    /// The expiration time (as UTC timestamp)
+    pub(crate) exp: i64,
 }
 
 impl FromRequestParts<Config> for Claims {
@@ -51,12 +56,11 @@ impl FromRequestParts<Config> for Claims {
             &state.jwt_keys.decoding,
             &Validation::default(),
         )
-        .map_err(|e| {
-            if let jsonwebtoken::errors::ErrorKind::ExpiredSignature = e.kind() {
-                ApiError::ExpiredSession
-            } else {
-                ApiError::InvalidSession
-            }
+        .map_err(|e| match e.kind() {
+            // exp gets validated by the library, but we want to map it to our own error type.
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredSession,
+            // other validation error, usually means that the decoding failed (completely invalid session)
+            _ => ApiError::InvalidSession,
         })?;
 
         Ok(token_data.claims)

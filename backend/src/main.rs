@@ -23,7 +23,7 @@ pub struct Config {
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().expect(".env file missing."); // TODO: this .expect() needs to be replaced when deployed
-    // set up logging
+    // Set up logging.
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -32,6 +32,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    // Set up and migrate database.
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db = PgPoolOptions::new()
         .max_connections(20)
@@ -43,6 +44,7 @@ async fn main() {
         .await
         .expect("failed to run database migrations.");
 
+    // Set up global configurations
     let config = Config {
         session_duration: env::var("SESSION_EXPIRATION_SECONDS")
             .unwrap_or("604800".to_string())
@@ -55,13 +57,13 @@ async fn main() {
         ),
     };
 
-    // build our application with a route
+    // Build our application with a route.
     let app = Router::new()
         .merge(static_frontend())
         .nest("/api", backend(db))
         .with_state(config);
 
-    // run it
+    // Serve the application
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();

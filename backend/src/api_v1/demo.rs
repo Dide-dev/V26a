@@ -2,7 +2,6 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::demo::{add_counter_value, fetch_counter_value};
 use crate::errors::ApiError;
-use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
@@ -42,20 +41,19 @@ pub struct JsonTestStruct {
 ///
 /// # Returns
 /// A [`Result`] containing the counter value in a [`JsonTestStruct`] if successful,
-/// or a [`StatusCode`] if not.
+/// or an [`ApiError`] if not.
 async fn backend_json_test(
     db: Extension<PgPool>,
-) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
+) -> Result<Json<JsonTestStruct>, ApiError> {
     let counter_value = fetch_counter_value(&db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await?;
 
     let test_struct = JsonTestStruct {
         a: "Hello, from rust struct!".to_owned(),
         b: counter_value,
     };
 
-    Ok(axum::Json(test_struct))
+    Ok(Json(test_struct))
 }
 
 /// A test endpoint that increments the value of a counter in the database,
@@ -63,20 +61,19 @@ async fn backend_json_test(
 ///
 /// # Returns
 /// A [`Result`] containing the updated counter value in a [`JsonTestStruct`] if successful,
-/// or a [`StatusCode`] if not.
+/// or an [`ApiError`] if not.
 async fn increment_counter_test(
     db: Extension<PgPool>,
-) -> Result<axum::Json<JsonTestStruct>, StatusCode> {
+) -> Result<Json<JsonTestStruct>, ApiError> {
     let counter_value = add_counter_value(&db, 1)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await?;
 
     let test_struct = JsonTestStruct {
         a: "Incremented counter!".to_owned(),
         b: counter_value,
     };
 
-    Ok(axum::Json(test_struct))
+    Ok(Json(test_struct))
 }
 
 /// A struct representing the body of an HTTP request to add to a counter.
@@ -89,13 +86,12 @@ pub struct AddCounterBody {
 /// This reads the given request body and tries to parse it as [`AddCounterBody`].
 ///
 /// # Returns
-/// Nothing if successful, or a specified [`StatusCode`] if not.
+/// Nothing if successful, or an [`ApiError`] if not.
 async fn add_counter_test(
     db: Extension<PgPool>,
     Json(body): Json<AddCounterBody>,
-) -> Result<(), StatusCode> {
+) -> Result<(), ApiError> {
     add_counter_value(&db, body.add)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await?;
     Ok(())
 }

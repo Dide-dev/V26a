@@ -53,7 +53,7 @@ async fn login(
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreation)?;
 
-    // Create the authorized token as a cookie
+    // Set the authorization token as a cookie
     let cookie = Cookie::build(("session", token))
         .path("/")
         .secure(true)

@@ -1,8 +1,8 @@
 use crate::Config;
 use crate::db::users::add_user;
-use crate::errors::ApiError;
 use crate::users::UserData;
 
+use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
@@ -15,10 +15,10 @@ pub fn users() -> Router<Config> {
 /// Add a user to the database.
 ///
 /// # Returns
-/// Returns the index assigned to the new user.
+/// The index assigned to the new user as [`Json`] if successful, or an [`ApiError`] if not.
 ///
 /// # Error
-/// Returns an [`ApiError::EmailAlreadyUsedException`] if the email was already used in the database
+/// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.
 async fn add_new_user(
     db: Extension<PgPool>,
     Json(user_data): Json<UserData>,
