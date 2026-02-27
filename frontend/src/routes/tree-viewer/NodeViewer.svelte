@@ -88,9 +88,9 @@
         class:bg-orange-300={$secondSelectedNode === node}
         onclick={() => {
             if ($selectedNode && $selectedNode !== node) {
-            secondSelectedNode.set(node);
+            secondSelectedNode.set(node as Node);
             } else {
-            selectedNode.set(node);
+            selectedNode.set(node as Node);
             secondSelectedNode.set(null);
             }
         }}
