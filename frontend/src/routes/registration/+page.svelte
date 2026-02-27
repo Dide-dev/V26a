@@ -19,8 +19,8 @@
             await addUser(formData);
             // TODO: this should redirect to the login page
             goto(appLink('/'));
-        } catch (e: any) {
-            error = e;
+        } catch (e) {
+            error = e as Error;
         }
     }
 </script>
@@ -52,7 +52,7 @@
         <label>
             language
             <select class="rounded-md border-2" bind:value={formData.language}>
-                {#each locales as value}<option {value}>{value}</option>{/each}
+                {#each locales as value (value)}<option {value}>{value}</option>{/each}
             </select>
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">Register</button>
