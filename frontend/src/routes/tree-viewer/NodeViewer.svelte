@@ -1,8 +1,10 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { Node, RootNode } from './example_tree';
-    import { onMount } from 'svelte';
-    let { node }: { node: Node | RootNode } = $props();
+    import type { Node } from './example_tree';
+    import { selectedNode, secondSelectedNode } from '../add-card/selected-node.store';
+    //import { onMount } from 'svelte';
+    import { tick } from 'svelte';
+    let { node }: { node: Node} = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -23,60 +25,84 @@
         y2: number;
     };
 
-    onMount(() => {
-        if (node.children.length === 0) return;
+    $effect(() => {
+        if (!domChildren) return;
+        //handles "shifts" in tree
+        const observer = new ResizeObserver(() => {
+                if (node.children.length === 0) return;
 
-        let top = domChildren.getBoundingClientRect().top;
+                tick().then(() => {
+                    svgLines = [];
+                    svgHeight = 0;
 
-        // Vertical line from lineOffset to last child
-        {
-            let lastChildBounding =
-                domChildren.children[
-                    domChildren.children.length - 1
-                ].children[0].getBoundingClientRect();
-            let childTop = lastChildBounding.top;
-            svgLines.push({
-                x1: svgWidth / 2,
-                y1: lineOffset,
-                x2: svgWidth / 2,
-                y2: childTop - top + lineOffset
+                    let top = domChildren.getBoundingClientRect().top;
+
+                // Vertical line from lineOffset to last child
+                {
+                    let lastChildBounding =
+                        domChildren.children[
+                            domChildren.children.length - 1
+                        ].children[0].getBoundingClientRect();
+                    let childTop = lastChildBounding.top;
+                    svgLines.push({
+                        x1: svgWidth / 2,
+                        y1: lineOffset,
+                        x2: svgWidth / 2,
+                        y2: childTop - top + lineOffset
+                    });
+                    svgHeight = strokeWidth + childTop - top + lineOffset;
+                }
+
+                // Right horizontal line from vertical line to child
+                for (let child of domChildren.children) {
+                    let childBounding = child.children[0].getBoundingClientRect();
+                    let childTop = childBounding.top;
+
+                    svgLines.push({
+                        x1: svgWidth / 2,
+                        y1: childTop + lineOffset - top,
+                        x2: svgWidth,
+                        y2: childTop + lineOffset - top
+                    });
+                }
+
+                // Left horizontal line from parent to vertical line
+                svgLines.push({
+                    x1: 0,
+                    y1: lineOffset,
+                    x2: svgWidth / 2,
+                    y2: lineOffset
+                });
             });
-            svgHeight = strokeWidth + childTop - top + lineOffset;
-        }
-
-        // Right horizontal line from vertical line to child
-        for (let child of domChildren.children) {
-            let childBounding = child.children[0].getBoundingClientRect();
-            let childTop = childBounding.top;
-
-            svgLines.push({
-                x1: svgWidth / 2,
-                y1: childTop + lineOffset - top,
-                x2: svgWidth,
-                y2: childTop + lineOffset - top
-            });
-        }
-
-        // Left horizontal line from parent to vertical line
-        svgLines.push({
-            x1: 0,
-            y1: lineOffset,
-            x2: svgWidth / 2,
-            y2: lineOffset
         });
+        observer.observe(domChildren);
+        return () => observer.disconnect();
     });
 </script>
 
 <div class="flex">
-    {#if 'label' in node}
-        <div class="h-fit w-32 shrink-0">
-            <strong>{node.label}</strong>
-        </div>
-    {:else}
-        <div class="h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
+    <button
+        class="h-fit w-xl border-2 border-green-800 p-1 cursor-pointer"
+        class:bg-green-50={$selectedNode !== node}
+        class:bg-fuchsia-300={$selectedNode === node}
+        class:bg-orange-300={$secondSelectedNode === node}
+        onclick={() => {
+            if ($selectedNode && $selectedNode !== node) {
+            secondSelectedNode.set(node);
+            } else {
+            selectedNode.set(node);
+            secondSelectedNode.set(null);
+            }
+        }}
+    >
+        {#if 'label' in node}
+            <div class="h-fit w-32 shrink-0">
+                <strong>{node.label}</strong>
+            </div>
+        {:else}
             <p>{node.card}</p>
-        </div>
-    {/if}
+        {/if}
+    </button>
 
     {#if node.children.length !== 0}
         <svg width={svgWidth} height={svgHeight} class="shrink-0">
