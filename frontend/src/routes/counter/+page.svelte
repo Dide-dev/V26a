@@ -13,8 +13,6 @@
     }
 </script>
 
-
-
 <div class="flex h-32 items-center justify-center">
     {#await backendPromise}
         <p>waiting on backend...</p>
