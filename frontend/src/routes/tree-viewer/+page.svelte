@@ -1,15 +1,16 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
+    import { exampleTree } from './example_tree';
     import AddCard from '../add-card/AddCard.svelte';
-    import { selectedNode } from '../add-card/selected-node.store';
-    import { example_tree } from './example_tree';
 
-    let tree = example_tree;
+    let tree = $state(exampleTree);
 </script>
 
-<h1>{tree.name}</h1>
+<h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.name}</h1>
+<AddCard/> 
+<p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">{tree.assignment}</p>
 
-<div class="flex grow flex-col gap-7 overflow-auto">
+<div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
     {#each tree.roots as root (root)}
         <NodeViewer node={root} />
     {/each}
