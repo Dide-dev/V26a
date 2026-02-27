@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { m } from '$lib/paraglide/messages.js';
     import { locales, getLocale } from '$lib/paraglide/runtime.js';
     import { addUser, type UserData } from '$lib/backend/users';
     import { goto } from '$app/navigation';
@@ -18,7 +17,7 @@
         event.preventDefault();
         try {
             await addUser(formData);
-            // this should redirect to the login page
+            // TODO: this should redirect to the login page
             goto(appLink('/'));
         } catch (e: any) {
             error = e;
