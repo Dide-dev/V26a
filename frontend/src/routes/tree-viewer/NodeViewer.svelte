@@ -1,10 +1,10 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { Node } from './example_tree';
+    import type { Node, RootNode } from './example_tree';
     import { selectedNode, secondSelectedNode } from '../add-card/selected-node.store';
     //import { onMount } from 'svelte';
     import { tick } from 'svelte';
-    let { node }: { node: Node} = $props();
+    let { node }: { node: Node |RootNode} = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
