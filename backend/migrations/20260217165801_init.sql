@@ -12,7 +12,7 @@ CREATE TABLE users
     about_me      VARCHAR(160)           DEFAULT NULL,  -- current longest is 127 characters
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     email_visible BOOLEAN       NOT NULL DEFAULT FALSE, -- default false because AVG (`emailvermelding` in prototype)
-    language      CHAR(2)       NOT NULL DEFAULT 'nl'
+    language      CHAR(2)       NOT NULL DEFAULT 'nl'   -- ISO 639-1
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
 
@@ -34,15 +34,15 @@ CREATE TABLE trees
     book_chapter    VARCHAR(32)           DEFAULT NULL,
     book_exercise   VARCHAR(32)           DEFAULT NULL,
     assignment_text VARCHAR(5000)         DEFAULT NULL,              -- currently stored as HTML with images in BASE64. We might want to consider Markdown or some other way of storing this.
-    structure       JSONB         NOT NULL,
+    structure       JSONB        NOT NULL,
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
 
 CREATE TABLE hints
 (
-    id       SERIAL PRIMARY KEY,
-    front    VARCHAR(1024) DEFAULT NULL,
-    back     VARCHAR(5000) DEFAULT NULL,
-    tree_id  INTEGER       DEFAULT NULL, -- library cards are not linked to a tree
-    FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE   -- deleting a tree deletes its cards
+    id      SERIAL PRIMARY KEY,
+    tree_id INTEGER       NOT NULL,                               -- library cards will be their own table later(?), with foreign key to hints(id)
+    front   VARCHAR(1024) NOT NULL,
+    back    VARCHAR(5000) DEFAULT NULL,                           -- if null, this should be a label card and not allow flipping
+    FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree deletes its cards
 );
