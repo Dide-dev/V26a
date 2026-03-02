@@ -10,7 +10,7 @@ export async function apiCallGet(path: string) {
     });
 
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await response.text());
     }
 
     return await response.json();
@@ -20,14 +20,13 @@ export async function apiCallGet(path: string) {
 export async function apiCallPost(path: string, body: unknown) {
     const response = await fetch(prefix + path, {
         method: 'POST',
-        /* eslint-disable */
+        // eslint-disable-next-line
         headers: { 'Content-Type': 'application/json' },
-        /* eslint-enable */
         body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await response.text());
     }
 
     // Only return if some content is sent back
