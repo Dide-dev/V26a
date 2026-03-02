@@ -1,18 +1,19 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
     import { exampleTree } from './example_tree';
-    import AddCard from '../add-card/AddCard.svelte';
+    import type { Node } from './example_tree';
 
     let tree = $state(exampleTree);
+    let selectedNode = $state<Node | null>(null);
+    let secondSelectedNode = $state<Node | null>(null);
 </script>
 
 <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.name}</h1>
-<AddCard />
 <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">{tree.assignment}</p>
 
 <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
-    {#each tree.roots as root (root)}
-        <NodeViewer node={root} />
+    {#each tree.roots as root (root.label)}
+        <NodeViewer node={root} bind:selectedNode bind:secondSelectedNode />
     {/each}
 </div>
 

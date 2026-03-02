@@ -1,9 +1,15 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
     import type { Node, RootNode } from './example_tree';
-    import { selectedNode, secondSelectedNode } from '../add-card/selected-node.store';
     import { tick } from 'svelte';
-    let { node }: { node: Node | RootNode } = $props();
+
+    //initialization off types
+    let { node, selectedNode = $bindable(), secondSelectedNode = $bindable() }: 
+    {
+    node: Node | RootNode;
+    selectedNode: Node | null;
+    secondSelectedNode: Node | null;
+    } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -82,15 +88,15 @@
 <div class="flex">
     <button
         class="h-fit w-xl cursor-pointer border-2 border-green-800 p-1"
-        class:bg-green-50={$selectedNode !== node}
-        class:bg-fuchsia-300={$selectedNode === node}
-        class:bg-orange-300={$secondSelectedNode === node}
+        class:bg-green-50={selectedNode !== node}
+        class:bg-fuchsia-300={selectedNode === node}
+        class:bg-orange-300={secondSelectedNode === node}
         onclick={() => {
-            if ($selectedNode && $selectedNode !== node) {
-                secondSelectedNode.set(node as Node);
+            if (selectedNode && selectedNode !== node) {
+                secondSelectedNode = node as Node;
             } else {
-                selectedNode.set(node as Node);
-                secondSelectedNode.set(null);
+                selectedNode = node as Node;
+                secondSelectedNode = null;
             }
         }}
     >
@@ -118,7 +124,7 @@
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node} />
+            <NodeViewer node={child_node} bind:selectedNode bind:secondSelectedNode />
         {/each}
     </div>
 </div>
