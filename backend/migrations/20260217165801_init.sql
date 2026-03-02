@@ -43,6 +43,6 @@ CREATE TABLE hints
     id      SERIAL PRIMARY KEY,
     tree_id INTEGER       NOT NULL,                               -- library cards will be their own table later(?), with foreign key to hints(id)
     front   VARCHAR(1024) NOT NULL DEFAULT '',                    -- a lot of cards currently are empty at the front, TODO: check if this is done because of bad design or if it is actually desired.
-    back    VARCHAR(5000)          DEFAULT NULL,                  -- if null, this should be a label card and not allow flipping
+    back    VARCHAR(5000) NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree deletes its cards
 );
