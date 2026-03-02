@@ -1,4 +1,4 @@
-use crate::trees::TreeData;
+use crate::db_structs::trees::TreeData;
 
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};

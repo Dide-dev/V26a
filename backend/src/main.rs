@@ -3,8 +3,6 @@
 mod api_v1;
 mod db;
 mod errors;
-mod trees;
-mod users;
 mod db_structs;
 
 use crate::api_v1::{session::Keys, v1_api};

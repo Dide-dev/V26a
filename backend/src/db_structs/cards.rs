@@ -13,7 +13,7 @@ pub struct CardData {
 #[serde(rename_all = "camelCase")]
 pub struct CardGeneratedData {
     pub id: i32,
-    pub owner_id: i32,
+    pub tree_id: i32,
     pub created_at: DateTime<Utc>,
     pub last_edited: DateTime<Utc>,
 }

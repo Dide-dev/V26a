@@ -12,12 +12,12 @@ use sqlx::{PgPool, query};
 ///
 /// # Returns
 /// Returns the index assigned to the new card.
-pub async fn add_card(db: &PgPool, card_data: CardData, owner_id: i32) -> Result<i32, Error> {
+pub async fn add_card(db: &PgPool, card_data: CardData, tree_id: i32) -> Result<i32, Error> {
     let id_record = query!(
-        "INSERT INTO cards (owner_id, front, back)
+        "INSERT INTO cards (tree_id, front, back)
         VALUES ($1, $2, $3)
         RETURNING id",
-        owner_id,
+        tree_id,
         card_data.front,
         card_data.back,
     )

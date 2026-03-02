@@ -1,7 +1,7 @@
 extern crate bcrypt;
 
 use crate::errors::ApiError;
-use crate::users::UserData;
+use crate::db_structs::users::UserData;
 use bcrypt::{DEFAULT_COST, hash};
 
 use sqlx::{PgPool, query};

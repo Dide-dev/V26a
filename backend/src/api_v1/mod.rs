@@ -1,12 +1,12 @@
 mod auth;
+mod cards;
 mod demo;
 pub mod session;
 mod trees;
-mod cards;
 mod users;
 
 use crate::Config;
-use crate::api_v1::{demo::demo, trees::trees, cards::cards, users::users};
+use crate::api_v1::{cards::cards, demo::demo, trees::trees, users::users};
 use auth::auth;
 use axum::Router;
 
