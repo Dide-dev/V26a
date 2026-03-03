@@ -31,7 +31,7 @@ async fn backend_html_test() -> Html<&'static str> {
 }
 
 /// A test struct, containing some example fields to later be converted to JSON.
-#[derive(serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct JsonTestStruct {
     a: String,
     b: i32,
@@ -89,4 +89,71 @@ async fn add_counter_test(
 ) -> Result<(), ApiError> {
     add_counter_value(&db, body.add).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use axum::http::{Request, Method};
+    use axum::body;
+    use sqlx::query;
+    use tower::util::ServiceExt;
+
+    #[tokio::test]
+    async fn test_backend_html() {
+        let router = Router::new().route("/html", get(backend_html_test));
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/html")
+            .body(String::new())
+            .unwrap();
+
+        let response = router.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(body::to_bytes(response.into_body(), usize::MAX).await.unwrap(), "<h1>Hello from axum!</h1>".as_bytes());
+    }
+
+    #[sqlx::test]
+    async fn test_backend_json_default(db: PgPool) {
+        let router = Router::new().route("/json", get(backend_json_test)).layer(Extension(db));
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/json")
+            .body(String::new())
+            .unwrap();
+
+        let response = router.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), 200);
+        let json: JsonTestStruct = serde_json::from_slice(&body::to_bytes(response.into_body(), usize::MAX).await.unwrap()).unwrap();
+        assert_eq!(json, JsonTestStruct {
+            a: "Hello, from rust struct!".to_owned(),
+            b: 0,
+        });
+    }
+
+    #[sqlx::test]
+    async fn test_backend_json_value(db: PgPool) {
+        query!("INSERT INTO counters VALUES (0, 67)").execute(&db).await.unwrap();
+
+        let router = Router::new().route("/json", get(backend_json_test)).layer(Extension(db));
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("/json")
+            .body(String::new())
+            .unwrap();
+
+        let response = router.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), 200);
+        let json: JsonTestStruct = serde_json::from_slice(&body::to_bytes(response.into_body(), usize::MAX).await.unwrap()).unwrap();
+        assert_eq!(json, JsonTestStruct {
+            a: "Hello, from rust struct!".to_owned(),
+            b: 67,
+        });
+    }
 }
