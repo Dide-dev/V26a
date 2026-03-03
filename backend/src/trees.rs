@@ -32,5 +32,5 @@ pub struct TreeGeneratedData {
     pub created_at: DateTime<Utc>,
     pub last_edited: DateTime<Utc>,
     pub times_visited: i64,
-    pub last_visited: DateTime<Utc>,
+    pub last_visited: Option<DateTime<Utc>>,
 }

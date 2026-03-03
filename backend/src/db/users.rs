@@ -10,37 +10,31 @@ use sqlx::{PgPool, query};
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
-/// `user_data` - The data assigned to the new tree
+///
+/// `user_data` - The data assigned to the new tree.
 ///
 /// # Returns
-/// Returns the index assigned to the new tree.
+/// The index assigned to the new tree.
 ///
 /// # Error
-/// Returns an [`ApiError::EmailAlreadyUsedException`] if the email was already used in the database
+/// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.
 pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError> {
-    // Check if email already exists. This check is not strictly necessary,
-    // as a `UNIQUE` constraint is placed on the `password_hash` field.
+    // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
+    // constraint is placed on the `email` field.
     // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
     // will be returned instead of an `ApiError::EmailAlreadyUsedException`.
-    let exists = query!(
-        "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
-        user_data.email,
-    )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .exists
-    .unwrap();
+    let exists = user_exists(db, &user_data.email).await?;
 
     if exists {
-        return Err(ApiError::EmailAlreadyUsedException);
+        return Err(ApiError::EmailAlreadyUsed);
     }
 
-    // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated. Put a limit on password length.
+    // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
+    // Put a limit on password length.
     let hashed_password =
         hash(user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
 
-    // Insert user into database
+    // Insert user into database.
     let id_record = query!(
         "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -58,4 +52,18 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
     .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(id_record.id)
+}
+
+/// Checks if a user with a given e-mail exists in the given database. Returns a bool if the check
+/// was successful, or an [`ApiError`] if not.
+pub async fn user_exists(db: &PgPool, email: &String) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
+        email,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .exists
+    .ok_or(ApiError::DatabaseException)
 }

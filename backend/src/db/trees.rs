@@ -9,11 +9,13 @@ use sqlx::{PgPool, query, query_as};
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
-/// `tree_data` - The data assigned to the new tree
+///
+/// `tree_data` - The data assigned to the new tree as [`TreeData`]
+///
 /// `owner_id` - The id of the owner of the tree
 ///
 /// # Returns
-/// Returns the index assigned to the new tree.
+/// The index assigned to the new tree if successful, or an [`ApiError`] if not.
 pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
     let id_record = query!(
         "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
@@ -30,7 +32,8 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
         tree_data.assignment_text,
     )
     .fetch_one(db)
-    .await.map_err(|_| ApiError::DatabaseException)?;
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(id_record.id)
 }
