@@ -10,11 +10,11 @@
     let secondSelectedNode = $state<Node | null>(null);
 </script>
 
-<AddCard bind:selectedNode bind:secondSelectedNode />
+<AddCard {selectedNode} {secondSelectedNode} />
 
 <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
     {#each tree.roots as root (root.label)}
-        <NodeViewer node={root} bind:selectedNode bind:secondSelectedNode />
+        <NodeViewer node={root} {selectedNode} {secondSelectedNode}/>
     {/each}
 </div>
 

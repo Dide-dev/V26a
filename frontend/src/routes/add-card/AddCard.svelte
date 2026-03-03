@@ -2,7 +2,7 @@
     import type { Node } from '../tree-viewer/example_tree';
 
     //attach a "bind" to the selected nodes
-    let { selectedNode = $bindable(), secondSelectedNode = $bindable() }: 
+    let { selectedNode, secondSelectedNode }: 
     {
         selectedNode: Node | null;
         secondSelectedNode: Node | null;

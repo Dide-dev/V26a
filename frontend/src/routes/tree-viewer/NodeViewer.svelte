@@ -4,11 +4,11 @@
     import { tick } from 'svelte';
 
     //initialization off types
-    let { node, selectedNode = $bindable(), secondSelectedNode = $bindable() }: 
+    let { node, selectedNode, secondSelectedNode}: 
     {
     node: Node | RootNode;
-    selectedNode: Node | null;
-    secondSelectedNode: Node | null;
+    selectedNode: Node | RootNode | null;
+    secondSelectedNode: Node | RootNode | null;
     } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
@@ -124,7 +124,7 @@
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node} bind:selectedNode bind:secondSelectedNode />
+            <NodeViewer node={(child_node, selectedNode, secondSelectedNode)} />
         {/each}
     </div>
 </div>
