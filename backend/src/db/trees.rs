@@ -47,3 +47,12 @@ pub async fn tree_exists(db: &PgPool, tree_id: i32) -> Result<bool, ApiError> {
     .exists
     .ok_or(ApiError::DatabaseException)
 }
+
+pub async fn tree_owned_by(db: &PgPool, tree_id: i32, owner_id: i32) -> Result<bool, ApiError> {
+    let owner = query!(
+        "SELECT owner_id FROM trees WHERE id = $1",
+        tree_id,
+    ).fetch_one(db).await.map_err(|_| ApiError::DatabaseException)?;
+    
+    Ok(owner.owner_id == owner_id)
+}

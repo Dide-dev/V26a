@@ -6,6 +6,7 @@ use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
+use crate::api_v1::session::Claims;
 
 /// Creates an `Axum` [`Router`] for the cards category.
 pub fn cards() -> Router<Config> {
@@ -15,10 +16,11 @@ pub fn cards() -> Router<Config> {
 /// Add a card to the database
 /// Returns the index assigned to the new tree
 async fn add_new_card(
+    claims: Claims,
     db: Extension<PgPool>,
     Json(card_data): Json<CardData>,
 ) -> Result<Json<i32>, ApiError> {
-    let id = add_card(&db, card_data).await?;
+    let id = add_card(&db, card_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)
