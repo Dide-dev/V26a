@@ -18,6 +18,7 @@ use sqlx::{PgPool, query};
 ///
 /// # Error
 /// Returns an [`ApiError::MissingTree`] if the `tree_id` referenced in [`CardData`] does not exist.
+///
 /// Returns an [`ApiError::MissingAuthorisation`] if the `user_id` does not match the `owner_id` field
 /// for the given `tree_id` in `card_data`.
 pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<i32, ApiError> {
