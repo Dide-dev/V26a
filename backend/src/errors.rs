@@ -8,6 +8,8 @@ use std::fmt::Display;
 pub enum ApiError {
     /// An exception to throw when an e-mail has already been used and can not be used again.
     EmailAlreadyUsed,
+    /// An exception to throw when a card is attempted to be added to a tree, which does not exist.
+    MissingTree(i32),
     /// Generic exception when the database fails on something unexpected. Do not use this in place
     /// of proper error handling.
     DatabaseException,
@@ -40,6 +42,7 @@ impl Display for ApiError {
             ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
             }
+            ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
             ApiError::WrongCredentials => write!(f, "Wrong credentials"),
@@ -57,7 +60,8 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed => StatusCode::BAD_REQUEST,
+            ApiError::EmailAlreadyUsed
+            | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException
