@@ -35,3 +35,15 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 
     Ok(id_record.id)
 }
+
+pub async fn tree_exists(db: &PgPool, tree_id: i32) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM trees WHERE id = $1)",
+        tree_id,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .exists
+    .ok_or(ApiError::DatabaseException)
+}

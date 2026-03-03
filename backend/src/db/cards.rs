@@ -1,4 +1,5 @@
 use crate::db_structs::cards::CardData;
+use crate::db::trees::tree_exists;
 
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};
@@ -12,7 +13,16 @@ use sqlx::{PgPool, query};
 ///
 /// # Returns
 /// The index assigned to the new card if successful, or an [`ApiError`] if not.
+///
+/// # Error
+/// Returns an [`ApiError::MissingTree`] if the `tree_id` referenced in [`CardData`] does not exist.
 pub async fn add_card(db: &PgPool, card_data: CardData) -> Result<i32, ApiError> {
+    let tree_exists = tree_exists(db, card_data.tree_id).await?;
+
+    if !tree_exists {
+        return Err(ApiError::MissingTree(card_data.tree_id));
+    }
+
     let id_record = query!(
         "INSERT INTO cards (tree_id, front, back)
         VALUES ($1, $2, $3)
