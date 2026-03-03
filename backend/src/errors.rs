@@ -48,7 +48,7 @@ impl Display for ApiError {
             ApiError::WrongCredentials => write!(f, "Wrong credentials"),
             ApiError::MissingCredentials => write!(f, "Missing credentials"),
             ApiError::TokenCreation => write!(f, "Session creation error"),
-            ApiError::MissingAuthorisation => write!(f, "You are not logged in."),
+            ApiError::MissingAuthorisation => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation"),
             ApiError::Text(s) => write!(f, "Error: {s}."),
