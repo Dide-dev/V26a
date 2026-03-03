@@ -14,9 +14,9 @@ function apiCallGetCard(path: string) {
 
 /** The basic data of the card, including the tree it belongs to. */
 type CardData = {
-    treeId: number,
-    front: string,
-    back: string
+    treeId: number;
+    front: string;
+    back: string;
 };
 
 type CardId = number;

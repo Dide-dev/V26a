@@ -1,5 +1,5 @@
-use crate::db_structs::cards::CardData;
 use crate::db::trees::{tree_exists, tree_owned_by};
+use crate::db_structs::cards::CardData;
 
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};

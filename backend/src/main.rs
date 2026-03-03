@@ -2,8 +2,8 @@
 
 mod api_v1;
 mod db;
-mod errors;
 mod db_structs;
+mod errors;
 
 use crate::api_v1::{session::Keys, v1_api};
 use axum::{Extension, Router};

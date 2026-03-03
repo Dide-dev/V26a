@@ -2,11 +2,11 @@ use crate::Config;
 use crate::db::cards::add_card;
 use crate::db_structs::cards::CardData;
 
+use crate::api_v1::session::Claims;
 use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
-use crate::api_v1::session::Claims;
 
 /// Creates an `Axum` [`Router`] for the cards category.
 pub fn cards() -> Router<Config> {
