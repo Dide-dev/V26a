@@ -1,4 +1,4 @@
-use crate::db::trees::{get_tree_owner, tree_exists};
+use crate::db::trees::get_tree_owner;
 use crate::db_structs::cards::CardData;
 
 use crate::errors::ApiError;
@@ -23,15 +23,11 @@ use sqlx::{PgPool, query};
 /// for the given `tree_id` in `card_data`.
 pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<i32, ApiError> {
     // Check whether the tree which the card is being added to exists.
-    let tree_exists = tree_exists(db, card_data.tree_id).await?;
-
-    if !tree_exists {
-        return Err(ApiError::MissingTree(card_data.tree_id));
-    }
+    let owner_id = get_tree_owner(db, card_data.tree_id)
+        .await?
+        .ok_or(ApiError::MissingTree(card_data.tree_id))?;
 
     // Check whether the user is authorized to add a card to the tree.
-    let owner_id = get_tree_owner(db, card_data.tree_id).await?;
-
     if user_id != owner_id {
         return Err(ApiError::MissingAuthorisation);
     }

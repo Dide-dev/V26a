@@ -36,25 +36,6 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
     Ok(id_record.id)
 }
 
-/// Check whether a tree exists within the database.
-///
-/// # Arguments
-/// `db` - A reference to the database connection to use for the query.
-///
-/// `tree_id` - The id of the tree of which the existence is queried.
-///
-/// # Returns
-/// `true` if the tree exists or `false` if the tree does not exist if successful,
-/// or an [`ApiError::DatabaseException`] if not.
-pub async fn tree_exists(db: &PgPool, tree_id: i32) -> Result<bool, ApiError> {
-    query!("SELECT EXISTS (SELECT 1 FROM trees WHERE id = $1)", tree_id,)
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .exists
-        .ok_or(ApiError::DatabaseException)
-}
-
 /// Get the id of the owner of the tree.
 ///
 /// # Arguments
@@ -63,12 +44,14 @@ pub async fn tree_exists(db: &PgPool, tree_id: i32) -> Result<bool, ApiError> {
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
 /// # Returns
-/// The index of the owner of the tree if successful, or an [`ApiError::DatabaseException`] if not.
-pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<i32, ApiError> {
+/// The index of the owner of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't
+/// if successful, or an [`ApiError::DatabaseException`] if not.
+pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
-        .fetch_one(db)
+        .fetch_optional(db)
         .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .map_err(|_| ApiError::DatabaseException)?
+        .map(|r| r.owner_id);
 
-    Ok(owner.owner_id)
+    Ok(owner)
 }
