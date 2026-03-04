@@ -1,4 +1,4 @@
-use crate::db::trees::{tree_exists, tree_owned_by};
+use crate::db::trees::{get_tree_owner, tree_exists};
 use crate::db_structs::cards::CardData;
 
 use crate::errors::ApiError;
@@ -30,9 +30,9 @@ pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<
     }
 
     // Check whether the user is authorized to add a card to the tree.
-    let ownership = tree_owned_by(db, card_data.tree_id, user_id).await?;
+    let owner_id = get_tree_owner(db, card_data.tree_id).await?;
 
-    if !ownership {
+    if !(user_id == owner_id) {
         return Err(ApiError::MissingAuthorisation);
     }
 
