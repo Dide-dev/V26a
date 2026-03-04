@@ -61,11 +61,10 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
-            ApiError::WrongCredentials
-            | ApiError::MissingAuthorisation => StatusCode::FORBIDDEN,
-            ApiError::DatabaseException
-            | ApiError::HashException
-            | ApiError::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::WrongCredentials | ApiError::MissingAuthorisation => StatusCode::FORBIDDEN,
+            ApiError::DatabaseException | ApiError::HashException | ApiError::TokenCreation => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             ApiError::MissingCredentials
             | ApiError::MissingAuthentication
             | ApiError::ExpiredSession
