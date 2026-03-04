@@ -13,13 +13,13 @@ function apiCallGetCard(path: string) {
 }
 
 /** The basic data of the card, including the tree it belongs to. */
-type CardData = {
+export type CardData = {
     treeId: number;
     front: string;
     back: string;
 };
 
-type CardId = number;
+export type CardId = number;
 
 /** Add a card to the database */
 export function addCard(card: CardData): Promise<CardId> {
