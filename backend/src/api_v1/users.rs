@@ -1,6 +1,6 @@
 use crate::Config;
 use crate::db::users::add_user;
-use crate::users::UserData;
+use crate::db_structs::users::UserData;
 
 use crate::errors::ApiError;
 use axum::routing::post;
