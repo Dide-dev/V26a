@@ -20,7 +20,7 @@ pub fn demo() -> Router<Config> {
 /// A test endpoint that checks whether the user is logged in as user 1.
 async fn protected_test(claims: Claims) -> Result<String, ApiError> {
     if claims.sub != 1 {
-        Err(ApiError::WrongCredentials)?;
+        Err(ApiError::NoPermission)?;
     }
     Ok("Welcome, user 1!".to_string())
 }

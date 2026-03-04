@@ -35,7 +35,7 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
         hash(user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
 
     // Insert user into database.
-    let id_record = query!(
+    let user_id = query!(
         "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id",
@@ -49,9 +49,10 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
     )
     .fetch_one(db)
     .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .map_err(|_| ApiError::DatabaseException)?
+    .id;
 
-    Ok(id_record.id)
+    Ok(user_id)
 }
 
 /// Checks if a user with a given e-mail exists in the given database. Returns a bool if the check

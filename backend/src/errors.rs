@@ -4,7 +4,6 @@ use std::fmt::Display;
 
 /// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
-#[allow(dead_code)]
 pub enum ApiError {
     /// An exception to throw when an e-mail has already been used and can not be used again.
     EmailAlreadyUsed,
@@ -27,7 +26,7 @@ pub enum ApiError {
     MissingAuthentication,
     /// An exception to be given when a user tries to do something for which they are not properly
     /// authorized.
-    MissingAuthorisation,
+    NoPermission,
     /// An exception to be given by `Axum` when a user provides a session that can not be decoded.
     InvalidSession,
     /// An exception to be given by `Axum` when a user tries to access a protected endpoint with
@@ -49,7 +48,7 @@ impl Display for ApiError {
             ApiError::MissingCredentials => write!(f, "Missing credentials"),
             ApiError::TokenCreation => write!(f, "Session creation error"),
             ApiError::MissingAuthentication => write!(f, "You need to login first."),
-            ApiError::MissingAuthorisation => write!(f, "You are not authorised to do this."),
+            ApiError::NoPermission => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation"),
         }
@@ -61,7 +60,7 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
-            ApiError::WrongCredentials | ApiError::MissingAuthorisation => StatusCode::FORBIDDEN,
+            ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException | ApiError::HashException | ApiError::TokenCreation => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
