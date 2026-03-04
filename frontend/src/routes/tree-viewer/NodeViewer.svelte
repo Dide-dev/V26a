@@ -4,11 +4,11 @@
     import { tick } from 'svelte';
 
     //initialization off types
-    let { node, selectedNode, secondSelectedNode}: 
-    {
-    node: Node | RootNode;
-    selectedNode: Node | RootNode | null;
-    secondSelectedNode: Node | RootNode | null;
+    let { node, selectedNode = null, secondSelectedNode = null, onSelect = () => {} }: {
+        node: Node | RootNode;
+        selectedNode?: Node | null;
+        secondSelectedNode?: Node | null;
+        onSelect?: (node: Node) => void;
     } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
@@ -91,14 +91,7 @@
         class:bg-green-50={selectedNode !== node}
         class:bg-fuchsia-300={selectedNode === node}
         class:bg-orange-300={secondSelectedNode === node}
-        onclick={() => {
-            if (selectedNode && selectedNode !== node) {
-                secondSelectedNode = node as Node;
-            } else {
-                selectedNode = node as Node;
-                secondSelectedNode = null;
-            }
-        }}
+        onclick={() => onSelect(node as Node)}
     >
         {#if 'label' in node}
             <div class="h-fit w-32 shrink-0">
@@ -124,7 +117,7 @@
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={(child_node, selectedNode, secondSelectedNode)} />
+            <NodeViewer node={child_node} {selectedNode} {secondSelectedNode} {onSelect} />
         {/each}
     </div>
 </div>

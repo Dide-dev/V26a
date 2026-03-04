@@ -1,11 +1,12 @@
 <script lang="ts">
     import type { Node } from '../tree-viewer/example_tree';
 
-    //attach a "bind" to the selected nodes
-    let { selectedNode, secondSelectedNode }: 
-    {
+    //the selected nodes are iniatilized as properties
+    //TODO, if a new card is send back then type & argument needs to be edited
+     let { selectedNode, secondSelectedNode, onAdd }: {
         selectedNode: Node | null;
         secondSelectedNode: Node | null;
+        onAdd: () => void;
     } = $props();
 
     function addCard() {
@@ -29,7 +30,7 @@
             ];
         }
 
-        selectedNode = null;
+        onAdd();
     }
     
 </script>
@@ -38,5 +39,5 @@
     class="w-fit rounded bg-blue-500 px-3 py-1 text-white"
     onclick={addCard}
     disabled={!selectedNode}>
-        {secondSelectedNode ? 'Add in between' : 'Add card'}
+        Add card
 </button>
