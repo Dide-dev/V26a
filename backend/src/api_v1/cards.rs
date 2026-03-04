@@ -14,7 +14,7 @@ pub fn cards() -> Router<Config> {
 }
 
 /// Add a card to the database
-/// Returns the index assigned to the new tree
+/// Returns the ID assigned to the new card
 async fn add_new_card(
     claims: Claims,
     db: Extension<PgPool>,
