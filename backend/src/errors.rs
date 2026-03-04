@@ -24,15 +24,15 @@ pub enum ApiError {
     TokenCreation,
     /// An exception to be given by `Axum` when a protected endpoint is accessed without providing
     /// a session.
+    MissingAuthentication,
+    /// An exception to be given when a user tries to do something for which they are not properly
+    /// authorized.
     MissingAuthorisation,
     /// An exception to be given by `Axum` when a user provides a session that can not be decoded.
     InvalidSession,
     /// An exception to be given by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    // This currently serves as an example, remove the allow statement above when we have an
-    // error type that contains a string
-    Text(String),
 }
 
 // Define how errors should be converted to messages.
@@ -48,10 +48,10 @@ impl Display for ApiError {
             ApiError::WrongCredentials => write!(f, "Wrong credentials"),
             ApiError::MissingCredentials => write!(f, "Missing credentials"),
             ApiError::TokenCreation => write!(f, "Session creation error"),
+            ApiError::MissingAuthentication => write!(f, "You need to login first."),
             ApiError::MissingAuthorisation => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation"),
-            ApiError::Text(s) => write!(f, "Error: {s}."),
         }
     }
 }
@@ -61,13 +61,13 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
-            ApiError::WrongCredentials => StatusCode::FORBIDDEN,
+            ApiError::WrongCredentials
+            | ApiError::MissingAuthorisation => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException
-            | ApiError::TokenCreation
-            | ApiError::Text(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            | ApiError::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::MissingCredentials
-            | ApiError::MissingAuthorisation
+            | ApiError::MissingAuthentication
             | ApiError::ExpiredSession
             | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
         }

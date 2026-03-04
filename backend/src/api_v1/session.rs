@@ -44,10 +44,10 @@ impl FromRequestParts<Config> for Claims {
         // Extract the token from the cookie jar
         let jar = CookieJar::from_request_parts(parts, state)
             .await
-            .map_err(|_| ApiError::MissingAuthorisation)?;
+            .map_err(|_| ApiError::MissingAuthentication)?;
         let auth_cookie = jar
             .get("session")
-            .ok_or(ApiError::MissingAuthorisation)?
+            .ok_or(ApiError::MissingAuthentication)?
             .value();
 
         // Decode the user data, this automatically validates the expiration time
