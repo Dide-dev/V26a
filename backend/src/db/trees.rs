@@ -1,4 +1,4 @@
-use crate::trees::TreeData;
+use crate::db_structs::trees::TreeData;
 
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};
@@ -13,7 +13,7 @@ use sqlx::{PgPool, query};
 /// `owner_id` - The id of the owner of the tree
 ///
 /// # Returns
-/// The index assigned to the new tree if successful, or an [`ApiError`] if not.
+/// The index assigned to the new tree if successful, or an [`ApiError::DatabaseException`] if not.
 pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
     let id_record = query!(
         "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
@@ -34,4 +34,24 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
     .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(id_record.id)
+}
+
+/// Get the id of the owner of the tree.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The id of the tree of which the owner is queried.
+///
+/// # Returns
+/// The index of the owner of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't
+/// if successful, or an [`ApiError::DatabaseException`] if not.
+pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
+    let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .map(|r| r.owner_id);
+
+    Ok(owner)
 }
