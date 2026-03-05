@@ -14,13 +14,15 @@ use sqlx::{PgPool, query};
 /// `user_id` - The id of the user who sent this request. Used to verify ownership of the tree being edited.
 ///
 /// # Returns
-/// The id assigned to the new card if successful, or an [`ApiError`] if not.
+/// The id assigned to the new card if successful.
 ///
 /// # Error
 /// Returns an [`ApiError::MissingTree`] if the `tree_id` referenced in [`CardData`] does not exist.
 ///
 /// Returns an [`ApiError::NoPermission`] if the `user_id` does not match the `owner_id` field
 /// for the given `tree_id` in `card_data`.
+///
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<i32, ApiError> {
     // Check whether the tree which the card is being added to exists.
     let owner_id = get_tree_owner(db, card_data.tree_id)

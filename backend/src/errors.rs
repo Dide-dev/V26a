@@ -20,7 +20,7 @@ pub enum ApiError {
     /// An exception to be given when a user tries to log in with missing credentials.
     MissingCredentials,
     /// An exception to be given by `jsonwebtoken` if the encoding of a token fails.
-    TokenCreation,
+    TokenCreationException,
     /// An exception to be given by `Axum` when a protected endpoint is accessed without providing
     /// a session.
     MissingAuthentication,
@@ -44,13 +44,15 @@ impl Display for ApiError {
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
-            ApiError::WrongCredentials => write!(f, "Wrong credentials"),
-            ApiError::MissingCredentials => write!(f, "Missing credentials"),
-            ApiError::TokenCreation => write!(f, "Session creation error"),
-            ApiError::MissingAuthentication => write!(f, "You need to login first."),
+            ApiError::WrongCredentials => write!(f, "Wrong credentials."),
+            ApiError::MissingCredentials => write!(f, "Missing credentials."),
+            ApiError::TokenCreationException => {
+                write!(f, "An unexpected session creation error occurred.")
+            }
+            ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
-            ApiError::InvalidSession => write!(f, "Invalid authorisation"),
+            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
         }
     }
 }
@@ -61,9 +63,9 @@ impl ApiError {
         match &self {
             ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
-            ApiError::DatabaseException | ApiError::HashException | ApiError::TokenCreation => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            ApiError::DatabaseException
+            | ApiError::HashException
+            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::MissingCredentials
             | ApiError::MissingAuthentication
             | ApiError::ExpiredSession
