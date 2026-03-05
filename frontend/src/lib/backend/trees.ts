@@ -32,3 +32,37 @@ type TreeId = number;
 export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add-new-tree', tree);
 }
+
+//This is all the data I want to receive from the tree call api, how do I get this format from the API and/or how do I generate a variable with this format?
+class TreeDataForAuthorPage {
+    name: string; //Username of creator. Might be smarter to do this another way, I will get back to this.
+    title: string;
+    lastEdited: Date;
+    published: boolean;
+
+    constructor(name: string, title: string, lastEdited: Date, published: boolean) {
+        this.name = name;
+        this.title = title;
+        this.lastEdited = lastEdited;
+        this.published = published;
+    }
+}
+
+// MOCK API for author-trees, maybe rename this to apiCallGetTreesWhichUserHasAccessTo?
+export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
+    const trees: TreeDataForAuthorPage[] = [
+        new TreeDataForAuthorPage(
+            'Jedidja', //Has to be userID or this gets fixed in the backend
+            'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
+            new Date(14658759), //Random time
+            true
+        ),
+        new TreeDataForAuthorPage(
+            'Theo van den Bogaart',
+            'Je kan de boom in!',
+            new Date(14658759000), //Again random time
+            true
+        )
+    ];
+    return (trees);
+}
