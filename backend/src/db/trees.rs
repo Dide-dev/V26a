@@ -45,8 +45,8 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
 /// # Returns
-/// The index of the owner of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't
-/// if successful, or an [`ApiError::DatabaseException`] if not.
+/// If successful, the index of the owner of the tree as a [`Some`] if the tree exists,
+/// or a [`None`] if it doesn't, or if it is not successful, an [`ApiError::DatabaseException`].
 pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
