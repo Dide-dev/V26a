@@ -1,4 +1,4 @@
-use crate::db::trees::get_tree_owner;
+use crate::db::trees::verify_tree_ownership;
 use crate::db_structs::cards::CardData;
 
 use crate::errors::ApiError;
@@ -24,15 +24,8 @@ use sqlx::{PgPool, query};
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<i32, ApiError> {
-    // Check whether the tree which the card is being added to exists.
-    let owner_id = get_tree_owner(db, card_data.tree_id)
-        .await?
-        .ok_or(ApiError::MissingTree(card_data.tree_id))?;
-
-    // Check whether the user is authorized to add a card to the tree.
-    if user_id != owner_id {
-        return Err(ApiError::NoPermission);
-    }
+    // Check whether the tree which the card is being added to exists and is owned by the user.
+    verify_tree_ownership(db, card_data.tree_id, user_id).await?;
 
     let card_id = query!(
         "INSERT INTO cards (tree_id, front, back)
@@ -48,4 +41,23 @@ pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<
     .id;
 
     Ok(card_id)
+}
+
+/// TODO: Add docs.
+pub async fn update_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<(), ApiError> {
+    verify_tree_ownership(db, card_data.tree_id, user_id).await?;
+
+    query!(
+        "UPDATE cards SET (front, back) = ($2, $3) WHERE id = $1",
+        card_data
+            .card_id
+            .ok_or(ApiError::IncompleteRequest("card_id".to_string()))?,
+        card_data.front,
+        card_data.back,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
 }

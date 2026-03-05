@@ -1,5 +1,5 @@
 use crate::Config;
-use crate::db::cards::add_card;
+use crate::db::cards::{add_card, update_card};
 use crate::db_structs::cards::CardData;
 
 use crate::api_v1::session::Claims;
@@ -10,7 +10,9 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the cards category.
 pub fn cards() -> Router<Config> {
-    Router::new().route("/add", post(add_new_card))
+    Router::new()
+        .route("/add", post(add_new_card))
+        .route("/update", post(update_existing_card))
 }
 
 /// Add a card to the database.
@@ -29,4 +31,15 @@ async fn add_new_card(
 
     let json_id = Json(id);
     Ok(json_id)
+}
+
+/// TODO: Add docs.
+async fn update_existing_card(
+    claims: Claims,
+    db: Extension<PgPool>,
+    Json(card_data): Json<CardData>,
+) -> Result<(), ApiError> {
+    update_card(&db, card_data, claims.sub).await?;
+
+    Ok(())
 }
