@@ -32,6 +32,9 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
+    /// An exception to be given when a request is missing certain fields, which are required for
+    /// the request to process successfully.
+    IncompleteRequest(String),
 }
 
 // Define how errors should be converted to messages.
@@ -53,6 +56,10 @@ impl Display for ApiError {
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
+            ApiError::IncompleteRequest(field) => write!(
+                f,
+                "The request did not process successfully, please specify the '{field}' field."
+            ),
         }
     }
 }
@@ -61,7 +68,9 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
+            ApiError::EmailAlreadyUsed
+            | ApiError::MissingTree(_)
+            | ApiError::IncompleteRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException
