@@ -15,7 +15,7 @@ pub fn users() -> Router<Config> {
 /// Add a user to the database.
 ///
 /// # Returns
-/// The index assigned to the new user as [`Json`] if successful, or an [`ApiError`] if not.
+/// The id assigned to the new user as [`Json`] if successful, or an [`ApiError`] if not.
 ///
 /// # Error
 /// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.

@@ -4,7 +4,7 @@ use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};
 
-/// Add a new card to the database, returning its assigned index.
+/// Add a new card to the database, returning its assigned id.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
@@ -14,7 +14,7 @@ use sqlx::{PgPool, query};
 /// `user_id` - The id of the user who sent this request. Used to verify ownership of the tree being edited.
 ///
 /// # Returns
-/// The index assigned to the new card if successful, or an [`ApiError`] if not.
+/// The id assigned to the new card if successful, or an [`ApiError`] if not.
 ///
 /// # Error
 /// Returns an [`ApiError::MissingTree`] if the `tree_id` referenced in [`CardData`] does not exist.

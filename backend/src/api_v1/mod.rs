@@ -17,5 +17,6 @@ pub fn v1_api() -> Router<Config> {
         .nest("/demo", demo())
         .nest("/trees", trees())
         .nest("/cards", cards())
+        .nest("/cards", cards())
         .nest("/users", users())
 }

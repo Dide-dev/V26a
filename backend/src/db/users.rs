@@ -6,7 +6,7 @@ use bcrypt::{DEFAULT_COST, hash};
 
 use sqlx::{PgPool, query};
 
-/// Add a new user to the database, returning its assigned index.
+/// Add a new user to the database, returning its assigned id.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
@@ -14,7 +14,7 @@ use sqlx::{PgPool, query};
 /// `user_data` - The data assigned to the new tree.
 ///
 /// # Returns
-/// The index assigned to the new tree.
+/// The id assigned to the new tree.
 ///
 /// # Error
 /// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.
