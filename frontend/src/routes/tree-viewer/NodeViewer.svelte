@@ -4,15 +4,14 @@
     import { tick } from 'svelte';
 
     //initialization off types
-    let { node, selectedNode = null, secondSelectedNode = null, onSelect = () => {} }: {
+    let { node, addChild = null, insertChild = null }: {
         node: Node | RootNode;
-        selectedNode?: Node | null;
-        secondSelectedNode?: Node | null;
-        onSelect?: (node: Node) => void;
+        addChild?: ((node: Node) => void) | null;
+        insertChild?: ((parent: Node, child: Node) => void) | null;
     } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
-    const svgWidth = 50;
+    const svgWidth = 90;
     let svgHeight = $state(0);
 
     /** Y-offset from the top of the nodecards, used for the horizontal lines connecting the nodes. */
@@ -86,21 +85,25 @@
 </script>
 
 <div class="flex">
-    <button
-        class="h-fit w-xl cursor-pointer border-2 border-green-800 p-1"
-        class:bg-green-50={selectedNode !== node}
-        class:bg-fuchsia-300={selectedNode === node}
-        class:bg-orange-300={secondSelectedNode === node}
-        onclick={() => onSelect(node as Node)}
-    >
-        {#if 'label' in node}
-            <div class="h-fit w-32 shrink-0">
-                <strong>{node.label}</strong>
-            </div>
-        {:else}
+    {#if 'label' in node}
+        <div class="h-fit w-32 shrink-0 cursor-default">
+            <strong>{node.label}</strong>
+        </div>
+    {:else}
+        <div class="relative h-fit group">
+        <button
+            class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50"
+        >
             <p>{node.card}</p>
+        </button>
+        {#if addChild}
+            <button
+                class="absolute top-1.5 right-1 h-5 w-5 rounded-full bg-blue-500 text-white text-xs opacity-20 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onclick={() => addChild!(node as Node)}
+            >+</button>
         {/if}
-    </button>
+    </div>
+    {/if}
 
     {#if node.children.length !== 0}
         <svg width={svgWidth} height={svgHeight} class="shrink-0">
@@ -116,8 +119,16 @@
     {/if}
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
-        {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node} {selectedNode} {secondSelectedNode} {onSelect} />
-        {/each}
-    </div>
+    {#each node.children as child_node (child_node)}
+        <div class="relative"> 
+            {#if insertChild}
+               <button
+                    class="absolute -left-8 z-10 h-5 w-5 rounded-full bg-green-500 text-white text-xs opacity-20 hover:opacity-100 transition-opacity cursor-pointer"
+                    onclick={() => insertChild!(node as Node, child_node as Node)}
+                >+</button>
+            {/if}
+            <NodeViewer node={child_node} {addChild} {insertChild} />
+        </div>
+    {/each}
+</div>
 </div>
