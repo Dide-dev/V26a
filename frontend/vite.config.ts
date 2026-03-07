@@ -12,5 +12,10 @@ export default defineConfig({
             outdir: './src/lib/paraglide',
             strategy: ['url', 'cookie', 'baseLocale']
         })
-    ]
+    ],
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['testSetup.ts']
+    },
+    resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined
 });
