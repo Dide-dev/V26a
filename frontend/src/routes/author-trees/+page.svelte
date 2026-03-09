@@ -1,7 +1,8 @@
 <script lang="ts">
-    //import * as user from '$lib/backend/users'
+    import { m } from '$lib/paraglide/messages'
     import { apiCallGetTreesFromUser } from "$lib/backend/trees"
 
+    const header: string[] = JSON.parse(m.table_header());
     const values = apiCallGetTreesFromUser();
 </script>
 
@@ -11,10 +12,10 @@
     <table style="width:100%">
         <thead>
         <tr>
-            <th style="width:20%">Made By</th>
-            <th style="width:50%">Title</th>
-            <th style="width:15%">Last Edited</th>
-            <th style="width:10%">Published</th>
+            <th style="width:20%">{header[0]}</th>
+            <th style="width:50%">{header[1]}</th>
+            <th style="width:15%">{header[2]}</th>
+            <th style="width:10%">{header[3]}</th>
         </tr>
         </thead>
         <tbody>
