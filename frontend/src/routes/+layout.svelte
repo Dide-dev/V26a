@@ -18,6 +18,7 @@
     <a href={appLink('/counter')}>Global Counter</a>
     <a href={appLink('/tree-viewer')}>View Example Tree</a>
     <a href={appLink('/registration')}>Register</a>
+    <a href={appLink('/login')}>Login</a>
     {#each locales as locale (locale)}
         <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
         <a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
