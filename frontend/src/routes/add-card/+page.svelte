@@ -7,7 +7,7 @@
     import { type CardData, addCard } from '$lib/backend/cards';
 
     //TODO, replaces the example with real tree in future
-    let tree = $state(exampleTree); 
+    let tree = $state(exampleTree);
 
     //rerenders the tree when adding nodes
     //TODO, send updated tree or new card to backend
@@ -23,7 +23,7 @@
 
     //variable to have the add/insert action on hold
     let action = $state<null | { type: 'add', parent: Node } | { type: 'insert', parent: Node, child: Node }>(null);
-    
+
 
     function handlerAdd(parent: Node) {
         action = { type: 'add', parent };
@@ -33,7 +33,7 @@
         action = { type: 'insert', parent, child };
     }
 
-    //check the action and execute it if necessarily 
+    //check the action and execute it if necessarily
     function acceptCard(text: string) {
     if (!action) return;
         if (action.type === 'add') {

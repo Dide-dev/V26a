@@ -17,7 +17,7 @@ export type Node = {
 export type Card = string;
 
 export const exampleTree: HeuristicTree = {
-    id: 0,
+    id: 0, // CHANGE THIS TO THE TREE-ID OF YOUR TEST TREE IN YOUR DATABASE
     name: 'Testing 123',
     assignment:
         "Je hebt een touwtje van 1 meter lengte. Dit touwtje leg je tegen een muur, op zo'n manier dat het touwtje drie zijden van een rechthoek vormt en de muur de vierde zijde. Hoe moet je het touwtje leggen zodat de oppervlakte van de rechthoek maximaal is?",
