@@ -9,5 +9,6 @@
     "emailVisible": "Mijn zichbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jouw te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
     "register": "Registreer",
     "optional": "Optioneel",
-    "emailPlaceholder": "gebruiker@voorbeeld.com"
+    "emailPlaceholder": "gebruiker@voorbeeld.com",
+    "login": "login"
 }
