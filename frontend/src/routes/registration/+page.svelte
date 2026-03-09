@@ -3,12 +3,13 @@
     import { addUser, type UserData } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
+    import { m } from '$lib/paraglide/messages.js';
 
     let formData: UserData = $state({
         email: '',
         password: '',
         name: '',
-        nickname: null,
+        nickname: '',
         aboutMe: null,
         emailVisible: false,
         language: getLocale()
@@ -30,42 +31,68 @@
 <div class="flex w-full justify-center">
     <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
         <label>
-            Email
+            {m.email()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.email}
                 name="email"
                 type="email"
+                placeholder={m.emailPlaceholder()}
+                maxlength="256"
                 required
             />
         </label>
         <label>
-            name
+            {m.name()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.name}
                 name="name"
                 type="text"
+                maxlength="128"
                 required
             />
         </label>
         <label>
-            Password
+            {m.nickname()}
+            <input
+                class="rounded-md border-2"
+                bind:value={formData.nickname}
+                name="nickname"
+                type="nickname"
+                placeholder={m.optional()}
+                maxlength="128"
+            />
+        </label>
+        <label>
+            {m.password()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.password}
                 name="password"
                 type="password"
+                maxlength="128"
                 required
             />
         </label>
         <label>
-            language
+            {m.language()}
             <select class="rounded-md border-2" bind:value={formData.language}>
                 {#each locales as value (value)}<option {value}>{value}</option>{/each}
             </select>
         </label>
-        <button class="rounded-sm bg-emerald-500 p-1">Register</button>
+        <label>
+            <input
+                class="rounded-md border-2"
+                bind:value={formData.emailVisible}
+                name="emailVisible"
+                type="checkbox"
+                maxlength="128"
+                required
+            />
+            {m.emailVisible()}
+        </label>
+        <button class="rounded-sm bg-emerald-500 p-1">{m.register()}</button>
         <p class="text-red-600">{error?.message}</p>
     </form>
 </div>
