@@ -1,7 +1,7 @@
 use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::trees::add_tree;
-use crate::trees::TreeData;
+use crate::db_structs::trees::TreeData;
 
 use crate::errors::ApiError;
 use axum::routing::post;

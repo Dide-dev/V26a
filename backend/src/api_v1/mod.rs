@@ -1,11 +1,12 @@
 mod auth;
+mod cards;
 mod demo;
 pub mod session;
 mod trees;
 mod users;
 
 use crate::Config;
-use crate::api_v1::{demo::demo, trees::trees, users::users};
+use crate::api_v1::{cards::cards, demo::demo, trees::trees, users::users};
 use auth::auth;
 use axum::Router;
 
@@ -15,5 +16,6 @@ pub fn v1_api() -> Router<Config> {
         .nest("/auth", auth())
         .nest("/demo", demo())
         .nest("/trees", trees())
+        .nest("/cards", cards())
         .nest("/users", users())
 }
