@@ -33,7 +33,13 @@ async fn add_new_card(
     Ok(json_id)
 }
 
-/// TODO: Add docs.
+/// Update the contents of an existing card in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return an [`ApiError`] instead.
 async fn update_existing_card(
     claims: Claims,
     db: Extension<PgPool>,
