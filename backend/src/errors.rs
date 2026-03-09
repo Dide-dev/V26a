@@ -9,6 +9,8 @@ pub enum ApiError {
     EmailAlreadyUsed,
     /// An error to return when a card is attempted to be added to a tree, which does not exist.
     MissingTree(i32),
+    /// An exception to throw when a card is attempted to be updated, which does not yet exist.
+    MissingCard(i32),
     /// A generic exception to return when the database fails on something unexpected.
     /// Do not use this in place of proper error handling.
     DatabaseException,
@@ -32,9 +34,11 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    /// An exception to be given when a request is missing certain fields, which are required for
+    /// An exception to be given when a request is missing a certain field, which is required for
     /// the request to process successfully.
     IncompleteRequest(String),
+    /// An exception to be given when a request contains unexpected data for a certain field.
+    IncorrectRequest(String),
 }
 
 // Define how errors should be converted to messages.
@@ -45,6 +49,7 @@ impl Display for ApiError {
                 write!(f, "A user with this e-mail address already exists.")
             }
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
+            ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
             ApiError::WrongCredentials => write!(f, "Wrong credentials."),
@@ -60,6 +65,10 @@ impl Display for ApiError {
                 f,
                 "The request did not process successfully, please specify the '{field}' field."
             ),
+            ApiError::IncorrectRequest(field) => write!(
+                f,
+                "The request did not process successfully, please specify the '{field}' field correctly."
+            ),
         }
     }
 }
@@ -70,7 +79,9 @@ impl ApiError {
         match &self {
             ApiError::EmailAlreadyUsed
             | ApiError::MissingTree(_)
-            | ApiError::IncompleteRequest(_) => StatusCode::BAD_REQUEST,
+            | ApiError::MissingCard(_)
+            | ApiError::IncompleteRequest(_)
+            | ApiError::IncorrectRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException
