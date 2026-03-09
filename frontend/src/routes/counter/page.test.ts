@@ -30,10 +30,7 @@ test('increment-counter', async () => {
 
     render(page);
 
-    let button;
-    await waitFor(() => {
-        button = screen.getByText('Increment!');
-    });
+    let button = await waitFor(() => screen.getByText('Increment!'));
     await user.click(button);
     await waitFor(() => {
         expect(() => screen.getByText('Current count: 1')).not.toThrow();
@@ -57,10 +54,7 @@ test('add-to-counter', async () => {
 
     render(page);
 
-    let button;
-    await waitFor(() => {
-        button = screen.getByText('Increment by 100_000_000!');
-    });
+    let button = await waitFor(() => screen.getByText('Increment by 100_000_000!'));
     await user.click(button);
     await waitFor(() => {
         expect(() => screen.getByText('Current count: 100000000')).not.toThrow();
