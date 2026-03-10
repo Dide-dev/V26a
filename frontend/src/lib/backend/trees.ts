@@ -39,12 +39,14 @@ class TreeDataForAuthorPage {
     title: string;
     lastEdited: Date;
     published: boolean;
+    treeID: number;
 
-    constructor(name: string, title: string, lastEdited: Date, published: boolean) {
+    constructor(name: string, title: string, lastEdited: Date, published: boolean, treeID: number) {
         this.name = name;
         this.title = title;
         this.lastEdited = lastEdited;
         this.published = published;
+        this.treeID = treeID;
     }
 }
 
@@ -55,13 +57,15 @@ export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
             'Jedidja', //Has to be userID or this gets fixed in the backend
             'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
             new Date(Date.now()), //Random time
-            true
+            true,
+            42
         ),
         new TreeDataForAuthorPage(
             'Theo van den Bogaart',
             'Je kan de boom in!',
             new Date(14658759000), //Again random time
-            true
+            true,
+            67
         )
     ];
     return (trees);
