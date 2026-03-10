@@ -6,7 +6,7 @@
     "nickname": "pseudoniem",
     "password": "Wachtwoord",
     "language": "Taal",
-    "emailVisible": "Mijn zichbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jou te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
+    "emailVisible": "Mijn zichtbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jou te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
     "register": "Registreer",
     "optional": "Optioneel",
     "emailPlaceholder": "gebruiker@voorbeeld.com"
