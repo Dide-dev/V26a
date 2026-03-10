@@ -26,7 +26,7 @@ type TreeComplete = {
 /** All data of the tree, without the cards. */
 type TreeAllData = {
     data: TreeData;
-    gen_data: TreeGeneratedData;
+    genData: TreeGeneratedData;
     structure: TreeStructure;
 };
 
@@ -72,15 +72,15 @@ type TreeGeneratedData = {
 
 /** Add a tree to the database. */
 export function addTree(tree: TreeData): Promise<TreeId> {
-    return apiCallPostTree('add-new-tree', tree);
+    return apiCallPostTree('add', tree);
 }
 
 /** Request all data of a specific tree from the database. */
-export function getTreeAllData(tree_id: TreeId): Promise<TreeAllData> {
-    return apiCallGetTree(`get-data/${tree_id}`);
+export function getTreeAllData(treeId: TreeId): Promise<TreeAllData> {
+    return apiCallGetTree(`get-data/${treeId}`);
 }
 
 /** Request all data of a specific tree together with all its cards from the database. */
-export function getTreeWithCards(tree_id: TreeId): Promise<TreeComplete> {
-    return apiCallGetTree(`get-with-cards/${tree_id}`);
+export function getTreeWithCards(treeId: TreeId): Promise<TreeComplete> {
+    return apiCallGetTree(`get-with-cards/${treeId}`);
 }
