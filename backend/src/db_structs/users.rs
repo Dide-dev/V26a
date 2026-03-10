@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-/// Data needed to add a user to the database
+/// Data needed to add a user to the database.
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
@@ -13,6 +13,7 @@ pub struct UserData {
     pub language: UserLanguage,
 }
 
+/// The possible values of the `language` field of a user.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum UserLanguage {
