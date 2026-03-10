@@ -23,7 +23,10 @@ pub fn trees() -> Router<Config> {
 /// Add a tree to the database.
 ///
 /// # Returns
-/// The index assigned to the new tree as [`Json`] if successful, or an [`ApiError`] if not.
+/// The id assigned to the new tree as [`Json`].
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
 async fn add_new_tree(
     claims: Claims,
     db: Extension<PgPool>,
