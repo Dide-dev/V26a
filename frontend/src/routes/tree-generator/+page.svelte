@@ -47,7 +47,7 @@
         <label>
             <p>{m.description()}</p>
             <textarea
-                class="rounded-md border-2 size-64"
+                class="size-64 rounded-md border-2"
                 bind:value={treeData.description}
                 name="desctiption"
                 maxlength="128"
@@ -87,7 +87,7 @@
                 placeholder={m.optional()}
             />
         </label>
-              <label>
+        <label>
             {m.book_exercise()}
             <input
                 class="rounded-md border-2"
