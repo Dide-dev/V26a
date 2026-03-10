@@ -1,6 +1,6 @@
 use crate::Config;
 use crate::db::cards::{add_card, update_card};
-use crate::db_structs::cards::CardData;
+use crate::db_structs::cards::{CardAddData, CardUpdateData};
 
 use crate::api_v1::session::Claims;
 use crate::errors::ApiError;
@@ -25,7 +25,7 @@ pub fn cards() -> Router<Config> {
 async fn add_new_card(
     claims: Claims,
     db: Extension<PgPool>,
-    Json(card_data): Json<CardData>,
+    Json(card_data): Json<CardAddData>,
 ) -> Result<Json<i32>, ApiError> {
     let id = add_card(&db, card_data, claims.sub).await?;
 
@@ -43,7 +43,7 @@ async fn add_new_card(
 async fn update_existing_card(
     claims: Claims,
     db: Extension<PgPool>,
-    Json(card_data): Json<CardData>,
+    Json(card_data): Json<CardUpdateData>,
 ) -> Result<(), ApiError> {
     update_card(&db, card_data, claims.sub).await?;
 

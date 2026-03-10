@@ -14,21 +14,27 @@ function apiCallGetCard(path: string) {
 }
 
 /** The basic data of the card, including the tree it belongs to. */
-export type CardData = {
+export type CardAddData = {
     treeId: number;
-    cardId: Option<number>;
     front: string;
     back: string;
+};
+
+/** The basic data required to update an existing card. */
+export type CardUpdateData = {
+    cardId: number;
+    newFront: Option<string>;
+    newBack: Option<string>;
 };
 
 export type CardId = number;
 
 /** Add a card to the database */
-export function addCard(card: CardData): Promise<CardId> {
+export function addCard(card: CardAddData): Promise<CardId> {
     return apiCallPostCard('add', card);
 }
 
 /** Update an existing card in the database */
-export function updateCard(card: CardData): Promise<unknown> {
+export function updateCard(card: CardUpdateData): Promise<void> {
     return apiCallPostCard('update', card);
 }

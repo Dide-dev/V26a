@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 /// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
+#[allow(dead_code)]
 pub enum ApiError {
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
@@ -34,9 +35,15 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    /// An exception to be given when a request is missing a certain field, which is required for
+    /// An exception to be given when a request is missing one or more fields, which are required for
     /// the request to process successfully.
-    IncompleteRequest(String),
+    ///
+    /// # Arguments
+    /// `Vec<String>` - the list fields which are missing.
+    ///
+    /// `bool` - `true` if just any of the fields must be specified or
+    ///          `false` if all of them need to be specified.
+    IncompleteRequest(Vec<String>, bool),
     /// An exception to be given when a request contains unexpected data for a certain field.
     IncorrectRequest(String),
 }
@@ -61,9 +68,12 @@ impl Display for ApiError {
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
-            ApiError::IncompleteRequest(field) => write!(
+            ApiError::IncompleteRequest(fields, any) => write!(
                 f,
-                "The request did not process successfully, please specify the '{field}' field."
+                "The request did not process successfully, please specify {} the '{}' field{}.",
+                if *any { "one of" } else { "" },
+                fields.join("', '"),
+                if fields.len() > 1 { "s" } else { "" }
             ),
             ApiError::IncorrectRequest(field) => write!(
                 f,
@@ -80,7 +90,7 @@ impl ApiError {
             ApiError::EmailAlreadyUsed
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
-            | ApiError::IncompleteRequest(_)
+            | ApiError::IncompleteRequest(_, _)
             | ApiError::IncorrectRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
