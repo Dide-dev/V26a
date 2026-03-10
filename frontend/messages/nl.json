@@ -9,5 +9,13 @@
     "book_exercise": "Boekopdracht",
     "assignment_text" : "Opdrachtbeschrijving",
     "create_tree": "Creëer boom", 
-    "optional": "Optioneel"
+    "optional": "Optioneel",
+    "email": "E-mail",
+    "name": "Naam",
+    "nickname": "Pseudoniem",
+    "password": "Wachtwoord",
+    "language": "Taal",
+    "emailVisible": "Mijn zichtbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jou te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
+    "register": "Registreer",
+    "emailPlaceholder": "gebruiker@voorbeeld.com"
 }
