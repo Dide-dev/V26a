@@ -14,7 +14,7 @@
         event.preventDefault();
         try {
             await login(loginData);
-            // TODO: this should redirect to the login page
+            // TODO: this should redirect to the main page after login
             goto(appLink('/'));
         } catch (e) {
             error = e as Error;
