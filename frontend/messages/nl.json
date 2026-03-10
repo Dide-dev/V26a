@@ -1,4 +1,13 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
-    "hello_world": "Hallo, {name} vanuit nl!"
+    "hello_world": "Hallo, {name} vanuit nl!",
+    "title": "Titel",
+    "description": "Beschrijving",
+    "bookname": "boeknaam",
+    "book_isbn": "Boek ISBN",
+    "book_chapter": "Boek hoofdstuk",
+    "book_exercise": "Boekopdracht",
+    "assignment_text" : "Opdrachtbeschrijving",
+    "create_tree": "Creëer boom", 
+    "optional": "Optioneel"
 }
