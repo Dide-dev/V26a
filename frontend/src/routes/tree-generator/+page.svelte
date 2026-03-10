@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { locales, getLocale } from '$lib/paraglide/runtime.js';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
