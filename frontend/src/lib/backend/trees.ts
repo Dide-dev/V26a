@@ -56,7 +56,7 @@ export type RootNode = {
 
 /** A node (not root) in a tree. */
 export type Node = {
-    card: CardData;
+    cardId: CardId;
     children: Node[];
 };
 

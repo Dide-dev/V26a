@@ -41,7 +41,12 @@ async fn add_new_tree(
 /// Request all data of a specific tree from the database.
 ///
 /// # Returns
-/// The tree structure as [`Json<TreeAllData>`] if successful, or an [`ApiError`] if not.
+/// The tree structure as [`Json<TreeAllData>`].
+///
+/// # Error
+/// Return an [`ApiError::MissingTree`] if `tree_id` does not exist.
+///
+/// May return an [`ApiError`] instead.
 async fn get_tree_data(
     db: Extension<PgPool>,
     Path(tree_id): Path<i32>,
@@ -56,7 +61,12 @@ async fn get_tree_data(
 /// Request all data of a specific tree together with all its cards from the database.
 ///
 /// # Returns
-/// The tree data together with the cards as [`Json<TreeComplete>`] if successful, or an [`ApiError`] if not.
+/// The tree data together with the cards as [`Json<TreeComplete>`].
+///
+/// # Error
+/// Return an [`ApiError::MissingTree`] if `tree_id` does not exist.
+///
+/// May return an [`ApiError`] instead.
 async fn get_tree_with_cards(
     db: Extension<PgPool>,
     Path(tree_id): Path<i32>,

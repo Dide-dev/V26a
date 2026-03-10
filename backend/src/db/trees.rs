@@ -50,8 +50,10 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 /// `tree_id` - The id of the tree of which is queried.
 ///
 /// # Returns
-/// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't
-/// if successful, or an [`ApiError::DatabaseException`] if not.
+/// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn db_get_tree_all_data(
     db: &PgPool,
     tree_id: i32,

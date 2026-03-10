@@ -33,6 +33,7 @@ pub struct TreeStructure {
 
 /// A root node of a tree.
 #[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RootNode {
     pub label: String,
     pub children: Vec<Node>,
@@ -40,6 +41,7 @@ pub struct RootNode {
 
 /// A node (not root) in a tree.
 #[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Node {
     pub card_id: i32,
     pub children: Vec<Node>,

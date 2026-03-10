@@ -60,7 +60,10 @@ pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<
 /// `tree_id` - The id of the tree of which the cards are asked.
 ///
 /// # Returns
-/// The cards of the tree as a [`BTreeMap`], or an [`ApiError`] if not.
+/// The cards of the tree as a [`BTreeMap`].
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn get_tree_cards(
     db: &PgPool,
     tree_id: i32,
