@@ -1,6 +1,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages'
     import { apiCallGetTreesFromUser } from "$lib/backend/trees"
+    import img from '$lib/assets/compose.svg'
 
     const header: string[] = JSON.parse(m.table_header());
     const values = apiCallGetTreesFromUser();
@@ -13,23 +14,25 @@
 
 
 
-<div class="mx-4 h-24">
-    <table class="w-full">
+<div class="min-w-16 relative md:left-10 lg:left-20 mx-4 h-24">
+    <table >
         <thead>
         <tr>
             <th class="text-left">{header[0]}</th>
             <th class="text-left">{header[1]}</th>
             <th class="text-left">{header[2]}</th>
             <th class="text-left">{header[3]}</th>
+            <th class="text-left"></th>
         </tr>
         </thead>
         <tbody>
             {#each values as value (value.treeID)}
             <tr>
                 <td class="pr-4">{value.name}</td>
-                <td class="pr-4"><a href="/tree-viewer/{value.treeID}">{value.title}</a></td>
+                <td class="pr-4 hover:text-blue-800 hover:underline"><a href="/tree-viewer/{value.treeID}">{value.title}</a></td>
                 <td class="pr-4">{(value.lastEdited).toLocaleString()}</td> <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                 <td >{parseBooleanToString(value.published)}</td>
+                <td class="hover:fill-amber-700"><a href="/edit"><img src="{img}" alt="edit" width="20" height="20" class="fill-amber-400"></a></td>
             </tr>
             {/each}
         </tbody>
