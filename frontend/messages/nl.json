@@ -1,5 +1,5 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
     "hello_world": "Hallo, {name} vanuit nl!",
-    "table_header": "[\"Gemaakt door\", \"Titel\", \"Laatst aangepast\", \"Gepubliceerd\"]"
+    "table_header": "[\"Gemaakt door\", \"Titel\", \"Laatst aangepast\", \"Gepubliceerd\", \"Ja\", \"Nee\"]"
 }

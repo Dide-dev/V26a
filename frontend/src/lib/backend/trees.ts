@@ -54,7 +54,7 @@ export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
         new TreeDataForAuthorPage(
             'Jedidja', //Has to be userID or this gets fixed in the backend
             'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
-            new Date(14658759), //Random time
+            new Date(Date.now()), //Random time
             true
         ),
         new TreeDataForAuthorPage(
