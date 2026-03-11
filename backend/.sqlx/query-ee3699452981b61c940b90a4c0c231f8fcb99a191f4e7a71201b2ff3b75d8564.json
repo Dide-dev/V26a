@@ -20,7 +20,7 @@
       },
       {
         "ordinal": 3,
-        "name": "last_edited",
+        "name": "last_modified",
         "type_info": "Timestamptz"
       },
       {

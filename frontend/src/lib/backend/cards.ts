@@ -16,13 +16,30 @@ function apiCallGetCard(path: string) {
 export type CardId = number;
 
 /** The basic data of the card, including the tree it belongs to. */
-export type CardData = {
+export type CardAddData = {
     treeId: TreeId;
     front: string;
     back: string;
 };
 
+/** The basic data required to update an existing card. */
+export type CardUpdateData = {
+    cardId: number;
+    newFront: string;
+    newBack: string;
+};
+
+export type CardGetData = {
+    front: string;
+    back: string;
+};
+
 /** Add a card to the database */
-export function addCard(card: CardData): Promise<CardId> {
+export function addCard(card: CardAddData): Promise<CardId> {
     return apiCallPostCard('add', card);
+}
+
+/** Update an existing card in the database */
+export function updateCard(card: CardUpdateData): Promise<void> {
+    return apiCallPostCard('update', card);
 }

@@ -60,7 +60,7 @@ pub struct TreeGeneratedData {
     pub id: i32,
     pub owner_id: i32,
     pub created_at: DateTime<Utc>,
-    pub last_edited: DateTime<Utc>,
+    pub last_modified: DateTime<Utc>,
     pub times_visited: i64,
     pub last_visited: Option<DateTime<Utc>>,
 }
