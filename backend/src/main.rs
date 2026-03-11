@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic)]
 
+mod tests;
 mod api_v1;
 mod db;
 mod db_structs;
@@ -17,6 +18,23 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 pub struct Config {
     session_duration: i64,
     jwt_keys: Keys,
+}
+
+impl Config {
+    pub fn load() -> Self {
+        Self {
+            session_duration: env::var("SESSION_EXPIRATION_SECONDS")
+                // Defaults to a week.
+                .unwrap_or("604800".to_string())
+                .parse()
+                .expect("Failed to parse SESSION_EXPIRATION_SECONDS"),
+            jwt_keys: Keys::new(
+                env::var("JWT_SECRET")
+                    .expect("JWT_SECRET must be set")
+                    .as_bytes(),
+            ),
+        }
+    }
 }
 
 #[tokio::main]
@@ -44,18 +62,7 @@ async fn main() {
         .expect("failed to run database migrations.");
 
     // Set up global configurations.
-    let config = Config {
-        session_duration: env::var("SESSION_EXPIRATION_SECONDS")
-            // Defaults to a week.
-            .unwrap_or("604800".to_string())
-            .parse()
-            .expect("Failed to parse SESSION_EXPIRATION_SECONDS"),
-        jwt_keys: Keys::new(
-            env::var("JWT_SECRET")
-                .expect("JWT_SECRET must be set")
-                .as_bytes(),
-        ),
-    };
+    let config = Config::load();
 
     // Build our application with a route.
     let app = Router::new()

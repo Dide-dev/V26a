@@ -33,8 +33,8 @@ async fn backend_html_test() -> Html<&'static str> {
 /// A test struct, containing some example fields to later be converted to JSON.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct JsonTestStruct {
-    a: String,
-    b: i32,
+    pub a: String,
+    pub b: i32,
 }
 
 /// A test endpoint that retrieves the value of a counter in the database.
