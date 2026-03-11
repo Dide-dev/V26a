@@ -7,8 +7,8 @@ Also specify whether the entire story has been implemented or only certain parts
 
 ### How to test
 
-Describe how the changes can be tested by a reviewer. 
-For frontend changes, this might include what pages/functionality have been added/changed, and how these are supposed to work from a user's perspective. 
+Describe how the changes can be tested by a reviewer.
+For frontend changes, this might include what pages/functionality have been added/changed, and how these are supposed to work from a user's perspective.
 For backend changes, this might include a list of API endpoints that has been added/changed, how they are supposed to work, and example inputs.
 
 ### Checklist

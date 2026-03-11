@@ -1,4 +1,5 @@
 import { apiCallPost, apiCallGet } from './index';
+import type { TreeId } from './trees';
 
 const prefix = 'cards/';
 
@@ -12,9 +13,11 @@ function apiCallGetCard(path: string) {
     return apiCallGet(prefix + path);
 }
 
+export type CardId = number;
+
 /** The basic data of the card, including the tree it belongs to. */
 export type CardAddData = {
-    treeId: number;
+    treeId: TreeId;
     front: string;
     back: string;
 };
@@ -26,7 +29,10 @@ export type CardUpdateData = {
     newBack: string;
 };
 
-export type CardId = number;
+export type CardGetData = {
+    front: string;
+    back: string;
+}
 
 /** Add a card to the database */
 export function addCard(card: CardAddData): Promise<CardId> {

@@ -8,7 +8,7 @@ use std::fmt::Display;
 pub enum ApiError {
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
-    /// An error to return when a card is attempted to be added to a tree, which does not exist.
+    /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
     /// An exception to throw when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
