@@ -1,6 +1,8 @@
-use crate::db_structs::trees::TreeData;
+use crate::{
+    db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
+    errors::ApiError,
+};
 
-use crate::errors::ApiError;
 use sqlx::{PgPool, query};
 
 /// Add a new tree to the database.
@@ -20,7 +22,7 @@ use sqlx::{PgPool, query};
 pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
     let tree_id = query!(
         "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{}')
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{\"rootNodes\": []}')
         RETURNING id",
         owner_id,
         tree_data.title,
@@ -38,6 +40,63 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
     .id;
 
     Ok(tree_id)
+}
+
+/// Request all data of a specific tree from the database.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The id of the tree of which is queried.
+///
+/// # Returns
+/// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
+pub async fn db_get_tree_all_data(
+    db: &PgPool,
+    tree_id: i32,
+) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
+    let field = query!(
+        "SELECT *
+        FROM trees
+        WHERE id = $1",
+        tree_id,
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    let Some(field) = field else {
+        return Ok(None);
+    };
+
+    let tree_structure =
+        serde_json::from_value(field.structure).map_err(|_| ApiError::DatabaseException)?;
+
+    let tree_data = TreeData {
+        title: field.title,
+        description: field.description,
+        book_name: field.book_name,
+        book_edition: field.book_edition,
+        book_isbn: field.book_isbn,
+        book_chapter: field.book_chapter,
+        book_exercise: field.book_exercise,
+        assignment_text: field.assignment_text,
+        published: field.published,
+    };
+
+    let tree_gen_data = TreeGeneratedData {
+        id: field.id,
+        owner_id: field.owner_id,
+        created_at: field.created_at,
+        last_edited: field.last_edited,
+        times_visited: field.times_visited,
+        last_visited: field.last_visited,
+    };
+
+    Ok(Some((tree_data, tree_gen_data, tree_structure)))
 }
 
 /// Get the id of the owner of the tree.

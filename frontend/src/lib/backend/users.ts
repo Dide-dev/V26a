@@ -13,6 +13,8 @@ function apiCallGetUser(path: string) {
     return apiCallGet(prefix + path);
 }
 
+export type UserId = number;
+
 /** The data of the user */
 export type UserData = {
     email: string;
@@ -23,8 +25,6 @@ export type UserData = {
     emailVisible: boolean;
     language: string;
 };
-
-type UserId = number;
 
 /** Add a user to the database */
 export function addUser(user: UserData): Promise<UserId> {

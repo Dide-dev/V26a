@@ -1,5 +1,7 @@
+use std::collections::BTreeMap;
+
 use crate::db::trees::get_tree_owner;
-use crate::db_structs::cards::CardData;
+use crate::db_structs::cards::{CardData, CardGetData};
 
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};
@@ -48,4 +50,44 @@ pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<
     .id;
 
     Ok(card_id)
+}
+
+/// Get all cards from a tree.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The id of the tree of which the cards are asked.
+///
+/// # Returns
+/// The cards of the tree as a [`BTreeMap`].
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
+pub async fn get_tree_cards(
+    db: &PgPool,
+    tree_id: i32,
+) -> Result<BTreeMap<i32, CardGetData>, ApiError> {
+    let cards = query!(
+        "SELECT id, front, back
+        FROM cards
+        WHERE tree_id = $1",
+        tree_id
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(cards
+        .into_iter()
+        .map(|card| {
+            (
+                card.id,
+                CardGetData {
+                    front: card.front,
+                    back: card.back,
+                },
+            )
+        })
+        .collect())
 }
