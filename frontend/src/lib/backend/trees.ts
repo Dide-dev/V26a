@@ -68,6 +68,11 @@ export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add', tree);
 }
 
+/** Update the structure of an existing tree. */
+export function updateTreeStructure(treeStructure: TreeStructure): Promise<void> {
+    return apiCallPostTree('update-structure', treeStructure);
+}
+
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);

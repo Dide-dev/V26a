@@ -10,6 +10,9 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
+    /// An error to return when the new tree structure doesn't match the list of cards matched
+    /// to the tree in the cards table.
+    MismatchedStructure,
     /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
     /// An error to return when a card is attempted to be updated, which does not yet exist.
@@ -60,6 +63,10 @@ impl Display for ApiError {
             ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
             }
+            ApiError::MismatchedStructure => write!(
+                f,
+                "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
+            ),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
 
@@ -87,10 +94,8 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) | ApiError::MissingCard(_) => {
-                StatusCode::BAD_REQUEST
-            }
             ApiError::EmailAlreadyUsed
+            | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,

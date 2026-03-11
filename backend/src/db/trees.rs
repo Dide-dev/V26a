@@ -3,6 +3,7 @@ use crate::{
     errors::ApiError,
 };
 
+use crate::db_structs::trees::RootNode;
 use sqlx::{PgPool, query};
 
 /// Add a new tree to the database.
@@ -20,9 +21,27 @@ use sqlx::{PgPool, query};
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
+    let structure = serde_json::to_value(TreeStructure {
+        root_nodes: vec![
+            RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            },
+            RootNode {
+                label: "Making & executing plans".to_owned(),
+                children: vec![],
+            },
+            RootNode {
+                label: "Completion".to_owned(),
+                children: vec![],
+            },
+        ],
+    })
+    .map_err(|_| ApiError::SerdeException)?;
+
     let tree_id = query!(
         "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{\"rootNodes\": []}')
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id",
         owner_id,
         tree_data.title,
@@ -33,6 +52,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
         tree_data.book_chapter,
         tree_data.book_exercise,
         tree_data.assignment_text,
+        structure
     )
     .fetch_one(db)
     .await
@@ -40,6 +60,41 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
     .id;
 
     Ok(tree_id)
+}
+
+/// Update the structure of an existing tree in the database.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The id of the tree which is updated.
+///
+/// `new_tree_structure` - The new structure of the tree as a [`TreeStructure`].
+/// Completely overwrites the existing data in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
+pub async fn update_tree_structure(
+    db: &PgPool,
+    tree_id: i32,
+    new_tree_structure: TreeStructure,
+) -> Result<(), ApiError> {
+    let new_tree_structure =
+        serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;
+
+    query!(
+        "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
+        tree_id,
+        new_tree_structure,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
 }
 
 /// Request all data of a specific tree from the database.
@@ -148,4 +203,45 @@ pub async fn verify_tree_ownership(
         .ok_or(ApiError::MissingTree(tree_id))?;
 
     Ok(user_id == owner_id)
+}
+
+/// Checks whether the cards in a tree structure match those linked to the tree in the `Cards` table.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The id of the tree to check.
+///
+/// `tree_structure` - The structure to check as a [`TreeStructure`].
+///
+/// # Returns
+/// `true` if the cards in the structure and database match, or `false` if they don't.
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
+pub async fn verify_tree_structure_cards(
+    db: &PgPool,
+    tree_id: i32,
+    tree_structure: &TreeStructure,
+) -> Result<bool, ApiError> {
+    // We retrieve the card id's in the new structure.
+    let mut structure_card_ids = tree_structure.flatten();
+
+    // We retrieve the card id's linked to the tree from the database.
+    // The limit of 10,000 is arbitrarily set to avoid excessive memory usage.
+    let mut db_card_ids = query!(
+        "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_000",
+        tree_id
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .iter()
+    .map(|n| n.id)
+    .collect::<Vec<_>>();
+
+    structure_card_ids.sort_unstable();
+    db_card_ids.sort_unstable();
+
+    Ok(structure_card_ids == db_card_ids)
 }
