@@ -77,7 +77,7 @@ pub async fn update_card(
         .map_err(|_| ApiError::DatabaseException)?
         .ok_or(ApiError::MissingCard(card_data.card_id))?
         .tree_id;
-    
+
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(db, tree_id, user_id).await?;
 
