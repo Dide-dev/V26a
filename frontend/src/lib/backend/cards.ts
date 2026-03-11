@@ -32,7 +32,7 @@ export type CardUpdateData = {
 export type CardGetData = {
     front: string;
     back: string;
-}
+};
 
 /** Add a card to the database */
 export function addCard(card: CardAddData): Promise<CardId> {
