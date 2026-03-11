@@ -4,7 +4,6 @@ use std::fmt::Display;
 
 /// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
-#[allow(dead_code)]
 pub enum ApiError {
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
@@ -35,14 +34,6 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    /// A warning to be given when a request is missing one or more fields, which are required for
-    /// the request to process successfully.
-    ///
-    /// # Arguments
-    /// `Vec<String>` - the list of fields, of which some must be defined.
-    IncompleteRequest(Vec<String>),
-    /// An exception to be given when a request contains unexpected data for a certain field.
-    IncorrectRequest(String),
 }
 
 // Define how errors should be converted to messages.
@@ -65,16 +56,6 @@ impl Display for ApiError {
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
-            ApiError::IncompleteRequest(fields) => write!(
-                f,
-                "The request did not process successfully, please specify one of the '{}' field{}.",
-                fields.join("', '"),
-                if fields.len() > 1 { "s" } else { "" }
-            ),
-            ApiError::IncorrectRequest(field) => write!(
-                f,
-                "The request did not process successfully, please specify the '{field}' field correctly."
-            ),
         }
     }
 }
@@ -85,9 +66,7 @@ impl ApiError {
         match &self {
             ApiError::EmailAlreadyUsed
             | ApiError::MissingTree(_)
-            | ApiError::MissingCard(_)
-            | ApiError::IncompleteRequest(_)
-            | ApiError::IncorrectRequest(_) => StatusCode::BAD_REQUEST,
+            | ApiError::MissingCard(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException

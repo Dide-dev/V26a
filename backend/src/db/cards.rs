@@ -58,9 +58,6 @@ pub async fn add_card(db: &PgPool, card_data: CardAddData, user_id: i32) -> Resu
 /// Nothing.
 ///
 /// # Error
-/// Returns an [`ApiError::IncompleteRequest`] if both the `new_front` and `new_back` fields in
-/// [`CardUpdateData`] are [`None`].
-///
 /// Returns an [`ApiError::MissingCard`] if the `card_id`referenced in [`CardUpdateData`] does not exist.
 ///
 /// Returns an [`ApiError::NoPermission`] if the `user_id` does not match the `owner_id` field
