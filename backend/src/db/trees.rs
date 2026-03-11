@@ -47,7 +47,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
-/// `tree_id` - The id of the tree of which is queried.
+/// `tree_id` - The id of the tree which is queried.
 ///
 /// # Returns
 /// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
@@ -131,27 +131,21 @@ async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiErr
 /// `user_id` - The id of the user who sent this request.
 ///
 /// # Returns
-/// Nothing.
+/// `true` if `user_id` matches the `owner_id` field for `tree_id`, or `false` if it doesn't.
 ///
 /// # Error
 /// Returns an [`ApiError::MissingTree`] if no tree with `tree_id` exists.
 ///
-/// Returns an [`ApiError::NoPermission`] if the `user_id` does not match the `owner_id` field
-/// for the given `tree_id`.
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn verify_tree_ownership(
     db: &PgPool,
     tree_id: i32,
     user_id: i32,
-) -> Result<(), ApiError> {
-    // Check whether the tree which the card is being added to exists.
+) -> Result<bool, ApiError> {
+    // Check whether the tree exists.
     let owner_id = get_tree_owner(db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    // Check whether the user is authorized to add a card to the tree.
-    if user_id != owner_id {
-        return Err(ApiError::NoPermission);
-    }
-
-    Ok(())
+    Ok(user_id == owner_id)
 }

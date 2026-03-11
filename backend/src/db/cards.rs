@@ -27,7 +27,10 @@ use sqlx::{PgPool, query};
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_card(db: &PgPool, card_data: CardAddData, user_id: i32) -> Result<i32, ApiError> {
     // Check whether the tree which the card is being added to exists and is owned by the user.
-    verify_tree_ownership(db, card_data.tree_id, user_id).await?;
+    let is_owner = verify_tree_ownership(db, card_data.tree_id, user_id).await?;
+    if !is_owner {
+        return Err(ApiError::NoPermission);
+    }
 
     let card_id = query!(
         "INSERT INTO cards (tree_id, front, back)
@@ -79,7 +82,10 @@ pub async fn update_card(
         .tree_id;
 
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_ownership(db, tree_id, user_id).await?;
+    let is_owner = verify_tree_ownership(db, tree_id, user_id).await?;
+    if !is_owner {
+        return Err(ApiError::NoPermission);
+    }
 
     query!(
         "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1",
