@@ -1,13 +1,18 @@
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};
 
-/// Fetch a user's password from the given database, returning the password hash if successful,
-/// or an error if not.
+/// Fetch a user's password from the given database.
 ///
 /// # Arguments
 /// `db` - a reference to the database connection to use for the query.
 ///
 /// `email` - the user's email address.
+///
+/// # Returns
+/// A tuple containing the user id and the password hash.
+///
+/// # Error
+/// May return an [`ApiError::WrongCredentials`] instead. TODO: clarify when this error occurs.
 pub async fn get_user_id_and_password(
     db: &PgPool,
     email: String,

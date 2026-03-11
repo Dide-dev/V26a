@@ -13,8 +13,10 @@ function apiCallGetUser(path: string) {
     return apiCallGet(prefix + path);
 }
 
+export type UserId = number;
+
 /** The data of the user */
-type UserData = {
+export type UserData = {
     email: string;
     password: string;
     name: string;
@@ -24,9 +26,7 @@ type UserData = {
     language: string;
 };
 
-type UserId = number;
-
 /** Add a user to the database */
 export function addUser(user: UserData): Promise<UserId> {
-    return apiCallPostUser('add-new-user', user);
+    return apiCallPostUser('add', user);
 }

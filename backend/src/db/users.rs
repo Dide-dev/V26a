@@ -1,28 +1,32 @@
 extern crate bcrypt;
 
+use crate::db_structs::users::UserData;
 use crate::errors::ApiError;
-use crate::users::UserData;
 use bcrypt::{DEFAULT_COST, hash};
 
 use sqlx::{PgPool, query};
 
-/// Add a new user to the database, returning its assigned index.
+/// Add a new user to the database, returning its assigned id.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
-/// `user_data` - The data assigned to the new tree.
+/// `user_data` - The data assigned to the new user.
 ///
 /// # Returns
-/// The index assigned to the new tree.
+/// The id assigned to the new user.
 ///
 /// # Error
 /// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.
+///
+/// May return an [`ApiError::HashException`] instead.
+///
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError> {
     // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
     // constraint is placed on the `email` field.
     // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
-    // will be returned instead of an `ApiError::EmailAlreadyUsedException`.
+    // will be returned instead of an `ApiError::EmailAlreadyUsed`.
     let exists = user_exists(db, &user_data.email).await?;
 
     if exists {
@@ -35,7 +39,7 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
         hash(user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
 
     // Insert user into database.
-    let id_record = query!(
+    let user_id = query!(
         "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id",
@@ -49,13 +53,24 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
     )
     .fetch_one(db)
     .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .map_err(|_| ApiError::DatabaseException)?
+    .id;
 
-    Ok(id_record.id)
+    Ok(user_id)
 }
 
-/// Checks if a user with a given e-mail exists in the given database. Returns a bool if the check
-/// was successful, or an [`ApiError`] if not.
+/// Checks if a user with a given e-mail exists in the given database.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `email` - A reference to the email of the user being checked.
+///
+/// # Returns
+/// `true` if the user exists or `false` if they do not.
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn user_exists(db: &PgPool, email: &String) -> Result<bool, ApiError> {
     query!(
         "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
