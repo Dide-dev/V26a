@@ -1,4 +1,4 @@
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallGet, apiCallPost } from './index';
 import type { Option } from './types';
 
 const prefix = 'trees/';
@@ -33,7 +33,6 @@ export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add-new-tree', tree);
 }
 
-
 class TreeDataForAuthorPage {
     username: string;
     title: string;
@@ -53,7 +52,7 @@ class TreeDataForAuthorPage {
 /** Receive tree data (username, title, last edited, published, and ID) from database which the user has access to. */
 export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
     // Mock items
-    const trees: TreeDataForAuthorPage[] = [
+    return [
         new TreeDataForAuthorPage(
             'Jedidja',
             'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
@@ -69,5 +68,4 @@ export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
             67
         )
     ];
-    return (trees);
 }
