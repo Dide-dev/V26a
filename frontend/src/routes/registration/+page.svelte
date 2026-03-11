@@ -31,19 +31,19 @@
 <div class="flex w-full justify-center">
     <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
         <label>
-            {m.email()}
+            {m.Email()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.email}
                 name="email"
                 type="email"
-                placeholder={m.emailPlaceholder()}
+                placeholder={m.EmailPlaceholder()}
                 maxlength="256"
                 required
             />
         </label>
         <label>
-            {m.name()}
+            {m.Name()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.name}
@@ -54,18 +54,18 @@
             />
         </label>
         <label>
-            {m.nickname()}
+            {m.Nickname()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.nickname}
                 name="nickname"
                 type="nickname"
-                placeholder={m.optional()}
+                placeholder={m.Optional()}
                 maxlength="128"
             />
         </label>
         <label>
-            {m.password()}
+            {m.Password()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.password}
@@ -76,7 +76,7 @@
             />
         </label>
         <label>
-            {m.language()}
+            {m.Language()}
             <select class="rounded-md border-2" bind:value={formData.language}>
                 {#each locales as value (value)}<option {value}>{value}</option>{/each}
             </select>
@@ -89,9 +89,9 @@
                 type="checkbox"
                 maxlength="128"
             />
-            {m.emailVisible()}
+            {m.EmailVisible()}
         </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.register()}</button>
+        <button class="rounded-sm bg-emerald-500 p-1">{m.Register()}</button>
         <p class="text-red-600">{error?.message}</p>
     </form>
 </div>

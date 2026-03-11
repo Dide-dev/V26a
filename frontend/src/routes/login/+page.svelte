@@ -25,7 +25,7 @@
 <div class="flex w-full justify-center">
     <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
         <label>
-            {m.email()}
+            {m.Email()}
             <input
                 class="rounded-md border-2"
                 bind:value={loginData.email}
@@ -35,7 +35,7 @@
             />
         </label>
         <label>
-            {m.password()}
+            {m.Password()}
             <input
                 class="rounded-md border-2"
                 bind:value={loginData.password}
@@ -44,7 +44,7 @@
                 required
             />
         </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.login()}</button>
+        <button class="rounded-sm bg-emerald-500 p-1">{m.Login()}</button>
         <p class="text-red-600">{error?.message}</p>
     </form>
 </div>
