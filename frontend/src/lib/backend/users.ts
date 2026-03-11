@@ -14,7 +14,7 @@ function apiCallGetUser(path: string) {
 }
 
 /** The data of the user */
-type UserData = {
+export type UserData = {
     email: string;
     password: string;
     name: string;
