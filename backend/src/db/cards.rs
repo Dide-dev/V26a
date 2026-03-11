@@ -78,13 +78,16 @@ pub async fn get_tree_cards(
     .await
     .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(BTreeMap::from_iter(cards.into_iter().map(|card| {
-        (
-            card.id,
-            CardGetData {
-                front: card.front,
-                back: card.back,
-            },
-        )
-    })))
+    Ok(cards
+        .into_iter()
+        .map(|card| {
+            (
+                card.id,
+                CardGetData {
+                    front: card.front,
+                    back: card.back,
+                },
+            )
+        })
+        .collect())
 }
