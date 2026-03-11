@@ -64,9 +64,9 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed
-            | ApiError::MissingTree(_)
-            | ApiError::MissingCard(_) => StatusCode::BAD_REQUEST,
+            ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) | ApiError::MissingCard(_) => {
+                StatusCode::BAD_REQUEST
+            }
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException
