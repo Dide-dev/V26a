@@ -10,5 +10,9 @@
     "register": "Registreer",
     "optional": "Optioneel",
     "emailPlaceholder": "gebruiker@voorbeeld.com",
-    "login": "Login"
+    "login": "Login",
+    "view_example_tree": "Bekijk Voorbeeld Boom",
+    "global_counter": "Globale Teller",
+    "api_testing": "Api Testen",
+    "home": "Home"
 }

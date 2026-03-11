@@ -10,5 +10,9 @@
     "register": "Register",
     "optional": "Optional",
     "emailPlaceholder": "user@example.com",
-    "login": "Login"
+    "login": "Login",
+    "view_example_tree": "View Example Tree",
+    "global_counter": "Global Counter",
+    "api_testing": "Api Testing",
+    "home": "Home"
 }
