@@ -72,20 +72,23 @@ pub async fn update_card(
 ) -> Result<(), ApiError> {
     // We retrieve the `tree_id` of the tree the card belongs to, and by doing so we simultaneously
     // check whether the card with `card_id` exists in the database.
-    let tree_id = query!("SELECT tree_id FROM cards where id=$1", card_data.card_id,)
-        .fetch_one(db)
+    let tree_id_option = query!("SELECT tree_id FROM cards where id=$1", card_data.card_id,)
+        .fetch_optional(db)
         .await
-        .map_err(|_| ApiError::MissingCard(card_data.card_id))?
-        .tree_id;
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let Some(tree_id) = tree_id_option else {
+        return Err(ApiError::MissingCard(card_data.card_id));
+    };
 
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_ownership(db, tree_id, user_id).await?;
+    verify_tree_ownership(db, tree_id.tree_id, user_id).await?;
 
-    let mut updated = 0;
+    let mut updated_rows = 0;
 
     // We only update the front if the field contains a new value.
     if let Some(new_front) = card_data.new_front {
-        updated += query!(
+        updated_rows += query!(
             "UPDATE cards SET front = $2 WHERE id = $1",
             card_data.card_id,
             new_front,
@@ -98,7 +101,7 @@ pub async fn update_card(
 
     // We only update the back if the field contains a new value.
     if let Some(new_back) = card_data.new_back {
-        updated += query!(
+        updated_rows += query!(
             "UPDATE cards SET back = $2 WHERE id = $1",
             card_data.card_id,
             new_back,
@@ -109,10 +112,9 @@ pub async fn update_card(
         .rows_affected();
     }
 
-    if updated == 0 {
+    if updated_rows == 0 {
         return Err(ApiError::IncompleteRequest(
             ["newFront".to_string(), "newBack".to_string()].to_vec(),
-            true,
         ));
     }
 

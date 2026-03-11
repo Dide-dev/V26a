@@ -35,15 +35,12 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    /// An exception to be given when a request is missing one or more fields, which are required for
+    /// A warning to be given when a request is missing one or more fields, which are required for
     /// the request to process successfully.
     ///
     /// # Arguments
-    /// `Vec<String>` - the list fields which are missing.
-    ///
-    /// `bool` - `true` if just any of the fields must be specified or
-    ///          `false` if all of them need to be specified.
-    IncompleteRequest(Vec<String>, bool),
+    /// `Vec<String>` - the list of fields, of which some must be defined.
+    IncompleteRequest(Vec<String>),
     /// An exception to be given when a request contains unexpected data for a certain field.
     IncorrectRequest(String),
 }
@@ -68,10 +65,9 @@ impl Display for ApiError {
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
-            ApiError::IncompleteRequest(fields, any) => write!(
+            ApiError::IncompleteRequest(fields) => write!(
                 f,
-                "The request did not process successfully, please specify {} the '{}' field{}.",
-                if *any { "one of" } else { "" },
+                "The request did not process successfully, please specify one of the '{}' field{}.",
                 fields.join("', '"),
                 if fields.len() > 1 { "s" } else { "" }
             ),
@@ -90,7 +86,7 @@ impl ApiError {
             ApiError::EmailAlreadyUsed
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
-            | ApiError::IncompleteRequest(_, _)
+            | ApiError::IncompleteRequest(_)
             | ApiError::IncorrectRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException

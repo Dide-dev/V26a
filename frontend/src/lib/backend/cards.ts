@@ -20,7 +20,11 @@ export type CardAddData = {
     back: string;
 };
 
-/** The basic data required to update an existing card. */
+/** The basic data required to update an existing card.
+ *
+ * `newFront` and `newBack` may be `null` if they are not updated. If both are `null`,
+ * an `ApiError::IncompleteRequest` will be returned.
+ * */
 export type CardUpdateData = {
     cardId: number;
     newFront: Option<string>;

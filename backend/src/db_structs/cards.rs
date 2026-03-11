@@ -8,6 +8,9 @@ pub struct CardAddData {
 }
 
 /// The basic data required to update an existing card.
+///
+/// `new_front` and `new_back` may be [`None`] if they are not updated. If both are [`None`],
+/// an [`ApiError::IncompleteRequest`](crate::errors::ApiError::IncompleteRequest) will be returned.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CardUpdateData {
