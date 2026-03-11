@@ -20,7 +20,7 @@ pub fn demo() -> Router<Config> {
 /// A test endpoint that checks whether the user is logged in as user 1.
 async fn protected_test(claims: Claims) -> Result<String, ApiError> {
     if claims.sub != 1 {
-        Err(ApiError::WrongCredentials)?;
+        Err(ApiError::NoPermission)?;
     }
     Ok("Welcome, user 1!".to_string())
 }
@@ -37,11 +37,13 @@ pub struct JsonTestStruct {
     b: i32,
 }
 
-/// A test endpoint that returns the value of a counter in the database as JSON.
+/// A test endpoint that retrieves the value of a counter in the database.
 ///
 /// # Returns
-/// A [`Result`] containing the counter value in a [`JsonTestStruct`] if successful,
-/// or an [`ApiError`] if not.
+/// A [`Result`] containing the counter value in a [`JsonTestStruct`].
+///
+/// # Error
+/// May return an [`ApiError`] instead.
 async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
     let counter_value = fetch_counter_value(&db).await?;
 

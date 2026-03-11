@@ -13,10 +13,13 @@ pub fn cards() -> Router<Config> {
     Router::new().route("/add", post(add_new_card))
 }
 
-/// Add a card to the database
+/// Add a card to the database.
 ///
 /// # Returns
-/// The index assigned to the new card
+/// The id assigned to the new card.
+///
+/// # Error
+/// May return an [`ApiError`] instead.
 async fn add_new_card(
     claims: Claims,
     db: Extension<PgPool>,
