@@ -71,17 +71,13 @@ pub async fn update_card(
 ) -> Result<(), ApiError> {
     // We retrieve the `tree_id` of the tree the card belongs to, and by doing so we simultaneously
     // check whether the card with `card_id` exists in the database.
-    let tree_id_option = query!("SELECT tree_id FROM cards where id=$1", card_data.card_id,)
+    let tree_id = query!("SELECT tree_id FROM cards where id=$1", card_data.card_id,)
         .fetch_optional(db)
         .await
-        .map_err(|_| ApiError::DatabaseException)?;
-
-    let Some(tree_id) = tree_id_option else {
-        return Err(ApiError::MissingCard(card_data.card_id));
-    };
-
-    let tree_id = tree_id.tree_id;
-
+        .map_err(|_| ApiError::DatabaseException)?
+        .ok_or(ApiError::MissingCard(card_data.card_id))?
+        .tree_id;
+    
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(db, tree_id, user_id).await?;
 
