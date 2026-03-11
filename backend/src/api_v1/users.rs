@@ -9,7 +9,7 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<Config> {
-    Router::new().route("/add-new-user", post(add_new_user))
+    Router::new().route("/add", post(add_new_user))
 }
 
 /// Add a user to the database.
