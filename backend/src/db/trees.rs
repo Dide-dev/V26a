@@ -215,7 +215,11 @@ pub async fn verify_tree_ownership(
 /// `tree_structure` - The structure to check as a [`TreeStructure`].
 ///
 /// # Returns
-/// `true` if the cards in the structure and database match, or `false` if they don't.
+/// `true` if the cards in the structure and database match exactly. The number of elements must be
+/// the same for `true` to be returned, as the function is duplicate-aware. Trees shouldn't contain
+/// multiple cards with the same id.
+///
+/// `false` if they don't match exactly.
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
