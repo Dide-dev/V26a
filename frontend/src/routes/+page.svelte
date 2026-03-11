@@ -3,5 +3,5 @@
 </script>
 
 <div class="flex h-32 items-center justify-center">
-    <p>{m.HelloWorld({ name: 'wortel' })}</p>
+    <p>{m.helloWorld({ name: 'wortel' })}</p>
 </div>

@@ -20,8 +20,7 @@
         event.preventDefault();
         try {
             await addUser(formData);
-            // TODO: this should redirect to the login page
-            goto(appLink('/'));
+            goto(appLink('/login'));
         } catch (e) {
             error = e as Error;
         }
@@ -31,19 +30,19 @@
 <div class="flex w-full justify-center">
     <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
         <label>
-            {m.Email()}
+            {m.email()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.email}
                 name="email"
                 type="email"
-                placeholder={m.EmailPlaceholder()}
+                placeholder={m.emailPlaceholder()}
                 maxlength="256"
                 required
             />
         </label>
         <label>
-            {m.Name()}
+            {m.name()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.name}
@@ -54,18 +53,18 @@
             />
         </label>
         <label>
-            {m.Nickname()}
+            {m.nickname()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.nickname}
                 name="nickname"
-                type="nickname"
-                placeholder={m.Optional()}
+                type="text"
+                placeholder={m.optional()}
                 maxlength="128"
             />
         </label>
         <label>
-            {m.Password()}
+            {m.password()}
             <input
                 class="rounded-md border-2"
                 bind:value={formData.password}
@@ -76,7 +75,7 @@
             />
         </label>
         <label>
-            {m.Language()}
+            {m.language()}
             <select class="rounded-md border-2" bind:value={formData.language}>
                 {#each locales as value (value)}<option {value}>{value}</option>{/each}
             </select>
@@ -89,9 +88,9 @@
                 type="checkbox"
                 maxlength="128"
             />
-            {m.EmailVisible()}
+            {m.emailVisible()}
         </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.Register()}</button>
+        <button class="rounded-sm bg-emerald-500 p-1">{m.register()}</button>
         <p class="text-red-600">{error?.message}</p>
     </form>
 </div>

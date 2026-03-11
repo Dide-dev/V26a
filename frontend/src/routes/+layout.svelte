@@ -14,12 +14,12 @@
 <nav
     class="m-1 flex justify-end gap-2 bg-sky-400 p-1 *:rounded-sm *:border-zinc-900 *:bg-sky-600 *:p-1"
 >
-    <a href={appLink('/')}>{m.Home()}</a>
-    <a href={appLink('/api-testing')}>{m.ApiTesting()}</a>
-    <a href={appLink('/counter')}>{m.GlobalCounter()}</a>
-    <a href={appLink('/tree-viewer')}>{m.ViewExampleTree()}</a>
-    <a href={appLink('/registration')}>{m.Register()}</a>
-    <a href={appLink('/login')}>{m.Login()}</a>
+    <a href={appLink('/')}>{m.home()}</a>
+    <a href={appLink('/api-testing')}>{m.apiTesting()}</a>
+    <a href={appLink('/counter')}>{m.globalCounter()}</a>
+    <a href={appLink('/tree-viewer')}>{m.viewExampleTree()}</a>
+    <a href={appLink('/registration')}>{m.register()}</a>
+    <a href={appLink('/login')}>{m.login()}</a>
     {#each locales as locale (locale)}
         <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
         <a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
