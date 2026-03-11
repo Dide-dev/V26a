@@ -28,5 +28,5 @@ export type UserData = {
 
 /** Add a user to the database */
 export function addUser(user: UserData): Promise<UserId> {
-    return apiCallPostUser('add-new-user', user);
+    return apiCallPostUser('add', user);
 }
