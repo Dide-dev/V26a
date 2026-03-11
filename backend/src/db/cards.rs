@@ -81,42 +81,29 @@ pub async fn update_card(
         return Err(ApiError::MissingCard(card_data.card_id));
     };
 
+    let tree_id = tree_id.tree_id;
+
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_ownership(db, tree_id.tree_id, user_id).await?;
+    verify_tree_ownership(db, tree_id, user_id).await?;
 
-    let mut updated_rows = 0;
+    query!(
+        "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1",
+        card_data.card_id,
+        card_data.new_front,
+        card_data.new_back,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
-    // We only update the front if the field contains a new value.
-    if let Some(new_front) = card_data.new_front {
-        updated_rows += query!(
-            "UPDATE cards SET front = $2 WHERE id = $1",
-            card_data.card_id,
-            new_front,
-        )
-        .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .rows_affected();
-    }
-
-    // We only update the back if the field contains a new value.
-    if let Some(new_back) = card_data.new_back {
-        updated_rows += query!(
-            "UPDATE cards SET back = $2 WHERE id = $1",
-            card_data.card_id,
-            new_back,
-        )
-        .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .rows_affected();
-    }
-
-    if updated_rows == 0 {
-        return Err(ApiError::IncompleteRequest(
-            ["newFront".to_string(), "newBack".to_string()].to_vec(),
-        ));
-    }
+    // Also update the `last_modified` field in the tree the card belongs to.
+    query!(
+        "UPDATE trees SET last_modified = CURRENT_TIMESTAMP WHERE id = $1",
+        tree_id,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }

@@ -1,5 +1,4 @@
 import { apiCallPost, apiCallGet } from './index';
-import type { Option } from './types';
 
 const prefix = 'cards/';
 
@@ -20,15 +19,11 @@ export type CardAddData = {
     back: string;
 };
 
-/** The basic data required to update an existing card.
- *
- * `newFront` and `newBack` may be `null` if they are not updated. If both are `null`,
- * an `ApiError::IncompleteRequest` will be returned.
- * */
+/** The basic data required to update an existing card. */
 export type CardUpdateData = {
     cardId: number;
-    newFront: Option<string>;
-    newBack: Option<string>;
+    newFront: string;
+    newBack: string;
 };
 
 export type CardId = number;
