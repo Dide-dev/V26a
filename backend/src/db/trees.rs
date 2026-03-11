@@ -1,5 +1,5 @@
 use crate::{
-    db_structs::trees::{TreeAllData, TreeData, TreeGeneratedData},
+    db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
 
@@ -57,7 +57,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 pub async fn db_get_tree_all_data(
     db: &PgPool,
     tree_id: i32,
-) -> Result<Option<TreeAllData>, ApiError> {
+) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
     let field = query!(
         "SELECT *
         FROM trees
@@ -96,13 +96,7 @@ pub async fn db_get_tree_all_data(
         last_visited: field.last_visited,
     };
 
-    let tree_all_data = TreeAllData {
-        data: tree_data,
-        gen_data: tree_gen_data,
-        structure: tree_structure,
-    };
-
-    Ok(Some(tree_all_data))
+    Ok(Some((tree_data, tree_gen_data, tree_structure)))
 }
 
 /// Get the id of the owner of the tree.

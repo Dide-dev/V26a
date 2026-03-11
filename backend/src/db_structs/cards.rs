@@ -6,3 +6,11 @@ pub struct CardData {
     pub front: String,
     pub back: String,
 }
+
+/// The basic data of the card
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CardGetData {
+    pub front: String,
+    pub back: String,
+}

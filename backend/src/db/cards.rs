@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::db::trees::get_tree_owner;
-use crate::db_structs::cards::CardData;
+use crate::db_structs::cards::{CardData, CardGetData};
 
 use crate::errors::ApiError;
 use sqlx::{PgPool, query};
@@ -67,7 +67,7 @@ pub async fn add_card(db: &PgPool, card_data: CardData, user_id: i32) -> Result<
 pub async fn get_tree_cards(
     db: &PgPool,
     tree_id: i32,
-) -> Result<BTreeMap<i32, CardData>, ApiError> {
+) -> Result<BTreeMap<i32, CardGetData>, ApiError> {
     let cards = query!(
         "SELECT id, front, back
         FROM cards
@@ -82,8 +82,7 @@ pub async fn get_tree_cards(
     for card in cards {
         map_cards.insert(
             card.id,
-            CardData {
-                tree_id,
+            CardGetData {
                 front: card.front,
                 back: card.back,
             },

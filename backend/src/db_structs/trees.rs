@@ -2,26 +2,17 @@ use std::collections::BTreeMap;
 
 use sqlx::types::chrono::{DateTime, Utc};
 
-use crate::db_structs::cards::CardData;
+use crate::db_structs::cards::CardGetData;
 
 /// All data of the tree, together with its cards.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TreeComplete {
+pub struct TreeWithCards {
     pub data: TreeData,
     pub gen_data: TreeGeneratedData,
     pub structure: TreeStructure,
     /// The `card_id` with the corresponding card.
-    pub cards: BTreeMap<i32, CardData>,
-}
-
-/// All data of the tree, without the cards.
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeAllData {
-    pub data: TreeData,
-    pub gen_data: TreeGeneratedData,
-    pub structure: TreeStructure,
+    pub cards: BTreeMap<i32, CardGetData>,
 }
 
 /// The tree structure with the card id's.
