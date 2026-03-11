@@ -78,16 +78,13 @@ pub async fn get_tree_cards(
     .await
     .map_err(|_| ApiError::DatabaseException)?;
 
-    let mut map_cards = BTreeMap::new();
-    for card in cards {
-        map_cards.insert(
+    Ok(BTreeMap::from_iter(cards.into_iter().map(|card| {
+        (
             card.id,
             CardGetData {
                 front: card.front,
                 back: card.back,
             },
-        );
-    }
-
-    Ok(map_cards)
+        )
+    })))
 }
