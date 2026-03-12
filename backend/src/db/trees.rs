@@ -129,7 +129,7 @@ pub async fn db_get_tree_all_data(
     };
 
     let tree_structure =
-        serde_json::from_value(field.structure).map_err(|_| ApiError::DatabaseException)?;
+        serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
 
     let tree_data = TreeData {
         title: field.title,

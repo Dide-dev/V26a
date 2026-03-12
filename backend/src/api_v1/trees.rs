@@ -3,7 +3,7 @@ use crate::db::cards::get_tree_cards;
 use crate::db::trees::{
     add_tree, db_get_tree_all_data, verify_structure_cards_exist, verify_tree_ownership,
 };
-use crate::db_structs::trees::{TreeData, TreeUpdateData, TreeWithCards};
+use crate::db_structs::trees::{TreeData, TreeUpdateStructureData, TreeWithCards};
 use crate::{Config, db};
 
 use crate::errors::ApiError;
@@ -62,7 +62,7 @@ async fn add_new_tree(
 async fn update_tree_structure(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_update_data): Json<TreeUpdateData>,
+    Json(tree_update_data): Json<TreeUpdateStructureData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
     let is_owner = verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;

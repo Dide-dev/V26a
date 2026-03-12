@@ -65,10 +65,6 @@ impl Node {
     /// The `card_id` of this [`Node`] and of each [`Node`] in the children of this node
     /// as a [`Vec<i32>`].
     fn flatten(&self) -> Vec<i32> {
-        if self.children.is_empty() {
-            return vec![self.card_id];
-        }
-
         let mut child_ids: Vec<i32> = self.children.iter().flat_map(Node::flatten).collect();
 
         child_ids.push(self.card_id);
@@ -106,7 +102,7 @@ pub struct TreeGeneratedData {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TreeUpdateData {
+pub struct TreeUpdateStructureData {
     pub id: i32,
     pub new_structure: TreeStructure,
 }
