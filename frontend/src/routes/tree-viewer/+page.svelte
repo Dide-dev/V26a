@@ -2,13 +2,12 @@
     import NodeViewer from './NodeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards } from '$lib/backend/trees';
-    import type { TreeWithCards } from '$lib/backend/trees';
-    import type { HeuristicTree, RootNode } from './example_tree';
+    import type { HeuristicTree } from './example_tree';
+    import { convertTree } from '$lib/backend/tree-adapter';
 
-    let tree: TreeWithCards | null = null;
     let loading = true;
     let error: string | null = null;
-    // let heuristicTree : HeuristicTree = $state();
+    let tree: HeuristicTree | null = null;
 
     onMount(async () => {
         try {
@@ -25,10 +24,12 @@
                 return;
             }
 
-            tree = await getTreeWithCards(idNumber);
+            const treeData = await getTreeWithCards(idNumber);
 
-            if (!tree) {
+            if (!treeData) {
                 throw new Error('Tree not found');
+            } else {
+                tree = convertTree(treeData);
             }
         } catch (err) {
             console.error(err);
@@ -37,12 +38,6 @@
             loading = false;
         }
     });
-
-    // function convertToHeuristicTree(tree: TreeWithCards){
-    //     heuristicTree.name = tree.data.title;
-    //     heuristicTree.assignment = tree.data.assignmentText;
-    //     heuristicTree.roots = tree.cards;
-    // }
 </script>
 
 {#if loading}
@@ -50,17 +45,17 @@
 {:else if error}
     <p class="text-red-700">{error}</p>
 {:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.name}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree.data.assignmentText}
+        {tree.assignment}
     </p>
-{/if}
 
-<!-- <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
-    {#each tree.roots as root (root)}
-        <NodeViewer node={root} />
-    {/each}
-</div> -->
+    <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
+        {#each tree.roots as root (root)}
+            <NodeViewer node={root} />
+        {/each}
+    </div>
+{/if}
 
 <!--
     Here we add a few css classes to the body,
