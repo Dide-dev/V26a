@@ -1,10 +1,10 @@
 #![warn(clippy::pedantic)]
 
-mod tests;
 mod api_v1;
 mod db;
 mod db_structs;
 mod errors;
+mod tests;
 
 use crate::api_v1::{session::Keys, v1_api};
 use axum::{Extension, Router};

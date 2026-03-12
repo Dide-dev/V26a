@@ -29,9 +29,10 @@ async fn test_counter_add(db: PgPool) {
     response.assert_status_ok();
     let before_inc: JsonTestStruct = response.json();
 
-    let response = server.post("/demo/add-to-counter").json(&AddCounterBody {
-        add: 100,
-    }).await;
+    let response = server
+        .post("/demo/add-to-counter")
+        .json(&AddCounterBody { add: 100 })
+        .await;
     response.assert_status_ok();
 
     let response = server.get("/demo/json").await;
