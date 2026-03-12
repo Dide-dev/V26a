@@ -5,7 +5,7 @@ use crate::{
 use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
-use sqlx::{PgPool, query};
+use sqlx::{PgPool, query, Executor, Postgres};
 
 /// Add a new tree to the database.
 ///
@@ -78,8 +78,8 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 ///
 /// # Error
 /// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
-pub async fn update_tree_structure(
-    db: &PgPool,
+pub async fn update_tree_structure<'a, E: Executor<'a, Database=Postgres>>(
+    db: E,
     tree_id: i32,
     new_tree_structure: TreeStructure,
 ) -> Result<(), ApiError> {
@@ -224,8 +224,8 @@ pub async fn verify_tree_ownership(
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_structure_cards_exist(
-    db: &PgPool,
+pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database=Postgres>>(
+    db: E,
     tree_id: i32,
     tree_structure: &TreeStructure,
 ) -> Result<bool, ApiError> {

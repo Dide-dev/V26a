@@ -1,7 +1,7 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, verify_tree_ownership, verify_structure_cards_exist,
+    add_tree, db_get_tree_all_data, verify_structure_cards_exist, verify_tree_ownership,
 };
 use crate::db_structs::trees::{TreeData, TreeUpdateData, TreeWithCards};
 use crate::{Config, db};
@@ -54,7 +54,7 @@ async fn add_new_tree(
 /// May return an [`ApiError::DatabaseException`] or an [`ApiError::SerdeException`] instead.
 async fn update_tree_structure(
     claims: Claims,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(tree_update_data): Json<TreeUpdateData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
@@ -63,16 +63,20 @@ async fn update_tree_structure(
         return Err(ApiError::NoPermission);
     }
 
+    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
     // Verify the new structure matches the cards linked to the tree in the database.
     let cards_match_structure =
-        verify_structure_cards_exist(&db, tree_update_data.id, &tree_update_data.new_structure)
+        verify_structure_cards_exist(&mut *tx, tree_update_data.id, &tree_update_data.new_structure)
             .await?;
     if !cards_match_structure {
         return Err(ApiError::MismatchedStructure);
     }
 
-    db::trees::update_tree_structure(&db, tree_update_data.id, tree_update_data.new_structure)
+    db::trees::update_tree_structure(&mut *tx, tree_update_data.id, tree_update_data.new_structure)
         .await?;
+
+    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
