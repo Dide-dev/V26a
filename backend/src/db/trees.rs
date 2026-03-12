@@ -2,6 +2,7 @@ use crate::{
     db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
+use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
 use sqlx::{PgPool, query};
@@ -223,17 +224,17 @@ pub async fn verify_tree_ownership(
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_tree_structure_cards(
+pub async fn verify_structure_cards_exist(
     db: &PgPool,
     tree_id: i32,
     tree_structure: &TreeStructure,
 ) -> Result<bool, ApiError> {
     // We retrieve the card id's in the new structure.
-    let mut structure_card_ids = tree_structure.flatten();
+    let structure_card_ids = tree_structure.flatten();
 
     // We retrieve the card id's linked to the tree from the database.
     // The limit of 10,000 is arbitrarily set to avoid excessive memory usage.
-    let mut db_card_ids = query!(
+    let db_card_ids = query!(
         "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_000",
         tree_id
     )
@@ -242,10 +243,9 @@ pub async fn verify_tree_structure_cards(
     .map_err(|_| ApiError::DatabaseException)?
     .iter()
     .map(|n| n.id)
-    .collect::<Vec<_>>();
+    .collect::<HashSet<_>>();
 
-    structure_card_ids.sort_unstable();
-    db_card_ids.sort_unstable();
+    let valid = structure_card_ids.iter().all(|i| db_card_ids.contains(i));
 
-    Ok(structure_card_ids == db_card_ids)
+    Ok(valid)
 }

@@ -1,7 +1,7 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, verify_tree_ownership, verify_tree_structure_cards,
+    add_tree, db_get_tree_all_data, verify_tree_ownership, verify_structure_cards_exist,
 };
 use crate::db_structs::trees::{TreeData, TreeUpdateData, TreeWithCards};
 use crate::{Config, db};
@@ -65,7 +65,7 @@ async fn update_tree_structure(
 
     // Verify the new structure matches the cards linked to the tree in the database.
     let cards_match_structure =
-        verify_tree_structure_cards(&db, tree_update_data.id, &tree_update_data.new_structure)
+        verify_structure_cards_exist(&db, tree_update_data.id, &tree_update_data.new_structure)
             .await?;
     if !cards_match_structure {
         return Err(ApiError::MismatchedStructure);
