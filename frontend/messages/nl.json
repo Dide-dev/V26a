@@ -17,5 +17,10 @@
     "language": "Taal",
     "emailVisible": "Mijn zichtbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jou te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
     "register": "Registreer",
-    "emailPlaceholder": "gebruiker@voorbeeld.com"
+    "emailPlaceholder": "gebruiker@voorbeeld.com",
+    "login": "Login",
+    "viewExampleTree": "Bekijk Voorbeeld Boom",
+    "globalCounter": "Globale Teller",
+    "apiTesting": "Api Testen",
+    "home": "Home"
 }

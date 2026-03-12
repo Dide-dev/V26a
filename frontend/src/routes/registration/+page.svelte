@@ -20,8 +20,7 @@
         event.preventDefault();
         try {
             await addUser(formData);
-            // TODO: this should redirect to the login page
-            goto(appLink('/'));
+            goto(appLink('/login'));
         } catch (e) {
             error = e as Error;
         }
@@ -59,7 +58,7 @@
                 class="rounded-md border-2"
                 bind:value={formData.nickname}
                 name="nickname"
-                type="nickname"
+                type="text"
                 placeholder={m.optional()}
                 maxlength="128"
             />
@@ -84,11 +83,10 @@
         <label>
             <input
                 class="rounded-md border-2"
-                bind:value={formData.emailVisible}
+                bind:checked={formData.emailVisible}
                 name="emailVisible"
                 type="checkbox"
                 maxlength="128"
-                required
             />
             {m.emailVisible()}
         </label>

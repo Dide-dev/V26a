@@ -7,7 +7,7 @@ function apiCallPostAuth(path: string, body: unknown) {
 }
 
 /** The data required to login */
-type LoginData = {
+export type LoginData = {
     email: string;
     password: string;
 };

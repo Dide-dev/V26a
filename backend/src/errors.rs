@@ -7,8 +7,10 @@ use std::fmt::Display;
 pub enum ApiError {
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
-    /// An error to return when a card is attempted to be added to a tree, which does not exist.
+    /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
+    /// An exception to throw when a card is attempted to be updated, which does not yet exist.
+    MissingCard(i32),
     /// A generic exception to return when the database fails on something unexpected.
     /// Do not use this in place of proper error handling.
     DatabaseException,
@@ -42,6 +44,7 @@ impl Display for ApiError {
                 write!(f, "A user with this e-mail address already exists.")
             }
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
+            ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
             ApiError::WrongCredentials => write!(f, "Wrong credentials."),
@@ -61,7 +64,9 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) => StatusCode::BAD_REQUEST,
+            ApiError::EmailAlreadyUsed | ApiError::MissingTree(_) | ApiError::MissingCard(_) => {
+                StatusCode::BAD_REQUEST
+            }
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
             ApiError::DatabaseException
             | ApiError::HashException

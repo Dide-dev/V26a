@@ -17,5 +17,10 @@
     "language": "Language",
     "emailVisible": "My viewable trees may show my email address. (This is useful for students to contact you, e.g., for feedback or signaling of errors.)",
     "register": "Register",
-    "emailPlaceholder": "user@example.com"
+    "emailPlaceholder": "user@example.com",
+    "login": "Login",
+    "viewExampleTree": "View Example Tree",
+    "globalCounter": "Global Counter",
+    "apiTesting": "Api Testing",
+    "home": "Home"
 }
