@@ -244,7 +244,14 @@ pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database=Postgres>
     .map(|n| n.id)
     .collect::<HashSet<_>>();
 
-    let valid = structure_card_ids.iter().all(|i| db_card_ids.contains(i));
+    // We check whether all cards exist in the `Cards` table and link to the `tree_id`,
+    // by verifying each of the `card_id`'s is contained in `db_card_ids`.
+    let all_cards_exist_in_database = structure_card_ids.iter().all(|i| db_card_ids.contains(i));
+    
+    // We check whether any duplicates exist, by converting the Vec<> into a HashSet<>
+    // and verifying their length stays the same.
+    let hash_structure_card_ids = structure_card_ids.iter().collect::<HashSet<_>>();
+    let no_duplicates_in_structure = structure_card_ids.len() == hash_structure_card_ids.len();
 
-    Ok(valid)
+    Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }

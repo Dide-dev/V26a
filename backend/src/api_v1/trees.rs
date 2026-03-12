@@ -51,6 +51,10 @@ async fn add_new_tree(
 /// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
 /// for the given `tree_id`.
 ///
+/// Returns an [`ApiError::MismatchedStructure`] if either of the following are the case:
+/// * Not all cards in the structure reference the `tree_id` in the `Cards` database table.
+/// * A card is referenced more than once in the structure.
+///
 /// May return an [`ApiError::DatabaseException`] or an [`ApiError::SerdeException`] instead.
 async fn update_tree_structure(
     claims: Claims,
@@ -66,15 +70,22 @@ async fn update_tree_structure(
     let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
     // Verify the new structure matches the cards linked to the tree in the database.
-    let cards_match_structure =
-        verify_structure_cards_exist(&mut *tx, tree_update_data.id, &tree_update_data.new_structure)
-            .await?;
+    let cards_match_structure = verify_structure_cards_exist(
+        &mut *tx,
+        tree_update_data.id,
+        &tree_update_data.new_structure,
+    )
+    .await?;
     if !cards_match_structure {
         return Err(ApiError::MismatchedStructure);
     }
 
-    db::trees::update_tree_structure(&mut *tx, tree_update_data.id, tree_update_data.new_structure)
-        .await?;
+    db::trees::update_tree_structure(
+        &mut *tx,
+        tree_update_data.id,
+        tree_update_data.new_structure,
+    )
+    .await?;
 
     tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
 
