@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_000",
+  "query": "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_001",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "6bb5f8f0240f5db75e849a2543a28c70531d5cc9ae7e6953ed67bc67f7713e2f"
+  "hash": "e167b32f8c9aebb5fef3aa868eaa82652653694ef3dea4adca2be1f826919fb1"
 }

@@ -5,7 +5,7 @@ use crate::{
 use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
-use sqlx::{PgPool, query, Executor, Postgres};
+use sqlx::{Executor, PgPool, Postgres, query};
 
 /// Add a new tree to the database.
 ///
@@ -78,7 +78,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 ///
 /// # Error
 /// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
-pub async fn update_tree_structure<'a, E: Executor<'a, Database=Postgres>>(
+pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
     db: E,
     tree_id: i32,
     new_tree_structure: TreeStructure,
@@ -222,8 +222,10 @@ pub async fn verify_tree_ownership(
 /// `false` if they don't match exactly.
 ///
 /// # Error
+/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 10,000 cards are found which link to `tree_id`.
+///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database=Postgres>>(
+pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database = Postgres>>(
     db: E,
     tree_id: i32,
     tree_structure: &TreeStructure,
@@ -234,7 +236,7 @@ pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database=Postgres>
     // We retrieve the card id's linked to the tree from the database.
     // The limit of 10,000 is arbitrarily set to avoid excessive memory usage.
     let db_card_ids = query!(
-        "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_000",
+        "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_001",
         tree_id
     )
     .fetch_all(db)
@@ -244,10 +246,14 @@ pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database=Postgres>
     .map(|n| n.id)
     .collect::<HashSet<_>>();
 
+    if db_card_ids.len() > 10_000 {
+        return Err(ApiError::DatabaseMemoryCap);
+    }
+
     // We check whether all cards exist in the `Cards` table and link to the `tree_id`,
     // by verifying each of the `card_id`'s is contained in `db_card_ids`.
     let all_cards_exist_in_database = structure_card_ids.iter().all(|i| db_card_ids.contains(i));
-    
+
     // We check whether any duplicates exist, by converting the Vec<> into a HashSet<>
     // and verifying their length stays the same.
     let hash_structure_card_ids = structure_card_ids.iter().collect::<HashSet<_>>();

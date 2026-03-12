@@ -48,6 +48,9 @@ pub enum ApiError {
     /// A generic exception to return when the database fails on something unexpected.
     /// Do not use this in place of proper error handling.
     DatabaseException,
+    /// An error to return when a request is denied because a limit on the database memory
+    /// disallows it.
+    DatabaseMemoryCap,
     /// An error to return when hashing fails (on creating or verifying a hash).
     HashException,
     /// An exception to return when serde fails on something unexpected.
@@ -79,6 +82,10 @@ impl Display for ApiError {
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
+            ApiError::DatabaseMemoryCap => write!(
+                f,
+                "Request was denied, because a database memory cap was exceeded."
+            ),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
@@ -98,15 +105,19 @@ impl ApiError {
             | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_) => StatusCode::BAD_REQUEST,
-            ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
-            ApiError::DatabaseException
-            | ApiError::HashException
-            | ApiError::SerdeException
-            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
+
             ApiError::MissingCredentials
             | ApiError::MissingAuthentication
             | ApiError::ExpiredSession
             | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
+
+            ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
+
+            ApiError::DatabaseException
+            | ApiError::DatabaseMemoryCap
+            | ApiError::HashException
+            | ApiError::SerdeException
+            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
