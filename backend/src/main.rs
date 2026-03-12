@@ -21,6 +21,7 @@ pub struct Config {
 }
 
 impl Config {
+    #[must_use]
     pub fn load() -> Self {
         Self {
             session_duration: env::var("SESSION_EXPIRATION_SECONDS")

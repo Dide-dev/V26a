@@ -20,3 +20,6 @@ tower = "0.5.3"
 tower-http = { version = "0.6.8", features = ["fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+axum-test = "19.1.1"

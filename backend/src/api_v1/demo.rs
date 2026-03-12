@@ -73,9 +73,9 @@ async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestSt
 }
 
 /// A struct representing the body of an HTTP request to add to a counter.
-#[derive(serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct AddCounterBody {
-    add: i32,
+    pub add: i32,
 }
 
 /// A test endpoint that adds a given value in the request body to a counter in the database.
@@ -94,43 +94,22 @@ async fn add_counter_test(
 #[cfg(test)]
 mod test {
     use super::*;
-    use axum::http::{Request, Method};
-    use axum::body;
+    use axum_test::TestServer;
     use sqlx::query;
-    use tower::util::ServiceExt;
 
     #[tokio::test]
     async fn test_backend_html() {
-        let router = Router::new().route("/html", get(backend_html_test));
-
-        let request = Request::builder()
-            .method(Method::GET)
-            .uri("/html")
-            .body(String::new())
-            .unwrap();
-
-        let response = router.oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), 200);
-        assert_eq!(body::to_bytes(response.into_body(), usize::MAX).await.unwrap(), "<h1>Hello from axum!</h1>".as_bytes());
+        let server = TestServer::new(Router::new().route("/html", get(backend_html_test)));
+        let response = server.get("/html").await;
+        response.assert_status_ok().assert_text("<h1>Hello from axum!</h1>");
     }
 
     #[sqlx::test]
     async fn test_backend_json_default(db: PgPool) {
-        let router = Router::new().route("/json", get(backend_json_test)).layer(Extension(db));
-
-        let request = Request::builder()
-            .method(Method::GET)
-            .uri("/json")
-            .body(String::new())
-            .unwrap();
-
-        let response = router.oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), 200);
-        let json: JsonTestStruct = serde_json::from_slice(&body::to_bytes(response.into_body(), usize::MAX).await.unwrap()).unwrap();
-        assert_eq!(json, JsonTestStruct {
-            a: "Hello, from rust struct!".to_owned(),
+        let server = TestServer::new(Router::new().route("/json", get(backend_json_test)).layer(Extension(db)));
+        let response = server.get("/json").await;
+        response.assert_status_ok().assert_json(&JsonTestStruct {
+            a: "Hello, from rust struct!".to_string(),
             b: 0,
         });
     }
@@ -139,20 +118,10 @@ mod test {
     async fn test_backend_json_value(db: PgPool) {
         query!("INSERT INTO counters VALUES (0, 67)").execute(&db).await.unwrap();
 
-        let router = Router::new().route("/json", get(backend_json_test)).layer(Extension(db));
-
-        let request = Request::builder()
-            .method(Method::GET)
-            .uri("/json")
-            .body(String::new())
-            .unwrap();
-
-        let response = router.oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), 200);
-        let json: JsonTestStruct = serde_json::from_slice(&body::to_bytes(response.into_body(), usize::MAX).await.unwrap()).unwrap();
-        assert_eq!(json, JsonTestStruct {
-            a: "Hello, from rust struct!".to_owned(),
+        let server = TestServer::new(Router::new().route("/json", get(backend_json_test)).layer(Extension(db)));
+        let response = server.get("/json").await;
+        response.assert_status_ok().assert_json(&JsonTestStruct {
+            a: "Hello, from rust struct!".to_string(),
             b: 67,
         });
     }
