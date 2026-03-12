@@ -1,6 +1,6 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
-    "hello_world": "Hallo, {name} vanuit nl!",
+    "helloWorld": "Hallo, {name} vanuit nl!",
     "email": "E-mail",
     "name": "Naam",
     "nickname": "Pseudoniem",
@@ -10,5 +10,10 @@
     "register": "Registreer",
     "optional": "Optioneel",
     "emailPlaceholder": "gebruiker@voorbeeld.com",
-    "table_header": "[\"Gemaakt door\", \"Titel\", \"Laatst aangepast\", \"Gepubliceerd\", \"Ja\", \"Nee\"]"
+    "table_header": "[\"Gemaakt door\", \"Titel\", \"Laatst aangepast\", \"Gepubliceerd\", \"Ja\", \"Nee\"]",
+    "login": "Login",
+    "viewExampleTree": "Bekijk Voorbeeld Boom",
+    "globalCounter": "Globale Teller",
+    "apiTesting": "Api Testen",
+    "home": "Home"
 }

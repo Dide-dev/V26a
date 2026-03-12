@@ -22,7 +22,7 @@ CREATE TABLE trees
     id              SERIAL PRIMARY KEY,
     owner_id        INTEGER      NOT NULL,
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP, -- `timestamp` in prototype
-    last_edited     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     published       BOOLEAN      NOT NULL DEFAULT FALSE,
     times_visited   BIGINT       NOT NULL DEFAULT 0,
     last_visited    TIMESTAMPTZ           DEFAULT NULL,              -- commonly NULL in prototype, can consider setting NOT NULL and filling the null values with last_edited
