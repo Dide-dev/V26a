@@ -206,7 +206,8 @@ pub async fn verify_tree_ownership(
     Ok(user_id == owner_id)
 }
 
-/// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree.
+/// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
+/// and whether any duplicate cards exist in the tree structure.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
@@ -216,16 +217,18 @@ pub async fn verify_tree_ownership(
 /// `tree_structure` - The structure to check as a [`TreeStructure`].
 ///
 /// # Returns
-/// `true` if each `card_id` in the structure exists in the `Cards` table and has `tree_id` in the
-/// corresponding column.
-///
-/// `false` if they don't match exactly.
+/// `true` if both of the following hold:
+/// * each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
+///   corresponding column.
+/// * no duplicate cards exist within the tree structure.
+/// 
+/// `false` if either of these don't hold.
 ///
 /// # Error
 /// Returns an [`ApiError::DatabaseMemoryCap`] if more than 10,000 cards are found which link to `tree_id`.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_structure_cards_exist<'a, E: Executor<'a, Database = Postgres>>(
+pub async fn verify_structure_validity<'a, E: Executor<'a, Database = Postgres>>(
     db: E,
     tree_id: i32,
     tree_structure: &TreeStructure,
