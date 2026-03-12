@@ -221,7 +221,7 @@ pub async fn verify_tree_ownership(
 /// * each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
 ///   corresponding column.
 /// * no duplicate cards exist within the tree structure.
-/// 
+///
 /// `false` if either of these don't hold.
 ///
 /// # Error
