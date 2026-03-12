@@ -206,7 +206,7 @@ pub async fn verify_tree_ownership(
     Ok(user_id == owner_id)
 }
 
-/// Checks whether the cards in a tree structure match those linked to the tree in the `Cards` table.
+/// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
@@ -216,9 +216,8 @@ pub async fn verify_tree_ownership(
 /// `tree_structure` - The structure to check as a [`TreeStructure`].
 ///
 /// # Returns
-/// `true` if the cards in the structure and database match exactly. The number of elements must be
-/// the same for `true` to be returned, as the function is duplicate-aware. Trees shouldn't contain
-/// multiple cards with the same id.
+/// `true` if each `card_id` in the structure exists in the `Cards` table and has `tree_id` in the
+/// corresponding column.
 ///
 /// `false` if they don't match exactly.
 ///
