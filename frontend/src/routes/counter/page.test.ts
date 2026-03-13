@@ -3,7 +3,7 @@ import { render, waitFor, screen } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';
 import page from './+page.svelte';
 
-test('fetch-counter', async () => {
+test('fetching counter', async () => {
     global.fetch = vi.fn().mockImplementation(() => {
         return Promise.resolve(Response.json({ a: '', b: 67 }));
     });
@@ -14,7 +14,7 @@ test('fetch-counter', async () => {
     });
 });
 
-test('increment-counter', async () => {
+test('incrementing counter', async () => {
     let counter = 0;
     global.fetch = vi.fn().mockImplementation((path: string) => {
         if (path === '/api/v1/demo/json') {
@@ -37,7 +37,7 @@ test('increment-counter', async () => {
     });
 });
 
-test('add-to-counter', async () => {
+test('adding to counter', async () => {
     let counter = 0;
     global.fetch = vi.fn().mockImplementation((path: string, options: any) => {
         if (path === '/api/v1/demo/json') {

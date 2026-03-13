@@ -11,7 +11,7 @@ test('NodeViewer', async () => {
     expect(document.getElementsByTagName('line')).toHaveLength(0);
 });
 
-test('NodeViewer-with-child', async () => {
+test('NodeViewer with child', async () => {
     const node: RootNode = { label: 'Root', children: [{ card: 'bla', children: [] }] };
     render(NodeViewer, { node });
 
@@ -19,7 +19,7 @@ test('NodeViewer-with-child', async () => {
     expect(document.getElementsByTagName('line')).toHaveLength(3);
 });
 
-test('NodeViewer-with-children', async () => {
+test('NodeViewer with children', async () => {
     const node: RootNode = {
         label: 'Root',
         children: [
