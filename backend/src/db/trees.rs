@@ -22,6 +22,7 @@ use sqlx::{Executor, PgPool, Postgres, query};
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
+    // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
     let structure = serde_json::to_value(TreeStructure {
         root_nodes: vec![
             RootNode {
@@ -167,7 +168,7 @@ pub async fn db_get_tree_all_data(
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
+pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await
@@ -175,35 +176,6 @@ async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiErr
         .map(|r| r.owner_id);
 
     Ok(owner)
-}
-
-/// Checks whether the tree exists and if it is owner by the user.
-///
-/// # Params
-/// `db` - A reference to the database connection to use for the query.
-///
-/// `tree_id` - The tree of which the ownerships gets verified.
-///
-/// `user_id` - The id of the user who sent this request.
-///
-/// # Returns
-/// `true` if `user_id` matches the `owner_id` field for `tree_id`, or `false` if it doesn't.
-///
-/// # Error
-/// Returns an [`ApiError::MissingTree`] if no tree with `tree_id` exists.
-///
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_tree_ownership(
-    db: &PgPool,
-    tree_id: i32,
-    user_id: i32,
-) -> Result<bool, ApiError> {
-    // Check whether the tree exists.
-    let owner_id = get_tree_owner(db, tree_id)
-        .await?
-        .ok_or(ApiError::MissingTree(tree_id))?;
-
-    Ok(user_id == owner_id)
 }
 
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
@@ -228,7 +200,7 @@ pub async fn verify_tree_ownership(
 /// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_structure_validity<'a, E: Executor<'a, Database = Postgres>>(
+pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
     db: E,
     tree_id: i32,
     tree_structure: &TreeStructure,

@@ -1,8 +1,6 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
-use crate::db::trees::{
-    add_tree, db_get_tree_all_data, verify_structure_validity, verify_tree_ownership,
-};
+use crate::db::trees::{add_tree, db_get_tree_all_data, get_tree_owner, is_structure_valid};
 use crate::db_structs::trees::{TreeData, TreeUpdateStructureData, TreeWithCards};
 use crate::{Config, db};
 
@@ -48,11 +46,11 @@ async fn add_new_tree(
 /// # Error
 /// Returns an [`ApiError::MissingTree`] if no tree with the `id` specified in `tree_update_data` exists.
 ///
-/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
-/// for the given `tree_id`.
-///
 /// Returns an [`ApiError::DatabaseMemoryCap`] if more than 10,000 cards in the `Cards` table
 /// link to `tree_id`.
+///
+/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// for the given `tree_id`.
 ///
 /// Returns an [`ApiError::MismatchedStructure`] if either of the following are the case:
 /// * Not all cards in the structure reference the `tree_id` in the `Cards` database table.
@@ -65,15 +63,12 @@ async fn update_tree_structure(
     Json(tree_update_data): Json<TreeUpdateStructureData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    let is_owner = verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
-    if !is_owner {
-        return Err(ApiError::NoPermission);
-    }
+    verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
 
     let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
     // Verify the new structure matches the cards linked to the tree in the database.
-    let is_structure_valid = verify_structure_validity(
+    let is_structure_valid = is_structure_valid(
         &mut *tx,
         tree_update_data.id,
         &tree_update_data.new_structure,
@@ -120,4 +115,40 @@ async fn get_tree_with_cards(
         structure,
         cards: tree_cards,
     }))
+}
+
+/// Checks whether the tree exists and if it is owner by the user.
+///
+/// # Params
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The tree of which the ownerships gets verified.
+///
+/// `user_id` - The id of the user who sent this request.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// for the given `tree_id`.
+///
+/// Returns an [`ApiError::MissingTree`] if no tree with `tree_id` exists.
+///
+/// May return an [`ApiError::DatabaseException`] instead.
+pub async fn verify_tree_ownership(
+    db: &PgPool,
+    tree_id: i32,
+    user_id: i32,
+) -> Result<(), ApiError> {
+    // Check whether the tree exists.
+    let owner_id = get_tree_owner(db, tree_id)
+        .await?
+        .ok_or(ApiError::MissingTree(tree_id))?;
+
+    if user_id == owner_id {
+        return Err(ApiError::NoPermission);
+    }
+
+    Ok(())
 }
