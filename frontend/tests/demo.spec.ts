@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-test('demo pages', async ({ page }) => {
-    async function getJsonCounterValue(): number {
+test('demo page counter', async ({ page }) => {
+    async function getJsonCounterValue(): Promise<number> {
         const text = await page.getByText('Received:').textContent();
-        const json = JSON.parse(text.split('Received: ')[1]);
+        const json = JSON.parse(text!.split('Received: ')[1]);
         return json.b;
     }
 
-    async function getTextCounterValue(): number {
+    async function getTextCounterValue(): Promise<number> {
         const counterText = await page.getByText('Current count:').textContent();
-        return parseInt(counterText.split('Current count: ')[1]);
+        return parseInt(counterText!.split('Current count: ')[1]);
     }
 
     await page.goto('/api-testing');

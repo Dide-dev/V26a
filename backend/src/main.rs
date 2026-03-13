@@ -20,6 +20,10 @@ pub struct Config {
 }
 
 impl Config {
+    /// Loads the global server configuration from the environment.
+    ///
+    /// # Panics
+    /// This may panic if any of the server parameters have an invalid format.
     #[must_use]
     pub fn load() -> Self {
         Self {
@@ -48,7 +52,6 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-
 
     // Build our application with a route.
     let app = Router::new()
@@ -89,5 +92,8 @@ async fn backend() -> Router {
         .await
         .expect("failed to run database migrations.");
 
-    Router::new().nest("/v1", v1_api()).layer(Extension(db)).with_state(config)
+    Router::new()
+        .nest("/v1", v1_api())
+        .layer(Extension(db))
+        .with_state(config)
 }

@@ -34,9 +34,9 @@ export default defineConfig({
 
     /* Run your local dev server before starting the tests */
     webServer: {
-      command: 'cd ../backend && cargo sqlx db reset -y && cargo run',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+        command: 'cd ../backend && cargo sqlx db reset -y && cargo run',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI
     },
 
     /* Configure projects for major browsers */

@@ -9,6 +9,10 @@ use axum::Extension;
 use axum_test::TestServer;
 use sqlx::PgPool;
 
+/// Sets up an API test server with the given mock database.
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints and saves cookies.
 fn setup(db: PgPool) -> TestServer {
     let router = crate::api_v1::v1_api()
         .layer(Extension(db))
@@ -16,6 +20,11 @@ fn setup(db: PgPool) -> TestServer {
     TestServer::builder().save_cookies().build(router)
 }
 
+/// Sets up an API test server with the given mock database, creates an account and logs in.
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints, including ones
+/// that require being logged in, and saves cookies.
 async fn setup_login(db: PgPool) -> TestServer {
     let server = setup(db);
 
