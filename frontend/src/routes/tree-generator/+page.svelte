@@ -17,7 +17,7 @@
     });
 
     let error: null | Error = $state(null);
-    
+
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         try {
