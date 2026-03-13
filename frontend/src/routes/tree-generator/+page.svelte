@@ -17,15 +17,16 @@
     });
 
     let error: null | Error = $state(null);
-
+    
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         try {
-            await addTree(treeData);
-            // TODO: this should redirect to the tree edit page
-            goto(appLink('/tree-viewer'));
+            const treeId = await addTree(treeData);
+            console.log('Tree created with ID:', treeId);
+            goto(appLink(`/editor?id=${treeId}`));
         } catch (e) {
             error = e as Error;
+            console.error('Failed to create tree:', e);
         }
     }
 </script>

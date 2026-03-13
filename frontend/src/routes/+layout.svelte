@@ -18,6 +18,7 @@
     <a href={appLink('/api-testing')}>{m.apiTesting()}</a>
     <a href={appLink('/counter')}>{m.globalCounter()}</a>
     <a href={appLink('/tree-viewer')}>{m.viewExampleTree()}</a>
+    <a href={appLink('/tree-generator')}>create Tree</a>
     <a href={appLink('/registration')}>{m.register()}</a>
     <a href={appLink('/login')}>{m.login()}</a>
     {#each locales as locale (locale)}
