@@ -73,39 +73,31 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
 
-class TreeDataForAuthorPage {
+type TreeDataForAuthorPage = {
     username: string;
     title: string;
     lastEdited: Date;
     published: boolean;
     treeID: number;
-
-    constructor(name: string, title: string, lastEdited: Date, published: boolean, treeID: number) {
-        this.username = name;
-        this.title = title;
-        this.lastEdited = lastEdited;
-        this.published = published;
-        this.treeID = treeID;
-    }
-}
+};
 
 /** Receive tree data (username, title, last edited, published, and ID) from database which the user has access to. */
 export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
     // Mock items
     return [
-        new TreeDataForAuthorPage(
-            'Jedidja',
-            'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
-            new Date(Date.now()), //Random time
-            true,
-            42
-        ),
-        new TreeDataForAuthorPage(
-            'Theo van den Bogaart',
-            'Je kan de boom in!',
-            new Date(14658759000), //Again random time
-            true,
-            67
-        )
+        {
+            username: 'Jedidja',
+            title: 'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
+            lastEdited: new Date(Date.now()), //Random time
+            published: true,
+            treeID: 42
+        },
+        {
+            username: 'Theo van den Bogaart',
+            title: 'Je kan de boom in!',
+            lastEdited: new Date(14658759000), //Again random time
+            published: true,
+            treeID: 67
+        }
     ];
 }
