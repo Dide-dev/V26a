@@ -66,7 +66,7 @@
             />
         </label>
         <label>
-            {m.book_isbn()}
+            {m.bookIsbn()}
             <input
                 class="rounded-md border-2"
                 bind:value={treeData.bookIsbn}
@@ -77,7 +77,7 @@
             />
         </label>
         <label>
-            {m.book_chapter()}
+            {m.bookChapter()}
             <input
                 class="rounded-md border-2"
                 bind:value={treeData.bookChapter}
@@ -88,7 +88,7 @@
             />
         </label>
         <label>
-            {m.book_exercise()}
+            {m.bookExercise()}
             <input
                 class="rounded-md border-2"
                 bind:value={treeData.bookExercise}
@@ -99,7 +99,7 @@
             />
         </label>
         <label>
-            {m.assignment_text()}
+            {m.assignmentText()}
             <input
                 class="rounded-md border-2"
                 bind:value={treeData.assignmentText}
@@ -109,7 +109,7 @@
                 placeholder={m.optional()}
             />
         </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.create_tree()}</button>
+        <button class="rounded-sm bg-emerald-500 p-1">{m.createTree()}</button>
         <p class="text-red-600">{error?.message}</p>
     </form>
 </div>
