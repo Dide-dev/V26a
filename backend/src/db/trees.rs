@@ -225,7 +225,7 @@ pub async fn verify_tree_ownership(
 /// `false` if either of these don't hold.
 ///
 /// # Error
-/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 10,000 cards are found which link to `tree_id`.
+/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn verify_structure_validity<'a, E: Executor<'a, Database = Postgres>>(
@@ -236,11 +236,14 @@ pub async fn verify_structure_validity<'a, E: Executor<'a, Database = Postgres>>
     // We retrieve the card id's in the new structure.
     let structure_card_ids = tree_structure.flatten();
 
+    let db_card_limit: u32 = 10_000;
+
     // We retrieve the card id's linked to the tree from the database.
     // The limit of 10,000 is arbitrarily set to avoid excessive memory usage.
     let db_card_ids = query!(
-        "SELECT id FROM cards WHERE tree_id = $1 LIMIT 10_001",
-        tree_id
+        "SELECT id FROM cards WHERE tree_id = $1 LIMIT $2",
+        tree_id,
+        i64::from(db_card_limit),
     )
     .fetch_all(db)
     .await
@@ -249,7 +252,7 @@ pub async fn verify_structure_validity<'a, E: Executor<'a, Database = Postgres>>
     .map(|n| n.id)
     .collect::<HashSet<_>>();
 
-    if db_card_ids.len() > 10_000 {
+    if db_card_ids.len() >= db_card_limit as usize {
         return Err(ApiError::DatabaseMemoryCap);
     }
 
