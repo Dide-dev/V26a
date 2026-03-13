@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "944c90f92f86f8310f44f6de8d6db495ce98200dcbb53c5793938e16199803c6"
+}

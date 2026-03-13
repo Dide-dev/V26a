@@ -2,8 +2,10 @@ use crate::{
     db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
+use std::collections::HashSet;
 
-use sqlx::{PgPool, query};
+use crate::db_structs::trees::RootNode;
+use sqlx::{Executor, PgPool, Postgres, query};
 
 /// Add a new tree to the database.
 ///
@@ -20,9 +22,28 @@ use sqlx::{PgPool, query};
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
+    // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
+    let structure = serde_json::to_value(TreeStructure {
+        root_nodes: vec![
+            RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            },
+            RootNode {
+                label: "Making & executing plans".to_owned(),
+                children: vec![],
+            },
+            RootNode {
+                label: "Completion".to_owned(),
+                children: vec![],
+            },
+        ],
+    })
+    .map_err(|_| ApiError::SerdeException)?;
+
     let tree_id = query!(
         "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{\"rootNodes\": []}')
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id",
         owner_id,
         tree_data.title,
@@ -33,6 +54,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
         tree_data.book_chapter,
         tree_data.book_exercise,
         tree_data.assignment_text,
+        structure
     )
     .fetch_one(db)
     .await
@@ -42,12 +64,47 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
     Ok(tree_id)
 }
 
+/// Update the structure of an existing tree in the database.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `tree_id` - The id of the tree which is updated.
+///
+/// `new_tree_structure` - The new structure of the tree as a [`TreeStructure`].
+/// Completely overwrites the existing data in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
+pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
+    db: E,
+    tree_id: i32,
+    new_tree_structure: TreeStructure,
+) -> Result<(), ApiError> {
+    let new_tree_structure =
+        serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;
+
+    query!(
+        "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
+        tree_id,
+        new_tree_structure,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
-/// `tree_id` - The id of the tree of which is queried.
+/// `tree_id` - The id of the tree which is queried.
 ///
 /// # Returns
 /// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
@@ -73,7 +130,7 @@ pub async fn db_get_tree_all_data(
     };
 
     let tree_structure =
-        serde_json::from_value(field.structure).map_err(|_| ApiError::DatabaseException)?;
+        serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
 
     let tree_data = TreeData {
         title: field.title,
@@ -111,7 +168,7 @@ pub async fn db_get_tree_all_data(
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
+pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await
@@ -121,37 +178,64 @@ async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiErr
     Ok(owner)
 }
 
-/// Checks whether the tree exists and if it is owner by the user.
+/// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
+/// and whether any duplicate cards exist in the tree structure.
 ///
-/// # Params
+/// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
-/// `tree_id` - The tree of which the ownerships gets verified.
+/// `tree_id` - The id of the tree to check.
 ///
-/// `user_id` - The id of the user who sent this request.
+/// `tree_structure` - The structure to check as a [`TreeStructure`].
 ///
 /// # Returns
-/// Nothing.
+/// `true` if both of the following hold:
+/// * each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
+///   corresponding column.
+/// * no duplicate cards exist within the tree structure.
+///
+/// `false` if either of these don't hold.
 ///
 /// # Error
-/// Returns an [`ApiError::MissingTree`] if no tree with `tree_id` exists.
+/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
 ///
-/// Returns an [`ApiError::NoPermission`] if the `user_id` does not match the `owner_id` field
-/// for the given `tree_id`.
-pub async fn verify_tree_ownership(
-    db: &PgPool,
+/// May return an [`ApiError::DatabaseException`] instead.
+pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
+    db: E,
     tree_id: i32,
-    user_id: i32,
-) -> Result<(), ApiError> {
-    // Check whether the tree which the card is being added to exists.
-    let owner_id = get_tree_owner(db, tree_id)
-        .await?
-        .ok_or(ApiError::MissingTree(tree_id))?;
+    tree_structure: &TreeStructure,
+) -> Result<bool, ApiError> {
+    // We retrieve the card id's in the new structure.
+    let structure_card_ids = tree_structure.flatten();
 
-    // Check whether the user is authorized to add a card to the tree.
-    if user_id != owner_id {
-        return Err(ApiError::NoPermission);
+    let db_card_limit: u32 = 10_000;
+
+    // We retrieve the card id's linked to the tree from the database.
+    // The limit of 10,000 is arbitrarily set to avoid excessive memory usage.
+    let db_card_ids = query!(
+        "SELECT id FROM cards WHERE tree_id = $1 LIMIT $2",
+        tree_id,
+        i64::from(db_card_limit),
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .iter()
+    .map(|n| n.id)
+    .collect::<HashSet<_>>();
+
+    if db_card_ids.len() >= db_card_limit as usize {
+        return Err(ApiError::DatabaseMemoryCap);
     }
 
-    Ok(())
+    // We check whether all cards exist in the `Cards` table and link to the `tree_id`,
+    // by verifying each of the `card_id`'s is contained in `db_card_ids`.
+    let all_cards_exist_in_database = structure_card_ids.iter().all(|i| db_card_ids.contains(i));
+
+    // We check whether any duplicates exist, by converting the Vec<> into a HashSet<>
+    // and verifying their length stays the same.
+    let hash_structure_card_ids = structure_card_ids.iter().collect::<HashSet<_>>();
+    let no_duplicates_in_structure = structure_card_ids.len() == hash_structure_card_ids.len();
+
+    Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
