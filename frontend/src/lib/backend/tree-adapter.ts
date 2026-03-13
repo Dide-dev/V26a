@@ -8,20 +8,26 @@ import type {
 
 /** Adapter-function to convert the tree structure from trees.ts to the HeuristicTree structure from example tree, used for NodeViewer. */
 export function convertTree(tree: TreeWithCards): HeuristicTree {
+    console.log("convert tree");
     return {
         name: tree.data.title,
         assignment: tree.data.assignmentText ?? '',
         roots: tree.structure.rootNodes.map((root) => convertRootNode(root, tree.cards))
     };
 }
-function convertRootNode(root: RootNode, cards: Map<CardId, CardGetData>): HeuristicRootNode {
+function convertRootNode(root: RootNode, cards: Record<CardId, CardGetData>): HeuristicRootNode {
+    console.log("convertRootNode");
     return {
         label: root.label,
         children: root.children.map((child) => convertNode(child, cards))
     };
 }
-function convertNode(node: Node, cards: Map<CardId, CardGetData>): HeuristicNode {
-    const card = cards.get(node.cardId);
+function convertNode(node: Node, cards: Record<CardId, CardGetData>): HeuristicNode {
+    let cardId = Number(node.cardId);
+    if(!Number.isInteger(cardId)){
+        throw new Error("Invalid card ID");
+    }
+    const card : CardGetData | undefined = cards[node.cardId];
 
     if (!card) {
         throw new Error(`Card ${node.cardId} not found in tree`);

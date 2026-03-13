@@ -4,6 +4,7 @@
     import { getTreeWithCards } from '$lib/backend/trees';
     import type { HeuristicTree } from './example_tree';
     import { convertTree } from '$lib/backend/tree-adapter';
+    import {page} from '$app/state';
 
     let loading = true;
     let error: string | null = null;
@@ -13,15 +14,16 @@
         try {
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
-            const idNumber = Number(id);
-
-            if (Number.isNaN(idNumber)) {
-                throw new Error('Invalid tree id');
-            }
 
             if (!id) {
                 console.error('No tree id provided');
                 return;
+            }
+
+            const idNumber = Number(id);
+
+            if (Number.isNaN(idNumber)) {
+                throw new Error('Invalid tree id');
             }
 
             const treeData = await getTreeWithCards(idNumber);
@@ -33,7 +35,7 @@
             }
         } catch (err) {
             console.error(err);
-            error = 'Falied to load tree';
+            error = 'Failed to load tree';
         } finally {
             loading = false;
         }
