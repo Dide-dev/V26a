@@ -2,6 +2,7 @@
     import { m } from '$lib/paraglide/messages.js';
     import { apiCallGetTreesFromUser } from '$lib/backend/trees';
     import icon from '$lib/assets/editIcon.svg?raw';
+    import { appLink } from '$lib/index';
 
     const values = apiCallGetTreesFromUser();
 
@@ -33,13 +34,13 @@
                 <tr>
                     <td class="pr-4">{value.username}</td>
                     <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline"
-                        ><a href="/tree-viewer?id={value.treeID}/">{value.title}</a></td
+                        ><a href={appLink(`/tree-viewer?id=${value.treeID}/`)}>{value.title}</a></td
                     >
                     <td class="pr-4">{value.lastEdited.toLocaleString()}</td>
                     <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                     <td class="pr-4">{parseBooleanToString(value.published)}</td>
                     <td class="min-w-2 hover:fill-blue-800">
-                        <a href="/" aria-label="edit">
+                        <a href={appLink('/')} aria-label="edit">
                             {@html icon}
                         </a>
                     </td>
