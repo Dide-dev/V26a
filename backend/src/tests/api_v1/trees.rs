@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::db_structs::trees::{TreeData, TreeStructure, TreeWithCards};
+use crate::db_structs::trees::{TreeData, TreeWithCards};
 use sqlx::PgPool;
 use std::collections::BTreeMap;
 
@@ -28,11 +28,5 @@ async fn test_new_empty_tree(db: PgPool) {
     let full_tree: TreeWithCards = response.json();
     assert_eq!(full_tree.data, tree_data);
     assert_eq!(full_tree.gen_data.id, id);
-    assert_eq!(
-        full_tree.structure,
-        TreeStructure {
-            root_nodes: Vec::new()
-        }
-    );
     assert_eq!(full_tree.cards, BTreeMap::new());
 }

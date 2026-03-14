@@ -30,7 +30,7 @@ test('incrementing counter', async () => {
 
     render(page);
 
-    let button = await waitFor(() => screen.getByText('Increment!'));
+    const button = await waitFor(() => screen.getByText('Increment!'));
     await user.click(button);
     await waitFor(() => {
         expect(() => screen.getByText('Current count: 1')).not.toThrow();
@@ -39,12 +39,13 @@ test('incrementing counter', async () => {
 
 test('adding to counter', async () => {
     let counter = 0;
-    global.fetch = vi.fn().mockImplementation((path: string, options: any) => {
+    global.fetch = vi.fn().mockImplementation((path: string, options: RequestInit) => {
         if (path === '/api/v1/demo/json') {
             return Promise.resolve(Response.json({ a: '', b: counter }));
         }
         if (path === '/api/v1/demo/add-to-counter') {
-            const body = JSON.parse(options.body);
+            expect(typeof options.body).toBe('string');
+            const body = JSON.parse(options.body as string);
             counter += body.add;
             return Promise.resolve(Response.json({}));
         }
@@ -54,7 +55,7 @@ test('adding to counter', async () => {
 
     render(page);
 
-    let button = await waitFor(() => screen.getByText('Increment by 100_000_000!'));
+    const button = await waitFor(() => screen.getByText('Increment by 100_000_000!'));
     await user.click(button);
     await waitFor(() => {
         expect(() => screen.getByText('Current count: 100000000')).not.toThrow();

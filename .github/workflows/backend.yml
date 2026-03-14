@@ -68,6 +68,6 @@ jobs:
       - name: Clippy
         run: cargo clippy
       - name: Run tests
-        run: cargo test
+        run: cp ../.env.example ../.env && cargo test
       - name: Check documentation
         run: cargo doc --no-deps
