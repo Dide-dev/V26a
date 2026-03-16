@@ -84,5 +84,6 @@ jobs:
           cache-dependency-path: './frontend/package-lock.json'
       - run: cd ../frontend && npm ci
       - run: cd ../frontend && npm run build
+      - run: cd ../frontend && npx playwright install
       - name: Run end-to-end tests
         run: cd ../frontend && npx playwright test
