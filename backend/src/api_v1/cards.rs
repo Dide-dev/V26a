@@ -1,8 +1,9 @@
 use crate::Config;
-use crate::db::cards::{add_card, update_card};
+use crate::db::cards::{add_card, get_tree_of_card, update_card};
 use crate::db_structs::cards::{CardAddData, CardUpdateData};
 
 use crate::api_v1::session::Claims;
+use crate::api_v1::trees::verify_tree_ownership;
 use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
@@ -21,16 +22,23 @@ pub fn cards() -> Router<Config> {
 /// The id assigned to the new card.
 ///
 /// # Error
+/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// for the given `tree_id` referenced in `card_data`.
+///
+/// Returns an [`ApiError::MissingTree`] if no tree with the `tree_id` referenced in `card_data` exists.
+///
 /// May return an [`ApiError`] instead.
 async fn add_new_card(
     claims: Claims,
     db: Extension<PgPool>,
     Json(card_data): Json<CardAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    let id = add_card(&db, card_data, claims.sub).await?;
+    // Check whether the tree of which a card is being updated exists and is owned by the user.
+    verify_tree_ownership(&db, card_data.tree_id, claims.sub).await?;
 
-    let json_id = Json(id);
-    Ok(json_id)
+    let id = add_card(&db, card_data).await?;
+
+    Ok(Json(id))
 }
 
 /// Update the contents of an existing card in the database.
@@ -39,13 +47,25 @@ async fn add_new_card(
 /// Nothing.
 ///
 /// # Error
+/// Returns an [`ApiError::MissingCard`] if the `card_id` referenced in `card_data` does not exist.
+///
+/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// the card belongs to.
+///
+/// Returns an [`ApiError::MissingTree`] if the tree the card belongs to no longer exists.
+///
 /// May return an [`ApiError`] instead.
 async fn update_existing_card(
     claims: Claims,
     db: Extension<PgPool>,
     Json(card_data): Json<CardUpdateData>,
 ) -> Result<(), ApiError> {
-    update_card(&db, card_data, claims.sub).await?;
+    let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
+
+    // Check whether the tree of which a card is being updated exists and is owned by the user.
+    verify_tree_ownership(&db, tree_id, claims.sub).await?;
+
+    update_card(&db, card_data).await?;
 
     Ok(())
 }
