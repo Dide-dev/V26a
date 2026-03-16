@@ -12,11 +12,6 @@ node_modules
 .DS_Store
 Thumbs.db
 
-# Env
-.env
-.env.*
-!.env.example
-!.env.test
 
 # Vite
 vite.config.js.timestamp-*
@@ -24,9 +19,6 @@ vite.config.ts.timestamp-*
 # Paraglide
 src/lib/paraglide
 project.inlang/cache/
-
-# Jetbrains
-.idea/
 
 # Playwright
 /test-results/
