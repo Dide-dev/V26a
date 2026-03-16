@@ -23,7 +23,7 @@ async fn test_new_empty_tree(db: PgPool) {
     response.assert_status_ok();
     let id: i32 = response.json();
 
-    let response = server.get(&format!("/trees/get-with-cards/{}", id)).await;
+    let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
     assert_eq!(full_tree.data, tree_data);
