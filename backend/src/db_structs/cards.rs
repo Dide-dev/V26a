@@ -1,5 +1,5 @@
 /// The basic data of the card, including the tree it belongs to.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CardAddData {
     pub tree_id: i32,
@@ -8,7 +8,7 @@ pub struct CardAddData {
 }
 
 /// The basic data required to update an existing card.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CardUpdateData {
     pub card_id: i32,
@@ -17,7 +17,7 @@ pub struct CardUpdateData {
 }
 
 /// The basic data of the card
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CardGetData {
     pub front: String,

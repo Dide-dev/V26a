@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 /// Data needed to add a user to the database.
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
     pub email: String,
