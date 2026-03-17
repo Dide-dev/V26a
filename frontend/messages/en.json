@@ -5,7 +5,7 @@
     "description": "Description",
     "bookname": "Book name",
     "bookIsbn": "ISBN",
-    "bookChapter": "Book chapter",
+    "bookChapter": "Chapter",
     "bookExercise": "Book exercise",
     "assignmentText": "Assignment description",
     "createTree": "Create tree",
