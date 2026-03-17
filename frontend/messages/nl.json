@@ -5,7 +5,7 @@
     "description": "Beschrijving",
     "bookname": "Naam boek",
     "bookIsbn": "ISBN",
-    "bookChapter": "Boek hoofdstuk",
+    "bookChapter": "Hoofdstuk",
     "bookExercise": "Opdracht",
     "assignmentText": "Opdrachtbeschrijving",
     "createTree": "Creëer boom",
