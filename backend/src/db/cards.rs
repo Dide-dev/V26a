@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 
 use crate::errors::ApiError;
-use sqlx::{PgPool, query};
+use sqlx::{Executor, PgPool, Postgres, query};
 
 /// Add a new card to the database, returning its assigned id.
 ///
@@ -32,6 +32,24 @@ pub async fn add_card(db: &PgPool, card_data: CardAddData) -> Result<i32, ApiErr
     .id;
 
     Ok(card_id)
+}
+
+/// TODO: Add docs.
+pub async fn remove_card<'a, E: Executor<'a, Database = Postgres>>(
+    db: E,
+    card_id: i32,
+) -> Result<(), ApiError> {
+    let removed_id = query!("DELETE FROM cards WHERE id = $1 RETURNING id", card_id,)
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    // Check whether the card could be removed.
+    if removed_id.is_none() {
+        return Err(ApiError::MissingCard(card_id));
+    }
+
+    Ok(())
 }
 
 /// Update a card in the database.
