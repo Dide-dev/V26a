@@ -3,7 +3,7 @@
     "helloWorld": "Hallo, {name} vanuit nl!",
     "title": "Titel",
     "description": "Beschrijving",
-    "bookname": "boeknaam",
+    "bookname": "Naam boek",
     "bookIsbn": "Boek ISBN",
     "bookChapter": "Boek hoofdstuk",
     "bookExercise": "Boekopdracht",
