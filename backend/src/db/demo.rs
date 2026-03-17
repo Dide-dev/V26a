@@ -4,7 +4,7 @@ use sqlx::{PgConnection, query};
 /// Fetches the counter value from the given database.
 ///
 /// # Arguments
-/// `db` - a reference to the database connection to use for the query.
+/// `db` - a connection to a Postgres database.
 ///
 /// # Returns
 /// The value if successful, or an [`ApiError::DatabaseException`] if not.
@@ -20,7 +20,7 @@ pub async fn fetch_counter_value(db: &mut PgConnection) -> Result<i32, ApiError>
 /// Adds a number to the counter value from the given database.
 ///
 /// # Arguments
-/// `db` - a reference to the database connection to use for the query.
+/// `db` - a connection to a Postgres database.
 ///
 /// `amount` - the amount to add to the counter.
 ///
@@ -55,7 +55,7 @@ pub async fn add_counter_value(db: &mut PgConnection, amount: i32) -> Result<i32
 /// Checks if the counter exists in the database, creating it if it doesn't.
 ///
 /// # Arguments
-/// `db` - a reference to the database connection to use for the query.
+/// `db` - a connection to a Postgres database.
 ///
 /// # Returns
 /// Nothing.

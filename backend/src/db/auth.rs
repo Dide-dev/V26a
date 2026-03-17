@@ -4,7 +4,7 @@ use sqlx::{PgExecutor, query};
 /// Fetch a user's password from the given database.
 ///
 /// # Arguments
-/// `db` - a reference to the database connection to use for the query.
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
 ///
 /// `email` - the user's email address.
 ///

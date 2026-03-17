@@ -9,7 +9,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// Add a new user to the database, returning its assigned id.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - A connection to a Postgres database.
 ///
 /// `user_data` - The data assigned to the new user.
 ///
@@ -62,7 +62,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32,
 /// Checks if a user with a given e-mail exists in the given database.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
 ///
 /// `email` - A reference to the email of the user being checked.
 ///
