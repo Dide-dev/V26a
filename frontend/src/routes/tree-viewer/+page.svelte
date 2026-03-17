@@ -1,14 +1,11 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
     import { onMount } from 'svelte';
-    import { getTreeWithCards } from '$lib/backend/trees';
-    import type { HeuristicTree } from './example_tree';
-    import { convertTree } from '$lib/backend/tree-adapter';
-    import {page} from '$app/state';
+    import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
 
     let loading = true;
     let error: string | null = null;
-    let tree: HeuristicTree | null = null;
+    let tree: TreeWithCards | null = null;
 
     onMount(async () => {
         try {
@@ -26,12 +23,10 @@
                 throw new Error('Invalid tree id');
             }
 
-            const treeData = await getTreeWithCards(idNumber);
+            tree = await getTreeWithCards(idNumber);
 
-            if (!treeData) {
+            if (!tree) {
                 throw new Error('Tree not found');
-            } else {
-                tree = convertTree(treeData);
             }
         } catch (err) {
             console.error(err);
@@ -47,14 +42,14 @@
 {:else if error}
     <p class="text-red-700">{error}</p>
 {:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.name}</h1>
+    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree.assignment}
+        {tree.data.description}
     </p>
 
     <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
-        {#each tree.roots as root (root)}
-            <NodeViewer node={root} />
+        {#each tree.structure.rootNodes as root (root)}
+            <NodeViewer node={root} cards={tree.cards} />
         {/each}
     </div>
 {/if}

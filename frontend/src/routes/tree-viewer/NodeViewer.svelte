@@ -1,8 +1,9 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { Node, RootNode } from './example_tree';
+    import type { Node, RootNode } from '$lib/backend/trees';
+    import type { CardGetData, CardId } from '$lib/backend/cards';
     import { onMount } from 'svelte';
-    let { node }: { node: Node | RootNode } = $props();
+    let { node, cards }: { node: Node | RootNode; cards: Record<CardId, CardGetData> } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -74,7 +75,8 @@
         </div>
     {:else}
         <div class="h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
-            <p>{node.card}</p>
+            <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
+            <p>{cards[node.cardId].front}</p>
         </div>
     {/if}
 
@@ -93,7 +95,7 @@
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node} />
+            <NodeViewer node={child_node} {cards} />
         {/each}
     </div>
 </div>
