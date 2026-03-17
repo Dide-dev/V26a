@@ -63,9 +63,19 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeUpdateStructureData = {
+    id: TreeId;
+    newStructure: TreeStructure;
+};
+
 /** Add a tree to the database. */
 export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add', tree);
+}
+
+/** Update the structure of an existing tree. */
+export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): Promise<void> {
+    return apiCallPostTree('update-structure', newTreeStructure);
 }
 
 /** Request all data of a specific tree together with all its cards from the database. */
