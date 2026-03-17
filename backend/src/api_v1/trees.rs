@@ -1,7 +1,7 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
 use crate::db::trees::{add_tree, db_get_tree_all_data, get_tree_owner, is_structure_valid};
-use crate::db_structs::trees::{TreeData, TreeUpdateStructureData, TreeWithCards};
+use crate::db_structs::trees::{TreeData, TreeList, TreeUpdateStructureData, TreeWithCards};
 use crate::{Config, db};
 
 use crate::errors::ApiError;
@@ -9,6 +9,7 @@ use crate::errors::ApiError;
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
+use axum_extra::extract::Query;
 
 use sqlx::PgPool;
 
@@ -18,6 +19,7 @@ pub fn trees() -> Router<Config> {
         .route("/add", post(add_new_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
+        .route("/get-list", get(get_list))
 }
 
 /// Add a tree to the database.
@@ -151,4 +153,21 @@ pub async fn verify_tree_ownership(
     }
 
     Ok(())
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterOptions {
+    // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
+    #[serde(default)]
+    pub book: Vec<String>,
+    pub created_at_min: u64, // unix epoch?
+    pub created_at_max: u64,
+}
+
+pub async fn get_list(
+    db: Extension<PgPool>,
+    Query(filters): Query<FilterOptions>,
+) -> Result<Json<TreeList>, ApiError> {
+    todo!()
 }
