@@ -4,7 +4,7 @@ use crate::db_structs::users::UserData;
 use crate::errors::ApiError;
 use bcrypt::{DEFAULT_COST, hash};
 
-use sqlx::{PgPool, query};
+use sqlx::{PgConnection, PgExecutor, query};
 
 /// Add a new user to the database, returning its assigned id.
 ///
@@ -22,12 +22,12 @@ use sqlx::{PgPool, query};
 /// May return an [`ApiError::HashException`] instead.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError> {
+pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32, ApiError> {
     // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
     // constraint is placed on the `email` field.
     // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
     // will be returned instead of an `ApiError::EmailAlreadyUsed`.
-    let exists = user_exists(db, &user_data.email).await?;
+    let exists = user_exists(&mut *db, &user_data.email).await?;
 
     if exists {
         return Err(ApiError::EmailAlreadyUsed);
@@ -71,7 +71,7 @@ pub async fn add_user(db: &PgPool, user_data: UserData) -> Result<i32, ApiError>
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn user_exists(db: &PgPool, email: &String) -> Result<bool, ApiError> {
+pub async fn user_exists<'a, E: PgExecutor<'a>>(db: E, email: &String) -> Result<bool, ApiError> {
     query!(
         "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
         email,

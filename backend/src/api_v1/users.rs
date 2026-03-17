@@ -2,6 +2,7 @@ use crate::Config;
 use crate::db::users::add_user;
 use crate::db_structs::users::UserData;
 
+use crate::db::get_connection;
 use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
@@ -22,8 +23,10 @@ pub fn users() -> Router<Config> {
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
 async fn add_new_user(
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(user_data): Json<UserData>,
 ) -> Result<Json<i32>, ApiError> {
-    add_user(&db, user_data).await.map(Json)
+    add_user(&mut *get_connection(db).await?, user_data)
+        .await
+        .map(Json)
 }

@@ -10,7 +10,7 @@ use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<Config> {
@@ -29,7 +29,7 @@ pub fn trees() -> Router<Config> {
 /// May return an [`ApiError::DatabaseException`] instead.
 async fn add_new_tree(
     claims: Claims,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(tree_data): Json<TreeData>,
 ) -> Result<Json<i32>, ApiError> {
     let id = add_tree(&db, tree_data, claims.sub).await?;
@@ -100,7 +100,7 @@ async fn update_tree_structure(
 ///
 /// May return an [`ApiError`] instead.
 async fn get_tree_with_cards(
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
     let (data, gen_data, structure) = db_get_tree_all_data(&db, tree_id)
@@ -136,8 +136,8 @@ async fn get_tree_with_cards(
 /// Returns an [`ApiError::MissingTree`] if no tree with `tree_id` exists.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn verify_tree_ownership(
-    db: &PgPool,
+pub async fn verify_tree_ownership<'a, E: PgExecutor<'a>>(
+    db: E,
     tree_id: i32,
     user_id: i32,
 ) -> Result<(), ApiError> {

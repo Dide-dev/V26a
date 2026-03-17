@@ -1,9 +1,8 @@
+use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use std::collections::BTreeMap;
 
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
-
 use crate::errors::ApiError;
-use sqlx::{PgPool, query};
+use sqlx::{PgConnection, PgExecutor, query};
 
 /// Add a new card to the database, returning its assigned id.
 ///
@@ -17,7 +16,10 @@ use sqlx::{PgPool, query};
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn add_card(db: &PgPool, card_data: CardAddData) -> Result<i32, ApiError> {
+pub async fn add_card<'a, E: PgExecutor<'a>>(
+    db: E,
+    card_data: CardAddData,
+) -> Result<i32, ApiError> {
     let card_id = query!(
         "INSERT INTO cards (tree_id, front, back)
         VALUES ($1, $2, $3)
@@ -46,14 +48,14 @@ pub async fn add_card(db: &PgPool, card_data: CardAddData) -> Result<i32, ApiErr
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn update_card(db: &PgPool, card_data: CardUpdateData) -> Result<(), ApiError> {
+pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Result<(), ApiError> {
     query!(
         "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1",
         card_data.card_id,
         card_data.new_front,
         card_data.new_back,
     )
-    .execute(db)
+    .execute(&mut *db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
 
@@ -82,8 +84,8 @@ pub async fn update_card(db: &PgPool, card_data: CardUpdateData) -> Result<(), A
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn get_tree_cards(
-    db: &PgPool,
+pub async fn get_tree_cards<'a, E: PgExecutor<'a>>(
+    db: E,
     tree_id: i32,
 ) -> Result<BTreeMap<i32, CardGetData>, ApiError> {
     let cards = query!(
@@ -124,7 +126,7 @@ pub async fn get_tree_cards(
 /// Returns an [`ApiError::MissingCard`] if the `card_id` does not exist.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn get_tree_of_card(db: &PgPool, card_id: i32) -> Result<i32, ApiError> {
+pub async fn get_tree_of_card<'a, E: PgExecutor<'a>>(db: E, card_id: i32) -> Result<i32, ApiError> {
     // We retrieve the `tree_id` of the tree the card belongs to, and by doing so we simultaneously
     // check whether the card with `card_id` exists in the database.
     let tree_id = query!("SELECT tree_id FROM cards where id=$1", card_id,)

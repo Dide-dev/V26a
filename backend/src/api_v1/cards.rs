@@ -4,6 +4,7 @@ use crate::db_structs::cards::{CardAddData, CardUpdateData};
 
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_ownership;
+use crate::db::get_connection;
 use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
@@ -30,7 +31,7 @@ pub fn cards() -> Router<Config> {
 /// May return an [`ApiError`] instead.
 async fn add_new_card(
     claims: Claims,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(card_data): Json<CardAddData>,
 ) -> Result<Json<i32>, ApiError> {
     // Check whether the tree of which a card is being updated exists and is owned by the user.
@@ -57,7 +58,7 @@ async fn add_new_card(
 /// May return an [`ApiError`] instead.
 async fn update_existing_card(
     claims: Claims,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(card_data): Json<CardUpdateData>,
 ) -> Result<(), ApiError> {
     let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
@@ -65,7 +66,7 @@ async fn update_existing_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, tree_id, claims.sub).await?;
 
-    update_card(&db, card_data).await?;
+    update_card(&mut *get_connection(db).await?, card_data).await?;
 
     Ok(())
 }

@@ -1,5 +1,5 @@
 use crate::errors::ApiError;
-use sqlx::{PgPool, query};
+use sqlx::{PgExecutor, query};
 
 /// Fetch a user's password from the given database.
 ///
@@ -13,8 +13,8 @@ use sqlx::{PgPool, query};
 ///
 /// # Error
 /// May return an [`ApiError::WrongCredentials`] instead. TODO: clarify when this error occurs.
-pub async fn get_user_id_and_password(
-    db: &PgPool,
+pub async fn get_user_id_and_password<'a, E: PgExecutor<'a>>(
+    db: E,
     email: String,
 ) -> Result<(i32, String), ApiError> {
     let record = query!(

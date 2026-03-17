@@ -5,7 +5,7 @@ use crate::{
 use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
-use sqlx::{Executor, PgPool, Postgres, query};
+use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
 ///
@@ -21,7 +21,11 @@ use sqlx::{Executor, PgPool, Postgres, query};
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
+pub async fn add_tree<'a, E: PgExecutor<'a>>(
+    db: E,
+    tree_data: TreeData,
+    owner_id: i32,
+) -> Result<i32, ApiError> {
     // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
     let structure = serde_json::to_value(TreeStructure {
         root_nodes: vec![
@@ -79,7 +83,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 ///
 /// # Error
 /// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
-pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
+pub async fn update_tree_structure<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
     new_tree_structure: TreeStructure,
@@ -111,8 +115,8 @@ pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn db_get_tree_all_data(
-    db: &PgPool,
+pub async fn db_get_tree_all_data<'a, E: PgExecutor<'a>>(
+    db: E,
     tree_id: i32,
 ) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
     let field = query!(
@@ -168,7 +172,10 @@ pub async fn db_get_tree_all_data(
 ///
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
+pub async fn get_tree_owner<'a, E: PgExecutor<'a>>(
+    db: E,
+    tree_id: i32,
+) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await
@@ -200,7 +207,7 @@ pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, Ap
 /// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
+pub async fn is_structure_valid<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
     tree_structure: &TreeStructure,

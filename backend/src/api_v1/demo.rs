@@ -1,6 +1,7 @@
 use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::demo::{add_counter_value, fetch_counter_value};
+use crate::db::get_connection;
 use crate::errors::ApiError;
 use axum::response::Html;
 use axum::routing::{get, post};
@@ -44,8 +45,10 @@ pub struct JsonTestStruct {
 ///
 /// # Error
 /// May return an [`ApiError`] instead.
-async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
-    let counter_value = fetch_counter_value(&db).await?;
+async fn backend_json_test(
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = fetch_counter_value(&mut *get_connection(db).await?).await?;
 
     let test_struct = JsonTestStruct {
         a: "Hello, from rust struct!".to_owned(),
@@ -61,8 +64,10 @@ async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>
 /// # Returns
 /// A [`Result`] containing the updated counter value in a [`JsonTestStruct`] if successful,
 /// or an [`ApiError`] if not.
-async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
-    let counter_value = add_counter_value(&db, 1).await?;
+async fn increment_counter_test(
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = add_counter_value(&mut *get_connection(db).await?, 1).await?;
 
     let test_struct = JsonTestStruct {
         a: "Incremented counter!".to_owned(),
@@ -84,10 +89,10 @@ pub struct AddCounterBody {
 /// # Returns
 /// Nothing if successful, or an [`ApiError`] if not.
 async fn add_counter_test(
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(body): Json<AddCounterBody>,
 ) -> Result<(), ApiError> {
-    add_counter_value(&db, body.add).await?;
+    add_counter_value(&mut *get_connection(db).await?, body.add).await?;
     Ok(())
 }
 
