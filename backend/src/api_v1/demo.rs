@@ -31,10 +31,10 @@ async fn backend_html_test() -> Html<&'static str> {
 }
 
 /// A test struct, containing some example fields to later be converted to JSON.
-#[derive(serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct JsonTestStruct {
-    a: String,
-    b: i32,
+    pub a: String,
+    pub b: i32,
 }
 
 /// A test endpoint that retrieves the value of a counter in the database.
@@ -73,9 +73,9 @@ async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestSt
 }
 
 /// A struct representing the body of an HTTP request to add to a counter.
-#[derive(serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct AddCounterBody {
-    add: i32,
+    pub add: i32,
 }
 
 /// A test endpoint that adds a given value in the request body to a counter in the database.
@@ -89,4 +89,53 @@ async fn add_counter_test(
 ) -> Result<(), ApiError> {
     add_counter_value(&db, body.add).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use axum_test::TestServer;
+    use sqlx::query;
+
+    #[tokio::test]
+    async fn test_backend_html() {
+        let server = TestServer::new(Router::new().route("/html", get(backend_html_test)));
+        let response = server.get("/html").await;
+        response
+            .assert_status_ok()
+            .assert_text("<h1>Hello from axum!</h1>");
+    }
+
+    #[sqlx::test]
+    async fn test_backend_json_default(db: PgPool) {
+        let server = TestServer::new(
+            Router::new()
+                .route("/json", get(backend_json_test))
+                .layer(Extension(db)),
+        );
+        let response = server.get("/json").await;
+        response.assert_status_ok().assert_json(&JsonTestStruct {
+            a: "Hello, from rust struct!".to_string(),
+            b: 0,
+        });
+    }
+
+    #[sqlx::test]
+    async fn test_backend_json_value(db: PgPool) {
+        query!("INSERT INTO counters VALUES (0, 67)")
+            .execute(&db)
+            .await
+            .unwrap();
+
+        let server = TestServer::new(
+            Router::new()
+                .route("/json", get(backend_json_test))
+                .layer(Extension(db)),
+        );
+        let response = server.get("/json").await;
+        response.assert_status_ok().assert_json(&JsonTestStruct {
+            a: "Hello, from rust struct!".to_string(),
+            b: 67,
+        });
+    }
 }
