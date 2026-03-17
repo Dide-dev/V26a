@@ -3,7 +3,7 @@
     "helloWorld": "Hello, {name} from en!",
     "title": "Title",
     "description": "Description",
-    "bookname": "Bookname",
+    "bookname": "Book name",
     "bookIsbn": "Book ISBN",
     "bookChapter": "Book chapter",
     "bookExercise": "Book exercise",
