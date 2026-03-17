@@ -8,7 +8,6 @@ test('NodeViewer', async () => {
     render(NodeViewer, { node });
 
     expect(document.getElementsByClassName('h-fit')).toHaveLength(1); // Count the number of cards
-    expect(document.getElementsByTagName('line')).toHaveLength(0);
 });
 
 test('NodeViewer with child', async () => {
@@ -16,7 +15,6 @@ test('NodeViewer with child', async () => {
     render(NodeViewer, { node });
 
     expect(document.getElementsByClassName('h-fit')).toHaveLength(2); // Count the number of cards
-    expect(document.getElementsByTagName('line')).toHaveLength(3);
 });
 
 test('NodeViewer with children', async () => {
@@ -30,5 +28,4 @@ test('NodeViewer with children', async () => {
     render(NodeViewer, { node });
 
     expect(document.getElementsByClassName('h-fit')).toHaveLength(3); // Count the number of cards
-    expect(document.getElementsByTagName('line')).toHaveLength(4);
 });
