@@ -20,7 +20,7 @@ use sqlx::{PgExecutor, query};
 /// The id assigned to the new tree.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree<'a, E: PgExecutor<'a>>(
     db: E,
     tree_data: TreeData,
@@ -82,7 +82,7 @@ pub async fn add_tree<'a, E: PgExecutor<'a>>(
 /// Nothing.
 ///
 /// # Error
-/// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
+/// May return a [`SerdeException`](ApiError::SerdeException) or a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_tree_structure<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
@@ -114,7 +114,7 @@ pub async fn update_tree_structure<'a, E: PgExecutor<'a>>(
 /// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn db_get_tree_all_data<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
@@ -171,7 +171,7 @@ pub async fn db_get_tree_all_data<'a, E: PgExecutor<'a>>(
 /// The id of the owner of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_owner<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
@@ -204,9 +204,9 @@ pub async fn get_tree_owner<'a, E: PgExecutor<'a>>(
 /// `false` if either of these don't hold.
 ///
 /// # Error
-/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found which link to `tree_id`.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn is_structure_valid<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,

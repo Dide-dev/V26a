@@ -15,7 +15,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// The id assigned to the new card if successful.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_card<'a, E: PgExecutor<'a>>(
     db: E,
     card_data: CardAddData,
@@ -47,7 +47,7 @@ pub async fn add_card<'a, E: PgExecutor<'a>>(
 /// Nothing.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Result<(), ApiError> {
     query!(
         "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1",
@@ -83,7 +83,7 @@ pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Re
 /// The cards of the tree as a [`BTreeMap`].
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_cards<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
@@ -123,9 +123,9 @@ pub async fn get_tree_cards<'a, E: PgExecutor<'a>>(
 /// The id of the tree the card belongs to, according to the `cards` table in the database.
 ///
 /// # Error
-/// Returns an [`ApiError::MissingCard`] if the `card_id` does not exist.
+/// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` does not exist.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_of_card<'a, E: PgExecutor<'a>>(db: E, card_id: i32) -> Result<i32, ApiError> {
     // We retrieve the `tree_id` of the tree the card belongs to, and by doing so we simultaneously
     // check whether the card with `card_id` exists in the database.

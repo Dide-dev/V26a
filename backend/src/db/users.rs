@@ -17,11 +17,11 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// The id assigned to the new user.
 ///
 /// # Error
-/// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.
+/// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
 ///
-/// May return an [`ApiError::HashException`] instead.
+/// May return a [`HashException`](ApiError::HashException) instead.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32, ApiError> {
     // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
     // constraint is placed on the `email` field.
@@ -70,7 +70,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32,
 /// `true` if the user exists or `false` if they do not.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn user_exists<'a, E: PgExecutor<'a>>(db: E, email: &String) -> Result<bool, ApiError> {
     query!(
         "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",

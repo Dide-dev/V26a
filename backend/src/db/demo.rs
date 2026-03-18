@@ -7,7 +7,7 @@ use sqlx::{PgConnection, query};
 /// `db` - a connection to a Postgres database.
 ///
 /// # Returns
-/// The value if successful, or an [`ApiError::DatabaseException`] if not.
+/// The value if successful, or a [`DatabaseException`](ApiError::DatabaseException) if not.
 pub async fn fetch_counter_value(db: &mut PgConnection) -> Result<i32, ApiError> {
     ensure_counter_exists(&mut *db).await?;
     Ok(query!("SELECT counter_value FROM counters WHERE id = 0")
@@ -28,7 +28,7 @@ pub async fn fetch_counter_value(db: &mut PgConnection) -> Result<i32, ApiError>
 /// The updated value.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_counter_value(db: &mut PgConnection, amount: i32) -> Result<i32, ApiError> {
     ensure_counter_exists(&mut *db).await?;
 
@@ -61,7 +61,7 @@ pub async fn add_counter_value(db: &mut PgConnection, amount: i32) -> Result<i32
 /// Nothing.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn ensure_counter_exists(db: &mut PgConnection) -> Result<(), ApiError> {
     let exists = query!("SELECT EXISTS(SELECT 1 FROM counters WHERE id = 0)")
         .fetch_one(&mut *db)

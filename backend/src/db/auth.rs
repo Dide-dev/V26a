@@ -12,7 +12,7 @@ use sqlx::{PgExecutor, query};
 /// A tuple containing the user id and the password hash.
 ///
 /// # Error
-/// May return an [`ApiError::WrongCredentials`] instead. TODO: clarify when this error occurs.
+/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
 pub async fn get_user_id_and_password<'a, E: PgExecutor<'a>>(
     db: E,
     email: String,

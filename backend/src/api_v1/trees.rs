@@ -26,7 +26,7 @@ pub fn trees() -> Router<Config> {
 /// The id assigned to the new tree as [`Json`].
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -44,19 +44,19 @@ async fn add_new_tree(
 /// Nothing.
 ///
 /// # Error
-/// Returns an [`ApiError::MissingTree`] if no tree with the `id` specified in `tree_update_data` exists.
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
-/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 10,000 cards in the `Cards` table
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 10,000 cards in the `Cards` table
 /// link to `tree_id`.
 ///
-/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
 /// for the given `tree_id`.
 ///
-/// Returns an [`ApiError::MismatchedStructure`] if either of the following are the case:
+/// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
 /// * Not all cards in the structure reference the `tree_id` in the `Cards` database table.
 /// * A card is referenced more than once in the structure.
 ///
-/// May return an [`ApiError::DatabaseException`] or an [`ApiError::SerdeException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) or a [`SerdeException`](ApiError::SerdeException) instead.
 async fn update_tree_structure(
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -96,7 +96,7 @@ async fn update_tree_structure(
 /// The tree data together with the cards as [`Json<TreeComplete>`].
 ///
 /// # Error
-/// Return an [`ApiError::MissingTree`] if `tree_id` does not exist.
+/// Return [`MissingTree`](ApiError::MissingTree) if `tree_id` does not exist.
 ///
 /// May return an [`ApiError`] instead.
 async fn get_tree_with_cards(
@@ -130,12 +130,12 @@ async fn get_tree_with_cards(
 /// Nothing.
 ///
 /// # Error
-/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
 /// for the given `tree_id`.
 ///
-/// Returns an [`ApiError::MissingTree`] if no tree with `tree_id` exists.
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn verify_tree_ownership<'a, E: PgExecutor<'a>>(
     db: E,
     tree_id: i32,
