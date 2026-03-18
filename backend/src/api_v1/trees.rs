@@ -3,9 +3,7 @@ use crate::db::cards::get_tree_cards;
 use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_tree_owner, get_trees_by_owner, is_structure_valid,
 };
-use crate::db_structs::trees::{
-    TreeData, TreeGeneratedData, TreeUpdateStructureData, TreeWithCards,
-};
+use crate::db_structs::trees::{TreeData, TreeMetadata, TreeUpdateStructureData, TreeWithCards};
 use crate::{Config, db};
 
 use crate::errors::ApiError;
@@ -22,7 +20,7 @@ pub fn trees() -> Router<Config> {
         .route("/add", post(add_new_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
-        .route("/get-trees-by-author/{owner_id}", get(get_trees_by_author))
+        .route("/get-by-author/{owner_id}", get(get_trees_by_author))
 }
 
 /// Add a tree to the database.
@@ -132,7 +130,7 @@ async fn get_tree_with_cards(
 async fn get_trees_by_author(
     Extension(db): Extension<PgPool>,
     Path(owner_id): Path<i32>,
-) -> Result<Json<Vec<TreeGeneratedData>>, ApiError> {
+) -> Result<Json<Vec<TreeMetadata>>, ApiError> {
     let trees_metadata = get_trees_by_owner(&db, owner_id).await?;
 
     Ok(Json(trees_metadata))

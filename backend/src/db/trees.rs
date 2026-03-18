@@ -4,7 +4,7 @@ use crate::{
 };
 use std::collections::HashSet;
 
-use crate::db_structs::trees::RootNode;
+use crate::db_structs::trees::{RootNode, TreeMetadata};
 use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
@@ -188,39 +188,48 @@ pub async fn get_tree_owner(
 /// Get the list of trees owned by some owner.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `owner_id` - The id of the owner that is queried on.
 ///
 /// # Returns
-/// A [`vec<TreeGeneratedData>`] containing the metadata of all trees owned by the owner (could be empty).
+/// A [`vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_trees_by_owner(
     db: impl PgExecutor<'_>,
     owner_id: i32,
-) -> Result<Vec<TreeGeneratedData>, ApiError> {
-    let field = query!(
-        "SELECT id, created_at, last_modified, times_visited, last_visited
-                  FROM trees WHERE owner_id = $1",
-        owner_id
-    )
-    .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+) -> Result<Vec<TreeMetadata>, ApiError> {
+    let field = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     let trees_metadata = field
         .iter()
-        .map(|t| TreeGeneratedData {
-            id: t.id,
-            owner_id,
-            created_at: t.created_at,
-            last_modified: t.last_modified,
-            times_visited: t.times_visited,
-            last_visited: t.last_visited,
-        })
-        .collect::<Vec<TreeGeneratedData>>();
+        .map(|t| TreeMetadata {
+            data: TreeData {
+                // Need to clone here because of shared references.
+                title: t.title.clone(),
+                description: t.description.clone(),
+                book_name: t.book_name.clone(),
+                book_edition: t.book_edition.clone(),
+                book_isbn: t.book_isbn.clone(),
+                book_chapter: t.book_chapter.clone(),
+                book_exercise: t.book_exercise.clone(),
+                assignment_text: t.assignment_text.clone(),
+                published: t.published,
+            },
+            gen_data: TreeGeneratedData {
+                id: t.id,
+                owner_id,
+                created_at: t.created_at,
+                last_modified: t.last_modified,
+                times_visited: t.times_visited,
+                last_visited: t.last_visited,
+            },
+        }).collect::<Vec<TreeMetadata>>();
 
     Ok(trees_metadata)
 }
