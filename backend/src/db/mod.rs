@@ -7,8 +7,8 @@ pub mod users;
 /// Get a [`PgConnection`](sqlx::PgConnection) from a [`PgPool`](sqlx::PgPool).
 ///
 /// # Errors
-/// May return a [`DatabaseException`](crate::errors::ApiError::DatabaseException) if the connection can not be
-/// acquired.
+/// May return a [`DatabaseException`](crate::errors::ApiError::DatabaseException) if the connection
+/// can not be acquired.
 #[macro_export]
 macro_rules! get_connection {
     ( $pool:expr ) => {

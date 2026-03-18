@@ -13,8 +13,8 @@ use sqlx::{PgExecutor, query};
 ///
 /// # Error
 /// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
-pub async fn get_user_id_and_password<'a, E: PgExecutor<'a>>(
-    db: E,
+pub async fn get_user_id_and_password<'a>(
+    db: impl PgExecutor<'a>,
     email: String,
 ) -> Result<(i32, String), ApiError> {
     let record = query!(

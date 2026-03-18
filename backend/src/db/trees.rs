@@ -21,8 +21,8 @@ use sqlx::{PgExecutor, query};
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_tree<'a, E: PgExecutor<'a>>(
-    db: E,
+pub async fn add_tree<'a>(
+    db: impl PgExecutor<'a>,
     tree_data: TreeData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
@@ -83,8 +83,8 @@ pub async fn add_tree<'a, E: PgExecutor<'a>>(
 ///
 /// # Error
 /// May return a [`SerdeException`](ApiError::SerdeException) or a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn update_tree_structure<'a, E: PgExecutor<'a>>(
-    db: E,
+pub async fn update_tree_structure<'a>(
+    db: impl PgExecutor<'a>,
     tree_id: i32,
     new_tree_structure: TreeStructure,
 ) -> Result<(), ApiError> {
@@ -115,8 +115,8 @@ pub async fn update_tree_structure<'a, E: PgExecutor<'a>>(
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn db_get_tree_all_data<'a, E: PgExecutor<'a>>(
-    db: E,
+pub async fn db_get_tree_all_data<'a>(
+    db: impl PgExecutor<'a>,
     tree_id: i32,
 ) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
     let field = query!(
@@ -172,8 +172,8 @@ pub async fn db_get_tree_all_data<'a, E: PgExecutor<'a>>(
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_tree_owner<'a, E: PgExecutor<'a>>(
-    db: E,
+pub async fn get_tree_owner<'a>(
+    db: impl PgExecutor<'a>,
     tree_id: i32,
 ) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
@@ -207,8 +207,8 @@ pub async fn get_tree_owner<'a, E: PgExecutor<'a>>(
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found which link to `tree_id`.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn is_structure_valid<'a, E: PgExecutor<'a>>(
-    db: E,
+pub async fn is_structure_valid<'a>(
+    db: impl PgExecutor<'a>,
     tree_id: i32,
     tree_structure: &TreeStructure,
 ) -> Result<bool, ApiError> {
