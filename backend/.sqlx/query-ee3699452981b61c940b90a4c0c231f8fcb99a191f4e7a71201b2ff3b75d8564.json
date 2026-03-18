@@ -16,12 +16,12 @@
       {
         "ordinal": 2,
         "name": "created_at",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 3,
-        "name": "last_edited",
-        "type_info": "Timestamp"
+        "name": "last_modified",
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 4,
@@ -36,7 +36,7 @@
       {
         "ordinal": 6,
         "name": "last_visited",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 7,
@@ -81,7 +81,7 @@
       {
         "ordinal": 15,
         "name": "structure",
-        "type_info": "Json"
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
