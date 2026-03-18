@@ -49,8 +49,8 @@ async fn add_new_card(
 /// # Error
 /// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` referenced in `card_data` does not exist.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
-/// the card belongs to.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change 
+/// the tree the card belongs to.
 ///
 /// Returns an [`MissingTree`](ApiError::MissingTree) if the tree the card belongs to no longer exists.
 ///

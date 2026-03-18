@@ -4,9 +4,9 @@ use sqlx::{PgExecutor, query};
 /// Fetch a user's password from the given database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `email` - the user's email address.
+/// `email` - The user's email address.
 ///
 /// # Returns
 /// A tuple containing the user id and the password hash.

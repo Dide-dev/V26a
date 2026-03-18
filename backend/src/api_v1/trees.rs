@@ -46,11 +46,11 @@ async fn add_new_tree(
 /// # Error
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
-/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 10,000 cards in the `Cards` table
-/// link to `tree_id`.
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 10,000 cards in the 
+/// `Cards` table link to `tree_id`.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
-/// for the given `tree_id`.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change 
+/// the tree for the given `tree_id`.
 ///
 /// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
 /// * Not all cards in the structure reference the `tree_id` in the `Cards` database table.

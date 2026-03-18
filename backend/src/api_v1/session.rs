@@ -60,7 +60,7 @@ impl FromRequestParts<Config> for Claims {
         .map_err(|e| match e.kind() {
             // exp gets validated by the library, but we want to map it to our own error type.
             jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredSession,
-            // other validation error, usually means that the decoding failed (completely invalid session).
+            // Other validation error, usually means that the decoding failed (completely invalid session).
             _ => ApiError::InvalidSession,
         })?;
 

@@ -71,7 +71,7 @@ pub async fn add_tree<'a>(
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -106,7 +106,7 @@ pub async fn update_tree_structure<'a>(
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree which is queried.
 ///
@@ -163,7 +163,7 @@ pub async fn db_get_tree_all_data<'a>(
 /// Get the id of the owner of the tree.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -189,7 +189,7 @@ pub async fn get_tree_owner<'a>(
 /// and whether any duplicate cards exist in the tree structure.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree to check.
 ///
@@ -197,9 +197,9 @@ pub async fn get_tree_owner<'a>(
 ///
 /// # Returns
 /// `true` if both of the following hold:
-/// * each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
+/// * Each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
 ///   corresponding column.
-/// * no duplicate cards exist within the tree structure.
+/// * No duplicate cards exist within the tree structure.
 ///
 /// `false` if either of these don't hold.
 ///
