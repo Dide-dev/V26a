@@ -13,8 +13,7 @@
             const id = params.get('id');
 
             if (!id) {
-                console.error('No tree id provided');
-                return;
+                throw new Error('No tree id provided');
             }
 
             const idNumber = Number(id);
@@ -30,7 +29,7 @@
             }
         } catch (err) {
             console.error(err);
-            error = 'Failed to load tree';
+            error = err as string;
         } finally {
             loading = false;
         }
