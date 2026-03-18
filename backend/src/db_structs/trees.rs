@@ -100,7 +100,7 @@ pub struct TreeGeneratedData {
     pub last_visited: Option<DateTime<Utc>>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeUpdateStructureData {
     pub id: i32,
