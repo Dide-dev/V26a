@@ -25,7 +25,8 @@ fn setup(db: PgPool) -> TestServer {
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints, including ones
 /// that require being logged in, and saves cookies.
-async fn setup_login(db: PgPool) -> TestServer {
+/// It also returns the user id you are logged in as.
+async fn setup_login(db: PgPool) -> (TestServer, i32) {
     let server = setup(db);
 
     let response = server
@@ -41,6 +42,7 @@ async fn setup_login(db: PgPool) -> TestServer {
         })
         .await;
     response.assert_status_ok();
+    let user_id: i32 = response.json();
 
     let response = server
         .post("/auth/login")
@@ -51,5 +53,5 @@ async fn setup_login(db: PgPool) -> TestServer {
         .await;
     response.assert_status_ok();
 
-    server
+    (server, user_id)
 }
