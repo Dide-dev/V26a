@@ -1,14 +1,13 @@
+use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use std::collections::BTreeMap;
 
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
-
 use crate::errors::ApiError;
-use sqlx::{PgExecutor, PgPool, query};
+use sqlx::{PgConnection, PgExecutor, query};
 
 /// Add a new card to the database.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `card_data` - The data assigned to the new card as [`CardAddData`].
 ///
@@ -16,8 +15,8 @@ use sqlx::{PgExecutor, PgPool, query};
 /// The id assigned to the new card if successful.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn add_card(db: &PgPool, card_data: CardAddData) -> Result<i32, ApiError> {
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_card(db: impl PgExecutor<'_>, card_data: CardAddData) -> Result<i32, ApiError> {
     let card_id = query!(
         "INSERT INTO cards (tree_id, front, back)
         VALUES ($1, $2, $3)
@@ -37,7 +36,7 @@ pub async fn add_card(db: &PgPool, card_data: CardAddData) -> Result<i32, ApiErr
 /// Remove a card from the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `card_id` - The id of the card which should be removed.
 ///
@@ -62,7 +61,7 @@ pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), Ap
 /// Update a card in the database.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - A connection to a Postgres database.
 ///
 /// `card_data` - The data used to update the card with, as [`CardUpdateData`].
 ///
@@ -70,10 +69,10 @@ pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), Ap
 /// Nothing.
 ///
 /// # Error
-/// Returns an [`ApiError::MissingCard`] if no card with `card_id` exists.
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn update_card(db: &PgPool, card_data: CardUpdateData) -> Result<(), ApiError> {
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Result<(), ApiError> {
     // We only return the id to handle the case where the card does not exist with fetch_optional().
     query!(
         "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1 RETURNING id",
@@ -81,7 +80,7 @@ pub async fn update_card(db: &PgPool, card_data: CardUpdateData) -> Result<(), A
         card_data.new_front,
         card_data.new_back,
     )
-    .fetch_optional(db)
+    .fetch_optional(&mut *db)
     .await
     .map_err(|_| ApiError::DatabaseException)?
     .ok_or(ApiError::MissingCard(card_data.card_id))?;
@@ -102,7 +101,7 @@ pub async fn update_card(db: &PgPool, card_data: CardUpdateData) -> Result<(), A
 /// Get all cards from a tree.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the cards are asked.
 ///
@@ -110,9 +109,9 @@ pub async fn update_card(db: &PgPool, card_data: CardUpdateData) -> Result<(), A
 /// The cards of the tree as a [`BTreeMap`].
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_cards(
-    db: &PgPool,
+    db: impl PgExecutor<'_>,
     tree_id: i32,
 ) -> Result<BTreeMap<i32, CardGetData>, ApiError> {
     let cards = query!(
@@ -142,7 +141,7 @@ pub async fn get_tree_cards(
 /// Get the id of the tree the card belongs to.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `card_id` - The id of the card of which the corresponding tree is queried.
 ///
@@ -150,10 +149,10 @@ pub async fn get_tree_cards(
 /// The id of the tree the card belongs to, according to the `cards` table in the database.
 ///
 /// # Error
-/// Returns an [`ApiError::MissingCard`] if no card with `card_id` exists.
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn get_tree_of_card(db: &PgPool, card_id: i32) -> Result<i32, ApiError> {
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_tree_of_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<i32, ApiError> {
     // We retrieve the `tree_id` of the tree the card belongs to, and by doing so we simultaneously
     // check whether the card with `card_id` exists in the database.
     let tree_id = query!("SELECT tree_id FROM cards where id=$1", card_id,)

@@ -68,15 +68,18 @@ async fn test_remove_card(db: PgPool) {
         .await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    
+
     let mut expected_btree = BTreeMap::new();
-    expected_btree.insert(card_id, CardGetData {
-        front: card_add_data.front,
-        back: card_add_data.back,
-    });
-    
+    expected_btree.insert(
+        card_id,
+        CardGetData {
+            front: card_add_data.front,
+            back: card_add_data.back,
+        },
+    );
+
     assert_eq!(full_tree.cards, expected_btree);
-    
+
     let tree_structure_with_card = TreeStructure {
         root_nodes: vec![
             RootNode {
@@ -142,7 +145,7 @@ async fn test_remove_card(db: PgPool) {
         .await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    
+
     // The structure should be updated to match the `new_structure` field.
     assert_eq!(full_tree.structure, card_removal_data.new_structure);
     // The card should be removed from the tree.
