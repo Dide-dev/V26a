@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 #[sqlx::test]
 async fn test_new_empty_tree(db: PgPool) {
-    let server = crate::tests::api_v1::setup_login(db).await;
+    let (server, _user_id) = crate::tests::api_v1::setup_login(db).await;
 
     let tree_data = TreeData {
         title: "Test tree".to_string(),
@@ -33,11 +33,10 @@ async fn test_new_empty_tree(db: PgPool) {
 
 #[sqlx::test]
 async fn test_retrieving_trees_by_author(db: PgPool) {
-    let server = crate::tests::api_v1::setup_login(db).await;
-    let owner_id = 1;
+    let (server, user_id) = crate::tests::api_v1::setup_login(db).await;
 
     let response = server
-        .get(&format!("/trees/get-trees-by-author/{owner_id}"))
+        .get(&format!("/trees/get-trees-by-author/{user_id}"))
         .await;
     response.assert_status_ok();
     let vec: Vec<TreeGeneratedData> = response.json();
@@ -57,14 +56,14 @@ async fn test_retrieving_trees_by_author(db: PgPool) {
     };
     let response = server.post("/trees/add").json(&tree_data).await;
     response.assert_status_ok();
+    let tree_id: i32 = response.json();
 
     let response = server
-        .get(&format!("/trees/get-trees-by-author/{owner_id}"))
+        .get(&format!("/trees/get-trees-by-author/{user_id}"))
         .await;
     response.assert_status_ok();
     let vec: Vec<TreeGeneratedData> = response.json();
     let tree_gen_data: &TreeGeneratedData = vec.first().unwrap();
-    let id = 1;
-    assert_eq!(id, tree_gen_data.id);
-    assert_eq!(owner_id, tree_gen_data.owner_id);
+    assert_eq!(tree_id, tree_gen_data.id);
+    assert_eq!(user_id, tree_gen_data.owner_id);
 }
