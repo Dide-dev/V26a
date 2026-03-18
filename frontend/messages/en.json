@@ -24,6 +24,6 @@
     "apiTesting": "Api Testing",
     "home": "Home",
     "repeatPassword": "Repeat password",
-    "missingCharacter": "Missing an uppercase, lowercase, number or special character",
+    "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
     "passwordsNotTheSame": "Passwords are not the same"
 }
