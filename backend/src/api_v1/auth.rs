@@ -20,7 +20,7 @@ pub fn auth() -> Router<Config> {
 /// with an encoded JWT.
 async fn login(
     jar: CookieJar,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
 ) -> Result<CookieJar, ApiError> {
