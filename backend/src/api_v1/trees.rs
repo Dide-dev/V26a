@@ -18,6 +18,7 @@ pub fn trees() -> Router<Config> {
         .route("/add", post(add_new_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
+        .route("/get-trees-by-author/{owner_id}", get(get_trees_by_author))
 }
 
 /// Add a tree to the database.
