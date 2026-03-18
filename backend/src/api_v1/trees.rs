@@ -77,7 +77,30 @@ async fn update_tree_structure(
     Ok(())
 }
 
-/// TODO: Add docs.
+/// Remove a card from a tree. Removes the card from the database table `cards`,
+/// and updates the tree structure, if the provided new structure in `tree_card_removal_data`
+/// is still valid when the card is removed.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
+/// for the given `tree_id`.
+///
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
+///
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
+///
+/// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
+/// * Not all cards in the structure reference the `tree_id` in the `cards` database table.
+/// * A card is referenced more than once in the structure.
+///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found
+/// which link to `tree_id`.
+///
+/// May return a [`SerdeException`](ApiError::SerdeException)
+/// or a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_card_from_tree(
     claims: Claims,
     db: Extension<PgPool>,
@@ -105,7 +128,29 @@ async fn remove_card_from_tree(
     Ok(())
 }
 
-/// TODO: Add docs.
+/// Check if `new_structure` is valid, and if it is, update the structure in the database.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query as a [`&mut PgConnection`](PgConnection)
+///
+/// `tree_id` - The id of the tree which should be updated.
+///
+/// `new_structure` - The new structure for the tree as a [`TreeStructure`], which should be checked,
+/// and, if valid, assigned as the structure for `tree_id` in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
+/// * Not all cards in the structure reference the `tree_id` in the `cards` database table.
+/// * A card is referenced more than once in the structure.
+///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found
+/// which link to `tree_id`.
+///
+/// May return a [`SerdeException`](ApiError::SerdeException)
+/// or a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_structure_if_valid(
     db: &mut PgConnection,
     tree_id: i32,
@@ -151,7 +196,7 @@ async fn get_tree_with_cards(
 
 /// Checks whether the tree exists and if it is owner by the user.
 ///
-/// # Params
+/// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
 /// `tree_id` - The tree of which the ownerships gets verified.
