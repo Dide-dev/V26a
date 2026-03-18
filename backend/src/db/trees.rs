@@ -178,12 +178,25 @@ pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, Ap
     Ok(owner)
 }
 
+/// Get the list of trees owned by some owner.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `owner_id` - The id of the owner that is queried on.
+///
+/// # Returns
+/// A [`vec<TreeGeneratedData>`] containing the metadata of all trees owned by the owner (could be empty).
+///
+/// # Error
+/// May return an [`ApiError::DatabaseException`] instead.
 pub async fn get_trees_by_owner(
     db: &PgPool,
     owner_id: i32
 ) -> Result<Vec<TreeGeneratedData>, ApiError> {
-    let field = query!("SELECT id, created_at, last_modified, times_visited, last_visited
-                        FROM trees WHERE owner_id = $1", owner_id)
+    let field
+        = query!("SELECT id, created_at, last_modified, times_visited, last_visited
+                  FROM trees WHERE owner_id = $1", owner_id)
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
