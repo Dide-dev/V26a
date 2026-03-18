@@ -1,5 +1,8 @@
 .env
+
+# IDE Specific
 .idea/
+.vscode/
 
 # OS
 .DS_Store
