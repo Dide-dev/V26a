@@ -10,7 +10,7 @@ use sqlx::{PgExecutor, query};
 /// Add a new tree to the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_data` - The data assigned to the new tree as [`TreeData`].
 ///
@@ -71,7 +71,7 @@ pub async fn add_tree<'a, E: PgExecutor<'a>>(
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -106,7 +106,7 @@ pub async fn update_tree_structure<'a, E: PgExecutor<'a>>(
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree which is queried.
 ///
@@ -163,7 +163,7 @@ pub async fn db_get_tree_all_data<'a, E: PgExecutor<'a>>(
 /// Get the id of the owner of the tree.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -189,7 +189,7 @@ pub async fn get_tree_owner<'a, E: PgExecutor<'a>>(
 /// and whether any duplicate cards exist in the tree structure.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree to check.
 ///

@@ -62,7 +62,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32,
 /// Checks if a user with a given e-mail exists in the given database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `email` - A reference to the email of the user being checked.
 ///

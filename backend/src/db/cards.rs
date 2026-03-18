@@ -7,7 +7,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// Add a new card to the database, returning its assigned id.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `card_data` - The data assigned to the new card as [`CardAddData`].
 ///
@@ -75,7 +75,7 @@ pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Re
 /// Get all cards from a tree.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the cards are asked.
 ///
@@ -115,7 +115,7 @@ pub async fn get_tree_cards<'a, E: PgExecutor<'a>>(
 /// Get the id of the tree the card belongs to.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or [`Transaction`](sqlx::Transaction).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `card_id` - The id of the card of which the corresponding tree is queried.
 ///

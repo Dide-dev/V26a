@@ -11,7 +11,7 @@ pub mod users;
 /// Get a [`PoolConnection`] from a [`PgPool`].
 ///
 /// # Example
-/// To get a [`PgConnection`](sqlx::PgConnection), you need to deref the value obtained and use it as a mutable reference.
+/// To get a [`&mut PgConnection`](sqlx::PgConnection), you need to deref the value obtained and use it as a mutable reference.
 /// ```rs
 /// function_using_pg_connection(&mut *get_connection(db).await?).await?;
 /// ```
