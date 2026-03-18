@@ -198,7 +198,7 @@ pub async fn get_tree_owner(
 /// # Error
 /// May return an [`ApiError::DatabaseException`] instead.
 pub async fn get_trees_by_owner(
-    db: &PgPool,
+    db: impl PgExecutor<'_>,
     owner_id: i32,
 ) -> Result<Vec<TreeGeneratedData>, ApiError> {
     let field = query!(

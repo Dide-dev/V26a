@@ -130,7 +130,7 @@ async fn get_tree_with_cards(
 /// # Error
 /// May return an [`ApiError`].
 async fn get_trees_by_author(
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Path(owner_id): Path<i32>,
 ) -> Result<Json<Vec<TreeGeneratedData>>, ApiError> {
     let trees_metadata = get_trees_by_owner(&db, owner_id).await?;
