@@ -2,7 +2,8 @@
     import NodeViewer from '../tree-viewer/NodeViewer.svelte';
     import { exampleTree } from '../tree-viewer/example_tree';
     import type { Node } from '../tree-viewer/example_tree';
-    import { type CardData, addCard } from '$lib/backend/cards';
+    import { type CardAddData, addCard } from '$lib/backend/cards';
+    import { type TreeUpdateStructureData, updateTreeStructure } from "$lib/backend/trees";
 
     //TODO, replaces the example with real tree in future
     let tree = $state(exampleTree);
@@ -30,7 +31,7 @@
         if (!action) return;
         errorMessage = '';
 
-        let card: CardData = {
+        let card: CardAddData = {
             treeId: tree.id,
             front: '',
             back: text,
@@ -44,28 +45,54 @@
     }
 
     // Adds a new child node
-    async function addChild(parent: Node, card: CardData) {
-        addCard(card).then(() => {
-            parent.children = [...parent.children, {card: card.back, children: []}];
-            tree = {...tree};
-            action = null;
-        }).catch((reason: Error) => {
-            errorMessage = reason.toString();
-            console.error('Error: ', reason);
-        });
+    async function addChild(parent: Node, card: CardAddData) {
+        const newStructure = [...parent.children, {card: card.back, children: []}];
+
+        addCard(card)
+            .then((treeId) => {
+                let update: TreeUpdateStructureData = {
+                    id: treeId,
+                    newStructure: newStructure,
+                }
+                return updateTreeStructure(update);
+            })
+
+            .then(() => {
+                parent.children = newStructure;
+                tree = {...tree};
+                action = null;
+            })
+
+            .catch((reason: Error) => {
+                errorMessage = reason.toString();
+                console.error('Error: ', reason);
+            });
     }
 
     // Inserts a new child between two nodes
-    async function insertChild(parent: Node, child: Node, card: CardData) {
-        addCard(card).then(() => {
-            const newNode: Node = { card: card.back, children: [child] };
-            parent.children = parent.children.map(c => c === child ? newNode : c) as Node[];
-            tree = {...tree};
-            action = null;
-        }).catch((reason: Error) => {
-            errorMessage = reason.toString();
-            console.error('Error: ', reason);
-        });
+    async function insertChild(parent: Node, child: Node, card: CardAddData) {
+        const newNode: Node = { card: card.back, children: [child] };
+        const newStructure = parent.children.map(c => c === child ? newNode : c) as Node[];
+
+        addCard(card)
+            .then((treeId) => {
+                let update: TreeUpdateStructureData = {
+                    id: treeId,
+                    newStructure: newStructure,
+                }
+                return updateTreeStructure(update);
+            })
+
+            .then(() => {
+                parent.children = newStructure;
+                tree = {...tree};
+                action = null;
+            })
+
+            .catch((reason: Error) => {
+                errorMessage = reason.toString();
+                console.error('Error: ', reason);
+            });
     }
 
 </script>
