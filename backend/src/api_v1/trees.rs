@@ -223,7 +223,7 @@ pub async fn verify_tree_ownership(
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if user_id == owner_id {
+    if user_id != owner_id {
         return Err(ApiError::NoPermission);
     }
 

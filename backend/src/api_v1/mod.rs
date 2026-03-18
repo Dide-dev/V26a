@@ -1,9 +1,9 @@
-mod auth;
-mod cards;
-mod demo;
+pub mod auth;
+pub mod cards;
+pub mod demo;
 pub mod session;
-mod trees;
-mod users;
+pub mod trees;
+pub mod users;
 
 use crate::Config;
 use crate::api_v1::{cards::cards, demo::demo, trees::trees, users::users};
