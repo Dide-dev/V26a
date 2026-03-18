@@ -1,20 +1,20 @@
 use crate::errors::ApiError;
-use sqlx::{PgPool, query};
+use sqlx::{PgExecutor, query};
 
 /// Fetch a user's password from the given database.
 ///
 /// # Arguments
-/// `db` - a reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `email` - the user's email address.
+/// `email` - The user's email address.
 ///
 /// # Returns
 /// A tuple containing the user id and the password hash.
 ///
 /// # Error
-/// May return an [`ApiError::WrongCredentials`] instead. TODO: clarify when this error occurs.
+/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
 pub async fn get_user_id_and_password(
-    db: &PgPool,
+    db: impl PgExecutor<'_>,
     email: String,
 ) -> Result<(i32, String), ApiError> {
     let record = query!(

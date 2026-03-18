@@ -5,12 +5,12 @@ use crate::{
 use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
-use sqlx::{Executor, PgPool, Postgres, query};
+use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_data` - The data assigned to the new tree as [`TreeData`].
 ///
@@ -20,8 +20,12 @@ use sqlx::{Executor, PgPool, Postgres, query};
 /// The id assigned to the new tree.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result<i32, ApiError> {
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_tree(
+    db: impl PgExecutor<'_>,
+    tree_data: TreeData,
+    owner_id: i32,
+) -> Result<i32, ApiError> {
     // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
     let structure = serde_json::to_value(TreeStructure {
         root_nodes: vec![
@@ -67,7 +71,7 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -78,9 +82,9 @@ pub async fn add_tree(db: &PgPool, tree_data: TreeData, owner_id: i32) -> Result
 /// Nothing.
 ///
 /// # Error
-/// May return an [`ApiError::SerdeException`] or an [`ApiError::DatabaseException`] instead.
-pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
-    db: E,
+/// May return a [`SerdeException`](ApiError::SerdeException) or a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_tree_structure(
+    db: impl PgExecutor<'_>,
     tree_id: i32,
     new_tree_structure: TreeStructure,
 ) -> Result<(), ApiError> {
@@ -102,7 +106,7 @@ pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree which is queried.
 ///
@@ -110,9 +114,9 @@ pub async fn update_tree_structure<'a, E: Executor<'a, Database = Postgres>>(
 /// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn db_get_tree_all_data(
-    db: &PgPool,
+    db: impl PgExecutor<'_>,
     tree_id: i32,
 ) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
     let field = query!(
@@ -159,7 +163,7 @@ pub async fn db_get_tree_all_data(
 /// Get the id of the owner of the tree.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -167,8 +171,11 @@ pub async fn db_get_tree_all_data(
 /// The id of the owner of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
 ///
 /// # Error
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, ApiError> {
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_tree_owner(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await
@@ -222,7 +229,7 @@ pub async fn get_trees_by_owner(
 /// and whether any duplicate cards exist in the tree structure.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_id` - The id of the tree to check.
 ///
@@ -230,18 +237,18 @@ pub async fn get_trees_by_owner(
 ///
 /// # Returns
 /// `true` if both of the following hold:
-/// * each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
+/// * Each `card_id` in the structure exists in the `cards` table and has `tree_id` in the
 ///   corresponding column.
-/// * no duplicate cards exist within the tree structure.
+/// * No duplicate cards exist within the tree structure.
 ///
 /// `false` if either of these don't hold.
 ///
 /// # Error
-/// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found which link to `tree_id`.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
-pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
-    db: E,
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn is_structure_valid(
+    db: impl PgExecutor<'_>,
     tree_id: i32,
     tree_structure: &TreeStructure,
 ) -> Result<bool, ApiError> {
