@@ -1,7 +1,11 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
-use crate::db::trees::{add_tree, db_get_tree_all_data, get_tree_owner, get_trees_by_owner, is_structure_valid};
-use crate::db_structs::trees::{TreeData, TreeGeneratedData, TreeUpdateStructureData, TreeWithCards};
+use crate::db::trees::{
+    add_tree, db_get_tree_all_data, get_tree_owner, get_trees_by_owner, is_structure_valid,
+};
+use crate::db_structs::trees::{
+    TreeData, TreeGeneratedData, TreeUpdateStructureData, TreeWithCards,
+};
 use crate::{Config, db};
 
 use crate::errors::ApiError;
@@ -129,8 +133,7 @@ async fn get_trees_by_author(
     db: Extension<PgPool>,
     Path(owner_id): Path<i32>,
 ) -> Result<Json<Vec<TreeGeneratedData>>, ApiError> {
-    let trees_metadata = get_trees_by_owner(&db, owner_id)
-        .await?;
+    let trees_metadata = get_trees_by_owner(&db, owner_id).await?;
 
     Ok(Json(trees_metadata))
 }

@@ -36,7 +36,9 @@ async fn test_retrieving_trees_by_author(db: PgPool) {
     let server = crate::tests::api_v1::setup_login(db).await;
     let owner_id = 1;
 
-    let response = server.get(&format!("/trees/get-trees-by-author/{owner_id}")).await;
+    let response = server
+        .get(&format!("/trees/get-trees-by-author/{owner_id}"))
+        .await;
     response.assert_status_ok();
     let vec: Vec<TreeGeneratedData> = response.json();
     let empty: Vec<TreeGeneratedData> = Vec::new();
@@ -56,7 +58,9 @@ async fn test_retrieving_trees_by_author(db: PgPool) {
     let response = server.post("/trees/add").json(&tree_data).await;
     response.assert_status_ok();
 
-    let response = server.get(&format!("/trees/get-trees-by-author/{owner_id}")).await;
+    let response = server
+        .get(&format!("/trees/get-trees-by-author/{owner_id}"))
+        .await;
     response.assert_status_ok();
     let vec: Vec<TreeGeneratedData> = response.json();
     let tree_gen_data: &TreeGeneratedData = vec.first().unwrap();
