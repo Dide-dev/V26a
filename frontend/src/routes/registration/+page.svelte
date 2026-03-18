@@ -14,15 +14,46 @@
         emailVisible: false,
         language: getLocale()
     });
+    let repeatPassword = $state('');
     let error: null | Error = $state(null);
 
+    function checkSamePassword(): boolean {
+        return repeatPassword == formData.password;
+    }
+
+    function checkLowercase(): boolean {
+        let passwordChecker = formData.password.toUpperCase();
+        return passwordChecker != formData.password;
+    }
+
+    function checkUppercase(): boolean {
+        let passwordChecker = formData.password.toLowerCase();
+        return passwordChecker != formData.password;
+    }
+
+    function checkNumber(): boolean {
+        let regex = /\d/;
+        return regex.test(formData.password);
+    }
+
+    function checkSpecialCharacter(): boolean {
+        let regex = /[?!@#$%^&*()+=.,<>{}[\]:;"'|~`_/\\-]/;
+        return regex.test(formData.password);
+    }
+
     async function handleSubmit(event: SubmitEvent) {
-        event.preventDefault();
-        try {
-            await addUser(formData);
-            goto(appLink('/login'));
-        } catch (e) {
-            error = e as Error;
+        if (!checkLowercase() || !checkUppercase() || !checkNumber() || !checkSpecialCharacter()) {
+            error = new Error(m.missingCharacter());
+        } else if (!checkSamePassword()) {
+            error = new Error(m.passwordsNotTheSame());
+        } else {
+            event.preventDefault();
+            try {
+                await addUser(formData);
+                goto(appLink('/login'));
+            } catch (e) {
+                error = e as Error;
+            }
         }
     }
 </script>
@@ -70,7 +101,20 @@
                 bind:value={formData.password}
                 name="password"
                 type="password"
-                maxlength="128"
+                minlength="8"
+                maxlength="72"
+                required
+            />
+        </label>
+        <label>
+            {m.repeatPassword()}
+            <input
+                class="rounded-md border-2"
+                bind:value={repeatPassword}
+                name="repeat password"
+                type="password"
+                minlength="8"
+                maxlength="72"
                 required
             />
         </label>
