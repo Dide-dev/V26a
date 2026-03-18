@@ -5,7 +5,7 @@ use crate::{
 use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
-use sqlx::{Executor, PgPool, Postgres, query};
+use sqlx::{Executor, PgExecutor, PgPool, Postgres, query};
 
 /// Add a new tree to the database.
 ///
@@ -200,8 +200,8 @@ pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, Ap
 /// Returns an [`ApiError::DatabaseMemoryCap`] if more than 9,999 cards are found which link to `tree_id`.
 ///
 /// May return an [`ApiError::DatabaseException`] instead.
-pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
-    db: E,
+pub async fn is_structure_valid(
+    db: impl PgExecutor<'_>,
     tree_id: i32,
     tree_structure: &TreeStructure,
 ) -> Result<bool, ApiError> {

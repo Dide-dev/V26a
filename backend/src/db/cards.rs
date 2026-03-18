@@ -48,7 +48,7 @@ pub async fn add_card(db: &PgPool, card_data: CardAddData) -> Result<i32, ApiErr
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn remove_card<'a>(db: impl PgExecutor<'a>, card_id: i32) -> Result<(), ApiError> {
+pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), ApiError> {
     // We only return the id to handle the case where the card does not exist with fetch_optional().
     query!("DELETE FROM cards WHERE id = $1 RETURNING id", card_id,)
         .fetch_optional(db)
