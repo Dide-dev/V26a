@@ -16,10 +16,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_card<'a>(
-    db: impl PgExecutor<'a>,
-    card_data: CardAddData,
-) -> Result<i32, ApiError> {
+pub async fn add_card(db: impl PgExecutor<'_>, card_data: CardAddData) -> Result<i32, ApiError> {
     let card_id = query!(
         "INSERT INTO cards (tree_id, front, back)
         VALUES ($1, $2, $3)
@@ -84,8 +81,8 @@ pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Re
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_tree_cards<'a>(
-    db: impl PgExecutor<'a>,
+pub async fn get_tree_cards(
+    db: impl PgExecutor<'_>,
     tree_id: i32,
 ) -> Result<BTreeMap<i32, CardGetData>, ApiError> {
     let cards = query!(
@@ -126,7 +123,7 @@ pub async fn get_tree_cards<'a>(
 /// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` does not exist.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_tree_of_card<'a>(db: impl PgExecutor<'a>, card_id: i32) -> Result<i32, ApiError> {
+pub async fn get_tree_of_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<i32, ApiError> {
     // We retrieve the `tree_id` of the tree the card belongs to, and by doing so we simultaneously
     // check whether the card with `card_id` exists in the database.
     let tree_id = query!("SELECT tree_id FROM cards where id=$1", card_id,)

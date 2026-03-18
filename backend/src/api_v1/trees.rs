@@ -136,8 +136,8 @@ async fn get_tree_with_cards(
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn verify_tree_ownership<'a>(
-    db: impl PgExecutor<'a>,
+pub async fn verify_tree_ownership(
+    db: impl PgExecutor<'_>,
     tree_id: i32,
     user_id: i32,
 ) -> Result<(), ApiError> {

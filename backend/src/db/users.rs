@@ -71,7 +71,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32,
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn user_exists<'a>(db: impl PgExecutor<'a>, email: &String) -> Result<bool, ApiError> {
+pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool, ApiError> {
     query!(
         "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
         email,
