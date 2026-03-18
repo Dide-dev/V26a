@@ -178,6 +178,29 @@ pub async fn get_tree_owner(db: &PgPool, tree_id: i32) -> Result<Option<i32>, Ap
     Ok(owner)
 }
 
+pub async fn get_trees_by_owner(
+    db: &PgPool,
+    owner_id: i32
+) -> Result<Vec<TreeGeneratedData>, ApiError> {
+    let field = query!("SELECT id, created_at, last_modified, times_visited, last_visited
+                        FROM trees WHERE owner_id = $1", owner_id)
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let trees_metadata =
+        field.iter().map(|t| TreeGeneratedData {
+            id: t.id,
+            owner_id,
+            created_at: t.created_at,
+            last_modified: t.last_modified,
+            times_visited: t.times_visited,
+            last_visited: t.last_visited,
+        }).collect::<Vec<TreeGeneratedData>>();
+
+    Ok(trees_metadata)
+}
+
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
 /// and whether any duplicate cards exist in the tree structure.
 ///
