@@ -68,6 +68,12 @@ export type TreeUpdateStructureData = {
     newStructure: TreeStructure;
 };
 
+export type TreeRemoveCardData = {
+    id: TreeId;
+    cardId: CardId;
+    newStructure: TreeStructure;
+};
+
 /** Add a tree to the database. */
 export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add', tree);
@@ -76,6 +82,10 @@ export function addTree(tree: TreeData): Promise<TreeId> {
 /** Update the structure of an existing tree. */
 export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): Promise<void> {
     return apiCallPostTree('update-structure', newTreeStructure);
+}
+
+export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
+    return apiCallPostTree('remove-card', removeCardData);
 }
 
 /** Request all data of a specific tree together with all its cards from the database. */
