@@ -1,10 +1,9 @@
-use crate::Config;
 use crate::db::cards::{add_card, get_tree_of_card, update_card};
 use crate::db_structs::cards::{CardAddData, CardUpdateData};
+use crate::{Config, get_connection};
 
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_ownership;
-use crate::db::get_connection;
 use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
@@ -53,7 +52,7 @@ async fn add_new_card(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
 /// the card belongs to.
 ///
-/// Returns [`MissingTree`](ApiError::MissingTree) if the tree the card belongs to no longer exists.
+/// Returns an [`MissingTree`](ApiError::MissingTree) if the tree the card belongs to no longer exists.
 ///
 /// May return an [`ApiError`] instead.
 async fn update_existing_card(
@@ -66,7 +65,7 @@ async fn update_existing_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, tree_id, claims.sub).await?;
 
-    update_card(&mut *get_connection(db).await?, card_data).await?;
+    update_card(get_connection!(db), card_data).await?;
 
     Ok(())
 }
