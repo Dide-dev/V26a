@@ -2,6 +2,7 @@
     import NodeViewer from './NodeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
+    import { page } from '$app/state';
 
     let loading = true;
     let error: string | null = null;
@@ -9,8 +10,7 @@
 
     onMount(async () => {
         try {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
+            const id = page.url.searchParams.get('id');
 
             if (!id) {
                 throw new Error('No tree id provided');

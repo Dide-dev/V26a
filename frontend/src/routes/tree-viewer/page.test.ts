@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/svelte';
-import { expect, test, vi } from 'vitest';
+import { render, screen } from '@testing-library/svelte';
+import { test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import PageComponent from './+page.svelte';
+import { page } from '$app/state';
 import type {
     RootNode,
     Node,
@@ -67,25 +68,27 @@ function createTree(): TreeWithCards {
 vi.mock('$lib/backend/trees', () => {
     return { getTreeWithCards: vi.fn() };
 });
+afterEach(() => {
+    vi.resetAllMocks();
+});
 
 test('Page succesfully loads tree', async () => {
     const tree: TreeWithCards = createTree();
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    Object.defineProperty(window, 'location', {
-        writable: true,
-        value: { search: '?id=4' }
-    });
+    page.url.searchParams.set('id', '4');
     render(PageComponent);
 
-    await waitFor(() => expect(screen.findByText(tree.data.title)).toBeTruthy());
+    await screen.findByText(tree.data.title);
 
     const description = tree.data.description as string;
-    await waitFor(() => expect(screen.getByText(description)).toBeTruthy());
+    await screen.getByText(description);
 
-    await waitFor(() => expect(screen.getByText(tree.cards[1].front)).toBeTruthy());
-    await waitFor(() => expect(screen.getByText(tree.cards[2].front)).toBeTruthy());
+    await screen.getByText(tree.cards[1].front);
+    await screen.getByText(tree.cards[2].front);
+
+    page.url.searchParams.delete('id');
 });
 
 test('No tree-id provided is handled correctly', async () => {
@@ -93,13 +96,10 @@ test('No tree-id provided is handled correctly', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    Object.defineProperty(window, 'location', {
-        writable: true,
-        value: { search: ' ' }
-    });
+    page.url.searchParams.delete('id');
     render(PageComponent);
 
-    await waitFor(() => expect(screen.findByText('Error: No tree id provided')).toBeTruthy());
+    await screen.findByText('Error: No tree id provided');
 });
 
 test('Invalid tree-id is handled correctly', async () => {
@@ -107,21 +107,20 @@ test('Invalid tree-id is handled correctly', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    Object.defineProperty(window, 'location', {
-        writable: true,
-        value: { search: '?id=abc' }
-    });
+    page.url.searchParams.delete('id');
+    page.url.searchParams.set('id', 'abc');
     render(PageComponent);
 
-    await waitFor(() => expect(screen.findByText('Error: Invalid tree id')).toBeTruthy());
+    await screen.findByText('Error: Invalid tree id');
 });
 
 test('No tree returned is handled correctly', async () => {
-    Object.defineProperty(window, 'location', {
-        writable: true,
-        value: { search: '?id=abc' }
-    });
+    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
+    mockGetTree.mockResolvedValue(null as unknown as TreeWithCards);
+
+    page.url.searchParams.delete('id');
+    page.url.searchParams.set('id', '5');
     render(PageComponent);
 
-    await waitFor(() => expect(screen.findByText('Error: Tree not found')).toBeTruthy());
+    await screen.findByText('Error: Tree not found');
 });
