@@ -113,3 +113,12 @@ pub struct TreeList {
     // TODO: moet meer data bevatten
     pub list: Vec<TreeData>,
 }
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Filters {
+    #[serde(default)]
+    pub book: Vec<String>,
+    pub created_after: Option<DateTime<Utc>>,
+    pub created_before: Option<DateTime<Utc>>,
+}

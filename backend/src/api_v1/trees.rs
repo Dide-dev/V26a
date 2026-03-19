@@ -1,7 +1,11 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
-use crate::db::trees::{add_tree, db_get_tree_all_data, get_tree_owner, is_structure_valid};
-use crate::db_structs::trees::{TreeData, TreeList, TreeUpdateStructureData, TreeWithCards};
+use crate::db::trees::{
+    add_tree, db_get_tree_all_data, get_queried_list, get_tree_owner, is_structure_valid,
+};
+use crate::db_structs::trees::{
+    Filters, TreeData, TreeList, TreeUpdateStructureData, TreeWithCards,
+};
 use crate::{Config, db};
 
 use crate::errors::ApiError;
@@ -11,6 +15,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 
+use chrono::{NaiveDate, NaiveTime};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -161,13 +166,27 @@ pub struct FilterOptions {
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
     pub book: Vec<String>,
-    pub created_at_min: u64, // unix epoch?
-    pub created_at_max: u64,
+    pub created_after: Option<NaiveDate>, // unix timestamp?
+    pub created_before: Option<NaiveDate>,
 }
 
 pub async fn get_list(
     db: Extension<PgPool>,
     Query(filters): Query<FilterOptions>,
 ) -> Result<Json<TreeList>, ApiError> {
-    todo!()
+    let filters = Filters {
+        book: filters.book,
+        created_after: filters
+            .created_after
+            .map(|date| date.and_time(NaiveTime::MIN).and_utc()),
+        created_before: filters.created_before.map(|date| {
+            date.and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap())
+                .and_utc()
+        }),
+    };
+    println!("{filters:?}");
+
+    let list = get_queried_list(&db, filters).await?;
+
+    Ok(Json(list))
 }

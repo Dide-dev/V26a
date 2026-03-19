@@ -1,11 +1,11 @@
 use crate::{
-    db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
+    db_structs::trees::{Filters, TreeData, TreeGeneratedData, TreeList, TreeStructure},
     errors::ApiError,
 };
 use std::collections::HashSet;
 
 use crate::db_structs::trees::RootNode;
-use sqlx::{Executor, PgPool, Postgres, query};
+use sqlx::{Executor, PgPool, Postgres, query, query_as};
 
 /// Add a new tree to the database.
 ///
@@ -124,7 +124,6 @@ pub async fn db_get_tree_all_data(
     .fetch_optional(db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
-
     let Some(field) = field else {
         return Ok(None);
     };
@@ -238,4 +237,20 @@ pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
     let no_duplicates_in_structure = structure_card_ids.len() == hash_structure_card_ids.len();
 
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
+}
+
+pub async fn get_queried_list(db: &PgPool, filters: Filters) -> Result<TreeList, ApiError> {
+    let trees = query_as!(
+        TreeData,
+        "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
+        FROM trees 
+        WHERE (book_name = ANY($1) OR CARDINALITY($1) = 0)
+        AND (created_at >= $2 OR $2 IS NULL)
+        AND (created_at <= $3 OR $3 IS NULL)",
+        &filters.book,
+        filters.created_after,
+        filters.created_before,
+    ).fetch_all(db).await.map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(TreeList { list: trees })
 }
