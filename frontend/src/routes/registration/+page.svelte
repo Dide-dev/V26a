@@ -42,12 +42,12 @@
     }
 
     async function handleSubmit(event: SubmitEvent) {
+        event.preventDefault();
         if (!checkLowercase() || !checkUppercase() || !checkNumber() || !checkSpecialCharacter()) {
             error = new Error(m.missingCharacter());
         } else if (!checkSamePassword()) {
             error = new Error(m.passwordsNotTheSame());
         } else {
-            event.preventDefault();
             try {
                 await addUser(formData);
                 goto(appLink('/login'));
@@ -67,6 +67,7 @@
                 bind:value={formData.email}
                 name="email"
                 type="email"
+                data-testid="email"
                 placeholder={m.emailPlaceholder()}
                 maxlength="256"
                 required
@@ -79,6 +80,7 @@
                 bind:value={formData.name}
                 name="name"
                 type="text"
+                data-testid="name"
                 maxlength="128"
                 required
             />
@@ -101,6 +103,7 @@
                 bind:value={formData.password}
                 name="password"
                 type="password"
+                data-testid="password"
                 minlength="8"
                 maxlength="72"
                 required
@@ -113,6 +116,7 @@
                 bind:value={repeatPassword}
                 name="repeat password"
                 type="password"
+                data-testid="repeat password"
                 minlength="8"
                 maxlength="72"
                 required
@@ -135,6 +139,6 @@
             {m.emailVisible()}
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.register()}</button>
-        <p class="text-red-600">{error?.message}</p>
+        <p class="text-red-600" data-testid="error">{error?.message}</p>
     </form>
 </div>
