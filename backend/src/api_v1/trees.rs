@@ -4,9 +4,10 @@ use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_queried_list, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
-    Filters, TreeData, TreeList, TreeUpdateStructureData, TreeWithCards,
+    TreeData, TreeFilters, TreeListResponse, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::{Config, db};
+use std::fmt::Debug;
 
 use crate::errors::ApiError;
 
@@ -15,6 +16,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 
+use crate::api_v1::structs::PaginationOptions;
 use chrono::{NaiveDate, NaiveTime};
 use sqlx::PgPool;
 
@@ -160,9 +162,10 @@ pub async fn verify_tree_ownership(
     Ok(())
 }
 
-#[derive(serde::Deserialize)]
+/// A struct representing the options available for filtering through a list of trees
+#[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct FilterOptions {
+pub struct TreeFilterOptions {
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
     pub book: Vec<String>,
@@ -170,11 +173,17 @@ pub struct FilterOptions {
     pub created_before: Option<NaiveDate>,
 }
 
+/// TODO: docs
 pub async fn get_list(
-    db: Extension<PgPool>,
-    Query(filters): Query<FilterOptions>,
-) -> Result<Json<TreeList>, ApiError> {
-    let filters = Filters {
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<PaginationOptions>,
+    Query(filters): Query<TreeFilterOptions>,
+) -> Result<Json<TreeListResponse>, ApiError> {
+    if page.size > 100 {
+        return Err(ApiError::MaxPageSizeExceeded(100));
+    }
+
+    let filters = TreeFilters {
         book: filters.book,
         created_after: filters
             .created_after
@@ -186,7 +195,17 @@ pub async fn get_list(
     };
     println!("{filters:?}");
 
-    let list = get_queried_list(&db, filters).await?;
+    let trees = get_queried_list(&db, &page, filters).await?;
+    let next_page = if trees.has_next {
+        Some(page.page + 1)
+    } else {
+        None
+    };
+
+    let list = TreeListResponse {
+        next_page,
+        trees: trees.trees,
+    };
 
     Ok(Json(list))
 }

@@ -1,11 +1,11 @@
+use crate::api_v1::structs::PaginationOptions;
+use crate::db_structs::trees::{RootNode, TreeList};
 use crate::{
-    db_structs::trees::{Filters, TreeData, TreeGeneratedData, TreeList, TreeStructure},
+    db_structs::trees::{TreeData, TreeFilters, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
-use std::collections::HashSet;
-
-use crate::db_structs::trees::RootNode;
 use sqlx::{Executor, PgPool, Postgres, query, query_as};
+use std::collections::HashSet;
 
 /// Add a new tree to the database.
 ///
@@ -239,18 +239,44 @@ pub async fn is_structure_valid<'a, E: Executor<'a, Database = Postgres>>(
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
 
-pub async fn get_queried_list(db: &PgPool, filters: Filters) -> Result<TreeList, ApiError> {
-    let trees = query_as!(
+/// TODO: docs
+pub async fn get_queried_list(
+    db: &PgPool,
+    page: &PaginationOptions,
+    filters: TreeFilters,
+) -> Result<TreeList, ApiError> {
+    // Prevent overflow errors
+    if !page.input_is_valid() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    let mut trees = query_as!(
         TreeData,
         "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
-        FROM trees 
-        WHERE (book_name = ANY($1) OR CARDINALITY($1) = 0)
-        AND (created_at >= $2 OR $2 IS NULL)
-        AND (created_at <= $3 OR $3 IS NULL)",
+        FROM trees
+        WHERE (book_name = ANY($3) OR CARDINALITY($3) = 0)
+        AND (created_at >= $4 OR $4 IS NULL)
+        AND (created_at <= $5 OR $5 IS NULL)
+        ORDER BY created_at DESC -- newest first
+        LIMIT $1 OFFSET $2",
+        i64::from(page.size + 1), // Return an extra entry to the API so it can efficiently know if there is a next page.
+        i64::from((page.page - 1) * page.size), // Page is 1-based
         &filters.book,
         filters.created_after,
         filters.created_before,
     ).fetch_all(db).await.map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(TreeList { list: trees })
+    // User requested a page that yields no results
+    if trees.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    // Check if there is a next page to be requested by the client, and remove the extra added entry if there is.
+    // The unwrap should not ever trigger an exception, as it is checked to be > 0 at the start of the function.
+    let has_next = trees.len() > usize::try_from(page.size).unwrap();
+    if has_next {
+        trees.pop();
+    }
+
+    Ok(TreeList { has_next, trees })
 }
