@@ -1,10 +1,10 @@
 #![cfg(test)]
 
 use crate::db::cards::{add_card, update_card};
-use crate::db::trees::add_tree;
+use crate::db::trees::{add_tree, update_tree_structure};
 use crate::db::users::add_user;
 use crate::db_structs::cards::{CardAddData, CardUpdateData};
-use crate::db_structs::trees::TreeData;
+use crate::db_structs::trees::{Node, RootNode, TreeData, TreeStructure};
 use crate::db_structs::users::{UserData, UserLanguage};
 use crate::errors::ApiError;
 use crate::get_connection;
@@ -18,7 +18,7 @@ async fn test_db_functions(db: PgPool) {
     /// # Tested functions
     /// `cards.rs` - [`add_card`] & [`update_card`].
     ///
-    /// `trees.rs` - [`add_tree`].
+    /// `trees.rs` - [`add_tree`], [`update_tree_structure`].
     ///
     /// `users.rs` - [`add_user`].
     async fn happy_path(db: PgPool) -> Result<(), ApiError> {
@@ -59,6 +59,13 @@ async fn test_db_functions(db: PgPool) {
         assert!(tree_id.is_ok());
         let tree_id = tree_id?;
 
+        let tree_is_added = query!("SELECT EXISTS (SELECT 1 FROM trees WHERE id = $1)", tree_id,)
+            .fetch_one(&db)
+            .await;
+        assert!(tree_is_added.is_ok());
+        let tree_is_added = tree_is_added.unwrap();
+        assert!(tree_is_added.exists.unwrap());
+
         let card_add_data = CardAddData {
             tree_id,
             front: "spoiler".to_string(),
@@ -68,6 +75,35 @@ async fn test_db_functions(db: PgPool) {
         let card_id = add_card(&db, card_add_data).await;
         assert!(card_id.is_ok());
         let card_id = card_id?;
+
+        let card_is_added = query!("SELECT EXISTS (SELECT 1 FROM cards WHERE id = $1)", card_id,)
+            .fetch_one(&db)
+            .await;
+        assert!(card_is_added.is_ok());
+        let card_is_added = card_is_added.unwrap();
+        assert!(card_is_added.exists.unwrap());
+
+        let new_tree_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![Node {
+                    card_id,
+                    children: vec![],
+                }],
+            }],
+        };
+
+        let void = update_tree_structure(&db, tree_id, &new_tree_structure).await;
+        assert!(void.is_ok());
+
+        let updated_tree_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id,)
+            .fetch_one(&db)
+            .await;
+        assert!(updated_tree_structure.is_ok());
+        let updated_tree_structure =
+            serde_json::from_value::<TreeStructure>(updated_tree_structure.unwrap().structure)
+                .unwrap();
+        assert_eq!(new_tree_structure, updated_tree_structure);
 
         let card_update_data = CardUpdateData {
             card_id,

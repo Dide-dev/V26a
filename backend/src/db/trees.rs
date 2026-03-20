@@ -86,7 +86,7 @@ pub async fn add_tree(
 pub async fn update_tree_structure(
     db: impl PgExecutor<'_>,
     tree_id: i32,
-    new_tree_structure: TreeStructure,
+    new_tree_structure: &TreeStructure,
 ) -> Result<(), ApiError> {
     let new_tree_structure =
         serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;

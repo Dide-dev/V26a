@@ -81,7 +81,7 @@ async fn update_tree_structure(
     db::trees::update_tree_structure(
         &mut *tx,
         tree_update_data.id,
-        tree_update_data.new_structure,
+        &tree_update_data.new_structure,
     )
     .await?;
 
