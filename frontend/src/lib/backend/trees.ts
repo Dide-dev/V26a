@@ -68,6 +68,16 @@ export type TreeUpdateStructureData = {
     newStructure: TreeStructure;
 };
 
+export type TreeList = {
+    list: TreeData[];
+};
+
+export type FilterOptions = {
+    book: string[];
+    createdAfter: Option<Date>;
+    createdBefore: Option<Date>;
+};
+
 /** Add a tree to the database. */
 export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add', tree);
@@ -81,4 +91,14 @@ export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): 
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+export function getFilteredList(filterOptions: FilterOptions): Promise<TreeList> {
+    // The JSON stringify is needed to get the dates in rfc3339 format instead of ISO format
+    // because there is a different implementation of toJSON and toString
+    let params: URLSearchParams = new URLSearchParams(
+        JSON.parse(JSON.stringify(filterOptions)) as Record<string, string>
+    );
+
+    return apiCallGetTree(`get-list?${params}`);
 }

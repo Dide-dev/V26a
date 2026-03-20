@@ -244,7 +244,8 @@ pub async fn get_queried_list(db: &PgPool, filters: Filters) -> Result<TreeList,
         TreeData,
         "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
         FROM trees 
-        WHERE (book_name = ANY($1) OR CARDINALITY($1) = 0)
+        WHERE published = true
+        AND (book_name = ANY($1) OR CARDINALITY($1) = 0)
         AND (created_at >= $2 OR $2 IS NULL)
         AND (created_at <= $3 OR $3 IS NULL)",
         &filters.book,

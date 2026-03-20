@@ -15,7 +15,6 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 
-use chrono::{NaiveDate, NaiveTime};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -160,30 +159,10 @@ pub async fn verify_tree_ownership(
     Ok(())
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FilterOptions {
-    // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
-    #[serde(default)]
-    pub book: Vec<String>,
-    pub created_after: Option<NaiveDate>, // unix timestamp?
-    pub created_before: Option<NaiveDate>,
-}
-
 pub async fn get_list(
     db: Extension<PgPool>,
-    Query(filters): Query<FilterOptions>,
+    Query(filters): Query<Filters>,
 ) -> Result<Json<TreeList>, ApiError> {
-    let filters = Filters {
-        book: filters.book,
-        created_after: filters
-            .created_after
-            .map(|date| date.and_time(NaiveTime::MIN).and_utc()),
-        created_before: filters.created_before.map(|date| {
-            date.and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap())
-                .and_utc()
-        }),
-    };
     println!("{filters:?}");
 
     let list = get_queried_list(&db, filters).await?;

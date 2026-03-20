@@ -115,8 +115,10 @@ pub struct TreeList {
 }
 
 #[derive(serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Filters {
+    // TODO: pub owner: Option<i32>,
+
+    // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
     pub book: Vec<String>,
     pub created_after: Option<DateTime<Utc>>,
