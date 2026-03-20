@@ -100,6 +100,7 @@ pub struct TreeGeneratedData {
     pub last_visited: Option<DateTime<Utc>>,
 }
 
+/// TODO: docs
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeUpdateStructureData {
@@ -107,15 +108,27 @@ pub struct TreeUpdateStructureData {
     pub new_structure: TreeStructure,
 }
 
+/// TODO: docs
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeListResponse {
+    /// The API url to request for the next page of the tree search
+    pub next_page: Option<i32>,
+    pub trees: Vec<TreeData>,
+}
+
+/// TODO: docs
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeList {
-    // TODO: moet meer data bevatten
-    pub list: Vec<TreeData>,
+    /// The API url to request for the next page of the tree search
+    pub has_next: bool,
+    pub trees: Vec<TreeData>,
 }
 
+/// TODO: docs
 #[derive(serde::Deserialize, Debug)]
-pub struct Filters {
+pub struct TreeFilters {
     // TODO: pub owner: Option<i32>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html

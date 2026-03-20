@@ -17,6 +17,10 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
+    /// An error to return when the user requests a page that doesn't exist.
+    InvalidPage,
+    /// An error to return when the user requests a page size that exceeds the defined maximum.
+    MaxPageSizeExceeded(i32),
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -93,6 +97,15 @@ impl Display for ApiError {
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
             }
+            ApiError::InvalidPage => {
+                write!(f, "This page does not exist.")
+            }
+            ApiError::MaxPageSizeExceeded(max_size) => {
+                write!(
+                    f,
+                    "You may not request more than {max_size} items per page."
+                )
+            }
         }
     }
 }
@@ -104,7 +117,9 @@ impl ApiError {
             ApiError::EmailAlreadyUsed
             | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
-            | ApiError::MissingCard(_) => StatusCode::BAD_REQUEST,
+            | ApiError::MissingCard(_)
+            | ApiError::InvalidPage
+            | ApiError::MaxPageSizeExceeded(_) => StatusCode::BAD_REQUEST,
 
             ApiError::MissingCredentials
             | ApiError::MissingAuthentication

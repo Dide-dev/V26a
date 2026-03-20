@@ -4,7 +4,7 @@ use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_queried_list, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
-    Filters, TreeData, TreeList, TreeUpdateStructureData, TreeWithCards,
+    TreeData, TreeFilters, TreeListResponse, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::{Config, db};
 
@@ -15,6 +15,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 
+use crate::api_v1::structs::PaginationOptions;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -159,13 +160,29 @@ pub async fn verify_tree_ownership(
     Ok(())
 }
 
+/// TODO: docs
 pub async fn get_list(
-    db: Extension<PgPool>,
-    Query(filters): Query<Filters>,
-) -> Result<Json<TreeList>, ApiError> {
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<PaginationOptions>,
+    Query(filters): Query<TreeFilters>,
+) -> Result<Json<TreeListResponse>, ApiError> {
+    if page.size > 100 {
+        return Err(ApiError::MaxPageSizeExceeded(100));
+    }
+
     println!("{filters:?}");
 
-    let list = get_queried_list(&db, filters).await?;
+    let trees = get_queried_list(&db, &page, filters).await?;
+    let next_page = if trees.has_next {
+        Some(page.page + 1)
+    } else {
+        None
+    };
+
+    let list = TreeListResponse {
+        next_page,
+        trees: trees.trees,
+    };
 
     Ok(Json(list))
 }
