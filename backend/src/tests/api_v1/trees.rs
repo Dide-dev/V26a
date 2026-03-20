@@ -5,6 +5,7 @@ use crate::db_structs::trees::{
     Node, RootNode, TreeData, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
     TreeWithCards,
 };
+use crate::errors::ApiError;
 use sqlx::PgPool;
 use std::collections::BTreeMap;
 
@@ -81,23 +82,13 @@ async fn test_remove_card(db: PgPool) {
     assert_eq!(full_tree.cards, expected_btree);
 
     let tree_structure_with_card = TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_owned(),
-                children: vec![Node {
-                    card_id,
-                    children: vec![],
-                }],
-            },
-            RootNode {
-                label: "Making & executing plans".to_owned(),
+        root_nodes: vec![RootNode {
+            label: "Orientation".to_owned(),
+            children: vec![Node {
+                card_id,
                 children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_owned(),
-                children: vec![],
-            },
-        ],
+            }],
+        }],
     };
 
     let tree_update_data = TreeUpdateStructureData {
@@ -111,24 +102,37 @@ async fn test_remove_card(db: PgPool) {
         .await;
     response.assert_status_ok();
 
-    let tree_structure_without_card = TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_owned(),
+    let invalid_tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "Orientation".to_owned(),
+            children: vec![Node {
+                card_id: card_id + 1,
                 children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_owned(),
-                children: vec![],
-            },
-        ],
+            }],
+        }],
     };
 
-    let card_removal_data = TreeRemoveCardData {
+    let invalid_card_removal_data = TreeRemoveCardData {
+        id: tree_id,
+        card_id,
+        new_structure: invalid_tree_structure,
+    };
+
+    let response = server
+        .post("/trees/remove-card")
+        .json(&invalid_card_removal_data)
+        .await;
+    response.assert_status_bad_request();
+    assert_eq!(response.text(), ApiError::MismatchedStructure.to_string());
+
+    let tree_structure_without_card = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "Orientation".to_owned(),
+            children: vec![],
+        }],
+    };
+
+    let valid_card_removal_data = TreeRemoveCardData {
         id: tree_id,
         card_id,
         new_structure: tree_structure_without_card,
@@ -136,7 +140,7 @@ async fn test_remove_card(db: PgPool) {
 
     let response = server
         .post("/trees/remove-card")
-        .json(&card_removal_data)
+        .json(&valid_card_removal_data)
         .await;
     response.assert_status_ok();
 
@@ -147,7 +151,7 @@ async fn test_remove_card(db: PgPool) {
     let full_tree: TreeWithCards = response.json();
 
     // The structure should be updated to match the `new_structure` field.
-    assert_eq!(full_tree.structure, card_removal_data.new_structure);
+    assert_eq!(full_tree.structure, valid_card_removal_data.new_structure);
     // The card should be removed from the tree.
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
