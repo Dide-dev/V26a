@@ -23,3 +23,4 @@ For backend changes, this might include a list of API endpoints that has been ad
 - [ ] Backend sqlx queries are up-to-date (`cargo sqlx prepare` has been run if necessary)
 - [ ] Branch is up-to-date with main
 - [ ] Story has been moved to 'Review' in YouTrack
+- [ ] File has a UU copyright comment on top, and a GUI copyright if applicable
