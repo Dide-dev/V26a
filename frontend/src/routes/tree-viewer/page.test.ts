@@ -87,8 +87,6 @@ test('Page successfully loads tree', async () => {
 
     await screen.getByText(tree.cards[1].front);
     await screen.getByText(tree.cards[2].front);
-
-    page.url.searchParams.delete('id');
 });
 
 test('No tree id provided is handled correctly', async () => {
@@ -107,7 +105,6 @@ test('Invalid tree id is handled correctly', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.delete('id');
     page.url.searchParams.set('id', 'abc');
     render(PageComponent);
 
@@ -117,8 +114,6 @@ test('Invalid tree id is handled correctly', async () => {
 test('No tree returned is handled correctly', async () => {
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(null as unknown as TreeWithCards);
-
-    page.url.searchParams.delete('id');
     page.url.searchParams.set('id', '5');
     render(PageComponent);
 
