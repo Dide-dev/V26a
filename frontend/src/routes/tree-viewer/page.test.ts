@@ -30,7 +30,7 @@ function createTree(): TreeWithCards {
         bookEdition: 'Test edition',
         bookIsbn: '12345679',
         bookChapter: 'Test chapter 4',
-        bookExercise: 'Test excersise 2091',
+        bookExercise: 'Test exercise 2091',
         assignmentText: 'Test assignment text',
         published: true
     };
@@ -72,7 +72,7 @@ afterEach(() => {
     vi.resetAllMocks();
 });
 
-test('Page succesfully loads tree', async () => {
+test('Page successfully loads tree', async () => {
     const tree: TreeWithCards = createTree();
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
@@ -91,7 +91,7 @@ test('Page succesfully loads tree', async () => {
     page.url.searchParams.delete('id');
 });
 
-test('No tree-id provided is handled correctly', async () => {
+test('No tree id provided is handled correctly', async () => {
     const tree: TreeWithCards = createTree();
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
@@ -102,7 +102,7 @@ test('No tree-id provided is handled correctly', async () => {
     await screen.findByText('Error: No tree id provided');
 });
 
-test('Invalid tree-id is handled correctly', async () => {
+test('Invalid tree id is handled correctly', async () => {
     const tree: TreeWithCards = createTree();
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
