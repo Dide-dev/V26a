@@ -93,7 +93,7 @@ async fn test_remove_card(db: PgPool) {
 
     let tree_update_data = TreeUpdateStructureData {
         id: tree_id,
-        new_structure: tree_structure_with_card,
+        new_structure: tree_structure_with_card.clone(),
     };
 
     let response = server
@@ -102,20 +102,12 @@ async fn test_remove_card(db: PgPool) {
         .await;
     response.assert_status_ok();
 
-    let invalid_tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "Orientation".to_owned(),
-            children: vec![Node {
-                card_id: card_id + 1,
-                children: vec![],
-            }],
-        }],
-    };
-
+    // Attempt to remove the card from the database without removing it from the tree
+    // and assert an appropriate error is returned.
     let invalid_card_removal_data = TreeRemoveCardData {
         id: tree_id,
         card_id,
-        new_structure: invalid_tree_structure,
+        new_structure: tree_structure_with_card,
     };
 
     let response = server
@@ -143,6 +135,14 @@ async fn test_remove_card(db: PgPool) {
         .json(&valid_card_removal_data)
         .await;
     response.assert_status_ok();
+
+    // Run same removal for a second time and assert an appropriate error is returned.
+    let response = server
+        .post("/trees/remove-card")
+        .json(&valid_card_removal_data)
+        .await;
+    response.assert_status_bad_request();
+    assert_eq!(response.text(), ApiError::MissingCard(card_id).to_string());
 
     let response = server
         .get(&format!("/trees/get-with-cards/{tree_id}"))
