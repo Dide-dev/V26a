@@ -84,6 +84,8 @@ export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): 
     return apiCallPostTree('update-structure', newTreeStructure);
 }
 
+/** Remove a card from the database and update the structure of the tree with a new
+ * appropriate structure. */
 export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
     return apiCallPostTree('remove-card', removeCardData);
 }
