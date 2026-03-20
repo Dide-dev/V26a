@@ -2,8 +2,7 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import Dropdown from './dropdown.svelte'
-
-    let treeId: string | null = null;
+    import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
 
     //metadata
     let treeData = $state({
@@ -13,13 +12,24 @@
         bookExercise: '',
     });
 
+    //variables 
+    let tree: TreeWithCards | null = null;
+    let error: string | null = null;
+
     //temporary storage
     let oldData = { ...treeData };
     let dropDown = $state(false);
 
-    onMount(() => {
-        treeId = page.url.searchParams.get('id');
-        //TODO: get treedata
+    onMount(async () => {
+        try{
+            const treeId = Number(page.url.searchParams.get('id'));
+
+            //get treedata
+            tree = await getTreeWithCards(treeId);
+        } catch (err) {
+            console.error(err);
+            error = err as string;
+        }
     });
 
     //save changes
