@@ -88,6 +88,6 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
 
-export function getTreesByAuthor(userId: UserId): Promise<TreeMetadata> {
-    return apiCallGetTree(`get-by-author/${userId}`);
+export function getUsersOwnTrees(): Promise<TreeMetadata> {
+    return apiCallGetTree(`get-all-owned`);
 }

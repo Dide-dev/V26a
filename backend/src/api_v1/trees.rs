@@ -1,8 +1,7 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_pub_trees_by_owner, get_tree_owner,
-    is_structure_valid,
+    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{TreeData, TreeMetadata, TreeUpdateStructureData, TreeWithCards};
 use crate::{Config, db};
@@ -21,7 +20,7 @@ pub fn trees() -> Router<Config> {
         .route("/add", post(add_new_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
-        .route("/get-by-author/{owner_id}", get(get_trees_by_author))
+        .route("/get-all-owned", get(get_all_owned_trees))
 }
 
 /// Add a tree to the database.
@@ -128,16 +127,11 @@ async fn get_tree_with_cards(
 ///
 /// # Error
 /// May return an [`ApiError`].
-async fn get_trees_by_author(
+async fn get_all_owned_trees(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(owner_id): Path<i32>,
 ) -> Result<Json<Vec<TreeMetadata>>, ApiError> {
-    let trees_metadata = if claims.sub == owner_id {
-        get_all_trees_by_owner(&db, owner_id).await?
-    } else {
-        get_pub_trees_by_owner(&db, owner_id).await?
-    };
+    let trees_metadata = get_all_trees_by_owner(&db, claims.sub).await?;
 
     Ok(Json(trees_metadata))
 }

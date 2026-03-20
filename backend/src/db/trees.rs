@@ -235,58 +235,6 @@ pub async fn get_all_trees_by_owner(
     Ok(trees_metadata)
 }
 
-/// Get the list of public trees owned by some owner.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-///
-/// `owner_id` - The id of the owner that is queried on.
-///
-/// # Returns
-/// A [`vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
-///
-/// # Error
-/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_pub_trees_by_owner(
-    db: impl PgExecutor<'_>,
-    owner_id: i32,
-) -> Result<Vec<TreeMetadata>, ApiError> {
-    let records = query!(
-        "SELECT * FROM trees WHERE owner_id = $1 AND published = true",
-        owner_id
-    )
-    .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
-
-    let trees_metadata = records
-        .into_iter()
-        .map(|t| TreeMetadata {
-            data: TreeData {
-                title: t.title,
-                description: t.description,
-                book_name: t.book_name,
-                book_edition: t.book_edition,
-                book_isbn: t.book_isbn,
-                book_chapter: t.book_chapter,
-                book_exercise: t.book_exercise,
-                assignment_text: t.assignment_text,
-                published: t.published,
-            },
-            gen_data: TreeGeneratedData {
-                id: t.id,
-                owner_id: t.owner_id,
-                created_at: t.created_at,
-                last_modified: t.last_modified,
-                times_visited: t.times_visited,
-                last_visited: t.last_visited,
-            },
-        })
-        .collect::<Vec<TreeMetadata>>();
-
-    Ok(trees_metadata)
-}
-
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
 /// and whether any duplicate cards exist in the tree structure.
 ///
