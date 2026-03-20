@@ -20,7 +20,7 @@ pub fn trees() -> Router<Config> {
         .route("/add", post(add_new_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
-        .route("/get-all-owned", get(get_all_owned_trees))
+        .route("/get-mine-all", get(get_all_owned_trees))
 }
 
 /// Add a tree to the database.

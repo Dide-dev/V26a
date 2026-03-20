@@ -35,7 +35,7 @@ async fn test_new_empty_tree(db: PgPool) {
 async fn test_retrieving_owned_trees(db: PgPool) {
     let (server, user_id) = crate::tests::api_v1::setup_login(db).await;
 
-    let response = server.get("/trees/get-all-owned").await;
+    let response = server.get("/trees/get-mine-all").await;
     response.assert_status_ok();
     let vec: Vec<TreeMetadata> = response.json();
     let empty: Vec<TreeMetadata> = Vec::new();
@@ -56,7 +56,7 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let response = server.get("/trees/get-all-owned").await;
+    let response = server.get("/trees/get-mine-all").await;
     response.assert_status_ok();
     let vec: Vec<TreeMetadata> = response.json();
     let tree_metadata: &TreeMetadata = vec.first().unwrap();
