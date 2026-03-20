@@ -35,9 +35,7 @@ async fn test_new_empty_tree(db: PgPool) {
 async fn test_retrieving_trees_by_author(db: PgPool) {
     let (server, user_id) = crate::tests::api_v1::setup_login(db).await;
 
-    let response = server
-        .get(&format!("/trees/get-by-author/{user_id}"))
-        .await;
+    let response = server.get(&format!("/trees/get-by-author/{user_id}")).await;
     response.assert_status_ok();
     let vec: Vec<TreeMetadata> = response.json();
     let empty: Vec<TreeMetadata> = Vec::new();

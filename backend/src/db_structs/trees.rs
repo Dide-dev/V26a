@@ -4,7 +4,7 @@ use sqlx::types::chrono::{DateTime, Utc};
 
 use crate::db_structs::cards::CardGetData;
 
-/// The full metadata of the tree, includes TreeData and TreeGeneratedData.
+/// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeMetadata {
