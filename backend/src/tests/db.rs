@@ -12,6 +12,15 @@ use sqlx::{PgPool, query};
 
 #[sqlx::test]
 async fn test_db_functions(db: PgPool) {
+    /// Test functions from the `db` folder with arguments that should succeed,
+    /// simulating the happy path.
+    ///
+    /// # Tested functions
+    /// `cards.rs` - [`add_card`] & [`update_card`].
+    ///
+    /// `trees.rs` - [`add_tree`].
+    ///
+    /// `users.rs` - [`add_user`].
     async fn happy_path(db: PgPool) -> Result<(), ApiError> {
         let user_data = UserData {
             email: "test@mail.com".to_owned(),
