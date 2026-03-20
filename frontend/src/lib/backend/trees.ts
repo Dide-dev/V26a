@@ -66,7 +66,7 @@ export type TreeGeneratedData = {
 export type TreeMetadata = {
     data: TreeData;
     genData: TreeGeneratedData;
-}
+};
 
 export type TreeUpdateStructureData = {
     id: TreeId;
@@ -89,5 +89,5 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
 }
 
 export function getTreesByAuthor(userId: UserId): Promise<TreeMetadata> {
-    return apiCallGetTree(`get-by-author/${userId}`)
+    return apiCallGetTree(`get-by-author/${userId}`);
 }
