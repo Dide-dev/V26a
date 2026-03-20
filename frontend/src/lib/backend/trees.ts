@@ -63,6 +63,11 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeMetadata = {
+    data: TreeData;
+    genData: TreeGeneratedData;
+}
+
 export type TreeUpdateStructureData = {
     id: TreeId;
     newStructure: TreeStructure;
@@ -81,4 +86,8 @@ export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): 
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+export function getTreesByAuthor(userId: UserId): Promise<TreeMetadata> {
+    return apiCallGetTree(`get-by-author/${userId}`)
 }

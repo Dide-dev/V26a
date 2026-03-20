@@ -185,7 +185,8 @@ pub async fn get_tree_owner(
     Ok(owner)
 }
 
-/// Get the list of trees owned by some owner.
+/// Get the list of all trees owned by some owner.
+/// Should only be called if the user is authorised to see private trees!
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -197,33 +198,80 @@ pub async fn get_tree_owner(
 ///
 /// # Error
 /// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_trees_by_owner(
+pub async fn get_all_trees_by_owner(
     db: impl PgExecutor<'_>,
-    owner_id: i32,
+    owner_id: i32
 ) -> Result<Vec<TreeMetadata>, ApiError> {
-    let field = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
+    let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    let trees_metadata = field
-        .iter()
+    let trees_metadata = records
+        .into_iter()
         .map(|t| TreeMetadata {
             data: TreeData {
-                // Need to clone here because of shared references.
-                title: t.title.clone(),
-                description: t.description.clone(),
-                book_name: t.book_name.clone(),
-                book_edition: t.book_edition.clone(),
-                book_isbn: t.book_isbn.clone(),
-                book_chapter: t.book_chapter.clone(),
-                book_exercise: t.book_exercise.clone(),
-                assignment_text: t.assignment_text.clone(),
+                title: t.title,
+                description: t.description,
+                book_name: t.book_name,
+                book_edition: t.book_edition,
+                book_isbn: t.book_isbn,
+                book_chapter: t.book_chapter,
+                book_exercise: t.book_exercise,
+                assignment_text: t.assignment_text,
                 published: t.published,
             },
             gen_data: TreeGeneratedData {
                 id: t.id,
-                owner_id,
+                owner_id: t.owner_id,
+                created_at: t.created_at,
+                last_modified: t.last_modified,
+                times_visited: t.times_visited,
+                last_visited: t.last_visited,
+            },
+        }).collect::<Vec<TreeMetadata>>();
+
+    Ok(trees_metadata)
+}
+
+/// Get the list of public trees owned by some owner.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `owner_id` - The id of the owner that is queried on.
+///
+/// # Returns
+/// A [`vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
+///
+/// # Error
+/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_pub_trees_by_owner(
+    db: impl PgExecutor<'_>,
+    owner_id: i32
+) -> Result<Vec<TreeMetadata>, ApiError> {
+    let records = query!("SELECT * FROM trees WHERE owner_id = $1 AND published = true", owner_id)
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let trees_metadata = records
+        .into_iter()
+        .map(|t| TreeMetadata {
+            data: TreeData {
+                title: t.title,
+                description: t.description,
+                book_name: t.book_name,
+                book_edition: t.book_edition,
+                book_isbn: t.book_isbn,
+                book_chapter: t.book_chapter,
+                book_exercise: t.book_exercise,
+                assignment_text: t.assignment_text,
+                published: t.published,
+            },
+            gen_data: TreeGeneratedData {
+                id: t.id,
+                owner_id: t.owner_id,
                 created_at: t.created_at,
                 last_modified: t.last_modified,
                 times_visited: t.times_visited,

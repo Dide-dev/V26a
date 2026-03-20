@@ -1,8 +1,6 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::get_tree_cards;
-use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_tree_owner, get_trees_by_owner, is_structure_valid,
-};
+use crate::db::trees::{add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_pub_trees_by_owner, get_tree_owner, is_structure_valid};
 use crate::db_structs::trees::{TreeData, TreeMetadata, TreeUpdateStructureData, TreeWithCards};
 use crate::{Config, db};
 
@@ -128,10 +126,16 @@ async fn get_tree_with_cards(
 /// # Error
 /// May return an [`ApiError`].
 async fn get_trees_by_author(
+    claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(owner_id): Path<i32>,
 ) -> Result<Json<Vec<TreeMetadata>>, ApiError> {
-    let trees_metadata = get_trees_by_owner(&db, owner_id).await?;
+    let trees_metadata;
+    if claims.sub == owner_id {
+        trees_metadata = get_all_trees_by_owner(&db, owner_id).await?;
+    } else {
+        trees_metadata = get_pub_trees_by_owner(&db, owner_id).await?;
+    }
 
     Ok(Json(trees_metadata))
 }
