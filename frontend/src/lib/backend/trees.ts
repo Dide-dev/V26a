@@ -89,6 +89,6 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
 }
 
 /** Request all trees owned by the logged-in user. */
-export function getUsersOwnTrees(): Promise<[TreeMetadata]> {
+export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
     return apiCallGetTree(`get-all-owned`);
 }
