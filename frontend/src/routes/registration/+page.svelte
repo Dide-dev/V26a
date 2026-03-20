@@ -50,7 +50,7 @@
         } else {
             try {
                 await addUser(formData);
-                goto(appLink('/login'));
+                await goto(appLink('/login'));
             } catch (e) {
                 error = e as Error;
             }
@@ -125,7 +125,9 @@
         <label>
             {m.language()}
             <select class="rounded-md border-2" bind:value={formData.language}>
-                {#each locales as value (value)}<option {value}>{value}</option>{/each}
+                {#each locales as value (value)}
+                    <option {value}>{value}</option>
+                {/each}
             </select>
         </label>
         <label>
