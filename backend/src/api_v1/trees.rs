@@ -1,8 +1,11 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
-use crate::db::trees::{add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid};
+use crate::db::trees::{
+    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
+};
 use crate::db_structs::trees::{
-    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData, TreeWithCards,
+    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
+    TreeWithCards,
 };
 use crate::{Config, db};
 

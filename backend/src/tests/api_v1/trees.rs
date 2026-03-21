@@ -2,8 +2,8 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
-    TreeWithCards,
+    Node, RootNode, TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use sqlx::PgPool;
