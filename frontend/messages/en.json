@@ -16,6 +16,7 @@
     "published": "Published",
     "yes": "Yes",
     "no": "No",
+    "noTreesFound": "We couldn't find any trees, it's time to make one!",
     "login": "Login",
     "viewExampleTree": "View Example Tree",
     "globalCounter": "Global Counter",

@@ -29,3 +29,5 @@
 </nav>
 
 {@render children()}
+
+<footer><p class="fixed right-1 bottom-1.5">© Utrecht University (ICS).</p></footer>

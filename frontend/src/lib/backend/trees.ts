@@ -1,3 +1,8 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at Utrecht
+    University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
 import type { CardGetData, CardId } from './cards';
 import { apiCallPost, apiCallGet } from './index';
 import type { Option } from './types';
@@ -82,10 +87,10 @@ type TreeDataForAuthorPage = {
 };
 
 /** Receive tree data (username, title, last edited, published, and ID) from database which the user has access to. */
-export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
+export function getTreesFromUser(): TreeDataForAuthorPage[] {
     // Mock items
     return [
-        {
+        /*{
             username: 'Jedidja',
             title: 'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
             lastEdited: new Date(Date.now()), //Random time
@@ -98,6 +103,6 @@ export function apiCallGetTreesFromUser(): TreeDataForAuthorPage[] {
             lastEdited: new Date(14658759000), //Again random time
             published: true,
             treeID: 67
-        }
+        }*/
     ];
 }
