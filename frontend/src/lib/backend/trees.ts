@@ -79,6 +79,7 @@ export type TreeList = {
 };
 
 export type FilterOptions = {
+    ownerId: number;
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
@@ -112,5 +113,5 @@ export function getFilteredList(filterOptions: FilterOptions): Promise<TreeList>
         JSON.parse(JSON.stringify(filterOptions)) as Record<string, string>
     );
 
-    return apiCallGetTree(`get-list?${params}`);
+    return apiCallGetTree(`get-list?page=1&size=50&${params}`);
 }

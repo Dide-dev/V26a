@@ -263,13 +263,15 @@ pub async fn get_queried_list(
         "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
         FROM trees 
         WHERE published = true
-        AND (book_name = ANY($3) OR CARDINALITY($3) = 0)
-        AND (created_at >= $4 OR $4 IS NULL)
-        AND (created_at <= $5 OR $5 IS NULL)
+        AND (owner_id = $3 OR $3 IS NULL)
+        AND (book_name = ANY($4) OR CARDINALITY($4) = 0)
+        AND (created_at >= $5 OR $5 IS NULL)
+        AND (created_at <= $6 OR $6 IS NULL)
         ORDER BY created_at DESC -- newest first
         LIMIT $1 OFFSET $2",
         i64::from(page.size + 1), // Return an extra entry to the API so it can efficiently know if there is a next page.
         i64::from((page.page - 1) * page.size), // Page is 1-based
+        filters.owner_id,
         &filters.book,
         filters.created_after,
         filters.created_before,

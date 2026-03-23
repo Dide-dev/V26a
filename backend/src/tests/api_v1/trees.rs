@@ -2,8 +2,8 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeData, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
-    TreeWithCards,
+    Node, RootNode, TreeData, TreeListResponse, TreeRemoveCardData, TreeStructure,
+    TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use sqlx::PgPool;
@@ -181,4 +181,74 @@ async fn test_remove_card(db: PgPool) {
     assert_eq!(full_tree.structure, valid_card_removal_data.new_structure);
     // The card should be removed from the tree.
     assert_eq!(full_tree.cards, BTreeMap::new());
+}
+
+#[sqlx::test]
+async fn test_filter_tree(db: PgPool) {
+    let server = crate::tests::api_v1::setup_login(db).await;
+
+    let trees_data = vec![
+        TreeData {
+            title: "Test tree".to_string(),
+            description: None,
+            book_name: None,
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: true,
+        },
+        TreeData {
+            title: "Test tree 2".to_string(),
+            description: None,
+            book_name: Some("vwo 4".to_string()), // TODO: fix name to camelCase
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: true,
+        },
+    ];
+
+    // Add in reverse order because trees are ordered with newest on top
+    server
+        .post("/trees/add")
+        .json(&trees_data[1].clone())
+        .await
+        .assert_status_ok();
+
+    server
+        .post("/trees/add")
+        .json(&trees_data[0].clone())
+        .await
+        .assert_status_ok();
+
+    let first_tree = vec![trees_data[0].clone()];
+    let second_tree = vec![trees_data[1].clone()];
+
+    let response = server.get("/trees/get-list?page=1&size=100").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, trees_data);
+    assert_eq!(requested_trees.next_page, None);
+
+    let response = server.get("/trees/get-list?page=1&size=1").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, first_tree);
+    assert_eq!(requested_trees.next_page, Some(2));
+
+    let response = server.get("/trees/get-list?page=2&size=1").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, second_tree);
+    assert_eq!(requested_trees.next_page, None);
+
+    // Filter on book with space
+    let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, second_tree);
 }
