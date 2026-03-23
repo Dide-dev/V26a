@@ -37,7 +37,24 @@ pub struct Claims {
 impl FromRequestParts<Config> for Claims {
     type Rejection = ApiError;
 
-    /// TODO: Add documentation, specifically on the possible errors that may occur.
+    /// Get JWT [`Claims`] from a user's cookies
+    ///
+    /// # Example
+    /// Passing `claims: `[`Claims`] into an axum function will automatically call this function.
+    /// ```rs
+    /// async fn protected(claims: Claims) -> Result<(), ApiError> {
+    /// ...
+    /// }
+    /// ```
+    ///
+    /// # Errors
+    /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user does not
+    /// have a session cookie, or if cookies can not be extracted from the request.
+    ///
+    /// Returns [`ExpiredSession`](ApiError::ExpiredSession) if the user's session has expired.
+    ///
+    /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be
+    /// decrypted, or if another error is given by [`jsonwebtoken`].
     async fn from_request_parts(
         parts: &mut Parts,
         state: &Config,
@@ -60,7 +77,7 @@ impl FromRequestParts<Config> for Claims {
         .map_err(|e| match e.kind() {
             // exp gets validated by the library, but we want to map it to our own error type.
             jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredSession,
-            // other validation error, usually means that the decoding failed (completely invalid session).
+            // Other validation error, usually means that the decoding failed (completely invalid session).
             _ => ApiError::InvalidSession,
         })?;
 

@@ -1,6 +1,6 @@
-use crate::Config;
 use crate::db::users::add_user;
 use crate::db_structs::users::UserData;
+use crate::{Config, get_connection};
 
 use crate::errors::ApiError;
 use axum::routing::post;
@@ -18,12 +18,12 @@ pub fn users() -> Router<Config> {
 /// The id assigned to the new user as [`Json`].
 ///
 /// # Error
-/// Returns an [`ApiError::EmailAlreadyUsed`] if the email was already used in the database.
+/// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
 ///
-/// May return an [`ApiError::DatabaseException`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(user_data): Json<UserData>,
 ) -> Result<Json<i32>, ApiError> {
-    add_user(&db, user_data).await.map(Json)
+    add_user(get_connection!(db), user_data).await.map(Json)
 }

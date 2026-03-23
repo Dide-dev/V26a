@@ -1,6 +1,6 @@
-use crate::Config;
 use crate::db::cards::{add_card, get_tree_of_card, update_card};
 use crate::db_structs::cards::{CardAddData, CardUpdateData};
+use crate::{Config, get_connection};
 
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_ownership;
@@ -22,15 +22,15 @@ pub fn cards() -> Router<Config> {
 /// The id assigned to the new card.
 ///
 /// # Error
-/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
 /// for the given `tree_id` referenced in `card_data`.
 ///
-/// Returns an [`ApiError::MissingTree`] if no tree with the `tree_id` referenced in `card_data` exists.
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `tree_id` referenced in `card_data` exists.
 ///
 /// May return an [`ApiError`] instead.
 async fn add_new_card(
     claims: Claims,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(card_data): Json<CardAddData>,
 ) -> Result<Json<i32>, ApiError> {
     // Check whether the tree of which a card is being updated exists and is owned by the user.
@@ -47,17 +47,17 @@ async fn add_new_card(
 /// Nothing.
 ///
 /// # Error
-/// Returns an [`ApiError::MissingCard`] if the `card_id` referenced in `card_data` does not exist.
+/// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` referenced in `card_data` does not exist.
 ///
-/// Returns an [`ApiError::NoPermission`] if the user does not have permission to change the tree
-/// the card belongs to.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the tree the card belongs to.
 ///
-/// Returns an [`ApiError::MissingTree`] if the tree the card belongs to no longer exists.
+/// Returns an [`MissingTree`](ApiError::MissingTree) if the tree the card belongs to no longer exists.
 ///
 /// May return an [`ApiError`] instead.
 async fn update_existing_card(
     claims: Claims,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(card_data): Json<CardUpdateData>,
 ) -> Result<(), ApiError> {
     let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
@@ -65,7 +65,7 @@ async fn update_existing_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, tree_id, claims.sub).await?;
 
-    update_card(&db, card_data).await?;
+    update_card(get_connection!(db), card_data).await?;
 
     Ok(())
 }

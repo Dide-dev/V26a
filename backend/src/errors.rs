@@ -13,38 +13,38 @@ pub enum ApiError {
     /// An error to return when the new tree structure doesn't match the list of cards matched
     /// to the tree in the cards table.
     MismatchedStructure,
-    /// An error to return when a non-existing `tree_id` is used to access a tree.
-    MissingTree(i32),
     /// An error to return when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page size that exceeds the defined maximum.
     MaxPageSizeExceeded(i32),
+    /// An error to return when a non-existing `tree_id` is used to access a tree.
+    MissingTree(i32),
 
     //-------------------//
     // 401: UNAUTHORIZED //
     //-------------------//
-    /// An error to be returned by `Axum` when a user provides a session that can not be decoded.
-    InvalidSession,
     /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
     /// an expired session.
     ExpiredSession,
-    /// An error to return when a user tries to log in with missing credentials.
-    MissingCredentials,
+    /// An error to be returned by `Axum` when a user provides a session that can not be decoded.
+    InvalidSession,
     /// An error to be returned by `Axum` when a protected endpoint is accessed without providing
     /// a session.
     MissingAuthentication,
+    /// An error to return when a user tries to log in with missing credentials.
+    MissingCredentials,
 
     //----------------//
     // 403: FORBIDDEN //
     //----------------//
-    /// An error to return when the API if the user does not have the right permissions to
-    /// access something.
-    WrongCredentials,
     /// An error to return when a user tries to do something for which they are not properly
     /// authorized.
     NoPermission,
+    /// An error to return when the API if the user does not have the right permissions to
+    /// access something.
+    WrongCredentials,
 
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
