@@ -1,6 +1,6 @@
 import { userEvent } from '@testing-library/user-event';
 import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 
@@ -85,6 +85,12 @@ test('passwordsNotTheSame', async () => {
 });
 
 test('passwordsCorrect', async () => {
+    let test = '';
+    global.fetch = vi.fn().mockImplementation((path: string) => {
+        if (path === '/api/v1/users/add') {
+            test = 'Correct password';
+        }
+    });
     const user = userEvent.setup();
     render(page);
 
@@ -97,6 +103,7 @@ test('passwordsCorrect', async () => {
     await user.click(button);
     const error = screen.getByTestId('error');
 
-    expect(error.textContent).not.toBe(m.passwordsNotTheSame());
     expect(error.textContent).not.toBe(m.missingCharacter());
+    expect(error.textContent).not.toBe(m.passwordsNotTheSame());
+    expect(test).toBe('Correct password');
 });
