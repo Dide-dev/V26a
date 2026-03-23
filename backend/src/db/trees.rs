@@ -357,9 +357,12 @@ mod test {
         assert!(tree_id.is_ok());
 
         let tree_id = tree_id.unwrap();
-        let all_found_tree_data = query!("SELECT * FROM trees WHERE id = $1", tree_id).fetch_one(&db).await.unwrap();
+        let all_found_tree_data = query!("SELECT * FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
         assert_eq!(all_found_tree_data.owner_id, user_id);
-        
+
         let found_tree_data = TreeData {
             title: all_found_tree_data.title,
             description: all_found_tree_data.description,
@@ -371,9 +374,9 @@ mod test {
             assignment_text: all_found_tree_data.assignment_text,
             published: all_found_tree_data.published,
         };
-        
+
         assert_eq!(found_tree_data, tree_data);
-        
+
         let tree_structure = serde_json::from_value::<TreeStructure>(all_found_tree_data.structure);
         assert!(tree_structure.is_ok());
     }

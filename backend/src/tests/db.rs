@@ -35,7 +35,7 @@ async fn test_db_functions(db: PgPool) {
             language: UserLanguage::Nl,
         };
 
-        let user_id = add_user(get_connection!(db), user_data).await;
+        let user_id = add_user(get_connection!(db), &user_data).await;
         assert!(user_id.is_ok());
         let user_id = user_id?;
 

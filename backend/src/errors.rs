@@ -54,6 +54,8 @@ pub enum ApiError {
     DatabaseMemoryCap,
     /// An error to return when hashing fails (on creating or verifying a hash).
     HashException,
+    /// An error to return when invalid data is found in the database.
+    InvalidDataFound,
     /// An exception to return when serde fails on something unexpected.
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
@@ -88,6 +90,7 @@ impl Display for ApiError {
                 "Request was denied, because a database memory cap was exceeded."
             ),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
+            ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
             }
@@ -117,6 +120,7 @@ impl ApiError {
             ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap
             | ApiError::HashException
+            | ApiError::InvalidDataFound
             | ApiError::SerdeException
             | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }
