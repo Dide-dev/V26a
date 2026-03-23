@@ -194,7 +194,7 @@ pub async fn get_tree_owner(
 /// `owner_id` - The id of the owner that is queried on.
 ///
 /// # Returns
-/// A [`vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
+/// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
 ///
 /// # Error
 /// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
