@@ -67,6 +67,7 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     let tree_metadata: &TreeMetadata = vec.first().unwrap();
     assert_eq!(tree_id, tree_metadata.gen_data.id);
     assert_eq!(user_id, tree_metadata.gen_data.owner_id);
+    assert_eq!(tree_data, tree_metadata.data);
 }
 
 #[sqlx::test]
