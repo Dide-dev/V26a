@@ -37,7 +37,7 @@ async fn test_new_empty_tree(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_new_filled_tree(db: PgPool) {
+async fn test_new_empty_tree_with_data(db: PgPool) {
     let server = crate::tests::api_v1::setup_login(db).await;
 
     let tree_data = TreeData {
