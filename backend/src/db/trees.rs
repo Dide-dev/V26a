@@ -103,6 +103,51 @@ pub async fn update_tree_structure(
     Ok(())
 }
 
+/// Update the data of an existing tree in the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree which is updated.
+///
+/// `new_tree_data` - The new data of the tree as [`TreeData`].
+/// Completely overwrites the existing data in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_tree_data(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    new_tree_data: TreeData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE trees SET
+        (last_modified, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published)
+        = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        WHERE id = $1",
+        tree_id,
+        new_tree_data.title,
+        new_tree_data.description,
+        new_tree_data.book_name,
+        new_tree_data.book_edition,
+        new_tree_data.book_isbn,
+        new_tree_data.book_chapter,
+        new_tree_data.book_exercise,
+        new_tree_data.assignment_text,
+        new_tree_data.published,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
+
+
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments

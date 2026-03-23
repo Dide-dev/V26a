@@ -106,3 +106,10 @@ pub struct TreeUpdateStructureData {
     pub id: i32,
     pub new_structure: TreeStructure,
 }
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeUpdateData {
+    pub id: i32,
+    pub new_data: TreeData,
+}
