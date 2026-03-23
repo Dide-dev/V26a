@@ -63,10 +63,18 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+/** The data of the tree. */
+export type TreeUpdateData = {
+    id: TreeId;
+    newData: TreeData;
+};
+
 export type TreeUpdateStructureData = {
     id: TreeId;
     newStructure: TreeStructure;
 };
+
+
 
 /** Add a tree to the database. */
 export function addTree(tree: TreeData): Promise<TreeId> {
@@ -79,6 +87,11 @@ export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): 
 }
 
 /** Request all data of a specific tree together with all its cards from the database. */
-export function getTreeWithCards(treeId: string | null, treeId: TreeId): Promise<TreeWithCards> {
+export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+/** Update the metadata of a specific tree.*/
+export function updateTreeMetaData(newTreeData: TreeUpdateData): Promise<void> {
+    return apiCallPostTree('update', newTreeData);
 }

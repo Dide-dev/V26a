@@ -1,8 +1,7 @@
 <script lang="ts">
     import { page } from '$app/state';
     import { onMount } from 'svelte';
-    import Dropdown from './dropdown.svelte'
-    import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
+    import { updateTreeMetaData, getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
 
     //metadata
     let treeData = $state({
@@ -13,30 +12,51 @@
     });
 
     //variables 
+    let treeId: number | null = null;
     let tree: TreeWithCards | null = null;
     let error: string | null = null;
+    
 
     //temporary storage
-    let oldData = { ...treeData };
+    let oldData = { ...treeData};
     let dropDown = $state(false);
 
     onMount(async () => {
         try{
-            const treeId = Number(page.url.searchParams.get('id'));
+            treeId = Number(page.url.searchParams.get('id'));
 
-            //get treedata
+        //get treedata
             tree = await getTreeWithCards(treeId);
+        
+        //prefill data
+            treeData = {
+                bookName: tree.data.bookName ?? '',
+                bookIsbn: tree.data.bookIsbn ?? '',
+                bookChapter: tree.data.bookChapter ?? '',
+                bookExercise: tree.data.bookExercise ?? '',
+            };
+            oldData = { ...treeData};
         } catch (err) {
             console.error(err);
             error = err as string;
         }
     });
 
-    //save changes
-     function saveData() {
+    //save changes (to backend)
+    async function saveData() {
+        if (!treeId || !tree) return;
         oldData = { ...treeData };
         dropDown = false;
-        //TODO: send data to backend
+        await updateTreeMetaData({ 
+            id: treeId, 
+            newData: { 
+                ...tree!.data,  
+                bookName: treeData.bookName,
+                bookIsbn: treeData.bookIsbn,
+                bookChapter: treeData.bookChapter,
+                bookExercise: treeData.bookExercise,
+            } 
+        });
     }
 
     //restore original data
@@ -61,6 +81,3 @@
     </div>
 {/if}
 
-<div>
-    {treeId}
-</div>
