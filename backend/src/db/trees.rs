@@ -46,10 +46,11 @@ pub async fn add_tree(
     .map_err(|_| ApiError::SerdeException)?;
 
     let tree_id = query!(
-        "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
+        tree_data.published,
         tree_data.title,
         tree_data.description,
         tree_data.book_name,
