@@ -37,6 +37,33 @@ async fn test_new_empty_tree(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_new_empty_tree_with_data(db: PgPool) {
+    let (server, _user_id) = crate::tests::api_v1::setup_login(db).await;
+
+    let tree_data = TreeData {
+        title: "Test tree".to_string(),
+        description: Some("This is used for testing".to_string()),
+        book_name: Some("Introduction to mathematics".to_string()),
+        book_edition: Some("4b".to_string()),
+        book_isbn: Some("9780136019701".to_string()),
+        book_chapter: Some("5".to_string()),
+        book_exercise: Some("27a".to_string()),
+        assignment_text: Some("Try to solve the following equation".to_string()),
+        published: true,
+    };
+    let response = server.post("/trees/add").json(&tree_data).await;
+    response.assert_status_ok();
+    let id: i32 = response.json();
+
+    let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
+    response.assert_status_ok();
+    let full_tree: TreeWithCards = response.json();
+    assert_eq!(full_tree.data, tree_data);
+    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.cards, BTreeMap::new());
+}
+
+#[sqlx::test]
 async fn test_retrieving_owned_trees(db: PgPool) {
     let (server, user_id) = crate::tests::api_v1::setup_login(db).await;
 
