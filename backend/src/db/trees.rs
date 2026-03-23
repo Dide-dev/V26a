@@ -4,7 +4,7 @@ use crate::{
 };
 use std::collections::HashSet;
 
-use crate::db_structs::trees::RootNode;
+use crate::db_structs::trees::{RootNode, TreeMetadata};
 use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
@@ -46,10 +46,11 @@ pub async fn add_tree(
     .map_err(|_| ApiError::SerdeException)?;
 
     let tree_id = query!(
-        "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
+        tree_data.published,
         tree_data.title,
         tree_data.description,
         tree_data.book_name,
@@ -183,6 +184,56 @@ pub async fn get_tree_owner(
         .map(|r| r.owner_id);
 
     Ok(owner)
+}
+
+/// Get the list of all trees owned by some owner.
+/// Should only be called if the user is authorised to see private trees!
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `owner_id` - The id of the owner that is queried on.
+///
+/// # Returns
+/// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_trees_by_owner(
+    db: impl PgExecutor<'_>,
+    owner_id: i32,
+) -> Result<Vec<TreeMetadata>, ApiError> {
+    let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let trees_metadata = records
+        .into_iter()
+        .map(|t| TreeMetadata {
+            data: TreeData {
+                title: t.title,
+                description: t.description,
+                book_name: t.book_name,
+                book_edition: t.book_edition,
+                book_isbn: t.book_isbn,
+                book_chapter: t.book_chapter,
+                book_exercise: t.book_exercise,
+                assignment_text: t.assignment_text,
+                published: t.published,
+            },
+            gen_data: TreeGeneratedData {
+                id: t.id,
+                owner_id: t.owner_id,
+                created_at: t.created_at,
+                last_modified: t.last_modified,
+                times_visited: t.times_visited,
+                last_visited: t.last_visited,
+            },
+        })
+        .collect::<Vec<TreeMetadata>>();
+
+    Ok(trees_metadata)
 }
 
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree

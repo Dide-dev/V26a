@@ -63,8 +63,19 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeMetadata = {
+    data: TreeData;
+    genData: TreeGeneratedData;
+};
+
 export type TreeUpdateStructureData = {
     id: TreeId;
+    newStructure: TreeStructure;
+};
+
+export type TreeRemoveCardData = {
+    id: TreeId;
+    cardId: CardId;
     newStructure: TreeStructure;
 };
 
@@ -78,7 +89,18 @@ export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): 
     return apiCallPostTree('update-structure', newTreeStructure);
 }
 
+/** Remove a card from the database and update the structure of the tree with a new
+ * appropriate structure. */
+export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
+    return apiCallPostTree('remove-card', removeCardData);
+}
+
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+/** Request all trees owned by the logged-in user. */
+export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
+    return apiCallGetTree(`get-mine-all`);
 }
