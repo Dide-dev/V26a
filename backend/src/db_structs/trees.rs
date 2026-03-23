@@ -100,7 +100,7 @@ pub struct TreeGeneratedData {
     pub last_visited: Option<DateTime<Utc>>,
 }
 
-/// TODO: docs
+/// The data needed to update a tree.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeUpdateStructureData {
@@ -108,15 +108,7 @@ pub struct TreeUpdateStructureData {
     pub new_structure: TreeStructure,
 }
 
-/// TODO: docs
-#[derive(serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeListResponse {
-    /// The API url to request for the next page of the tree search
-    pub next_page: Option<i32>,
-    pub trees: Vec<TreeData>,
-}
-
+/// The data needed to remove a card from a tree.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeRemoveCardData {
@@ -125,16 +117,25 @@ pub struct TreeRemoveCardData {
     pub new_structure: TreeStructure,
 }
 
-/// TODO: docs
+/// The data returned when requesting a list of trees.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeListResponse {
+    /// The API url to request for the next page of the tree search
+    pub next_page: Option<i32>,
+    pub trees: Vec<TreeData>,
+}
+
+/// The data internally used to return a list of trees.
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeList {
-    /// The API url to request for the next page of the tree search
+    /// The API url to request for the next page of the tree search.
     pub has_next: bool,
     pub trees: Vec<TreeData>,
 }
 
-/// TODO: docs
+/// The filters which can be applied to the public list of trees.
 #[derive(serde::Deserialize, Debug)]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,

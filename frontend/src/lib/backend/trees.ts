@@ -109,9 +109,9 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
 export function getFilteredList(filterOptions: FilterOptions): Promise<TreeList> {
     // The JSON stringify is needed to get the dates in rfc3339 format instead of ISO format
     // because there is a different implementation of toJSON and toString
-    let params: URLSearchParams = new URLSearchParams(
+    const params: URLSearchParams = new URLSearchParams(
         JSON.parse(JSON.stringify(filterOptions)) as Record<string, string>
     );
-
+    // TODO: add pagination options in request
     return apiCallGetTree(`get-list?page=1&size=50&${params}`);
 }

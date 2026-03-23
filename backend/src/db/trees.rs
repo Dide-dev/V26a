@@ -4,7 +4,7 @@ use crate::{
     db_structs::trees::{TreeData, TreeFilters, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
-use sqlx::{PgExecutor, PgPool, query, query_as};
+use sqlx::{PgExecutor, query, query_as};
 use std::collections::HashSet;
 
 /// Add a new tree to the database.
@@ -247,9 +247,25 @@ pub async fn is_structure_valid(
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
 
-/// TODO: docs
+/// Get the list of all trees satisfying some filters at a given page.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// # Returns
+/// A list with the trees satisfying the filters at the requested page,
+/// together with a boolean if there exists a next page.
+///
+/// # Error
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_list(
-    db: &PgPool,
+    db: impl PgExecutor<'_>,
     page: &PaginationOptions,
     filters: TreeFilters,
 ) -> Result<TreeList, ApiError> {
@@ -278,6 +294,7 @@ pub async fn get_queried_list(
     ).fetch_all(db).await.map_err(|_| ApiError::DatabaseException)?;
 
     // User requested a page that yields no results
+    // TODO: change to NoSuchTree error or something like that if page=1?
     if trees.is_empty() {
         return Err(ApiError::InvalidPage);
     }

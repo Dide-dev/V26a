@@ -236,7 +236,25 @@ pub async fn verify_tree_ownership(
     Ok(())
 }
 
-/// TODO: docs
+/// Checks whether the tree exists and if it is owner by the user.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `page` - Which page is requested.
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// # Returns
+/// A list with the trees satisfying the filters at the requested page,
+/// together with an integer with the next page num, or [`None`] if it doesn't exist.
+///
+/// # Error
+/// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than 100 items per page.
+///
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_list(
     Extension(db): Extension<PgPool>,
     Query(page): Query<PaginationOptions>,
@@ -246,6 +264,7 @@ pub async fn get_list(
         return Err(ApiError::MaxPageSizeExceeded(100));
     }
 
+    // TODO: remove when pushed to main
     println!("{filters:?}");
 
     let trees = get_queried_list(&db, &page, filters).await?;
