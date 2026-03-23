@@ -70,11 +70,11 @@
 
 <div class="flex">
     {#if 'label' in node}
-        <div class="test-class h-fit w-32 shrink-0">
+        <div class="tree__node h-fit w-32 shrink-0">
             <strong>{node.label}</strong>
         </div>
     {:else}
-        <div class="test-class h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
+        <div class="tree__node h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
             <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
             <p>{cards[node.cardId].front}</p>
         </div>

@@ -9,7 +9,7 @@ test('NodeViewer', async () => {
     const cards: Record<CardId, CardGetData> = {};
     render(NodeViewer, { node, cards });
 
-    expect(document.getElementsByClassName('test-class')).toHaveLength(1); // Count the number of cards
+    expect(document.getElementsByClassName('tree__node')).toHaveLength(1); // Count the number of cards
 });
 
 test('NodeViewer with child', async () => {
@@ -23,7 +23,7 @@ test('NodeViewer with child', async () => {
     const rootNode: RootNode = { label: 'Root', children: [node] };
     render(NodeViewer, { node: rootNode, cards });
 
-    expect(document.getElementsByClassName('test-class')).toHaveLength(2); // Count the number of cards
+    expect(document.getElementsByClassName('tree__node')).toHaveLength(2); // Count the number of cards
 });
 
 test('NodeViewer with children', async () => {
@@ -42,5 +42,5 @@ test('NodeViewer with children', async () => {
     };
     render(NodeViewer, { node, cards });
 
-    expect(document.getElementsByClassName('test-class')).toHaveLength(3); // Count the number of cards
+    expect(document.getElementsByClassName('tree__node')).toHaveLength(3); // Count the number of cards
 });

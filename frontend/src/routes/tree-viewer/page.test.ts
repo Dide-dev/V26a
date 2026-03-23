@@ -83,10 +83,10 @@ test('Page successfully loads tree', async () => {
     await screen.findByText(tree.data.title);
 
     const description = tree.data.description as string;
-    await screen.getByText(description);
+    screen.getByText(description);
 
-    await screen.getByText(tree.cards[1].front);
-    await screen.getByText(tree.cards[2].front);
+    screen.getByText(tree.cards[1].front);
+    screen.getByText(tree.cards[2].front);
 });
 
 test('No tree id provided is handled correctly', async () => {
