@@ -2,7 +2,7 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeData, TreeListResponse, TreeRemoveCardData, TreeStructure,
+    Node, RootNode, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
     TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
@@ -61,6 +61,39 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
     assert_eq!(full_tree.data, tree_data);
     assert_eq!(full_tree.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
+}
+
+#[sqlx::test]
+async fn test_retrieving_owned_trees(db: PgPool) {
+    let server = crate::tests::api_v1::setup_login(db).await;
+
+    let response = server.get("/trees/get-mine-all").await;
+    response.assert_status_ok();
+    let vec: Vec<TreeMetadata> = response.json();
+    let empty: Vec<TreeMetadata> = Vec::new();
+    assert_eq!(empty, vec);
+
+    let tree_data = TreeData {
+        title: "Test tree".to_string(),
+        description: None,
+        book_name: None,
+        book_edition: None,
+        book_isbn: None,
+        book_chapter: None,
+        book_exercise: None,
+        assignment_text: None,
+        published: false,
+    };
+    let response = server.post("/trees/add").json(&tree_data).await;
+    response.assert_status_ok();
+    let tree_id: i32 = response.json();
+
+    let response = server.get("/trees/get-mine-all").await;
+    response.assert_status_ok();
+    let vec: Vec<TreeMetadata> = response.json();
+    let tree_metadata: &TreeMetadata = vec.first().unwrap();
+    assert_eq!(tree_id, tree_metadata.gen_data.id);
+    assert_eq!(tree_data, tree_metadata.data);
 }
 
 #[sqlx::test]

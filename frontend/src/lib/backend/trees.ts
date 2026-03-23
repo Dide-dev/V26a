@@ -63,6 +63,11 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeMetadata = {
+    data: TreeData;
+    genData: TreeGeneratedData;
+};
+
 export type TreeUpdateStructureData = {
     id: TreeId;
     newStructure: TreeStructure;
@@ -106,6 +111,12 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
 
+/** Request all trees owned by the logged-in user. */
+export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
+    return apiCallGetTree(`get-mine-all`);
+}
+
+/** Get the list of all trees satisfying some filters at a given page. */
 export function getFilteredList(filterOptions: FilterOptions): Promise<TreeList> {
     // The JSON stringify is needed to get the dates in rfc3339 format instead of ISO format
     // because there is a different implementation of toJSON and toString

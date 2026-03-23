@@ -1,10 +1,11 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_queried_list, get_tree_owner, is_structure_valid,
+    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_list, get_tree_owner,
+    is_structure_valid,
 };
 use crate::db_structs::trees::{
-    TreeData, TreeFilters, TreeListResponse, TreeRemoveCardData, TreeStructure,
+    TreeData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
     TreeUpdateStructureData, TreeWithCards,
 };
 use crate::{Config, db};
@@ -27,6 +28,7 @@ pub fn trees() -> Router<Config> {
         .route("/remove-card", post(remove_card_from_tree))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
         .route("/get-list", get(get_list))
+        .route("/get-mine-all", get(get_all_owned_trees))
 }
 
 /// Add a tree to the database.
@@ -176,10 +178,10 @@ async fn update_structure_if_valid(
 /// Request all data of a specific tree together with all its cards from the database.
 ///
 /// # Returns
-/// The tree data together with the cards as [`Json<TreeComplete>`].
+/// The tree data together with the cards as [`Json<TreeWithCards>`].
 ///
 /// # Error
-/// Return [`MissingTree`](ApiError::MissingTree) if `tree_id` does not exist.
+/// Returns [`MissingTree`](ApiError::MissingTree) if `tree_id` does not exist.
 ///
 /// May return an [`ApiError`] instead.
 async fn get_tree_with_cards(
@@ -198,6 +200,22 @@ async fn get_tree_with_cards(
         structure,
         cards: tree_cards,
     }))
+}
+
+/// Requests all trees' metadata from a specific author.
+///
+/// # Returns
+/// A [`Json<Vec<TreeGeneratedData>>`] object.
+///
+/// # Error
+/// May return an [`ApiError`].
+async fn get_all_owned_trees(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<Vec<TreeMetadata>>, ApiError> {
+    let trees_metadata = get_all_trees_by_owner(&db, claims.sub).await?;
+
+    Ok(Json(trees_metadata))
 }
 
 /// Checks whether the tree exists and if it is owner by the user.
@@ -236,7 +254,7 @@ pub async fn verify_tree_ownership(
     Ok(())
 }
 
-/// Checks whether the tree exists and if it is owner by the user.
+/// Get the list of all trees satisfying some filters at a given page.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
