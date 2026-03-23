@@ -95,7 +95,7 @@ type TreeDataForAuthorPage = {
 export function getTreesFromUser(): TreeDataForAuthorPage[] {
     // Mock items
     return [
-        /*{
+        {
             username: 'Jedidja',
             title: 'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
             lastEdited: new Date(Date.now()), //Random time
@@ -108,6 +108,6 @@ export function getTreesFromUser(): TreeDataForAuthorPage[] {
             lastEdited: new Date(14658759000), //Again random time
             published: true,
             treeID: 67
-        }*/
+        }
     ];
 }

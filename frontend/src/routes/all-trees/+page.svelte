@@ -17,6 +17,16 @@
     }
     let thisPage = $state(1);
     let totalPages = $state(10);
+    function prevPage() {
+        if (thisPage > 1) {
+            thisPage -= 1;
+        }
+    }
+    function nextPage() {
+        if (thisPage < totalPages) {
+            thisPage += 1;
+        }
+    }
 </script>
 
 {#if values.length > 0}
@@ -60,8 +70,8 @@
     <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
 {/if}
 
-<div class="bottom-2 flex justify-center">
-    <button>Prev</button>
+<div class="fixed bottom-2 left-1/2 -translate-x-1/2">
+    <button onclick={prevPage} class="mx-5">Prev</button>
     {thisPage}/{totalPages}
-    <button>Next</button>
+    <button onclick={nextPage} class="mx-5">Next</button>
 </div>
