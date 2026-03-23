@@ -25,7 +25,6 @@ fn setup(db: PgPool) -> TestServer {
 /// # Returns
 /// A tuple, containing a [`TestServer`] that can handle all the API endpoints, including ones
 /// that require being logged in, and saves cookies, and the user id logged into this server.
-/// It also returns the user id you are logged in as.
 async fn setup_login(db: PgPool) -> (TestServer, i32) {
     let server = setup(db);
 
