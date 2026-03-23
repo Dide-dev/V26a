@@ -82,3 +82,32 @@ export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): 
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
+
+type TreeDataForAuthorPage = {
+    username: string;
+    title: string;
+    lastEdited: Date;
+    published: boolean;
+    treeID: number;
+};
+
+/** Receive tree data (username, title, last edited, published, and ID) from database which the user has access to. */
+export function getTreesFromUser(): TreeDataForAuthorPage[] {
+    // Mock items
+    return [
+        /*{
+            username: 'Jedidja',
+            title: 'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
+            lastEdited: new Date(Date.now()), //Random time
+            published: true,
+            treeID: 42
+        },
+        {
+            username: 'Theo van den Bogaart',
+            title: 'Je kan de boom in!',
+            lastEdited: new Date(14658759000), //Again random time
+            published: true,
+            treeID: 67
+        }*/
+    ];
+}

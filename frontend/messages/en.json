@@ -22,5 +22,11 @@
     "viewExampleTree": "View Example Tree",
     "globalCounter": "Global Counter",
     "apiTesting": "Api Testing",
-    "home": "Home"
+    "home": "Home",
+    "madeBy": "Made by",
+    "lastEdited": "Last edited",
+    "published": "Published",
+    "yes": "Yes",
+    "no": "No",
+    "noTreesFound": "We couldn't find any trees, it's time to make one!"
 }

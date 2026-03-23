@@ -21,6 +21,7 @@
     <a href={appLink('/tree-generator')}>{m.createTree()}</a>
     <a href={appLink('/registration')}>{m.register()}</a>
     <a href={appLink('/login')}>{m.login()}</a>
+    <a href={appLink('/all-trees')}>All trees</a>
     {#each locales as locale (locale)}
         <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
         <a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
