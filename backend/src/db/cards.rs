@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use crate::errors::ApiError;
 use sqlx::{PgConnection, PgExecutor, query};
 
-/// Add a new card to the database, returning its assigned id.
+/// Add a new card to the database.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
@@ -33,6 +33,31 @@ pub async fn add_card(db: impl PgExecutor<'_>, card_data: CardAddData) -> Result
     Ok(card_id)
 }
 
+/// Remove a card from the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `card_id` - The id of the card which should be removed.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), ApiError> {
+    // We only return the id to handle the case where the card does not exist with fetch_optional().
+    query!("DELETE FROM cards WHERE id = $1 RETURNING id", card_id,)
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .ok_or(ApiError::MissingCard(card_id))?;
+
+    Ok(())
+}
+
 /// Update a card in the database.
 ///
 /// # Arguments
@@ -44,22 +69,26 @@ pub async fn add_card(db: impl PgExecutor<'_>, card_data: CardAddData) -> Result
 /// Nothing.
 ///
 /// # Error
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Result<(), ApiError> {
+    // We only return the id to handle the case where the card does not exist with fetch_optional().
     query!(
-        "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1",
+        "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1 RETURNING id",
         card_data.card_id,
         card_data.new_front,
         card_data.new_back,
     )
-    .execute(&mut *db)
+    .fetch_optional(&mut *db)
     .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .map_err(|_| ApiError::DatabaseException)?
+    .ok_or(ApiError::MissingCard(card_data.card_id))?;
 
     // Also update the `last_modified` field in the tree the card belongs to.
     query!(
         "UPDATE trees SET last_modified = CURRENT_TIMESTAMP
-             WHERE id = (SELECT tree_id FROM cards where id=$1)",
+             WHERE id = (SELECT tree_id FROM cards where id = $1)",
         card_data.card_id,
     )
     .execute(db)
@@ -120,7 +149,7 @@ pub async fn get_tree_cards(
 /// The id of the tree the card belongs to, according to the `cards` table in the database.
 ///
 /// # Error
-/// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` does not exist.
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_of_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<i32, ApiError> {
