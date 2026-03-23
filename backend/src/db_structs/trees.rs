@@ -4,6 +4,14 @@ use sqlx::types::chrono::{DateTime, Utc};
 
 use crate::db_structs::cards::CardGetData;
 
+/// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeMetadata {
+    pub data: TreeData,
+    pub gen_data: TreeGeneratedData,
+}
+
 /// All data of the tree, together with its cards.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,7 +24,7 @@ pub struct TreeWithCards {
 }
 
 /// The tree structure with the card id's.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeStructure {
     pub root_nodes: Vec<RootNode>,
@@ -33,7 +41,7 @@ impl TreeStructure {
 }
 
 /// A root node of a tree.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RootNode {
     pub label: String,
@@ -51,7 +59,7 @@ impl RootNode {
 }
 
 /// A node (not root) in a tree.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub card_id: i32,
@@ -100,9 +108,17 @@ pub struct TreeGeneratedData {
     pub last_visited: Option<DateTime<Utc>>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeUpdateStructureData {
     pub id: i32,
+    pub new_structure: TreeStructure,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeRemoveCardData {
+    pub id: i32,
+    pub card_id: i32,
     pub new_structure: TreeStructure,
 }
