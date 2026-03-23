@@ -22,5 +22,6 @@
     "viewExampleTree": "View Example Tree",
     "globalCounter": "Global Counter",
     "apiTesting": "Api Testing",
-    "home": "Home"
+    "home": "Home",
+    "loadingTree": "The tree is growing..."
 }

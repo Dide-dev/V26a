@@ -22,5 +22,6 @@
     "viewExampleTree": "Bekijk Voorbeeld Boom",
     "globalCounter": "Globale Teller",
     "apiTesting": "Api Testen",
-    "home": "Home"
+    "home": "Home",
+    "loadingTree": "De boom groeit..."
 }

@@ -3,6 +3,7 @@
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
     import { page } from '$app/state';
+    import { m } from '$lib/paraglide/messages.js';
 
     let loading = true;
     let error: string | null = null;
@@ -37,7 +38,7 @@
 </script>
 
 {#if loading}
-    <p class="text-green-800">Tree is growing...</p>
+    <p class="text-green-800">{m.loadingTree()}</p>
 {:else if error}
     <p class="text-red-700">{error}</p>
 {:else if tree}
