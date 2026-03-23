@@ -197,7 +197,7 @@ pub async fn get_tree_owner(
 /// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
 ///
 /// # Error
-/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_trees_by_owner(
     db: impl PgExecutor<'_>,
     owner_id: i32,
