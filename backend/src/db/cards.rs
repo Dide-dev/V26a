@@ -72,7 +72,10 @@ pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), Ap
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn update_card(db: &mut PgConnection, card_data: CardUpdateData) -> Result<(), ApiError> {
+pub async fn update_card(
+    db: &mut PgConnection,
+    card_data: &CardUpdateData,
+) -> Result<(), ApiError> {
     // We only return the id to handle the case where the card does not exist with fetch_optional().
     query!(
         "UPDATE cards SET (front, back, last_modified) = ($2, $3, CURRENT_TIMESTAMP) WHERE id = $1 RETURNING id",

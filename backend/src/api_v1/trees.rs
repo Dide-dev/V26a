@@ -35,7 +35,7 @@ async fn add_new_tree(
     Extension(db): Extension<PgPool>,
     Json(tree_data): Json<TreeData>,
 ) -> Result<Json<i32>, ApiError> {
-    let id = add_tree(&db, tree_data, claims.sub).await?;
+    let id = add_tree(&db, &tree_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)
