@@ -23,9 +23,9 @@ fn setup(db: PgPool) -> TestServer {
 /// Sets up an API test server with the given mock database, creates an account and logs in.
 ///
 /// # Returns
-/// A tuple, containing a [`TestServer`] that can handle all the API endpoints, including ones
-/// that require being logged in, and saves cookies, and the user id logged into this server.
-async fn setup_login(db: PgPool) -> (TestServer, i32) {
+/// A [`TestServer`] that can handle all the API endpoints, including ones
+/// that require being logged in, and saves cookies.
+async fn setup_login(db: PgPool) -> TestServer {
     let server = setup(db);
 
     let response = server
@@ -41,7 +41,6 @@ async fn setup_login(db: PgPool) -> (TestServer, i32) {
         })
         .await;
     response.assert_status_ok();
-    let user_id: i32 = response.json();
 
     let response = server
         .post("/auth/login")
@@ -52,5 +51,5 @@ async fn setup_login(db: PgPool) -> (TestServer, i32) {
         .await;
     response.assert_status_ok();
 
-    (server, user_id)
+    server
 }
