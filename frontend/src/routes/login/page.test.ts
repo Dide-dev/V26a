@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at Utrecht
+    University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
@@ -18,7 +24,7 @@ afterEach(() => {
 });
 
 test('No submission without password', async () => {
-    const user = userEvent.setup({ delay: 0 });
+    const user = userEvent.setup();
     render(page);
 
     const emailInput = screen.getByLabelText('E-mail');
@@ -29,7 +35,7 @@ test('No submission without password', async () => {
 });
 
 test('No submission without email', async () => {
-    const user = userEvent.setup({ delay: 0 });
+    const user = userEvent.setup();
     render(page);
 
     const passwordInput = screen.getByLabelText('Wachtwoord');
@@ -41,7 +47,7 @@ test('No submission without email', async () => {
 });
 
 test('No submission when e-mail is invalid', async () => {
-    const user = userEvent.setup({ delay: 0 });
+    const user = userEvent.setup();
     render(page);
 
     const emailInput = screen.getByLabelText('E-mail');
@@ -65,7 +71,7 @@ test('No submission when e-mail is invalid', async () => {
 });
 
 test('Submission with valid e-mail', async () => {
-    const user = userEvent.setup({ delay: 0 });
+    const user = userEvent.setup();
     render(page);
 
     const emailInput = screen.getByLabelText('E-mail');
