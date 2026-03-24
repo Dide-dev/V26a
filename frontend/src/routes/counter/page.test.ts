@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import { userEvent } from '@testing-library/user-event';
 import { render, waitFor, screen } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';

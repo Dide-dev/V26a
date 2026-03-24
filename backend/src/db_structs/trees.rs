@@ -1,8 +1,22 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use std::collections::BTreeMap;
 
 use sqlx::types::chrono::{DateTime, Utc};
 
 use crate::db_structs::cards::CardGetData;
+
+/// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeMetadata {
+    pub data: TreeData,
+    pub gen_data: TreeGeneratedData,
+}
 
 /// All data of the tree, together with its cards.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
