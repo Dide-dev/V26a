@@ -251,7 +251,7 @@ pub async fn is_structure_valid(
 mod test {
     use super::*;
     use crate::db_structs::trees::Node;
-    use crate::unsafe_get_connection;
+    use crate::get_connection_unwrap;
     use sqlx::{PgConnection, PgPool};
 
     async fn initialize_db(db: &mut PgConnection) -> (i32, i32) {
@@ -383,9 +383,9 @@ mod test {
 
     #[sqlx::test]
     async fn test_update_tree_structure(db: PgPool) {
-        let (_, tree_id) = initialize_db(unsafe_get_connection!(db)).await;
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
-        let card_id = initialize_card(unsafe_get_connection!(db), tree_id).await;
+        let card_id = initialize_card(get_connection_unwrap!(db), tree_id).await;
 
         let new_tree_structure = TreeStructure {
             root_nodes: vec![RootNode {
@@ -452,7 +452,7 @@ mod test {
 
     #[sqlx::test]
     async fn test_get_tree_owner(db: PgPool) {
-        let (user_id, tree_id) = initialize_db(unsafe_get_connection!(db)).await;
+        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
         assert_eq!(found_owner_id, Some(user_id));
@@ -460,7 +460,7 @@ mod test {
 
     #[sqlx::test]
     async fn test_is_structure_valid(db: PgPool) {
-        let (_, tree_id) = initialize_db(unsafe_get_connection!(db)).await;
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Structure containing non-existent card_id should yield `false`.
         let invalid_structure_with_missing_card = TreeStructure {

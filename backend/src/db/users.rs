@@ -87,7 +87,7 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
 mod test {
     use super::*;
     use crate::db_structs::users::{UserData, UserLanguage};
-    use crate::unsafe_get_connection;
+    use crate::get_connection_unwrap;
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -102,7 +102,7 @@ mod test {
             language: UserLanguage::En,
         };
 
-        let user_id = add_user(unsafe_get_connection!(db), &user_data).await;
+        let user_id = add_user(get_connection_unwrap!(db), &user_data).await;
         assert!(user_id.is_ok());
 
         let user_id = user_id.unwrap();

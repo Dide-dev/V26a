@@ -21,14 +21,15 @@ macro_rules! get_connection {
 
 /// Get a [`PgConnection`](sqlx::PgConnection) from a [`PgPool`](sqlx::PgPool).
 ///
-/// **Warning:** might panic. Use the [`get_connection`] macro instead unless you're writing tests.
-/// Exists only for cases where the return type does not and should not match
+/// **Warning:** might panic. If not writing tests, use the [`get_connection`] macro instead.
+/// Exists only for some test where the return type does not and should not match
 /// Result<_, [`ApiError`](crate::errors::ApiError)>.
 ///
 /// # Panic
 /// May panic if the connection can not be acquired.
+#[cfg(test)]
 #[macro_export]
-macro_rules! unsafe_get_connection {
+macro_rules! get_connection_unwrap {
     ( $pool:expr ) => {
         &mut *($pool.acquire().await.unwrap())
     };
