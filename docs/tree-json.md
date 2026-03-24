@@ -1,4 +1,6 @@
-
+[This program has been developed by students from the bachelor Computer Science at
+Utrecht University within the Software Project course.
+© Copyright Utrecht University (Department of Information and Computing Sciences)]: #
 
 In the database table `trees` there is a field `structure` which is of type `JSONB`.
 The format of the json will look like this:
