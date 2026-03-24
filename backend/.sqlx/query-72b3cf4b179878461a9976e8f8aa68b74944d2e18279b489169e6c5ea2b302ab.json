@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO trees (owner_id, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{\"rootNodes\": []}')\n        RETURNING id",
+  "query": "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n        RETURNING id",
   "describe": {
     "columns": [
       {
@@ -12,6 +12,7 @@
     "parameters": {
       "Left": [
         "Int4",
+        "Bool",
         "Varchar",
         "Varchar",
         "Varchar",
@@ -19,12 +20,13 @@
         "Varchar",
         "Varchar",
         "Varchar",
-        "Varchar"
+        "Varchar",
+        "Jsonb"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "f6875f5de8c4416472007240d5f51089982bd46ccd3463371ee9816139788805"
+  "hash": "72b3cf4b179878461a9976e8f8aa68b74944d2e18279b489169e6c5ea2b302ab"
 }

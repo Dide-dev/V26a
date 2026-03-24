@@ -68,9 +68,36 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeMetadata = {
+    data: TreeData;
+    genData: TreeGeneratedData;
+};
+
+export type TreeUpdateStructureData = {
+    id: TreeId;
+    newStructure: TreeStructure;
+};
+
+export type TreeRemoveCardData = {
+    id: TreeId;
+    cardId: CardId;
+    newStructure: TreeStructure;
+};
+
 /** Add a tree to the database. */
 export function addTree(tree: TreeData): Promise<TreeId> {
     return apiCallPostTree('add', tree);
+}
+
+/** Update the structure of an existing tree. */
+export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): Promise<void> {
+    return apiCallPostTree('update-structure', newTreeStructure);
+}
+
+/** Remove a card from the database and update the structure of the tree with a new
+ * appropriate structure. */
+export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
+    return apiCallPostTree('remove-card', removeCardData);
 }
 
 /** Request all data of a specific tree together with all its cards from the database. */
@@ -78,31 +105,7 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
 
-type TreeDataForAuthorPage = {
-    username: string;
-    title: string;
-    lastEdited: Date;
-    published: boolean;
-    treeID: number;
-};
-
-/** Receive tree data (username, title, last edited, published, and ID) from database which the user has access to. */
-export function getTreesFromUser(): TreeDataForAuthorPage[] {
-    // Mock items
-    return [
-        /*{
-            username: 'Jedidja',
-            title: 'Germany in the stone ages had some interesting ideas, but what if this title is realy long, like REALLY REALLY LOOOOOOOOOOOOONG :)',
-            lastEdited: new Date(Date.now()), //Random time
-            published: true,
-            treeID: 42
-        },
-        {
-            username: 'Theo van den Bogaart',
-            title: 'Je kan de boom in!',
-            lastEdited: new Date(14658759000), //Again random time
-            published: true,
-            treeID: 67
-        }*/
-    ];
+/** Request all trees owned by the logged-in user. */
+export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
+    return apiCallGetTree(`get-mine-all`);
 }

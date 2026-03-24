@@ -1,7 +1,7 @@
-use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::demo::{add_counter_value, fetch_counter_value};
 use crate::errors::ApiError;
+use crate::{Config, get_connection};
 use axum::response::Html;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
@@ -31,10 +31,10 @@ async fn backend_html_test() -> Html<&'static str> {
 }
 
 /// A test struct, containing some example fields to later be converted to JSON.
-#[derive(serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct JsonTestStruct {
-    a: String,
-    b: i32,
+    pub a: String,
+    pub b: i32,
 }
 
 /// A test endpoint that retrieves the value of a counter in the database.
@@ -44,8 +44,10 @@ pub struct JsonTestStruct {
 ///
 /// # Error
 /// May return an [`ApiError`] instead.
-async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
-    let counter_value = fetch_counter_value(&db).await?;
+async fn backend_json_test(
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = fetch_counter_value(get_connection!(db)).await?;
 
     let test_struct = JsonTestStruct {
         a: "Hello, from rust struct!".to_owned(),
@@ -61,8 +63,10 @@ async fn backend_json_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>
 /// # Returns
 /// A [`Result`] containing the updated counter value in a [`JsonTestStruct`] if successful,
 /// or an [`ApiError`] if not.
-async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestStruct>, ApiError> {
-    let counter_value = add_counter_value(&db, 1).await?;
+async fn increment_counter_test(
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<JsonTestStruct>, ApiError> {
+    let counter_value = add_counter_value(get_connection!(db), 1).await?;
 
     let test_struct = JsonTestStruct {
         a: "Incremented counter!".to_owned(),
@@ -73,9 +77,9 @@ async fn increment_counter_test(db: Extension<PgPool>) -> Result<Json<JsonTestSt
 }
 
 /// A struct representing the body of an HTTP request to add to a counter.
-#[derive(serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct AddCounterBody {
-    add: i32,
+    pub add: i32,
 }
 
 /// A test endpoint that adds a given value in the request body to a counter in the database.
@@ -84,9 +88,58 @@ pub struct AddCounterBody {
 /// # Returns
 /// Nothing if successful, or an [`ApiError`] if not.
 async fn add_counter_test(
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     Json(body): Json<AddCounterBody>,
 ) -> Result<(), ApiError> {
-    add_counter_value(&db, body.add).await?;
+    add_counter_value(get_connection!(db), body.add).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use axum_test::TestServer;
+    use sqlx::query;
+
+    #[tokio::test]
+    async fn test_backend_html() {
+        let server = TestServer::new(Router::new().route("/html", get(backend_html_test)));
+        let response = server.get("/html").await;
+        response
+            .assert_status_ok()
+            .assert_text("<h1>Hello from axum!</h1>");
+    }
+
+    #[sqlx::test]
+    async fn test_backend_json_default(db: PgPool) {
+        let server = TestServer::new(
+            Router::new()
+                .route("/json", get(backend_json_test))
+                .layer(Extension(db)),
+        );
+        let response = server.get("/json").await;
+        response.assert_status_ok().assert_json(&JsonTestStruct {
+            a: "Hello, from rust struct!".to_string(),
+            b: 0,
+        });
+    }
+
+    #[sqlx::test]
+    async fn test_backend_json_value(db: PgPool) {
+        query!("INSERT INTO counters VALUES (0, 67)")
+            .execute(&db)
+            .await
+            .unwrap();
+
+        let server = TestServer::new(
+            Router::new()
+                .route("/json", get(backend_json_test))
+                .layer(Extension(db)),
+        );
+        let response = server.get("/json").await;
+        response.assert_status_ok().assert_json(&JsonTestStruct {
+            a: "Hello, from rust struct!".to_string(),
+            b: 67,
+        });
+    }
 }
