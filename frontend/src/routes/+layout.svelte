@@ -1,7 +1,7 @@
 <!--
-This program has been developed by students from the bachelor Computer Science at
-Utrecht University within the Software Project course.
-© Copyright Utrecht University (Department of Information and Computing Sciences)
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
 <script lang="ts">
@@ -28,7 +28,7 @@ Utrecht University within the Software Project course.
     <a href={appLink('/registration')}>{m.register()}</a>
     <a href={appLink('/login')}>{m.login()}</a>
     {#each locales as locale (locale)}
-        <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
+
         <a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
             {locale}
         </a>
