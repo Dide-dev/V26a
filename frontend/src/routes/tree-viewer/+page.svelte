@@ -5,42 +5,41 @@
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
 
-    let loading = true;
-    let error: string | null = null;
-    let tree: TreeWithCards | null = null;
+    let loading = $state(true);
+    let error: Error | null = $state(null);
+    let tree: TreeWithCards | null = $state(null);
 
     onMount(async () => {
-        try {
-            const id = page.url.searchParams.get('id');
+        const id = page.url.searchParams.get('id');
 
-            if (!id) {
-                throw new Error('No tree id provided');
-            }
-
-            const idNumber = Number(id);
-
-            if (Number.isNaN(idNumber)) {
-                throw new Error('Invalid tree id');
-            }
-
-            tree = await getTreeWithCards(idNumber);
-
-            if (!tree) {
-                throw new Error('Tree not found');
-            }
-        } catch (err) {
-            console.error(err);
-            error = err as string;
-        } finally {
-            loading = false;
+        if (!id) {
+            error = new Error('No tree id provided');
+            return;
         }
+
+        const idNumber = Number(id);
+
+        if (Number.isNaN(idNumber)) {
+            error = new Error('Invalid tree id');
+            return;
+        }
+
+        tree = await getTreeWithCards(idNumber).then(
+            (treeWithCards) => treeWithCards,
+            (e) => {
+                error = e;
+                return null;
+            }
+        );
+
+        loading = false;
     });
 </script>
 
-{#if loading}
+{#if error == null && loading}
     <p class="text-green-800">{m.loadingTree()}</p>
-{:else if error}
-    <p class="text-red-700">{error}</p>
+{:else if error != null}
+    <p class="text-red-700" data-testid="error">{error}</p>
 {:else if tree}
     <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
