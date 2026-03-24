@@ -2,7 +2,6 @@ pub mod auth;
 pub mod cards;
 pub mod demo;
 pub mod session;
-pub mod structs;
 pub mod trees;
 pub mod users;
 

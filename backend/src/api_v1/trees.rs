@@ -17,7 +17,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 
-use crate::api_v1::structs::PaginationOptions;
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use sqlx::{PgConnection, PgExecutor, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -275,9 +275,11 @@ pub async fn verify_tree_ownership(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_list(
     Extension(db): Extension<PgPool>,
-    Query(page): Query<PaginationOptions>,
+    Query(page): Query<OptionalPaginationOptions>,
     Query(filters): Query<TreeFilters>,
 ) -> Result<Json<TreeListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50);
+
     if page.size > 100 {
         return Err(ApiError::MaxPageSizeExceeded(100));
     }

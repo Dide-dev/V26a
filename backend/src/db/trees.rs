@@ -1,4 +1,4 @@
-use crate::api_v1::structs::PaginationOptions;
+use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
         RootNode, TreeData, TreeFilters, TreeGeneratedData, TreeList, TreeMetadata, TreeStructure,
