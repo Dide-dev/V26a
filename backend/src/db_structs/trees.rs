@@ -129,8 +129,12 @@ pub struct TreeRemoveCardData {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeListResponse {
-    /// The API url to request for the next page of the tree search
+    /// The API url to request for the next page of the tree search.
     pub next_page: Option<i32>,
+    /// The requested amount of trees per page.
+    pub page_size: i32,
+    /// The total amount of trees that are visible in the query.
+    pub total_trees: i32,
     pub trees: Vec<TreeData>,
 }
 

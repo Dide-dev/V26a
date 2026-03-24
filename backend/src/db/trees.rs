@@ -62,10 +62,10 @@ pub async fn add_tree(
         tree_data.assignment_text,
         structure
     )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .id;
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .id;
 
     Ok(tree_id)
 }
@@ -298,6 +298,44 @@ pub async fn is_structure_valid(
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
 
+/// Get the amount of trees satisfying some filters.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// # Returns
+/// The amount of trees satisfying the filters at the requested page,
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_queried_count(
+    db: impl PgExecutor<'_>,
+    filters: &TreeFilters,
+) -> Result<i64, ApiError> {
+    let trees_count = query!(
+        "SELECT count(*)
+        FROM trees
+        WHERE published = true
+        AND (owner_id = $1 OR $1 IS NULL)
+        AND (book_name = ANY($2) OR CARDINALITY($2) = 0)
+        AND (created_at >= $3 OR $3 IS NULL)
+        AND (created_at <= $4 OR $4 IS NULL)",
+        filters.owner_id,
+        &filters.book,
+        filters.created_after,
+        filters.created_before,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .count
+    .ok_or(ApiError::DatabaseException)?;
+
+    Ok(trees_count)
+}
+
 /// Get the list of all trees satisfying some filters at a given page.
 ///
 /// # Arguments
@@ -318,7 +356,7 @@ pub async fn is_structure_valid(
 pub async fn get_queried_list(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
-    filters: TreeFilters,
+    filters: &TreeFilters,
 ) -> Result<TreeList, ApiError> {
     // Prevent overflow errors
     if !page.input_is_valid() {
@@ -328,7 +366,7 @@ pub async fn get_queried_list(
     let mut trees = query_as!(
         TreeData,
         "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
-        FROM trees 
+        FROM trees
         WHERE published = true
         AND (owner_id = $3 OR $3 IS NULL)
         AND (book_name = ANY($4) OR CARDINALITY($4) = 0)

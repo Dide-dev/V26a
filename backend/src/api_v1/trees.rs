@@ -1,8 +1,8 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_list, get_tree_owner,
-    is_structure_valid,
+    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count, get_queried_list,
+    get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
     TreeData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
@@ -284,18 +284,26 @@ pub async fn get_list(
         return Err(ApiError::MaxPageSizeExceeded(100));
     }
 
-    // TODO: remove when pushed to main
-    println!("{filters:?}");
+    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let trees = get_queried_list(&db, &page, filters).await?;
+    let trees_count = get_queried_count(&mut *tx, &filters).await?;
+    if trees_count == 0 {
+        return Err(ApiError::NoSearchResults);
+    }
+
+    let trees = get_queried_list(&mut *tx, &page, &filters).await?;
     let next_page = if trees.has_next {
         Some(page.page + 1)
     } else {
         None
     };
 
+    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+
     let list = TreeListResponse {
         next_page,
+        page_size: page.size,
+        total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
         trees: trees.trees,
     };
 
