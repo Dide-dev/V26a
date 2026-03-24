@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import type { CardGetData, CardId } from './cards';
 import { apiCallPost, apiCallGet } from './index';
 import type { Option } from './types';
@@ -63,6 +69,11 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeMetadata = {
+    data: TreeData;
+    genData: TreeGeneratedData;
+};
+
 export type TreeUpdateStructureData = {
     id: TreeId;
     newStructure: TreeStructure;
@@ -93,4 +104,9 @@ export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+/** Request all trees owned by the logged-in user. */
+export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
+    return apiCallGetTree(`get-mine-all`);
 }
