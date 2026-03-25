@@ -300,6 +300,11 @@ pub async fn is_structure_valid(
 
 /// Adds [`TreeFilters`] to a Postgres [`QueryBuilder`]
 ///
+/// # Arguments
+/// `builder` - The [`QueryBuilder`] to be mutated in-place.
+///
+/// `filters` - The [`TreeFilters`] to apply to the query.
+///
 /// # Example:
 /// ```rs
 /// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
@@ -309,6 +314,10 @@ pub async fn is_structure_valid(
 ///         .fetch_one(db)
 ///         .await
 ///         .map_err(|_| ApiError::DatabaseException)?;
+/// ```
+///
+/// # To future developers:
+/// This function can and will become too big, good luck if that happens!
 fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a TreeFilters) {
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");

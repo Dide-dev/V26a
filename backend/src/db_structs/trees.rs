@@ -1,8 +1,7 @@
+use crate::db_structs::cards::CardGetData;
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use std::collections::BTreeMap;
-
-use crate::db_structs::cards::CardGetData;
 
 /// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -148,7 +147,8 @@ pub struct TreeList {
 }
 
 /// The filters which can be applied to the public list of trees.
-/// This struct does not use serde to rename fields to camelCase because
+///
+/// Note: This struct does not use serde to rename fields to camelCase because
 /// query parameters are automatically converted to `snake_case` in the front-end.
 #[derive(serde::Deserialize, Debug)]
 pub struct TreeFilters {
