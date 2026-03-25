@@ -221,3 +221,109 @@ async fn test_remove_card(db: PgPool) {
     // The card should be removed from the tree.
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
+
+#[sqlx::test]
+async fn test_update_and_get(db: PgPool) {
+    let server = crate::tests::api_v1::setup_login(db).await;
+
+    let tree_data = TreeData {
+        title: "Test tree 2".to_string(),
+        description: None,
+        book_name: None,
+        book_edition: None,
+        book_isbn: None,
+        book_chapter: None,
+        book_exercise: None,
+        assignment_text: None,
+        published: false,
+    };
+    let response = server.post("/trees/add").json(&tree_data).await;
+    response.assert_status_ok();
+    let tree_id: i32 = response.json();
+
+    let card_get_data = CardGetData {
+        front: String::new(),
+        back: "heuristic".to_string(),
+    };
+    let card_add_data = CardAddData {
+        tree_id,
+        front: card_get_data.front.clone(),
+        back: card_get_data.back.clone(),
+    };
+    let response = server.post("/cards/add").json(&card_add_data).await;
+    response.assert_status_ok();
+    let card_id: i32 = response.json();
+
+    let structure_valid = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "bla".to_string(),
+            children: vec![Node {
+                card_id,
+                children: vec![],
+            }],
+        }],
+    };
+
+    let mut structure_duplicate_card = structure_valid.clone();
+    let node = structure_duplicate_card.root_nodes[0].children[0].clone();
+    structure_duplicate_card.root_nodes[0].children.push(node);
+
+    let mut structure_invalid_card = structure_valid.clone();
+    structure_invalid_card.root_nodes[0].children[0].card_id = -999;
+
+    // First test happy path
+    let response = server
+        .post("/trees/update-structure")
+        .json(&TreeUpdateStructureData {
+            id: tree_id,
+            new_structure: structure_valid.clone(),
+        })
+        .await;
+    response.assert_status_ok();
+
+    let response = server
+        .get(&format!("/trees/get-with-cards/{tree_id}"))
+        .await;
+    response.assert_status_ok();
+    let tree_with_cards_valid: TreeWithCards = response.json();
+    assert_eq!(tree_with_cards_valid.structure, structure_valid);
+    assert_eq!(tree_with_cards_valid.data, tree_data);
+    assert!(
+        tree_with_cards_valid
+            .cards
+            .iter()
+            .eq(std::iter::once((&card_id, &card_get_data)))
+    );
+
+    // Try updating with duplicate card, ensure that the structure did not change
+    let response = server
+        .post("/trees/update-structure")
+        .json(&TreeUpdateStructureData {
+            id: tree_id,
+            new_structure: structure_duplicate_card.clone(),
+        })
+        .await;
+    response.assert_status_not_ok();
+    response.assert_text(ApiError::MismatchedStructure.to_string());
+
+    server
+        .get(&format!("/trees/get-with-cards/{tree_id}"))
+        .await
+        .assert_json(&tree_with_cards_valid);
+
+    // Try updating with invalid card, ensure that the structure did not change
+    let response = server
+        .post("/trees/update-structure")
+        .json(&TreeUpdateStructureData {
+            id: tree_id,
+            new_structure: structure_invalid_card.clone(),
+        })
+        .await;
+    response.assert_status_not_ok();
+    response.assert_text(ApiError::MismatchedStructure.to_string());
+
+    server
+        .get(&format!("/trees/get-with-cards/{tree_id}"))
+        .await
+        .assert_json(&tree_with_cards_valid);
+}
