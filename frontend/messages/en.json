@@ -29,5 +29,8 @@
     "viewExampleTree": "View Example Tree",
     "globalCounter": "Global Counter",
     "apiTesting": "Api Testing",
-    "home": "Home"
+    "home": "Home",
+    "repeatPassword": "Repeat password",
+    "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
+    "passwordsNotTheSame": "Passwords are not the same"
 }
