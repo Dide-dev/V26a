@@ -327,25 +327,25 @@ fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a
             .push("(owner_id = ")
             .push_bind_unseparated(owner_id)
             .push_unseparated(")");
-    };
+    }
     if !filters.book.is_empty() {
         separated
             .push("(book_name = ANY(")
             .push_bind_unseparated(&filters.book)
-            .push_unseparated(")");
-    };
+            .push_unseparated("))");
+    }
     if let Some(created_after) = filters.created_after {
         separated
             .push("(created_at >= ")
             .push_bind_unseparated(created_after)
             .push_unseparated(")");
-    };
+    }
     if let Some(created_before) = filters.created_before {
         separated
             .push("(created_at <= ")
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
-    };
+    }
 }
 
 /// Get the amount of trees satisfying some filters.
