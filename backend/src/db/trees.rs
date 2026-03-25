@@ -5,7 +5,7 @@ use crate::{
     },
     errors::ApiError,
 };
-use sqlx::{PgExecutor, query, query_as};
+use sqlx::{Execute, PgExecutor, Postgres, QueryBuilder, query};
 use std::collections::HashSet;
 
 /// Add a new tree to the database.
@@ -298,6 +298,44 @@ pub async fn is_structure_valid(
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
 
+/// Adds [`TreeFilters`] to a Postgres [`QueryBuilder`]
+///
+/// # Example:
+/// ```rs
+/// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+/// apply_tree_filters(query, &filters);
+/// let trees_count: i64 = query
+///         .build_query_scalar()
+///         .fetch_one(db)
+///         .await
+///         .map_err(|_| ApiError::DatabaseException)?;
+fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a TreeFilters) {
+    builder.push(" WHERE ");
+    builder
+        .separated(" AND ")
+        .push("published = true")
+        .push("(owner_id = ")
+        .push_bind_unseparated(filters.owner_id)
+        .push_unseparated(" OR ")
+        .push_bind_unseparated(filters.owner_id)
+        .push_unseparated(" IS NULL)")
+        .push("(book_name = ANY(")
+        .push_bind_unseparated(&filters.book)
+        .push_unseparated(") OR CARDINALITY(")
+        .push_bind_unseparated(&filters.book)
+        .push_unseparated(") = 0)")
+        .push("(created_at >= ")
+        .push_bind_unseparated(filters.created_after)
+        .push_unseparated(" OR ")
+        .push_bind_unseparated(filters.created_after)
+        .push_unseparated(" IS NULL)")
+        .push("(created_at <= ")
+        .push_bind_unseparated(filters.created_before)
+        .push_unseparated(" OR ")
+        .push_bind_unseparated(filters.created_before)
+        .push_unseparated(" IS NULL)");
+}
+
 /// Get the amount of trees satisfying some filters.
 ///
 /// # Arguments
@@ -314,24 +352,18 @@ pub async fn get_queried_count(
     db: impl PgExecutor<'_>,
     filters: &TreeFilters,
 ) -> Result<i64, ApiError> {
-    let trees_count = query!(
-        "SELECT count(*)
-        FROM trees
-        WHERE published = true
-        AND (owner_id = $1 OR $1 IS NULL)
-        AND (book_name = ANY($2) OR CARDINALITY($2) = 0)
-        AND (created_at >= $3 OR $3 IS NULL)
-        AND (created_at <= $4 OR $4 IS NULL)",
-        filters.owner_id,
-        &filters.book,
-        filters.created_after,
-        filters.created_before,
-    )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .count
-    .ok_or(ApiError::DatabaseException)?;
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+
+    apply_tree_filters(&mut query, filters);
+
+    // TODO: remove
+    // dbg!(query.build().sql());
+
+    let trees_count: i64 = query
+        .build_query_scalar()
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(trees_count)
 }
@@ -363,33 +395,38 @@ pub async fn get_queried_list(
         return Err(ApiError::InvalidPage);
     }
 
-    let mut trees = query_as!(
-        TreeData,
-        "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
-        FROM trees
-        WHERE published = true
-        AND (owner_id = $3 OR $3 IS NULL)
-        AND (book_name = ANY($4) OR CARDINALITY($4) = 0)
-        AND (created_at >= $5 OR $5 IS NULL)
-        AND (created_at <= $6 OR $6 IS NULL)
-        ORDER BY created_at DESC -- newest first
-        LIMIT $1 OFFSET $2",
-        i64::from(page.size + 1), // Return an extra entry to the API so it can efficiently know if there is a next page.
-        i64::from((page.page - 1) * page.size), // Page is 1-based
-        filters.owner_id,
-        &filters.book,
-        filters.created_after,
-        filters.created_before,
-    ).fetch_all(db).await.map_err(|_| ApiError::DatabaseException)?;
+    let mut query = QueryBuilder::<Postgres>::new("
+        SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
+        FROM trees"
+    );
 
-    // User requested a page that yields no results
-    // TODO: change to NoSuchTree error or something like that if page=1?
+    apply_tree_filters(&mut query, filters);
+    query
+        .push(
+            // newest first
+            " ORDER BY created_at DESC \
+              LIMIT ",
+        )
+        // Return an extra entry to the API so it can efficiently know if there is a next page.
+        .push_bind(i64::from(page.size + 1))
+        .push(" OFFSET ")
+        // Page is 1-based
+        .push_bind(i64::from((page.page - 1) * page.size));
+
+    let mut trees = query
+        .build_query_as::<TreeData>()
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    // User requested a page that yields no results. This should only occur if the user requests a
+    // page that is too high, as get_queried_count should be used to confirm results exist.
     if trees.is_empty() {
         return Err(ApiError::InvalidPage);
     }
 
     // Check if there is a next page to be requested by the client, and remove the extra added entry if there is.
-    // The unwrap should not ever trigger an exception, as it is checked to be > 0 at the start of the function.
+    // The "unwrap" should not ever trigger an exception, as it is checked to be > 0 at the start of the function.
     let has_next = trees.len() > usize::try_from(page.size).unwrap();
     if has_next {
         trees.pop();
