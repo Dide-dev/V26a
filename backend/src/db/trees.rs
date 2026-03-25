@@ -5,7 +5,7 @@ use crate::{
     },
     errors::ApiError,
 };
-use sqlx::{Execute, PgExecutor, Postgres, QueryBuilder, query};
+use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
 use std::collections::HashSet;
 
 /// Add a new tree to the database.
@@ -311,29 +311,32 @@ pub async fn is_structure_valid(
 ///         .map_err(|_| ApiError::DatabaseException)?;
 fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a TreeFilters) {
     builder.push(" WHERE ");
-    builder
-        .separated(" AND ")
-        .push("published = true")
-        .push("(owner_id = ")
-        .push_bind_unseparated(filters.owner_id)
-        .push_unseparated(" OR ")
-        .push_bind_unseparated(filters.owner_id)
-        .push_unseparated(" IS NULL)")
-        .push("(book_name = ANY(")
-        .push_bind_unseparated(&filters.book)
-        .push_unseparated(") OR CARDINALITY(")
-        .push_bind_unseparated(&filters.book)
-        .push_unseparated(") = 0)")
-        .push("(created_at >= ")
-        .push_bind_unseparated(filters.created_after)
-        .push_unseparated(" OR ")
-        .push_bind_unseparated(filters.created_after)
-        .push_unseparated(" IS NULL)")
-        .push("(created_at <= ")
-        .push_bind_unseparated(filters.created_before)
-        .push_unseparated(" OR ")
-        .push_bind_unseparated(filters.created_before)
-        .push_unseparated(" IS NULL)");
+    let mut separated = builder.separated(" AND ");
+    separated.push("published = true");
+    if let Some(owner_id) = filters.owner_id {
+        separated
+            .push("(owner_id = ")
+            .push_bind_unseparated(owner_id)
+            .push_unseparated(")");
+    };
+    if !filters.book.is_empty() {
+        separated
+            .push("(book_name = ANY(")
+            .push_bind_unseparated(&filters.book)
+            .push_unseparated(")");
+    };
+    if let Some(created_after) = filters.created_after {
+        separated
+            .push("(created_at >= ")
+            .push_bind_unseparated(created_after)
+            .push_unseparated(")");
+    };
+    if let Some(created_before) = filters.created_before {
+        separated
+            .push("(created_at <= ")
+            .push_bind_unseparated(created_before)
+            .push_unseparated(")");
+    };
 }
 
 /// Get the amount of trees satisfying some filters.

@@ -148,6 +148,8 @@ pub struct TreeList {
 }
 
 /// The filters which can be applied to the public list of trees.
+/// This struct does not use serde to rename fields to camelCase because
+/// query parameters are automatically converted to `snake_case` in the front-end.
 #[derive(serde::Deserialize, Debug)]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,
