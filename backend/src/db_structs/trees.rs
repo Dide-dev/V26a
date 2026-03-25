@@ -128,3 +128,45 @@ pub struct TreeRemoveCardData {
     pub card_id: i32,
     pub new_structure: TreeStructure,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_flatten_tree_structure() {
+        let tree_structure = TreeStructure {
+            root_nodes: vec![
+                RootNode {
+                    label: "Orientation".to_owned(),
+                    children: vec![
+                        Node {
+                            card_id: 1,
+                            children: vec![],
+                        },
+                        Node {
+                            card_id: 2,
+                            children: vec![Node {
+                                card_id: 3,
+                                children: vec![],
+                            }],
+                        },
+                    ],
+                },
+                RootNode {
+                    label: "Problem".to_owned(),
+                    children: vec![Node {
+                        card_id: 5,
+                        children: vec![],
+                    }],
+                },
+            ],
+        };
+
+        let flattened = tree_structure.flatten();
+
+        for id in [1, 2, 3, 5] {
+            assert!(flattened.contains(&id));
+        }
+    }
+}
