@@ -150,7 +150,7 @@ pub struct TreeList {
 ///
 /// Note: This struct does not use serde to rename fields to camelCase because
 /// query parameters are automatically converted to `snake_case` in the front-end.
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Default)]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,
 
