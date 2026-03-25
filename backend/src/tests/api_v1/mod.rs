@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+mod cards;
 mod demo;
 mod trees;
 

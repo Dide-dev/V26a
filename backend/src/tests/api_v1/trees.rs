@@ -12,6 +12,7 @@ use crate::db_structs::trees::{
     TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
+use crate::tests::api_v1::setup_login;
 use sqlx::PgPool;
 use std::collections::BTreeMap;
 
@@ -223,8 +224,8 @@ async fn test_remove_card(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_update_and_get(db: PgPool) {
-    let server = crate::tests::api_v1::setup_login(db).await;
+async fn test_update_and_get_tree(db: PgPool) {
+    let server = setup_login(db).await;
 
     let tree_data = TreeData {
         title: "Test tree 2".to_string(),
