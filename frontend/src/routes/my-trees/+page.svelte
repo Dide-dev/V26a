@@ -3,6 +3,7 @@
     University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
+
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import {getUsersOwnTrees} from '$lib/backend/trees';
@@ -16,7 +17,7 @@
 </script>
 
 {#await getUsersOwnTrees()}
-    <p>m.loading()</p>
+    <p>{m.loading()}</p>
 {:then trees}
     {#if trees.length > 0}
         <!-- For dynamically formatting the entire css has to be redone. -->
@@ -37,15 +38,13 @@
                         <tr>
                             <td class="pr-4">{tree.genData.ownerId}</td>
                             <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
-                                <a href={appLink(`/tree-viewer?id=${tree.genData.id}/`)} target="_blank"
-                                    >{tree.data.title}</a
-                                >
+                                <a href={appLink(`/tree-viewer?id=${tree.genData.id}`)} target="_blank">{tree.data.title}</a>
                             </td>
-                            <td class="pr-4">{tree.genData.lastEdited.toLocaleString()}</td>
+                            <td class="pr-4">{new Date(tree.genData.lastModified).toLocaleString()}</td>
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                             <td class="pr-4">{parseBooleanToString(tree.data.published)}</td>
                             <td class="min-w-2 hover:fill-blue-800">
-                                <a href={appLink('/')} target="_blank" aria-label="edit">
+                                <a href={appLink(`/editor?id=${tree.genData.id}`)} target="_blank" aria-label="edit">
                                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                     {@html icon}
                                 </a>
