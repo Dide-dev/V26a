@@ -12,6 +12,8 @@ import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { addUser } from '$lib/backend/users';
 import { goto } from '$app/navigation';
+import { appLink } from '$lib';
+import { getLocale } from '$lib/paraglide/runtime.js';
 
 vi.mock('$lib/backend/users', () => {
     return {
@@ -106,12 +108,8 @@ test('passwordsNotTheSame', async () => {
 });
 
 test('passwordsCorrect', async () => {
-    let test = '';
-    global.fetch = vi.fn().mockImplementation((path: string) => {
-        if (path === '/api/v1/users/add') {
-            test = 'Correct password';
-        }
-    });
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
+
     const user = userEvent.setup();
     render(page);
 
@@ -126,24 +124,127 @@ test('passwordsCorrect', async () => {
 
     expect(error.textContent).not.toBe(m.missingCharacter());
     expect(error.textContent).not.toBe(m.passwordsNotTheSame());
-    expect(test).toBe('Correct password');
+
+    expect(addUser).toHaveBeenCalledWith({
+        email: 'test@test.test',
+        password: 'aaaaaaaA1!',
+        name: 'test',
+        nickname: '',
+        aboutMe: null,
+        emailVisible: false,
+        language: getLocale()
+    });
 });
 
-test('Redirection after succesful creation', async () => {
+test('Redirection after succesful user=adding', async () => {
     const user = userEvent.setup();
 
     (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
 
     render(page);
 
-    const emailInput = screen.getByLabelText('E-mail');
+    const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
-    const nameInput = screen.getByLabelText('Naam');
+    const nameInput = screen.getByTestId('name');
     await user.type(nameInput, 'Tree Maker');
-    const passwordInput = screen.getByLabelText('Wachtwoord');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(goto).toHaveBeenCalledWith(appLink('/login'));
+});
+
+test('Submission with correct data', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+            email: 'test@email.nl',
+            password: 'ThisIsAVerySecureP@ssword123',
+            name: 'Tree Maker',
+            nickname: '',
+            aboutMe: null,
+            emailVisible: false,
+            language: getLocale()
+        })
+    );
+});
+
+test('No submission without password', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
+});
+
+test('No submission without repeat password', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.register() }));
 
-    expect(goto).toHaveBeenCalledWith('/login');
+    expect(addUser).not.toHaveBeenCalled();
+});
+
+test('No submission without name', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
+});
+
+test('No submission without email', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
 });
