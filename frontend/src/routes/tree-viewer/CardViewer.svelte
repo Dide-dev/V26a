@@ -5,14 +5,18 @@
 -->
 <script lang="ts">
     import type { Node } from './example_tree';
-    let { node, visibleParent = false }: { node: Node; visibleParent?: boolean } = $props();
-    let visible = $state(false);
-    let clickable = $state(() => visibleParent);
+    let { node, visible = $bindable(), visibleParent = false }: { node: Node; visible:boolean; visibleParent:boolean; } = $props();
+
+    function setVisible() {
+        visible = true;
+    }
 
 </script>
 
-{#if visibleParent}
-<p>{node.card}</p>
+{#if visible}
+    <p>{node.card}</p>
+{:else if visibleParent}
+    <button onclick={setVisible}>Clickable</button>
 {:else}
-    <p>No visible Parent</p>
+    <p>Not clickable</p>
 {/if}

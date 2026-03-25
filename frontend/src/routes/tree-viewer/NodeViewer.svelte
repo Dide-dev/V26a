@@ -8,7 +8,9 @@
     import CardViewer from './CardViewer.svelte';
     import type { Node, RootNode } from './example_tree';
     import { onMount } from 'svelte';
-    let { node, parentIsRoot=false }: { node: Node | RootNode; parentIsRoot?: boolean } = $props();
+    let { node, parentIsVisible=false }: { node: Node | RootNode; parentIsVisible?: boolean } = $props();
+
+    let visible = $derived("label" in node);
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -80,14 +82,10 @@
         </div>
     {:else}
         <div class="h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
-            <!--<p>{node.card}</p>-->
-            {#if parentIsRoot}
-                <CardViewer node={node}
-                            visibleParent={parentIsRoot}
-                />
-            {:else}
-                <CardViewer node={node} />
-            {/if}
+            <CardViewer node={node}
+                        visibleParent={parentIsVisible}
+                        bind:visible={visible}
+            />
         </div>
     {/if}
 
@@ -106,12 +104,8 @@
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            {#if 'label' in node}
                 <NodeViewer node={child_node}
-                            parentIsRoot={true}/>
-            {:else}
-                <NodeViewer node={child_node} />
-            {/if}
+                            parentIsVisible={visible}/>
         {/each}
     </div>
 </div>
