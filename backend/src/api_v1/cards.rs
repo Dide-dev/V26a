@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use crate::db::cards::{add_card, get_tree_of_card, update_card};
 use crate::db_structs::cards::{CardAddData, CardUpdateData};
 use crate::{Config, get_connection};
