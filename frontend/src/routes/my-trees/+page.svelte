@@ -42,7 +42,9 @@
                                 >
                             </td>
                             <td class="pr-4"
-                                >{new Date((tree.genData.lastModified).toString()).toLocaleString()}</td
+                                >{new Date(
+                                    tree.genData.lastModified.toString()
+                                ).toLocaleString()}</td
                             >
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                             <td class="pr-4">{booleanToString(tree.data.published)}</td>
