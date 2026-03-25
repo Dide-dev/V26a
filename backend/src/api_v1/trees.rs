@@ -45,6 +45,9 @@ async fn add_new_tree(
     Extension(db): Extension<PgPool>,
     Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
+    if !is_tree_structure_empty(&tree_add_data.tree_structure) {
+        return Err(ApiError::NonEmptyStructure);
+    }
     let id = add_tree(
         &db,
         tree_add_data.tree_data,
@@ -55,6 +58,14 @@ async fn add_new_tree(
 
     let json_id = Json(id);
     Ok(json_id)
+}
+
+/// Check whether a tree structure contains no cards.
+///
+/// # Returns
+/// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
+fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
+    tree_structure.flatten().len() == 0
 }
 
 /// Update the structure of an existing tree in the database.
