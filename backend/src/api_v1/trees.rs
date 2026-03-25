@@ -259,9 +259,9 @@ pub async fn verify_tree_ownership(
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
-/// `page` - Which page is requested.
+/// `page` - The requested page, given as [`OptionalPaginationOptions`].
 ///
-/// `filters` - The filters to apply to the trees.
+/// `filters` - The requested filters to apply to the trees, given as [`TreeFilters`].
 ///
 /// # Returns
 /// A list with the trees satisfying the filters at the requested page,
