@@ -27,8 +27,8 @@ The format of the json will look like this:
                                 {
                                     "cardId": 18,
                                     "children": []
-                                },
-                            ],
+                                }
+                            ]
                         },
                         {
                             "cardId": 23,
@@ -51,3 +51,12 @@ The format of the json will look like this:
 ```
 
 Make sure to differentiate the 'root nodes' from the normal 'nodes' in the types in rust and typescript!
+
+The `cardId`'s correspond to the id in the cards database table.
+
+Cards may exist without their card id present in the json structure.
+This is because when adding a new card the frontend initially does not know the id,
+so the frontend can not create the new structure yet.
+
+A card id that does not (yet) exist in the cards database table is **NOT** allowed,
+and considered to be an invalid database state (just like when the json structure has wrong keys).
