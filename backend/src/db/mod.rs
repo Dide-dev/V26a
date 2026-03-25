@@ -40,3 +40,96 @@ macro_rules! get_connection_unwrap {
         &mut *($pool.acquire().await.unwrap())
     };
 }
+
+#[cfg(test)]
+pub mod test {
+    use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
+    use sqlx::{PgConnection, PgExecutor, query};
+
+    /// Initialize a database with a user and a tree.
+    ///
+    /// # Returns
+    /// A tuple containing the `user_id` as its first value and the `tree_id` as its second value.
+    pub async fn initialize_db(db: &mut PgConnection) -> (i32, i32) {
+        let user_id = initialize_user(&mut *db).await;
+        let tree_id = initialize_empty_tree(&mut *db, user_id).await;
+
+        (user_id, tree_id)
+    }
+
+    pub async fn initialize_user(db: impl PgExecutor<'_>) -> i32 {
+        query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "email",
+            "password_hash",
+            "name"
+        )
+        .fetch_one(db)
+        .await
+        .unwrap()
+        .id
+    }
+
+    pub async fn initialize_empty_tree(db: impl PgExecutor<'_>, owner_id: i32) -> i32 {
+        let data = TreeData {
+            title: "title".to_string(),
+            description: None,
+            book_name: None,
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: false,
+        };
+
+        let structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            }],
+        };
+
+        initialize_tree(db, owner_id, &data, &structure).await
+    }
+
+    pub async fn initialize_tree(
+        db: impl PgExecutor<'_>,
+        owner_id: i32,
+        tree_data: &TreeData,
+        tree_structure: &TreeStructure,
+    ) -> i32 {
+        let structure = serde_json::to_value(tree_structure).unwrap();
+
+        query!(
+            "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id",
+            owner_id,
+            tree_data.published,
+            tree_data.title,
+            tree_data.description,
+            tree_data.book_name,
+            tree_data.book_edition,
+            tree_data.book_isbn,
+            tree_data.book_chapter,
+            tree_data.book_exercise,
+            tree_data.assignment_text,
+            structure,
+        )
+            .fetch_one(db)
+            .await
+            .unwrap()
+            .id
+    }
+
+    pub async fn initialize_card(db: impl PgExecutor<'_>, tree_id: i32) -> i32 {
+        query!(
+            "INSERT INTO cards (tree_id, back) VALUES ($1, $2) RETURNING id",
+            tree_id,
+            "back"
+        )
+        .fetch_one(db)
+        .await
+        .unwrap()
+        .id
+    }
+}

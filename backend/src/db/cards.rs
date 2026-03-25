@@ -22,7 +22,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_card(db: impl PgExecutor<'_>, card_data: CardAddData) -> Result<i32, ApiError> {
+pub async fn add_card(db: impl PgExecutor<'_>, card_data: &CardAddData) -> Result<i32, ApiError> {
     let card_id = query!(
         "INSERT INTO cards (tree_id, front, back)
         VALUES ($1, $2, $3)
@@ -172,4 +172,151 @@ pub async fn get_tree_of_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<i
         .tree_id;
 
     Ok(tree_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::test::{initialize_card, initialize_db};
+    use crate::get_connection_unwrap;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_add_card(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let card_data = CardAddData {
+            tree_id,
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        };
+
+        let card_id = add_card(&db, &card_data).await;
+        assert!(card_id.is_ok());
+        let card_id = card_id.unwrap();
+
+        let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id,)
+            .fetch_one(&db)
+            .await;
+        assert!(found_card_data.is_ok());
+        let found_card_data = found_card_data.unwrap();
+
+        let found_card_data = CardAddData {
+            tree_id: found_card_data.id,
+            front: found_card_data.front,
+            back: found_card_data.back,
+        };
+
+        assert_eq!(found_card_data, card_data);
+    }
+
+    #[sqlx::test]
+    async fn test_remove_card(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let void = remove_card(&db, card_id).await;
+        assert!(void.is_ok());
+
+        let does_card_exist = query!("SELECT EXISTS (SELECT 1 FROM cards WHERE id=$1)", card_id,)
+            .fetch_one(&db)
+            .await;
+        assert!(does_card_exist.is_ok());
+        let does_card_exist = does_card_exist.unwrap().exists.unwrap();
+        assert!(!does_card_exist);
+    }
+
+    #[sqlx::test]
+    async fn test_update_card(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let new_card_data = CardUpdateData {
+            card_id: 0,
+            new_front: "FRONT".to_owned(),
+            new_back: "BACK".to_owned(),
+        };
+
+        let error = update_card(get_connection_unwrap!(db), &new_card_data).await;
+        assert!(error.is_err());
+
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let new_card_data = CardUpdateData {
+            card_id,
+            new_front: "FRONT".to_owned(),
+            new_back: "BACK".to_owned(),
+        };
+
+        let void = update_card(get_connection_unwrap!(db), &new_card_data).await;
+        assert!(void.is_ok());
+
+        let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id,)
+            .fetch_one(&db)
+            .await;
+        assert!(found_card_data.is_ok());
+        let found_card_data = found_card_data.unwrap();
+
+        let found_card_data = CardUpdateData {
+            card_id: found_card_data.id,
+            new_front: found_card_data.front,
+            new_back: found_card_data.back,
+        };
+
+        assert_eq!(found_card_data, new_card_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_tree_cards(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_add_data1 = CardAddData {
+            tree_id,
+            front: "front1".to_owned(),
+            back: "back1".to_owned(),
+        };
+        let card_get_data1 = CardGetData {
+            front: card_add_data1.front.clone(),
+            back: card_add_data1.back.clone(),
+        };
+        let card_add_data2 = CardAddData {
+            tree_id,
+            front: "front2".to_owned(),
+            back: "back2".to_owned(),
+        };
+        let card_get_data2 = CardGetData {
+            front: card_add_data2.front.clone(),
+            back: card_add_data2.back.clone(),
+        };
+
+        let card_id1 = add_card(&db, &card_add_data1).await;
+        assert!(card_id1.is_ok());
+        let card_id1 = card_id1.unwrap();
+        let card_id2 = add_card(&db, &card_add_data2).await;
+        assert!(card_id2.is_ok());
+        let card_id2 = card_id2.unwrap();
+
+        let found_card_data = get_tree_cards(&db, tree_id).await;
+        assert!(found_card_data.is_ok());
+        let found_card_data = found_card_data.unwrap();
+
+        for (found_card_id, found_card_data) in &found_card_data {
+            if *found_card_id == card_id1 {
+                assert_eq!(found_card_data, &card_get_data1);
+            } else if *found_card_id == card_id2 {
+                assert_eq!(found_card_data, &card_get_data2);
+            } else {
+                unreachable!();
+            }
+        }
+    }
+
+    #[sqlx::test]
+    async fn test_get_tree_of_card(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let found_tree_id = get_tree_of_card(&db, card_id).await;
+        assert!(found_tree_id.is_ok());
+        let found_tree_id = found_tree_id.unwrap();
+        assert_eq!(found_tree_id, tree_id);
+    }
 }

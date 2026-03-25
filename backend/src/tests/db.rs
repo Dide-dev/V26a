@@ -81,7 +81,7 @@ async fn test_db_functions(db: PgPool) {
             back: "Dumbledore dies".to_string(),
         };
 
-        let card_id = add_card(&db, card_add_data).await;
+        let card_id = add_card(&db, &card_add_data).await;
         assert!(card_id.is_ok());
         let card_id = card_id?;
 

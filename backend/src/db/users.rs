@@ -139,4 +139,34 @@ mod test {
 
         assert!(password_matches);
     }
+
+    #[sqlx::test]
+    async fn test_user_exists(db: PgPool) {
+        let email = "email".to_owned();
+
+        let user_data = UserData {
+            email: email.clone(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: None,
+            about_me: None,
+            email_visible: false,
+            language: UserLanguage::Nl,
+        };
+
+        // Assert user does not exist before adding to the database.
+        let does_user_exist = user_exists(&db, &email).await;
+        assert!(does_user_exist.is_ok());
+        let does_user_exist = does_user_exist.unwrap();
+        assert!(!does_user_exist);
+
+        let user_id = add_user(get_connection_unwrap!(db), &user_data).await;
+        assert!(user_id.is_ok());
+
+        // Assert user does exist after adding to the database.
+        let does_user_exist = user_exists(&db, &email).await;
+        assert!(does_user_exist.is_ok());
+        let does_user_exist = does_user_exist.unwrap();
+        assert!(does_user_exist);
+    }
 }
