@@ -6,15 +6,10 @@
 
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { Node, RootNode } from './example_tree';
-    import { tick } from 'svelte';
-
-    //initialization off types
-    let { node, addChild = null, insertChild = null }: {
-        node: Node | RootNode;
-        addChild?: ((node: Node) => void) | null;
-        insertChild?: ((parent: Node, child: Node) => void) | null;
-    } = $props();
+    import type { Node, RootNode } from '$lib/backend/trees';
+    import type { CardGetData, CardId } from '$lib/backend/cards';
+    import { onMount, tick } from 'svelte';
+    let { node, cards }: { node: Node | RootNode; cards: Record<CardId, CardGetData> } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 90;
@@ -92,23 +87,24 @@
 
 <div class="flex">
     {#if 'label' in node}
-        <div class="h-fit w-32 shrink-0 cursor-default">
+        <div class="tree__node h-fit w-32 shrink-0 cursor-default">
             <strong>{node.label}</strong>
         </div>
     {:else}
-        <div class="relative h-fit group">
-        <button
-            class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50"
-        >
-            <p>{node.card}</p>
-        </button>
-        {#if addChild}
+        <div class="tree__node relative h-fit group w-xl border-2 border-green-800 bg-green-50 p-1">
             <button
-                class="absolute top-1.5 right-1 h-5 w-5 rounded-full bg-blue-500 text-white text-xs opacity-20 group-hover:opacity-100 transition-opacity cursor-pointer"
-                onclick={() => addChild!(node as Node)}
-            >+</button>
-        {/if}
-    </div>
+                class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50"
+            >
+            <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
+            <p>{cards[node.cardId].front}</p>
+            </button>
+            {#if addChild}
+                <button
+                    class="absolute top-1.5 right-1 h-5 w-5 rounded-full bg-blue-500 text-white text-xs opacity-20 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    onclick={() => addChild!(node as Node)}
+                >+</button>
+            {/if}
+        </div>
     {/if}
 
     {#if node.children.length !== 0}
@@ -125,16 +121,16 @@
     {/if}
 
     <div bind:this={domChildren} class="flex flex-col gap-5">
-    {#each node.children as child_node (child_node)}
-        <div class="relative"> 
-            {#if insertChild}
-               <button
-                    class="absolute -left-8 z-10 h-5 w-5 rounded-full bg-green-500 text-white text-xs opacity-20 hover:opacity-100 transition-opacity cursor-pointer"
-                    onclick={() => insertChild!(node as Node, child_node as Node)}
-                >+</button>
-            {/if}
-            <NodeViewer node={child_node} {addChild} {insertChild} />
-        </div>
-    {/each}
-</div>
+        {#each node.children as child_node (child_node)}
+            <div class="relative">
+                {#if insertChild}
+                    <button
+                        class="absolute -left-8 z-10 h-5 w-5 rounded-full bg-green-500 text-white text-xs opacity-20 hover:opacity-100 transition-opacity cursor-pointer"
+                        onclick={() => insertChild!(node as Node, child_node as Node)}
+                    >+</button>
+                {/if}
+                <NodeViewer node={child_node} {cards} {addChild} {insertChild} />
+            </div>
+        {/each}
+    </div>
 </div>
