@@ -11,7 +11,7 @@ import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { addTree } from '$lib/backend/trees';
-import {goto} from '$app/navigation'
+import { goto } from '$app/navigation';
 
 vi.mock('$lib/backend/trees', () => {
     return {
@@ -49,12 +49,12 @@ test('Submission with correct data', async () => {
             title: 'Test tree title',
             description: 'Test tree description',
             bookName: '',
-        bookEdition: '',
-        bookIsbn: '',
-        bookChapter: '',
-        bookExercise: '',
-        assignmentText: '',
-        published: false
+            bookEdition: '',
+            bookIsbn: '',
+            bookChapter: '',
+            bookExercise: '',
+            assignmentText: '',
+            published: false
         })
     );
 });
@@ -71,4 +71,4 @@ test('Redirection after succesful creation', async () => {
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
     expect(goto).toHaveBeenCalledWith('/editor?id=1');
-})
+});
