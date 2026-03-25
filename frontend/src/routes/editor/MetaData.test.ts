@@ -1,0 +1,99 @@
+import { render, screen } from '@testing-library/svelte'
+import { userEvent } from '@testing-library/user-event'
+import { expect, test, vi } from 'vitest';
+import MetaData from './+page.svelte';
+
+// mock API calls
+vi.mock('$lib/backend/trees', () => ({
+    getTreeWithCards: vi.fn().mockResolvedValue({
+        data: {
+            title: 'Test123',
+            description: 'gerdgreg',
+            bookName: 'Monkey',
+            bookEdition: '13th',
+            bookIsbn: '123-456',
+            bookChapter: '10',
+            bookExercise: '3',
+            assignmentText: 'I am a banabana',
+            published: false,
+        },
+        genData: { id: 1, ownerId: 1 },
+        structure: { rootNodes: [] },
+        cards: new Map(),
+    }),
+    updateTreeMetaData: vi.fn().mockResolvedValue(undefined),
+}));
+
+// mock state
+vi.mock('$app/state', () => ({
+    page: { url: { searchParams: { get: () => '1' } } },
+}));
+
+test('dropdown is hidden by default', () => {
+    render(MetaData);
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+});
+
+test('dropdown opens when edit metadata button is clicked', async () => {
+    const user = userEvent.setup();
+    render(MetaData);
+
+    await user.click(screen.getByText('Edit metadata'));
+    expect(screen.getByLabelText('Title')).toBeInTheDocument();
+});
+
+test('fields are prefilled with tree data', async () => {
+    const user = userEvent.setup();
+    render(MetaData);
+
+    await user.click(screen.getByText('Edit metadata'));
+    expect(screen.getByLabelText('Book name')).toHaveValue('Test Book');
+    expect(screen.getByLabelText('ISBN')).toHaveValue('123-456');
+});
+
+test('cancel restores original values', async () => {
+    const user = userEvent.setup();
+    render(MetaData);
+
+    await user.click(screen.getByText('Edit metadata'));
+    await user.clear(screen.getByLabelText('Book name'));
+    await user.type(screen.getByLabelText('Book name'), 'Changed Book');
+    await user.click(screen.getByText('Cancel'));
+
+    await user.click(screen.getByText('Edit metadata'));
+    expect(screen.getByLabelText('Book name')).toHaveValue('Test Book');
+});
+
+test('save calls updateTreeMetaData with correct data', async () => {
+    const { updateTreeMetaData } = await import('$lib/backend/trees');
+    const user = userEvent.setup();
+    render(MetaData);
+
+    await user.click(screen.getByText('Edit metadata'));
+    await user.clear(screen.getByLabelText('Book name'));
+    await user.type(screen.getByLabelText('Book name'), 'New Apple');
+    await user.click(screen.getByText('Save'));
+
+    expect(updateTreeMetaData).toHaveBeenCalledWith({
+        id: 1,
+        newData: expect.objectContaining({ bookName: 'New Apple' }),
+    });
+});
+
+test('dropdown closes after save', async () => {
+    const user = userEvent.setup();
+    render(MetaData);
+
+    await user.click(screen.getByText('Edit metadata'));
+    await user.click(screen.getByText('Save'));
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+});
+
+test('dropdown closes after cancel', async () => {
+    const user = userEvent.setup();
+    render(MetaData);
+
+    await user.click(screen.getByText('Edit metadata'));
+    await user.click(screen.getByText('Cancel'));
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+});

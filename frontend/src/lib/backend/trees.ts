@@ -74,6 +74,11 @@ export type TreeMetadata = {
     genData: TreeGeneratedData;
 };
 
+export type TreeUpdateMetaData = {
+    id: TreeId;
+    newData: TreeData;
+};
+
 export type TreeUpdateStructureData = {
     id: TreeId;
     newStructure: TreeStructure;
@@ -107,7 +112,7 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
 }
 
 /** Update the metadata of a specific tree.*/
-export function updateTreeMetaData(newTreeData: TreeMetadata): Promise<void> {
+export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
     return apiCallPostTree('update', newTreeData);
 }
 /** Request all trees owned by the logged-in user. */

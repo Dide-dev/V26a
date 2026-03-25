@@ -11,10 +11,15 @@
 
     //metadata
     let treeData = $state({
-        bookName: '',
-        bookIsbn: '',
-        bookChapter: '',
-        bookExercise: '',
+            title: '',
+            description: '',
+            bookName: '',
+            bookEdition: '',
+            bookIsbn: '',
+            bookChapter: '',
+            bookExercise: '',
+            assignmentText: '',
+            published: false,
     });
 
     //variables 
@@ -36,10 +41,15 @@
         
         //prefill data
             treeData = {
+                title: tree.data.title ?? '',
+                description: tree.data.description ?? '',
                 bookName: tree.data.bookName ?? '',
+                bookEdition: tree.data.bookEdition ?? '',
                 bookIsbn: tree.data.bookIsbn ?? '',
                 bookChapter: tree.data.bookChapter ?? '',
                 bookExercise: tree.data.bookExercise ?? '',
+                assignmentText: tree.data.assignmentText ?? '',
+                published: tree.data.published ?? false,
             };
             oldData = { ...treeData};
         } catch (err) {
@@ -54,14 +64,8 @@
         oldData = { ...treeData };
         dropDown = false;
         await updateTreeMetaData({ 
-            id: treeId, 
-            newData: { 
-                ...tree!.data,  
-                bookName: treeData.bookName,
-                bookIsbn: treeData.bookIsbn,
-                bookChapter: treeData.bookChapter,
-                bookExercise: treeData.bookExercise,
-            } 
+              id: treeId,
+              newData: { ...treeData } 
         });
     }
 
@@ -78,10 +82,15 @@
 
 {#if dropDown}
     <div class="absolute bg-white rounded shadow p-4 flex flex-col gap-2 z-10 w-64">
+        <label>Title<input class="border rounded p-1 w-full" bind:value={treeData.title} /></label>
+        <label>Description<textarea class="border rounded p-1 w-full" bind:value={treeData.description}></textarea></label>
         <label>Book name<input class="border rounded p-1 w-full" bind:value={treeData.bookName} /></label>
+        <label>Book edition<input class="border rounded p-1 w-full" bind:value={treeData.bookEdition} /></label>
         <label>ISBN<input class="border rounded p-1 w-full" bind:value={treeData.bookIsbn} /></label>
         <label>Chapter<input class="border rounded p-1 w-full" bind:value={treeData.bookChapter} /></label>
         <label>Exercise<input class="border rounded p-1 w-full" bind:value={treeData.bookExercise} /></label>
+        <label>Assignment<input class="border rounded p-1 w-full" bind:value={treeData.assignmentText} /></label>
+        <label>Published<input type="checkbox" bind:checked={treeData.published} /></label>
         <button class="bg-blue-500 text-white rounded px-3 py-1" onclick={saveData}>Save</button>
         <button onclick={cancelData}>Cancel</button>
     </div>
