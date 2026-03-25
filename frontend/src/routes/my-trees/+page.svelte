@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import {getUsersOwnTrees} from '$lib/backend/trees';
+    import { getUsersOwnTrees } from '$lib/backend/trees';
     import icon from '$lib/assets/editIcon.svg?raw';
     import { appLink } from '$lib';
 
@@ -25,7 +25,6 @@
             <table class="border-separate border-spacing-2">
                 <thead>
                     <tr>
-                        <th class="text-left">{m.madeBy()}</th>
                         <th class="text-left">{m.title()}</th>
                         <th class="text-left">{m.lastEdited()}</th>
                         <th class="text-left">{m.published()}</th>
@@ -36,15 +35,23 @@
                 <tbody>
                     {#each trees as tree (tree.genData.id)}
                         <tr>
-                            <td class="pr-4">{tree.genData.ownerId}</td>
                             <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
-                                <a href={appLink(`/tree-viewer?id=${tree.genData.id}`)} target="_blank">{tree.data.title}</a>
+                                <a
+                                    href={appLink(`/tree-viewer?id=${tree.genData.id}`)}
+                                    target="_blank">{tree.data.title}</a
+                                >
                             </td>
-                            <td class="pr-4">{new Date(tree.genData.lastModified).toLocaleString()}</td>
+                            <td class="pr-4"
+                                >{new Date(tree.genData.lastModified).toLocaleString()}</td
+                            >
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                             <td class="pr-4">{parseBooleanToString(tree.data.published)}</td>
                             <td class="min-w-2 hover:fill-blue-800">
-                                <a href={appLink(`/editor?id=${tree.genData.id}`)} target="_blank" aria-label="edit">
+                                <a
+                                    href={appLink(`/editor?id=${tree.genData.id}`)}
+                                    target="_blank"
+                                    aria-label="edit"
+                                >
                                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                     {@html icon}
                                 </a>
@@ -55,7 +62,12 @@
             </table>
         </div>
     {:else}
-        <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
+        <div class="text-center">
+            <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
+            <button class="m-2 rounded-sm bg-emerald-500 p-1"
+                ><a href={appLink('/tree-generator')}>{m.createTree()}</a></button
+            >
+        </div>
     {/if}
 {:catch error}
     <p style="color:red">{error.message}</p>
