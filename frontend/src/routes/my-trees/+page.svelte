@@ -10,7 +10,7 @@
     import icon from '$lib/assets/editIcon.svg?raw';
     import { appLink } from '$lib';
 
-    function parseBooleanToString(value: boolean) {
+    function booleanToString(value: boolean) {
         if (value) return m.yes();
         return m.no();
     }
@@ -45,7 +45,7 @@
                                 >{new Date(tree.genData.lastModified).toLocaleString()}</td
                             >
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
-                            <td class="pr-4">{parseBooleanToString(tree.data.published)}</td>
+                            <td class="pr-4">{booleanToString(tree.data.published)}</td>
                             <td class="min-w-2 hover:fill-blue-800">
                                 <a
                                     href={appLink(`/editor?id=${tree.genData.id}`)}
