@@ -21,7 +21,7 @@ async fn test_new_card(db: PgPool) {
         front: "front".to_owned(),
         back: "back".to_owned(),
     };
-    
+
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_bad_request();
 
@@ -95,13 +95,13 @@ async fn test_update_existing_card(db: PgPool) {
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
     let card_id: i32 = response.json();
-    
+
     let card_update_data = CardUpdateData {
         card_id,
         new_front: "FRONT".to_owned(),
         new_back: "BACK".to_owned(),
     };
-    
+
     let response = server.post("/cards/update").json(&card_update_data).await;
     response.assert_status_ok();
 

@@ -57,6 +57,10 @@ pub mod test {
         (user_id, tree_id)
     }
 
+    /// Initialize a user in the database.
+    ///
+    /// # Returns
+    /// The `user_id` associated with the newly added user.
     pub async fn initialize_user(db: impl PgExecutor<'_>) -> i32 {
         query!(
             "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
@@ -70,6 +74,10 @@ pub mod test {
         .id
     }
 
+    /// Initialize an empty tree in the database.
+    ///
+    /// # Returns
+    /// The `tree_id` associated with the newly added tree.
     pub async fn initialize_empty_tree(db: impl PgExecutor<'_>, owner_id: i32) -> i32 {
         let data = TreeData {
             title: "title".to_string(),
@@ -93,6 +101,20 @@ pub mod test {
         initialize_tree(db, owner_id, &data, &structure).await
     }
 
+    /// Initialize a tree in the database.
+    ///
+    /// # Arguments
+    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+    ///
+    /// `owner_id` - The `user_id` associated with the intended owner of the tree.
+    /// Must exist as an `id` in the `users` table.
+    ///
+    /// `tree_data` - The data added to the tree as [`TreeData`].
+    ///
+    /// `tree_structure` - The structure added to the tree as [`TreeStructure`].
+    ///
+    /// # Returns
+    /// The `tree_id` associated with the newly added tree.
     pub async fn initialize_tree(
         db: impl PgExecutor<'_>,
         owner_id: i32,
@@ -121,6 +143,16 @@ pub mod test {
             .id
     }
 
+    /// Initialize a card into the database.
+    ///
+    /// # Arguments
+    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+    ///
+    /// `tree_id` - The id associated with the tree the card should be added to.
+    /// Must exist as an `id` in the `trees` table.
+    ///
+    /// # Returns
+    /// The `card_id` associated with the newly added card.
     pub async fn initialize_card(db: impl PgExecutor<'_>, tree_id: i32) -> i32 {
         query!(
             "INSERT INTO cards (tree_id, back) VALUES ($1, $2) RETURNING id",
