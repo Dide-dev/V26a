@@ -63,10 +63,10 @@ export type Node = {
 export type TreeGeneratedData = {
     id: TreeId;
     ownerId: UserId;
-    createdAt: string;
-    lastModified: string;
+    createdAt: Date;
+    lastModified: Date;
     timesVisited: number;
-    lastVisited: Option<string>;
+    lastVisited: Option<Date>;
 };
 
 export type TreeMetadata = {
