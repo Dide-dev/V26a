@@ -10,7 +10,7 @@ use crate::{
 };
 use std::collections::HashSet;
 
-use crate::db_structs::trees::{RootNode, TreeMetadata};
+use crate::db_structs::trees::TreeMetadata;
 use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
@@ -19,6 +19,8 @@ use sqlx::{PgExecutor, query};
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_data` - The data assigned to the new tree as [`TreeData`].
+///
+/// `tree_structure` - The tree structure with cards as [`TreeStructure`].
 ///
 /// `owner_id` - The id of the owner of the tree.
 ///
@@ -30,26 +32,11 @@ use sqlx::{PgExecutor, query};
 pub async fn add_tree(
     db: impl PgExecutor<'_>,
     tree_data: TreeData,
+    tree_structure: TreeStructure,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
-    let structure = serde_json::to_value(TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_owned(),
-                children: vec![],
-            },
-        ],
-    })
-    .map_err(|_| ApiError::SerdeException)?;
+    let tree_structure =
+        serde_json::to_value(tree_structure).map_err(|_| ApiError::SerdeException)?;
 
     let tree_id = query!(
         "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
@@ -65,7 +52,7 @@ pub async fn add_tree(
         tree_data.book_chapter,
         tree_data.book_exercise,
         tree_data.assignment_text,
-        structure
+        tree_structure,
     )
     .fetch_one(db)
     .await

@@ -10,7 +10,7 @@ use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
-    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
+    TreeAddData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
     TreeWithCards,
 };
 use crate::{Config, db};
@@ -43,9 +43,15 @@ pub fn trees() -> Router<Config> {
 async fn add_new_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_data): Json<TreeData>,
+    Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    let id = add_tree(&db, tree_data, claims.sub).await?;
+    let id = add_tree(
+        &db,
+        tree_add_data.tree_data,
+        tree_add_data.tree_structure,
+        claims.sub,
+    )
+    .await?;
 
     let json_id = Json(id);
     Ok(json_id)
