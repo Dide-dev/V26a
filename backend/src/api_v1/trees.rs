@@ -178,6 +178,11 @@ async fn update_structure_if_valid(
 }
 
 /// Update the data of an existing tree in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
