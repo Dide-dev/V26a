@@ -23,6 +23,7 @@
     "globalCounter": "Globale Teller",
     "apiTesting": "Api Testen",
     "home": "Home",
+    "loadingTree": "De boom groeit...",
     "repeatPassword": "Herhaal wachtwoord",
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde"
