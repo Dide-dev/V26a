@@ -7,6 +7,7 @@
 <script lang="ts">
     import { page } from '$app/state';
     import { onMount } from 'svelte';
+    import { m } from '$lib/paraglide/messages.js';
     import { updateTreeMetaData, getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
 
     //metadata
@@ -76,23 +77,21 @@
     }
 </script>
 
-<button onclick={() => dropDown = !dropDown}>
-    Edit metadata
-</button>
+<button class="rounded-sm bg-emerald-500 p-1" onclick={() => dropDown = !dropDown}>{m.editMetadata()}</button>
 
 {#if dropDown}
     <div class= "meta_dropdown absolute bg-white rounded shadow p-4 flex flex-col gap-2 z-10 w-64">
-        <label>Title<input class="border rounded p-1 w-full" bind:value={treeData.title} /></label>
-        <label>Description<textarea class="border rounded p-1 w-full" bind:value={treeData.description}></textarea></label>
-        <label>Book name<input class="border rounded p-1 w-full" bind:value={treeData.bookName} /></label>
-        <label>Book edition<input class="border rounded p-1 w-full" bind:value={treeData.bookEdition} /></label>
-        <label>ISBN<input class="border rounded p-1 w-full" bind:value={treeData.bookIsbn} /></label>
-        <label>Chapter<input class="border rounded p-1 w-full" bind:value={treeData.bookChapter} /></label>
-        <label>Exercise<input class="border rounded p-1 w-full" bind:value={treeData.bookExercise} /></label>
-        <label>Assignment<input class="border rounded p-1 w-full" bind:value={treeData.assignmentText} /></label>
-        <label>Published<input type="checkbox" bind:checked={treeData.published} /></label>
-        <button class="bg-blue-500 text-white rounded px-3 py-1" onclick={saveData}>Save</button>
-        <button onclick={cancelData}>Cancel</button>
+        <label>{m.title()}<input class="border rounded p-1 w-full" bind:value={treeData.title} /></label>
+        <label>{m.description()}<textarea class="border rounded p-1 w-full" bind:value={treeData.description}></textarea></label>
+        <label>{m.bookname()}<input class="border rounded p-1 w-full" bind:value={treeData.bookName} /></label>
+        <label>{m.bookEdition()}<input class="border rounded p-1 w-full" bind:value={treeData.bookEdition} /></label>
+        <label>{m.bookIsbn()}<input class="border rounded p-1 w-full" bind:value={treeData.bookIsbn} /></label>
+        <label>{m.bookChapter()}<input class="border rounded p-1 w-full" bind:value={treeData.bookChapter} /></label>
+        <label>{m.bookExercise()}<input class="border rounded p-1 w-full" bind:value={treeData.bookExercise} /></label>
+        <label>{m.assignmentText()}<input class="border rounded p-1 w-full" bind:value={treeData.assignmentText} /></label>
+        <label>{m.published}<input type="checkbox" bind:checked={treeData.published} /></label>
+        <button class="bg-blue-500 text-white rounded px-3 py-1" onclick={saveData}>{m.save}</button>
+        <button onclick={cancelData}>{m.cancel}</button>
     </div>
 {/if}
 
