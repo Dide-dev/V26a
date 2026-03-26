@@ -346,3 +346,66 @@ pub async fn is_structure_valid(
 
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::db::users::add_user;
+    use crate::db_structs::users::{UserData, UserLanguage};
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_update_tree_data(db: PgPool) {
+        let mut conn = db.acquire().await.unwrap();
+        
+        // Create an account 
+        let user_id = add_user(&mut conn, UserData {
+            email: "test123@gmail.com".to_string(),
+            password: "monkey".to_string(),
+            name: "User123".to_string(),
+            nickname: None,
+            about_me: None,
+            email_visible: false,
+            language: UserLanguage::En,
+        }).await.unwrap();
+
+        // Add a tree to the database
+        let tree_data = TreeData {
+            title: "Test tree".to_string(),
+            description: None,
+            book_name: None,
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: false,
+        };
+        let tree_id = add_tree(&db, tree_data, user_id).await.unwrap();
+
+        // Update the tree data
+        let updated_tree_data = TreeData {
+            title: "Updated tree".to_string(),
+            description: Some("Updated description".to_string()),
+            book_name: Some("Updated book".to_string()),
+            book_edition: Some("2nd".to_string()),
+            book_isbn: Some("9780136019701".to_string()),
+            book_chapter: Some("3".to_string()),
+            book_exercise: Some("5b".to_string()),
+            assignment_text: Some("Updated assignment".to_string()),
+            published: true,
+        };
+        update_tree_data(&db, tree_id, updated_tree_data.clone())
+            .await
+            .unwrap();
+
+        // Verify the data was updated
+        let (result, _, _) = db_get_tree_all_data(&db, tree_id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, updated_tree_data);
+    }
+}
+
+
