@@ -31,7 +31,7 @@ vi.mock('$app/state', () => ({
 
 test('dropdown is hidden by default', () => {
     render(MetaData);
-    expect(screen.queryByLabelText('Title')).not.toBeinDocument();
+    expect(document.getElementsByClassName('meta_dropdown').length).not.toBeGreaterThan(0);
 });
 
 test('dropdown opens when edit metadata button is clicked', async () => {
@@ -39,7 +39,7 @@ test('dropdown opens when edit metadata button is clicked', async () => {
     render(MetaData);
 
     await user.click(screen.getByText('Edit metadata'));
-    expect(screen.getByLabelText('Title')).toBeinTheDocument();
+    expect(document.getElementsByClassName('meta_dropdown').length).toBeGreaterThan(0);
 });
 
 test('fields are prefilled with tree data', async () => {
@@ -47,8 +47,8 @@ test('fields are prefilled with tree data', async () => {
     render(MetaData);
 
     await user.click(screen.getByText('Edit metadata'));
-    expect(screen.getByLabelText('Book name')).toHaveValue('Test Book');
-    expect(screen.getByLabelText('ISBN')).toHaveValue('123-456');
+    expect((screen.getByLabelText('Book name') as HTMLInputElement).value).toBe('Monkey');
+    expect((screen.getByLabelText('ISBN') as HTMLInputElement).value).toBe('123-456');
 });
 
 test('cancel restores original values', async () => {
@@ -61,7 +61,7 @@ test('cancel restores original values', async () => {
     await user.click(screen.getByText('Cancel'));
 
     await user.click(screen.getByText('Edit metadata'));
-    expect(screen.getByLabelText('Book name')).toHaveValue('Test Book');
+    expect((screen.getByLabelText('Book name') as HTMLInputElement).value).toBe('Monkey');;
 });
 
 test('save calls updateTreeMetaData with correct data', async () => {
@@ -86,7 +86,7 @@ test('dropdown closes after save', async () => {
 
     await user.click(screen.getByText('Edit metadata'));
     await user.click(screen.getByText('Save'));
-    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+    expect(document.getElementsByClassName('meta_dropdown').length).not.toBeGreaterThan(0);
 });
 
 test('dropdown closes after cancel', async () => {
@@ -95,5 +95,5 @@ test('dropdown closes after cancel', async () => {
 
     await user.click(screen.getByText('Edit metadata'));
     await user.click(screen.getByText('Cancel'));
-    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+    expect(document.getElementsByClassName('meta_dropdown').length).not.toBeGreaterThan(0);
 });

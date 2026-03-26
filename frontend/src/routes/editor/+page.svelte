@@ -81,7 +81,7 @@
 </button>
 
 {#if dropDown}
-    <div class="absolute bg-white rounded shadow p-4 flex flex-col gap-2 z-10 w-64">
+    <div class= "meta_dropdown absolute bg-white rounded shadow p-4 flex flex-col gap-2 z-10 w-64">
         <label>Title<input class="border rounded p-1 w-full" bind:value={treeData.title} /></label>
         <label>Description<textarea class="border rounded p-1 w-full" bind:value={treeData.description}></textarea></label>
         <label>Book name<input class="border rounded p-1 w-full" bind:value={treeData.bookName} /></label>
