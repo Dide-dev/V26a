@@ -357,17 +357,23 @@ mod test {
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
         let mut conn = db.acquire().await.unwrap();
-        
-        // Create an account 
-        let user_id = add_user(&mut conn, UserData {
-            email: "test123@gmail.com".to_string(),
-            password: "monkey".to_string(),
-            name: "User123".to_string(),
-            nickname: None,
-            about_me: None,
-            email_visible: false,
-            language: UserLanguage::En,
-        }).await.unwrap();
+
+        // Create an account
+
+        let user_id = add_user(
+            &mut conn,
+            UserData {
+                email: "test123@gmail.com".to_string(),
+                password: "monkey".to_string(),
+                name: "User123".to_string(),
+                nickname: None,
+                about_me: None,
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        )
+        .await
+        .unwrap();
 
         // Add a tree to the database
         let tree_data = TreeData {
@@ -400,12 +406,7 @@ mod test {
             .unwrap();
 
         // Verify the data was updated
-        let (result, _, _) = db_get_tree_all_data(&db, tree_id)
-            .await
-            .unwrap()
-            .unwrap();
+        let (result, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
         assert_eq!(result, new_tree_data);
     }
 }
-
-

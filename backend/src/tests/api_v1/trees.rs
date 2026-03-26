@@ -258,7 +258,10 @@ async fn test_update_metadata(db: PgPool) {
         id: tree_id,
         new_data: new_tree_data.clone(),
     };
-    let response = server.post("/trees/update-data").json(&tree_update_data).await;
+    let response = server
+        .post("/trees/update-data")
+        .json(&tree_update_data)
+        .await;
     response.assert_status_ok();
 
     // Verify the metadata was updated
