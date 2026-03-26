@@ -8,7 +8,7 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    Node, RootNode, TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateData,
     TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
@@ -220,4 +220,52 @@ async fn test_remove_card(db: PgPool) {
     assert_eq!(full_tree.structure, valid_card_removal_data.new_structure);
     // The card should be removed from the tree.
     assert_eq!(full_tree.cards, BTreeMap::new());
+}
+
+#[sqlx::test]
+async fn test_update_metadata(db: PgPool) {
+    let server = crate::tests::api_v1::setup_login(db).await;
+
+    // Create a tree
+    let tree_data = TreeData {
+        title: "Test tree".to_string(),
+        description: None,
+        book_name: None,
+        book_edition: None,
+        book_isbn: None,
+        book_chapter: None,
+        book_exercise: None,
+        assignment_text: None,
+        published: false,
+    };
+    let response = server.post("/trees/add").json(&tree_data).await;
+    response.assert_status_ok();
+    let tree_id: i32 = response.json();
+
+    // Update the metadata
+    let updated_tree_data = TreeData {
+        title: "Updated tree".to_string(),
+        description: Some("Updated description".to_string()),
+        book_name: Some("Updated book".to_string()),
+        book_edition: Some("2nd".to_string()),
+        book_isbn: Some("9780136019701".to_string()),
+        book_chapter: Some("3".to_string()),
+        book_exercise: Some("5b".to_string()),
+        assignment_text: Some("Updated assignment".to_string()),
+        published: true,
+    };
+    let _update_data: TreeUpdateData = TreeUpdateData {
+        id: tree_id,
+        new_data: updated_tree_data.clone(),
+    };
+    let response = server.post("/trees/update-data").json(&_update_data).await;
+    response.assert_status_ok();
+
+    // Verify the metadata was updated
+    let response = server
+        .get(&format!("/trees/get-with-cards/{tree_id}"))
+        .await;
+    response.assert_status_ok();
+    let full_tree: TreeWithCards = response.json();
+    assert_eq!(full_tree.data, updated_tree_data);
 }

@@ -10,8 +10,8 @@ use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
-    TreeData, TreeUpdateData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
-    TreeWithCards,
+    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateData,
+    TreeUpdateStructureData, TreeWithCards,
 };
 use crate::{Config, db};
 
@@ -177,8 +177,6 @@ async fn update_structure_if_valid(
     Ok(())
 }
 
-
-
 /// Update the data of an existing tree in the database.
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
@@ -194,12 +192,7 @@ async fn update_tree_data(
     // Verify the tree's existence and the user's permissions.
     verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
 
-
-    db::trees::update_tree_data(
-        &db, 
-        tree_update_data.id, 
-        tree_update_data.new_data)
-        .await?;
+    db::trees::update_tree_data(&db, tree_update_data.id, tree_update_data.new_data).await?;
     Ok(())
 }
 

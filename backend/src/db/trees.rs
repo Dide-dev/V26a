@@ -153,8 +153,6 @@ pub async fn update_tree_data(
     Ok(())
 }
 
-
-
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
