@@ -243,7 +243,7 @@ async fn test_update_metadata(db: PgPool) {
     let tree_id: i32 = response.json();
 
     // Update the metadata
-    let updated_tree_data = TreeData {
+    let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
         description: Some("Updated description".to_string()),
         book_name: Some("Updated book".to_string()),
@@ -254,11 +254,11 @@ async fn test_update_metadata(db: PgPool) {
         assignment_text: Some("Updated assignment".to_string()),
         published: true,
     };
-    let _update_data: TreeUpdateData = TreeUpdateData {
+    let tree_update_data: TreeUpdateData = TreeUpdateData {
         id: tree_id,
-        new_data: updated_tree_data.clone(),
+        new_data: new_tree_data.clone(),
     };
-    let response = server.post("/trees/update-data").json(&_update_data).await;
+    let response = server.post("/trees/update-data").json(&tree_update_data).await;
     response.assert_status_ok();
 
     // Verify the metadata was updated
@@ -267,5 +267,5 @@ async fn test_update_metadata(db: PgPool) {
         .await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, updated_tree_data);
+    assert_eq!(full_tree.data, new_tree_data);
 }

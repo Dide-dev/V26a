@@ -384,7 +384,7 @@ mod test {
         let tree_id = add_tree(&db, tree_data, user_id).await.unwrap();
 
         // Update the tree data
-        let updated_tree_data = TreeData {
+        let new_tree_data = TreeData {
             title: "Updated tree".to_string(),
             description: Some("Updated description".to_string()),
             book_name: Some("Updated book".to_string()),
@@ -395,7 +395,7 @@ mod test {
             assignment_text: Some("Updated assignment".to_string()),
             published: true,
         };
-        update_tree_data(&db, tree_id, updated_tree_data.clone())
+        update_tree_data(&db, tree_id, new_tree_data.clone())
             .await
             .unwrap();
 
@@ -404,7 +404,7 @@ mod test {
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(result, updated_tree_data);
+        assert_eq!(result, new_tree_data);
     }
 }
 
