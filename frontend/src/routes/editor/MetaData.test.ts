@@ -31,7 +31,7 @@ vi.mock('$app/state', () => ({
 
 test('dropdown is hidden by default', () => {
     render(MetaData);
-    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Title')).not.toBeinDocument();
 });
 
 test('dropdown opens when edit metadata button is clicked', async () => {
@@ -39,7 +39,7 @@ test('dropdown opens when edit metadata button is clicked', async () => {
     render(MetaData);
 
     await user.click(screen.getByText('Edit metadata'));
-    expect(screen.getByLabelText('Title')).toBeInTheDocument();
+    expect(screen.getByLabelText('Title')).toBeinTheDocument();
 });
 
 test('fields are prefilled with tree data', async () => {
