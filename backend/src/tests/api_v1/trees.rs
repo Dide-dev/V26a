@@ -9,8 +9,7 @@
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
     Node, RootNode, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
-    TreeUpdateData,
-    TreeUpdateStructureData, TreeWithCards,
+    TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use sqlx::PgPool;
@@ -291,6 +290,7 @@ async fn test_filter_tree(db: PgPool) {
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.trees, second_tree);
+}
 
 #[sqlx::test]
 async fn test_update_metadata(db: PgPool) {

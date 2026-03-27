@@ -541,6 +541,7 @@ mod test {
             partial_filters_query.sql(),
             "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (created_at >= $2)"
         );
+    }
 
     /// TODO: rewrite test with initialize functions
     #[sqlx::test]
