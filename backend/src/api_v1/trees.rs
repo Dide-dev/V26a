@@ -40,6 +40,7 @@ pub fn trees() -> Router<Config> {
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) instead.
 async fn add_new_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
