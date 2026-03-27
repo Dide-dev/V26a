@@ -11,6 +11,7 @@
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
 
+    let editingPage = true;
     let loading = $state(true);
     let error: Error | null = $state(null);
     let tree: TreeWithCards | null = $state(null);
@@ -54,7 +55,7 @@
 
     <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer node={root} cards={tree.cards} />
+            <NodeViewer treeId={tree.genData.id} bind:treeStructure={tree.structure} node={root} cards={tree.cards} {editingPage} />
         {/each}
     </div>
 {/if}

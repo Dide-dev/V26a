@@ -6,10 +6,19 @@
 
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { Node, RootNode } from '$lib/backend/trees';
+    import type { TreeId, TreeStructure, Node, RootNode } from '$lib/backend/trees';
     import type { CardGetData, CardId } from '$lib/backend/cards';
-    import { onMount } from 'svelte';
-    let { node, cards }: { node: Node | RootNode; cards: Record<CardId, CardGetData> } = $props();
+    import { onMount, tick } from 'svelte';
+    import AddCard from "./AddCard.svelte";
+
+    //initialization off types
+    let { treeId, treeStructure = $bindable(), node, cards, editingPage }: {
+        treeId: TreeId;
+        treeStructure: TreeStructure;
+        node: Node | RootNode;
+        cards: Record<CardId, CardGetData>
+        editingPage: boolean
+    } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -72,17 +81,82 @@
             y2: lineOffset
         });
     });
+
+    /*
+    $effect(() => {
+        if (!domChildren) return;
+        //handles "shifts" in tree
+        const observer = new ResizeObserver(() => {
+            if (node.children.length === 0) return;
+
+            tick().then(() => {
+                svgLines = [];
+                svgHeight = 0;
+
+                let top = domChildren.getBoundingClientRect().top;
+
+                // Vertical line from lineOffset to last child
+                {
+                    let lastChildBounding =
+                        domChildren.children[
+                            domChildren.children.length - 1
+                        ].children[0].getBoundingClientRect();
+                    let childTop = lastChildBounding.top;
+                    svgLines.push({
+                        x1: svgWidth / 2,
+                        y1: lineOffset,
+                        x2: svgWidth / 2,
+                        y2: childTop - top + lineOffset
+                    });
+                    svgHeight = strokeWidth + childTop - top + lineOffset;
+                }
+
+                // Right horizontal line from vertical line to child
+                for (let child of domChildren.children) {
+                    let childBounding = child.children[0].getBoundingClientRect();
+                    let childTop = childBounding.top;
+
+                    svgLines.push({
+                        x1: svgWidth / 2,
+                        y1: childTop + lineOffset - top,
+                        x2: svgWidth,
+                        y2: childTop + lineOffset - top
+                    });
+                }
+
+                // Left horizontal line from parent to vertical line
+                svgLines.push({
+                    x1: 0,
+                    y1: lineOffset,
+                    x2: svgWidth / 2,
+                    y2: lineOffset
+                });
+            });
+        });
+        observer.observe(domChildren);
+        return () => observer.disconnect();
+    });*/
 </script>
 
 <div class="flex">
+    <!-- Root Node -->
     {#if 'label' in node}
-        <div class="tree__node h-fit w-32 shrink-0">
+        <div class="tree__node h-fit w-32 shrink-0 cursor-default">
             <strong>{node.label}</strong>
         </div>
+    <!-- Standard Node -->
     {:else}
-        <div class="tree__node h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
-            <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
-            <p>{cards[node.cardId].front}</p>
+        <div class="tree__node">
+            <button class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50">
+                <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
+                {cards[node.cardId].front}
+            </button>
+        </div>
+    {/if}
+
+    {#if editingPage}
+        <div class="relative">
+            <AddCard {treeId} {treeStructure} {node} />
         </div>
     {/if}
 
@@ -99,9 +173,12 @@
         </svg>
     {/if}
 
+    <!-- Create children Nodes -->
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node} {cards} />
+            <div class="relative">
+                <NodeViewer {treeId} {treeStructure} node={child_node} {cards} {editingPage} />
+            </div>
         {/each}
     </div>
 </div>
