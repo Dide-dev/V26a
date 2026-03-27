@@ -64,7 +64,7 @@ export type TreeGeneratedData = {
     id: TreeId;
     ownerId: UserId;
     createdAt: Date;
-    lastEdited: Date;
+    lastModified: Date;
     timesVisited: number;
     lastVisited: Option<Date>;
 };
@@ -72,6 +72,11 @@ export type TreeGeneratedData = {
 export type TreeMetadata = {
     data: TreeData;
     genData: TreeGeneratedData;
+};
+
+export type TreeUpdateMetaData = {
+    id: TreeId;
+    newData: TreeData;
 };
 
 export type TreeUpdateStructureData = {
@@ -104,6 +109,11 @@ export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+/** Update the metadata of a specific tree. */
+export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
+    return apiCallPostTree('update-data', newTreeData);
 }
 
 /** Request all trees owned by the logged-in user. */

@@ -110,6 +110,49 @@ pub async fn update_tree_structure(
     Ok(())
 }
 
+/// Update the data of an existing tree in the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree which is updated.
+///
+/// `new_tree_data` - The new data of the tree as [`TreeData`].
+/// Completely overwrites the existing data in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_tree_data(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    new_tree_data: TreeData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE trees SET
+        (last_modified, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published)
+        = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        WHERE id = $1",
+        tree_id,
+        new_tree_data.title,
+        new_tree_data.description,
+        new_tree_data.book_name,
+        new_tree_data.book_edition,
+        new_tree_data.book_isbn,
+        new_tree_data.book_chapter,
+        new_tree_data.book_exercise,
+        new_tree_data.assignment_text,
+        new_tree_data.published,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
@@ -496,5 +539,30 @@ mod test {
                 .await
                 .unwrap()
         );
+    }
+
+    #[sqlx::test]
+    async fn test_update_tree_data(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        // Update the tree data
+        let new_tree_data = TreeData {
+            title: "Updated tree".to_string(),
+            description: Some("Updated description".to_string()),
+            book_name: Some("Updated book".to_string()),
+            book_edition: Some("2nd".to_string()),
+            book_isbn: Some("9780136019701".to_string()),
+            book_chapter: Some("3".to_string()),
+            book_exercise: Some("5b".to_string()),
+            assignment_text: Some("Updated assignment".to_string()),
+            published: true,
+        };
+        update_tree_data(&db, tree_id, new_tree_data.clone())
+            .await
+            .unwrap();
+
+        // Verify the data was updated
+        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+        assert_eq!(found_tree_data, new_tree_data);
     }
 }
