@@ -43,7 +43,9 @@ macro_rules! get_connection_unwrap {
 
 #[cfg(test)]
 pub mod test {
+    use crate::db_structs::cards::CardAddData;
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
+    use crate::db_structs::users::UserData;
     use sqlx::{PgConnection, PgExecutor, query};
 
     /// Initialize a database with a user and a tree.
@@ -51,7 +53,7 @@ pub mod test {
     /// # Returns
     /// A tuple containing the `user_id` as its first value and the `tree_id` as its second value.
     pub async fn initialize_db(db: &mut PgConnection) -> (i32, i32) {
-        let user_id = initialize_user(&mut *db).await;
+        let user_id = initialize_basic_user(&mut *db).await;
         let tree_id = initialize_empty_tree(&mut *db, user_id).await;
 
         (user_id, tree_id)
@@ -61,12 +63,35 @@ pub mod test {
     ///
     /// # Returns
     /// The `user_id` associated with the newly added user.
-    pub async fn initialize_user(db: impl PgExecutor<'_>) -> i32 {
+    pub async fn initialize_basic_user(db: impl PgExecutor<'_>) -> i32 {
         query!(
             "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
             "test@email.com",
             "password_hash",
             "name"
+        )
+        .fetch_one(db)
+        .await
+        .unwrap()
+        .id
+    }
+
+    /// Initialize a user in the database with the provided user data.
+    ///
+    /// # Returns
+    /// The `user_id` associated with the newly added user.
+    pub async fn initialize_user(db: impl PgExecutor<'_>, user_data: &UserData) -> i32 {
+        let password_hash = bcrypt::hash(user_data.password.clone(), 2).unwrap();
+
+        query!(
+            "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+            user_data.email,
+            password_hash,
+            user_data.name,
+            user_data.nickname,
+            user_data.about_me,
+            user_data.email_visible,
+            user_data.language.to_string(),
         )
         .fetch_one(db)
         .await
@@ -146,7 +171,7 @@ pub mod test {
     /// Initialize a card into the database.
     ///
     /// # Arguments
-    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
     ///
     /// `tree_id` - The id associated with the tree the card should be added to.
     /// Must exist as an `id` in the `trees` table.
@@ -154,10 +179,33 @@ pub mod test {
     /// # Returns
     /// The `card_id` associated with the newly added card.
     pub async fn initialize_card(db: impl PgExecutor<'_>, tree_id: i32) -> i32 {
-        query!(
-            "INSERT INTO cards (tree_id, back) VALUES ($1, $2) RETURNING id",
+        let card_add_data = CardAddData {
             tree_id,
-            "back"
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        };
+
+        initialize_card_with_data(db, &card_add_data).await
+    }
+
+    /// Initialize a card into the database with the provided card data.
+    ///
+    /// # Arguments
+    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+    ///
+    /// `card_data` - The data added to the card as [`CardAddData`].
+    ///
+    /// # Returns
+    /// The `card_id` associated with the newly added card.
+    pub async fn initialize_card_with_data(
+        db: impl PgExecutor<'_>,
+        card_data: &CardAddData,
+    ) -> i32 {
+        query!(
+            "INSERT INTO cards (tree_id, back, front) VALUES ($1, $2, $3) RETURNING id",
+            card_data.tree_id,
+            card_data.back,
+            card_data.front,
         )
         .fetch_one(db)
         .await

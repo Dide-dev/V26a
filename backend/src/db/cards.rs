@@ -177,7 +177,7 @@ pub async fn get_tree_of_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<i
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::test::{initialize_card, initialize_db};
+    use crate::db::test::{initialize_card, initialize_card_with_data, initialize_db};
     use crate::get_connection_unwrap;
     use sqlx::PgPool;
 
@@ -221,6 +221,10 @@ mod tests {
             .exists
             .unwrap();
         assert!(!does_card_exist);
+
+        // Assert removing the card again leads to an error.
+        let err = remove_card(&db, card_id).await;
+        assert_eq!(err, Err(ApiError::MissingCard(card_id)));
     }
 
     #[sqlx::test]
@@ -246,8 +250,9 @@ mod tests {
             new_back: new_card_data.new_back,
         };
 
-        let void = update_card(get_connection_unwrap!(db), &new_card_data).await;
-        assert!(void.is_ok());
+        update_card(get_connection_unwrap!(db), &new_card_data)
+            .await
+            .unwrap();
 
         let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id)
             .fetch_one(&db)
@@ -285,16 +290,10 @@ mod tests {
             back: card_add_data2.back.clone(),
         };
 
-        let card_id1 = add_card(&db, &card_add_data1).await;
-        assert!(card_id1.is_ok());
-        let card_id1 = card_id1.unwrap();
-        let card_id2 = add_card(&db, &card_add_data2).await;
-        assert!(card_id2.is_ok());
-        let card_id2 = card_id2.unwrap();
+        let card_id1 = initialize_card_with_data(&db, &card_add_data1).await;
+        let card_id2 = initialize_card_with_data(&db, &card_add_data2).await;
 
-        let found_card_data = get_tree_cards(&db, tree_id).await;
-        assert!(found_card_data.is_ok());
-        let found_card_data = found_card_data.unwrap();
+        let found_card_data = get_tree_cards(&db, tree_id).await.unwrap();
 
         let mut expected_card_data = BTreeMap::new();
         expected_card_data.insert(card_id1, card_get_data1);

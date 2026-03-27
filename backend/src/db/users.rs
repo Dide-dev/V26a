@@ -92,8 +92,8 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::db::test::initialize_user;
     use crate::db_structs::users::{UserData, UserLanguage};
-    use crate::get_connection_unwrap;
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -108,16 +108,12 @@ mod test {
             language: UserLanguage::En,
         };
 
-        let user_id = add_user(get_connection_unwrap!(db), &user_data).await;
-        assert!(user_id.is_ok());
-
-        let user_id = user_id.unwrap();
+        let user_id = initialize_user(&db, &user_data).await;
 
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
             .fetch_one(&db)
             .await
             .unwrap();
-        assert_eq!(all_found_user_data.id, user_id);
 
         let found_user_data = UserData {
             email: all_found_user_data.email,
@@ -155,18 +151,13 @@ mod test {
         };
 
         // Assert user does not exist before adding to the database.
-        let does_user_exist = user_exists(&db, &email).await;
-        assert!(does_user_exist.is_ok());
-        let does_user_exist = does_user_exist.unwrap();
+        let does_user_exist = user_exists(&db, &email).await.unwrap();
         assert!(!does_user_exist);
 
-        let user_id = add_user(get_connection_unwrap!(db), &user_data).await;
-        assert!(user_id.is_ok());
+        initialize_user(&db, &user_data).await;
 
         // Assert user does exist after adding to the database.
-        let does_user_exist = user_exists(&db, &email).await;
-        assert!(does_user_exist.is_ok());
-        let does_user_exist = does_user_exist.unwrap();
+        let does_user_exist = user_exists(&db, &email).await.unwrap();
         assert!(does_user_exist);
     }
 }

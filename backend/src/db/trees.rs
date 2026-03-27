@@ -307,14 +307,14 @@ pub async fn is_structure_valid(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::db::test::{initialize_card, initialize_db, initialize_tree, initialize_user};
+    use crate::db::test::{initialize_basic_user, initialize_card, initialize_db, initialize_tree};
     use crate::db_structs::trees::Node;
     use crate::get_connection_unwrap;
-    use sqlx::PgPool;
+    use sqlx::{PgPool, query_as};
 
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
-        let user_id = initialize_user(&db).await;
+        let user_id = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             title: "title".to_owned(),
@@ -332,27 +332,28 @@ mod test {
         assert!(tree_id.is_ok());
 
         let tree_id = tree_id.unwrap();
-        let all_found_tree_data = query!("SELECT * FROM trees WHERE id = $1", tree_id)
+        let found_owner_id = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap()
+            .owner_id;
+
+        assert_eq!(found_owner_id, user_id);
+
+        let found_tree_data = query_as!(TreeData, "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published FROM trees WHERE id = $1", tree_id)
             .fetch_one(&db)
             .await
             .unwrap();
-        assert_eq!(all_found_tree_data.owner_id, user_id);
-
-        let found_tree_data = TreeData {
-            title: all_found_tree_data.title,
-            description: all_found_tree_data.description,
-            book_name: all_found_tree_data.book_name,
-            book_edition: all_found_tree_data.book_edition,
-            book_isbn: all_found_tree_data.book_isbn,
-            book_chapter: all_found_tree_data.book_chapter,
-            book_exercise: all_found_tree_data.book_exercise,
-            assignment_text: all_found_tree_data.assignment_text,
-            published: all_found_tree_data.published,
-        };
 
         assert_eq!(found_tree_data, tree_data);
 
-        let tree_structure = serde_json::from_value::<TreeStructure>(all_found_tree_data.structure);
+        let found_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap()
+            .structure;
+
+        let tree_structure = serde_json::from_value::<TreeStructure>(found_structure);
         assert!(tree_structure.is_ok());
     }
 
@@ -389,7 +390,7 @@ mod test {
 
     #[sqlx::test]
     async fn test_db_get_tree_all_data(db: PgPool) {
-        let user_id = initialize_user(&db).await;
+        let user_id = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             title: "title".to_owned(),
