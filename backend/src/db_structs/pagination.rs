@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 const GLOBAL_MAX_PAGE_COUNT: i32 = 1000;
 const GLOBAL_MAX_PAGE_SIZE: i32 = 1000;
 

@@ -6,9 +6,8 @@
 
 use crate::db::users::add_user;
 use crate::db_structs::users::UserData;
-use crate::{Config, get_connection};
-
 use crate::errors::ApiError;
+use crate::{Config, get_connection};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;

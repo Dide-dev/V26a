@@ -4,12 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-extern crate bcrypt;
-
 use crate::db_structs::users::UserData;
 use crate::errors::ApiError;
 use bcrypt::{DEFAULT_COST, hash};
-
 use sqlx::{PgConnection, PgExecutor, query};
 
 /// Add a new user to the database, returning its assigned id.

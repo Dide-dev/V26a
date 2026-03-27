@@ -4,12 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use std::collections::BTreeMap;
-
-use sqlx::types::chrono::{DateTime, Utc};
-
 use crate::db_structs::cards::CardGetData;
 use sqlx::FromRow;
+use sqlx::types::chrono::{DateTime, Utc};
+use std::collections::BTreeMap;
 
 /// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]

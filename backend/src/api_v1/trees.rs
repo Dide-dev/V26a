@@ -14,9 +14,8 @@ use crate::db_structs::trees::{
     TreeData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
     TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
-use crate::{Config, db};
-
 use crate::errors::ApiError;
+use crate::{Config, db};
 
 use axum::extract::Path;
 use axum::routing::{get, post};
