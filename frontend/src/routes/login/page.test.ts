@@ -46,7 +46,7 @@ test('No submission without email', async () => {
     expect(login).not.toHaveBeenCalled();
 });
 
-test('No submission when e-mail is invalid', async () => {
+test('No submission when e-mail contains no @ and no domain', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -58,15 +58,33 @@ test('No submission when e-mail is invalid', async () => {
     await user.click(screen.getByRole('button', { name: m.login() }));
 
     expect(login).not.toHaveBeenCalled();
+});
 
-    userEvent.clear(emailInput);
+test('No submission when e-mail contains no domain', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByLabelText('E-mail');
     await user.type(emailInput, 'test@');
-    await user.click(screen.getByRole('button', { name: m.login() }));
-    expect(login).not.toHaveBeenCalled();
+    const passwordInput = screen.getByLabelText('Wachtwoord');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
-    userEvent.clear(emailInput);
-    await user.type(emailInput, 'test@te;st.nl');
     await user.click(screen.getByRole('button', { name: m.login() }));
+
+    expect(login).not.toHaveBeenCalled();
+});
+
+test('No submission when e-mail contains a invalid special character other than @', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByLabelText('E-mail');
+    await user.type(emailInput, 'test@te;st.nl');
+    const passwordInput = screen.getByLabelText('Wachtwoord');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.login() }));
+
     expect(login).not.toHaveBeenCalled();
 });
 
