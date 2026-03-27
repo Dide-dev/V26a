@@ -375,7 +375,7 @@ mod test {
         let void = update_tree_structure(&db, tree_id, &new_tree_structure).await;
         assert!(void.is_ok());
 
-        let updated_tree_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id,)
+        let updated_tree_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id)
             .fetch_one(&db)
             .await;
         assert!(updated_tree_structure.is_ok());

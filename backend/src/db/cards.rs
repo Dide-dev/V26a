@@ -195,7 +195,7 @@ mod tests {
         assert!(card_id.is_ok());
         let card_id = card_id.unwrap();
 
-        let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id,)
+        let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id)
             .fetch_one(&db)
             .await;
         assert!(found_card_data.is_ok());
@@ -218,7 +218,7 @@ mod tests {
         let void = remove_card(&db, card_id).await;
         assert!(void.is_ok());
 
-        let does_card_exist = query!("SELECT EXISTS (SELECT 1 FROM cards WHERE id=$1)", card_id,)
+        let does_card_exist = query!("SELECT EXISTS (SELECT 1 FROM cards WHERE id=$1)", card_id)
             .fetch_one(&db)
             .await;
         assert!(does_card_exist.is_ok());
@@ -250,7 +250,7 @@ mod tests {
         let void = update_card(get_connection_unwrap!(db), &new_card_data).await;
         assert!(void.is_ok());
 
-        let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id,)
+        let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id)
             .fetch_one(&db)
             .await;
         assert!(found_card_data.is_ok());
@@ -298,15 +298,10 @@ mod tests {
         assert!(found_card_data.is_ok());
         let found_card_data = found_card_data.unwrap();
 
-        for (found_card_id, found_card_data) in &found_card_data {
-            if *found_card_id == card_id1 {
-                assert_eq!(found_card_data, &card_get_data1);
-            } else if *found_card_id == card_id2 {
-                assert_eq!(found_card_data, &card_get_data2);
-            } else {
-                unreachable!();
-            }
-        }
+        let mut expected_card_data = BTreeMap::new();
+        expected_card_data.insert(card_id1, card_get_data1);
+        expected_card_data.insert(card_id2, card_get_data2);
+        assert_eq!(found_card_data, expected_card_data);
     }
 
     #[sqlx::test]

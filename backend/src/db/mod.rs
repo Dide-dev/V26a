@@ -28,11 +28,11 @@ macro_rules! get_connection {
 /// Get a [`PgConnection`](sqlx::PgConnection) from a [`PgPool`](sqlx::PgPool).
 ///
 /// **Warning:** might panic. If not writing tests, use the [`get_connection`] macro instead.
-/// Exists only for some test where the return type does not and should not match
+/// Exists only for use in tests, where the return type does not and should not match
 /// Result<_, [`ApiError`](crate::errors::ApiError)>.
 ///
 /// # Panic
-/// May panic if the connection can not be acquired.
+/// May panic if the connection cannot be acquired.
 #[cfg(test)]
 #[macro_export]
 macro_rules! get_connection_unwrap {
@@ -64,7 +64,7 @@ pub mod test {
     pub async fn initialize_user(db: impl PgExecutor<'_>) -> i32 {
         query!(
             "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
-            "email",
+            "test@email.com",
             "password_hash",
             "name"
         )

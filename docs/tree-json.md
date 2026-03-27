@@ -51,7 +51,7 @@ The format of the JSON will look like this:
 }
 ```
 
-Make sure to differentiate the 'root nodes' from the normal 'nodes' in the types in rust and TypeScript!
+Make sure to differentiate the 'root nodes' from the normal 'nodes' in the types in Rust and TypeScript!
 
 The `cardId`'s correspond to the id in the cards database table.
 

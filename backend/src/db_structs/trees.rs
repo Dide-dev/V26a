@@ -164,9 +164,7 @@ mod test {
         };
 
         let flattened = tree_structure.flatten();
-
-        for id in [1, 2, 3, 5] {
-            assert!(flattened.contains(&id));
-        }
+        flattened.sort();
+        assert_eq!(flattened, vec![1, 2, 3, 5]);
     }
 }
