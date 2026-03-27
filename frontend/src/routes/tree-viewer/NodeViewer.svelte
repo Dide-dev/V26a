@@ -9,13 +9,17 @@
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
     import { onMount, tick } from 'svelte';
     import AddCard from "./AddCard.svelte";
+    import CardViewer from "./CardViewer.svelte";
 
-    //initialization off types
-    let { tree = $bindable(), node, editingPage }: {
+    //initialization of types
+    let { tree = $bindable(), node, parentIsVisible = false, editingPage }: {
         tree: TreeWithCards;
         node: Node | RootNode;
+        parentIsVisible: boolean;
         editingPage: boolean
     } = $props();
+
+    let visible = $derived("label" in node);
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -142,12 +146,8 @@
         </div>
     <!-- Standard Node -->
     {:else}
-        <div class="tree__node">
-            <button class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50">
-                <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
-                {tree.cards[node.cardId].front}
-            </button>
-        </div>
+        <CardViewer {tree} {node} visibleParent={parentIsVisible} bind:visible={visible}
+            />
     {/if}
 
     {#if editingPage}
@@ -173,7 +173,7 @@
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
             <div class="relative">
-                <NodeViewer bind:tree={tree} node={child_node} {editingPage} />
+                <NodeViewer bind:tree={tree} node={child_node} parentIsVisible={visible} {editingPage} />
             </div>
         {/each}
     </div>

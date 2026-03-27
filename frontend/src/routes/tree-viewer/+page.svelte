@@ -11,7 +11,7 @@
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
 
-    let editingPage = true;
+    let editingPage = false;
     let loading = $state(true);
     let error: Error | null = $state(null);
     let tree: TreeWithCards | null = $state(null);
