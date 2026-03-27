@@ -65,7 +65,7 @@ async fn add_new_tree(
 /// # Returns
 /// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
 fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
-    tree_structure.flatten().len() == 0
+    tree_structure.flatten().is_empty()
 }
 
 /// Update the structure of an existing tree in the database.
