@@ -10,8 +10,8 @@ use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
-    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
-    TreeWithCards,
+    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateData,
+    TreeUpdateStructureData, TreeWithCards,
 };
 use crate::{Config, db};
 
@@ -30,6 +30,7 @@ pub fn trees() -> Router<Config> {
         .route("/update-structure", post(update_tree_structure))
         .route("/remove-card", post(remove_card_from_tree))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
+        .route("/update-data", post(update_tree_data))
         .route("/get-mine-all", get(get_all_owned_trees))
 }
 
@@ -173,7 +174,30 @@ async fn update_structure_if_valid(
     }
 
     db::trees::update_tree_structure(db, tree_id, new_structure).await?;
+    Ok(())
+}
 
+/// Update the data of an existing tree in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the tree for the given `tree_id`.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn update_tree_data(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(tree_update_data): Json<TreeUpdateData>,
+) -> Result<(), ApiError> {
+    // Verify the tree's existence and the user's permissions.
+    verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
+
+    db::trees::update_tree_data(&db, tree_update_data.id, tree_update_data.new_data).await?;
     Ok(())
 }
 
