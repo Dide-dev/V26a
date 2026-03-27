@@ -354,6 +354,7 @@ mod test {
     use crate::db_structs::users::{UserData, UserLanguage};
     use sqlx::PgPool;
 
+    /// TODO: rewrite test with initialize functions
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
         let mut conn = db.acquire().await.unwrap();
@@ -406,7 +407,7 @@ mod test {
             .unwrap();
 
         // Verify the data was updated
-        let (result, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
-        assert_eq!(result, new_tree_data);
+        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+        assert_eq!(found_tree_data, new_tree_data);
     }
 }
