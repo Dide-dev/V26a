@@ -40,7 +40,7 @@ test('Submission with correct data', async () => {
 
     const titleInput = screen.getByTestId('title');
     await user.type(titleInput, 'Test tree title');
-    const descriptionInput = screen.getByTestId('description')
+    const descriptionInput = screen.getByTestId('description');
     await user.type(descriptionInput, 'Test tree description');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
