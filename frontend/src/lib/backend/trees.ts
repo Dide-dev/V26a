@@ -64,7 +64,7 @@ export type TreeGeneratedData = {
     id: TreeId;
     ownerId: UserId;
     createdAt: Date;
-    lastEdited: Date;
+    lastModified: Date;
     timesVisited: number;
     lastVisited: Option<Date>;
 };
