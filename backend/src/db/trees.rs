@@ -5,7 +5,7 @@
 */
 
 use crate::{
-    db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
+    db_structs::trees::{TreeAddData, TreeData, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
 use std::collections::HashSet;
@@ -31,27 +31,26 @@ use sqlx::{PgExecutor, query};
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: impl PgExecutor<'_>,
-    tree_data: TreeData,
-    tree_structure: TreeStructure,
+    tree_add_data: TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
     let tree_structure =
-        serde_json::to_value(tree_structure).map_err(|_| ApiError::SerdeException)?;
+        serde_json::to_value(tree_add_data.tree_structure).map_err(|_| ApiError::SerdeException)?;
 
     let tree_id = query!(
         "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
-        tree_data.published,
-        tree_data.title,
-        tree_data.description,
-        tree_data.book_name,
-        tree_data.book_edition,
-        tree_data.book_isbn,
-        tree_data.book_chapter,
-        tree_data.book_exercise,
-        tree_data.assignment_text,
+        tree_add_data.tree_data.published,
+        tree_add_data.tree_data.title,
+        tree_add_data.tree_data.description,
+        tree_add_data.tree_data.book_name,
+        tree_add_data.tree_data.book_edition,
+        tree_add_data.tree_data.book_isbn,
+        tree_add_data.tree_data.book_chapter,
+        tree_add_data.tree_data.book_exercise,
+        tree_add_data.tree_data.assignment_text,
         tree_structure,
     )
     .fetch_one(db)

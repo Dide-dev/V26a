@@ -49,13 +49,7 @@ async fn add_new_tree(
     if !is_tree_structure_empty(&tree_add_data.tree_structure) {
         return Err(ApiError::NonEmptyStructure);
     }
-    let id = add_tree(
-        &db,
-        tree_add_data.tree_data,
-        tree_add_data.tree_structure,
-        claims.sub,
-    )
-    .await?;
+    let id = add_tree(&db, tree_add_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)
