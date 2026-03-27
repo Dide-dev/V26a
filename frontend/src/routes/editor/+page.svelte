@@ -26,7 +26,7 @@
     //variables
     let treeId: number | null = null;
     let tree: TreeWithCards | null = null;
-    let error: string | null = null;
+    let error: null | Error = $state(null);
 
     //temporary storage
     let oldData: typeof treeData;
@@ -54,7 +54,7 @@
             oldData = $state.snapshot(treeData);
         } catch (err) {
             console.error(err);
-            error = err as string;
+            error = err as Error;
         }
     });
 
@@ -139,6 +139,7 @@
                 >{m.save()}</button
             >
             <button onclick={cancelData}>{m.cancel()}</button>
+            <p class="text-red-600">{error?.message}</p>
         </div>
     {/if}
 </div>
