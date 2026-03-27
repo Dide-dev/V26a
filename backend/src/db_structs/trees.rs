@@ -163,8 +163,8 @@ mod test {
             ],
         };
 
-        let flattened = tree_structure.flatten();
-        flattened.sort();
-        assert_eq!(flattened, vec![1, 2, 3, 5]);
+        let mut flattened = tree_structure.flatten();
+        flattened.sort_unstable();
+        assert_eq!(&flattened, &[1, 2, 3, 5]);
     }
 }

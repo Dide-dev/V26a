@@ -10,7 +10,7 @@ use std::fmt::Display;
 
 /// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //

@@ -191,15 +191,12 @@ mod tests {
             back: "back".to_owned(),
         };
 
-        let card_id = add_card(&db, &card_data).await;
-        assert!(card_id.is_ok());
-        let card_id = card_id.unwrap();
+        let card_id = add_card(&db, &card_data).await.unwrap();
 
         let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id)
             .fetch_one(&db)
-            .await;
-        assert!(found_card_data.is_ok());
-        let found_card_data = found_card_data.unwrap();
+            .await
+            .unwrap();
 
         let found_card_data = CardAddData {
             tree_id: found_card_data.id,
@@ -215,14 +212,14 @@ mod tests {
         let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let void = remove_card(&db, card_id).await;
-        assert!(void.is_ok());
+        remove_card(&db, card_id).await.unwrap();
 
         let does_card_exist = query!("SELECT EXISTS (SELECT 1 FROM cards WHERE id=$1)", card_id)
             .fetch_one(&db)
-            .await;
-        assert!(does_card_exist.is_ok());
-        let does_card_exist = does_card_exist.unwrap().exists.unwrap();
+            .await
+            .unwrap()
+            .exists
+            .unwrap();
         assert!(!does_card_exist);
     }
 
@@ -236,15 +233,17 @@ mod tests {
             new_back: "BACK".to_owned(),
         };
 
-        let error = update_card(get_connection_unwrap!(db), &new_card_data).await;
-        assert!(error.is_err());
+        let error = update_card(get_connection_unwrap!(db), &new_card_data)
+            .await
+            .unwrap_err();
+        assert_eq!(error, ApiError::MissingCard(new_card_data.card_id));
 
         let card_id = initialize_card(&db, tree_id).await;
 
         let new_card_data = CardUpdateData {
             card_id,
-            new_front: "FRONT".to_owned(),
-            new_back: "BACK".to_owned(),
+            new_front: new_card_data.new_front,
+            new_back: new_card_data.new_back,
         };
 
         let void = update_card(get_connection_unwrap!(db), &new_card_data).await;
@@ -252,9 +251,8 @@ mod tests {
 
         let found_card_data = query!("SELECT id, front, back FROM cards WHERE id=$1", card_id)
             .fetch_one(&db)
-            .await;
-        assert!(found_card_data.is_ok());
-        let found_card_data = found_card_data.unwrap();
+            .await
+            .unwrap();
 
         let found_card_data = CardUpdateData {
             card_id: found_card_data.id,
