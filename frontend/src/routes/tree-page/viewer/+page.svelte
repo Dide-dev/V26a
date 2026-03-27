@@ -10,6 +10,12 @@
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
+    import { getUserInfo } from '$lib/backend/users';
+    import { goto } from '$app/navigation';
+    import { appLink } from '$lib';
+
+    //checks if user is logged in or not
+    let userInfo = $state(getUserInfo());
 
     let loading = $state(true);
     let error: Error | null = $state(null);
@@ -17,6 +23,7 @@
     let tree: TreeWithCards | null = $state(null);
 
     onMount(async () => {
+
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
@@ -58,6 +65,15 @@
             <NodeViewer bind:tree parent={root} node={root} editingPage={false} />
         {/each}
     </div>
+{/if}
+
+{#if userInfo !== null}
+    <button
+        class="edit_button fixed top-16 right-4 z-50 rounded bg-blue-600 px-4 py-2 text-white shadow"
+        onclick={() => goto(appLink(`/editor`))}
+    >
+        Edit
+    </button>
 {/if}
 
 <!--
