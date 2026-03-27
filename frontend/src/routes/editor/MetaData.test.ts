@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/svelte';
 import { userEvent } from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 import MetaData from './+page.svelte';
+import { m } from '$lib/paraglide/messages.js';
 
 // mock API calls
 vi.mock('$lib/backend/trees', () => ({
@@ -29,24 +30,6 @@ vi.mock('$app/state', () => ({
     page: { url: { searchParams: { get: () => '1' } } }
 }));
 
-// mock the en-language
-vi.mock('$lib/paraglide/messages.js', () => ({
-    m: {
-        title: () => 'Title',
-        description: () => 'Description',
-        bookname: () => 'Book name',
-        bookEdition: () => 'Book edition',
-        bookIsbn: () => 'ISBN',
-        bookChapter: () => 'Chapter',
-        bookExercise: () => 'Exercise',
-        assignmentText: () => 'Assignment',
-        published: () => 'Published',
-        save: () => 'Save',
-        cancel: () => 'Cancel',
-        editMetadata: () => 'Edit metadata'
-    }
-}));
-
 test('dropdown is hidden by default', () => {
     render(MetaData);
     expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
@@ -56,8 +39,8 @@ test('dropdown opens when edit metadata button is clicked', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText('Edit metadata');
-    await user.click(screen.getByText('Edit metadata'));
+    screen.findByText(m.editMetadata());
+    await user.click(screen.getByText(m.editMetadata()));
     await waitFor(() => {
         expect(document.getElementsByClassName('meta-dropdown').length).toBeGreaterThan(0);
     });
@@ -67,24 +50,24 @@ test('fields are prefilled with tree data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText('Edit metadata');
-    await user.click(screen.getByText('Edit metadata'));
-    expect((screen.getByLabelText('Book name') as HTMLInputElement).value).toBe('Monkey');
-    expect((screen.getByLabelText('ISBN') as HTMLInputElement).value).toBe('123-456');
+    screen.findByText(m.editMetadata());
+    await user.click(screen.getByText(m.editMetadata()));
+    expect((screen.getByLabelText(m.bookname()) as HTMLInputElement).value).toBe('Monkey');
+    expect((screen.getByLabelText(m.bookIsbn()) as HTMLInputElement).value).toBe('123-456');
 });
 
 test('cancel restores original values', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText('Edit metadata');
-    await user.click(screen.getByText('Edit metadata'));
-    await user.clear(screen.getByLabelText('Book name'));
-    await user.type(screen.getByLabelText('Book name'), 'Changed Book');
-    await user.click(screen.getByText('Cancel'));
+    screen.findByText(m.editMetadata());
+    await user.click(screen.getByText(m.editMetadata()));
+    await user.clear(screen.getByLabelText(m.bookname()));
+    await user.type(screen.getByLabelText(m.bookname()), 'Changed Book');
+    await user.click(screen.getByText(m.cancel()));
 
-    await user.click(screen.getByText('Edit metadata'));
-    expect((screen.getByLabelText('Book name') as HTMLInputElement).value).toBe('Monkey');
+    await user.click(screen.getByText(m.editMetadata()));
+    expect((screen.getByLabelText(m.bookname()) as HTMLInputElement).value).toBe('Monkey');
 });
 
 test('save calls updateTreeMetaData with correct data', async () => {
@@ -92,11 +75,11 @@ test('save calls updateTreeMetaData with correct data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText('Edit metadata');
-    await user.click(screen.getByText('Edit metadata'));
-    await user.clear(screen.getByLabelText('Book name'));
-    await user.type(screen.getByLabelText('Book name'), 'New Apple');
-    await user.click(screen.getByText('Save'));
+    screen.findByText(m.editMetadata());
+    await user.click(screen.getByText(m.editMetadata()));
+    await user.clear(screen.getByLabelText(m.bookname()));
+    await user.type(screen.getByLabelText(m.bookname()), 'New Apple');
+    await user.click(screen.getByText(m.save()));
 
     expect(updateTreeMetaData).toHaveBeenCalledWith({
         id: 1,
@@ -108,9 +91,9 @@ test('dropdown closes after save', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText('Edit metadata');
-    await user.click(screen.getByText('Edit metadata'));
-    await user.click(screen.getByText('Save'));
+    screen.findByText(m.editMetadata());
+    await user.click(screen.getByText(m.editMetadata()));
+    await user.click(screen.getByText(m.save()));
     await waitFor(() => {
         expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
     });
@@ -120,9 +103,9 @@ test('dropdown closes after cancel', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText('Edit metadata');
-    await user.click(screen.getByText('Edit metadata'));
-    await user.click(screen.getByText('Cancel'));
+    screen.findByText(m.editMetadata());
+    await user.click(screen.getByText(m.editMetadata()));
+    await user.click(screen.getByText(m.cancel()));
     await waitFor(() => {
         expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
     });
