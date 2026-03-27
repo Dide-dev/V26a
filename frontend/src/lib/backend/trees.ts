@@ -79,27 +79,23 @@ export type TreeAddData = {
     treeStructure: TreeStructure;
 };
 
-// Creates a default tree structure, used in addTree.
-function makeNewTreeStructure(): TreeStructure {
-    const treeStructure: TreeStructure = {
-        rootNodes: [
-            {
-                label: 'Orientation',
-                children: []
-            },
-            {
-                label: 'Making & executing plans',
-                children: []
-            },
-            {
-                label: 'Completion',
-                children: []
-            }
-        ]
-    };
-
-    return treeStructure;
-}
+// Default tree structure used in addTree.
+const defaultTreeStructure: TreeStructure = {
+    rootNodes: [
+        {
+            label: 'Orientation',
+            children: []
+        },
+        {
+            label: 'Making & executing plans',
+            children: []
+        },
+        {
+            label: 'Completion',
+            children: []
+        }
+    ]
+};
 
 export type TreeUpdateStructureData = {
     id: TreeId;
@@ -114,8 +110,7 @@ export type TreeRemoveCardData = {
 
 /** Add a tree to the database. */
 export function addTree(treeData: TreeData): Promise<TreeId> {
-    const treeStructure: TreeStructure = makeNewTreeStructure();
-
+    const treeStructure: TreeStructure = defaultTreeStructure;
     const treeAddData = {
         treeData,
         treeStructure
