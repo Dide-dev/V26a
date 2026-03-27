@@ -111,10 +111,11 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
 
-/** Update the metadata of a specific tree.*/
+/** Update the metadata of a specific tree. */
 export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
     return apiCallPostTree('update-data', newTreeData);
 }
+
 /** Request all trees owned by the logged-in user. */
 export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
     return apiCallGetTree(`get-mine-all`);

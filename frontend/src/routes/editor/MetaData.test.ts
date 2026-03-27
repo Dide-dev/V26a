@@ -49,17 +49,17 @@ vi.mock('$lib/paraglide/messages.js', () => ({
 
 test('dropdown is hidden by default', () => {
     render(MetaData);
-    expect(document.getElementsByClassName('meta_dropdown').length).not.toBeGreaterThan(0);
+    expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
 });
 
 test('dropdown opens when edit metadata button is clicked', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await waitFor(() => screen.getByText('Edit metadata'));
+    screen.findByText('Edit metadata');
     await user.click(screen.getByText('Edit metadata'));
     await waitFor(() => {
-        expect(document.getElementsByClassName('meta_dropdown').length).toBeGreaterThan(0);
+        expect(document.getElementsByClassName('meta-dropdown').length).toBeGreaterThan(0);
     });
 });
 
@@ -67,7 +67,7 @@ test('fields are prefilled with tree data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await waitFor(() => screen.getByText('Edit metadata'));
+    screen.findByText('Edit metadata');
     await user.click(screen.getByText('Edit metadata'));
     expect((screen.getByLabelText('Book name') as HTMLInputElement).value).toBe('Monkey');
     expect((screen.getByLabelText('ISBN') as HTMLInputElement).value).toBe('123-456');
@@ -77,7 +77,7 @@ test('cancel restores original values', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await waitFor(() => screen.getByText('Edit metadata'));
+    screen.findByText('Edit metadata');
     await user.click(screen.getByText('Edit metadata'));
     await user.clear(screen.getByLabelText('Book name'));
     await user.type(screen.getByLabelText('Book name'), 'Changed Book');
@@ -92,7 +92,7 @@ test('save calls updateTreeMetaData with correct data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await waitFor(() => screen.getByText('Edit metadata'));
+    screen.findByText('Edit metadata');
     await user.click(screen.getByText('Edit metadata'));
     await user.clear(screen.getByLabelText('Book name'));
     await user.type(screen.getByLabelText('Book name'), 'New Apple');
@@ -108,11 +108,11 @@ test('dropdown closes after save', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await waitFor(() => screen.getByText('Edit metadata'));
+    screen.findByText('Edit metadata');
     await user.click(screen.getByText('Edit metadata'));
     await user.click(screen.getByText('Save'));
     await waitFor(() => {
-        expect(document.getElementsByClassName('meta_dropdown').length).not.toBeGreaterThan(0);
+        expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
     });
 });
 
@@ -120,10 +120,10 @@ test('dropdown closes after cancel', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await waitFor(() => screen.getByText('Edit metadata'));
+    screen.findByText('Edit metadata');
     await user.click(screen.getByText('Edit metadata'));
     await user.click(screen.getByText('Cancel'));
     await waitFor(() => {
-        expect(document.getElementsByClassName('meta_dropdown').length).not.toBeGreaterThan(0);
+        expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
     });
 });

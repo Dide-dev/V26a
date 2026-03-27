@@ -10,7 +10,6 @@
     import { m } from '$lib/paraglide/messages.js';
     import { updateTreeMetaData, getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
 
-    //metadata
     let treeData = $state({
         title: '',
         description: '',
@@ -23,12 +22,11 @@
         published: false
     });
 
-    //variables
     let treeId: number | null = null;
     let tree: TreeWithCards | null = null;
     let error: null | Error = $state(null);
 
-    //temporary storage
+    // The old tree data that is restored when canceling the edit.
     let oldData: typeof treeData;
     let dropDown = $state(false);
 
@@ -36,10 +34,8 @@
         try {
             treeId = Number(page.url.searchParams.get('id'));
 
-            //get treedata
             tree = await getTreeWithCards(treeId);
 
-            //prefill data
             treeData = {
                 title: tree.data.title ?? '',
                 description: tree.data.description ?? '',
@@ -58,7 +54,6 @@
         }
     });
 
-    //save changes (to backend)
     async function saveData() {
         if (!treeId || !tree) return;
         oldData = $state.snapshot(treeData);
@@ -69,8 +64,8 @@
         });
     }
 
-    //restore original data
-    function cancelData() {
+    // Restores treeData to its original value.
+    function cancelEdit() {
         treeData = { ...oldData };
         dropDown = false;
     }
@@ -83,7 +78,7 @@
 
     {#if dropDown}
         <div
-            class="meta_dropdown absolute z-10 flex w-64 flex-col gap-2 rounded bg-white p-4 shadow"
+            class="meta-dropdown absolute z-10 flex w-64 flex-col gap-2 rounded bg-white p-4 shadow"
         >
             <label
                 >{m.title()}<input
@@ -138,7 +133,7 @@
             <button class="rounded bg-blue-500 px-3 py-1 text-white" onclick={saveData}
                 >{m.save()}</button
             >
-            <button onclick={cancelData}>{m.cancel()}</button>
+            <button onclick={cancelEdit}>{m.cancel()}</button>
             <p class="text-red-600">{error?.message}</p>
         </div>
     {/if}
