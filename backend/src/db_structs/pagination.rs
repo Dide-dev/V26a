@@ -88,32 +88,37 @@ fn test_pagination_options_conversion() {
     assert_eq!(filled_some, correct);
 }
 
-#[test]
-fn test_pagination_options_valid() {
-    let one = PaginationOptions { page: 1, size: 1 };
-    assert!(one.input_is_valid());
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    let big = PaginationOptions {
-        page: 500,
-        size: 500,
-    };
-    assert!(big.input_is_valid());
+    #[test]
+    fn test_pagination_options_valid() {
+        let one = PaginationOptions { page: 1, size: 1 };
+        assert!(one.input_is_valid());
 
-    let zero = PaginationOptions { page: 0, size: 0 };
-    assert!(!zero.input_is_valid());
+        let big = PaginationOptions {
+            page: 500,
+            size: 500,
+        };
+        assert!(big.input_is_valid());
 
-    let single_zero = PaginationOptions { page: 0, size: 1 };
-    assert!(!single_zero.input_is_valid());
+        let zero = PaginationOptions { page: 0, size: 0 };
+        assert!(!zero.input_is_valid());
 
-    let page_too_big = PaginationOptions {
-        page: 10000,
-        size: 0,
-    };
-    assert!(!page_too_big.input_is_valid());
+        let single_zero = PaginationOptions { page: 0, size: 1 };
+        assert!(!single_zero.input_is_valid());
 
-    let size_too_big = PaginationOptions {
-        page: 0,
-        size: 100000,
-    };
-    assert!(!size_too_big.input_is_valid());
+        let page_too_big = PaginationOptions {
+            page: 10000,
+            size: 0,
+        };
+        assert!(!page_too_big.input_is_valid());
+
+        let size_too_big = PaginationOptions {
+            page: 0,
+            size: 100000,
+        };
+        assert!(!size_too_big.input_is_valid());
+    }
 }

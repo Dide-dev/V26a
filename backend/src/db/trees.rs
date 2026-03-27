@@ -447,42 +447,47 @@ pub async fn get_queried_list(
     Ok(TreeList { has_next, trees })
 }
 
-#[test]
-fn test_filter_query_builder() {
-    use chrono::{DateTime, Utc};
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
-    let empty_filters = TreeFilters {
-        ..Default::default()
-    };
-    apply_tree_filters(&mut no_filters_query, &empty_filters);
-    assert_eq!(
-        no_filters_query.sql(),
-        "SELECT * FROM trees WHERE published = true"
-    );
+    #[test]
+    fn test_filter_query_builder() {
+        use chrono::{DateTime, Utc};
 
-    let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
-    let all_filters = TreeFilters {
-        owner_id: Some(67),
-        book: vec!["1984".to_owned()],
-        created_after: Some(DateTime::<Utc>::MIN_UTC),
-        created_before: Some(DateTime::<Utc>::MAX_UTC),
-    };
-    apply_tree_filters(&mut all_filters_query, &all_filters);
-    assert_eq!(
-        all_filters_query.sql(),
-        "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (book_name = ANY($2)) AND (created_at >= $3) AND (created_at <= $4)"
-    );
+        let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let empty_filters = TreeFilters {
+            ..Default::default()
+        };
+        apply_tree_filters(&mut no_filters_query, &empty_filters);
+        assert_eq!(
+            no_filters_query.sql(),
+            "SELECT * FROM trees WHERE published = true"
+        );
 
-    let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
-    let partial_filters = TreeFilters {
-        owner_id: Some(67),
-        created_after: Some(DateTime::<Utc>::MIN_UTC),
-        ..Default::default()
-    };
-    apply_tree_filters(&mut partial_filters_query, &partial_filters);
-    assert_eq!(
-        partial_filters_query.sql(),
-        "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (created_at >= $2)"
-    );
+        let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let all_filters = TreeFilters {
+            owner_id: Some(67),
+            book: vec!["1984".to_owned()],
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            created_before: Some(DateTime::<Utc>::MAX_UTC),
+        };
+        apply_tree_filters(&mut all_filters_query, &all_filters);
+        assert_eq!(
+            all_filters_query.sql(),
+            "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (book_name = ANY($2)) AND (created_at >= $3) AND (created_at <= $4)"
+        );
+
+        let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let partial_filters = TreeFilters {
+            owner_id: Some(67),
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            ..Default::default()
+        };
+        apply_tree_filters(&mut partial_filters_query, &partial_filters);
+        assert_eq!(
+            partial_filters_query.sql(),
+            "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (created_at >= $2)"
+        );
+    }
 }
