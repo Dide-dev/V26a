@@ -75,6 +75,18 @@
             />
         </label>
         <label>
+            {m.bookedition()}
+            <input
+                class="rounded-md border-2"
+                bind:value={treeData.bookEdition}
+                name="bookedition"
+                type="bookedition"
+                data-testid="bookedition"
+                placeholder={m.optional()}
+                maxlength="128"
+            />
+        </label>
+        <label>
             {m.bookIsbn()}
             <input
                 class="rounded-md border-2"

@@ -107,35 +107,6 @@ test('Differing password and repeat password shows error', async () => {
     expect(error.textContent).toBe(m.passwordsNotTheSame());
 });
 
-test('Submission when password and repeat password are the same', async () => {
-    (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
-
-    const user = userEvent.setup();
-    render(page);
-
-    await user.type(screen.getByTestId('email'), 'test@test.test');
-    await user.type(screen.getByTestId('name'), 'test');
-    await user.type(screen.getByTestId('password'), 'aaaaaaaA1!');
-    await user.type(screen.getByTestId('repeat password'), 'aaaaaaaA1!');
-
-    const button = screen.getByRole('button');
-    await user.click(button);
-    const error = screen.getByTestId('error');
-
-    expect(error.textContent).not.toBe(m.missingCharacter());
-    expect(error.textContent).not.toBe(m.passwordsNotTheSame());
-
-    expect(addUser).toHaveBeenCalledWith({
-        email: 'test@test.test',
-        password: 'aaaaaaaA1!',
-        name: 'test',
-        nickname: '',
-        aboutMe: null,
-        emailVisible: false,
-        language: getLocale()
-    });
-});
-
 test('Redirection after succesful registration', async () => {
     const user = userEvent.setup();
 
@@ -171,6 +142,10 @@ test('Submission with correct data', async () => {
     await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.register() }));
+    const error = screen.getByTestId('error');
+
+    expect(error.textContent).toBe('');
+    expect(error.textContent).toBe('');
 
     expect(addUser).toHaveBeenCalledWith(
         expect.objectContaining({

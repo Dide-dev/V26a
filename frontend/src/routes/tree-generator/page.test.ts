@@ -42,18 +42,30 @@ test('Submission with correct data', async () => {
     await user.type(titleInput, 'Test tree title');
     const descriptionInput = screen.getByTestId('description');
     await user.type(descriptionInput, 'Test tree description');
+    const bookNameInput = screen.getByTestId('bookname');
+    await user.type(bookNameInput, 'A book name');
+    const bookEditionInput = screen.getByTestId('bookedition');
+    await user.type(bookEditionInput, '4th edition');
+    const bookIsbnInput = screen.getByTestId('bookIsbn');
+    await user.type(bookIsbnInput, '9781408883464');
+    const chapterInput = screen.getByTestId('chapter');
+    await user.type(chapterInput, 'chapter 1');
+    const excerciseInput = screen.getByTestId('exercise');
+    await user.type(excerciseInput, 'exercise 1');
+    const assignmentTextInput = screen.getByTestId('assignment');
+    await user.type(assignmentTextInput, 'assignment text');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
     expect(addTree).toHaveBeenCalledWith(
         expect.objectContaining({
             title: 'Test tree title',
             description: 'Test tree description',
-            bookName: '',
-            bookEdition: '',
-            bookIsbn: '',
-            bookChapter: '',
-            bookExercise: '',
-            assignmentText: '',
+            bookName: 'A book name',
+            bookEdition: '4th edition',
+            bookIsbn: '9781408883464',
+            bookChapter: 'chapter 1',
+            bookExercise: 'exercise 1',
+            assignmentText: 'assignment text',
             published: false
         })
     );
