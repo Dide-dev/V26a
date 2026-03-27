@@ -1,9 +1,16 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use std::fmt::Display;
 
 /// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
+#[derive(Debug)]
 pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //

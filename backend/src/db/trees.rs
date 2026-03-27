@@ -1,3 +1,9 @@
+/*
+This program has been developed by students from the bachelor Computer Science at
+Utrecht University within the Software Project course.
+© Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
@@ -97,6 +103,49 @@ pub async fn update_tree_structure(
         "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
         tree_id,
         new_tree_structure,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
+/// Update the data of an existing tree in the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree which is updated.
+///
+/// `new_tree_data` - The new data of the tree as [`TreeData`].
+/// Completely overwrites the existing data in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_tree_data(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    new_tree_data: TreeData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE trees SET
+        (last_modified, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published)
+        = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        WHERE id = $1",
+        tree_id,
+        new_tree_data.title,
+        new_tree_data.description,
+        new_tree_data.book_name,
+        new_tree_data.book_edition,
+        new_tree_data.book_isbn,
+        new_tree_data.book_chapter,
+        new_tree_data.book_exercise,
+        new_tree_data.assignment_text,
+        new_tree_data.published,
     )
     .execute(db)
     .await
@@ -450,6 +499,9 @@ pub async fn get_queried_list(
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::db::users::add_user;
+    use crate::db_structs::users::{UserData, UserLanguage};
+    use sqlx::PgPool;
 
     #[test]
     fn test_filter_query_builder() {
@@ -489,5 +541,61 @@ mod test {
             partial_filters_query.sql(),
             "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (created_at >= $2)"
         );
+
+    /// TODO: rewrite test with initialize functions
+    #[sqlx::test]
+    async fn test_update_tree_data(db: PgPool) {
+        let mut conn = db.acquire().await.unwrap();
+
+        // Create an account
+
+        let user_id = add_user(
+            &mut conn,
+            UserData {
+                email: "test123@gmail.com".to_string(),
+                password: "monkey".to_string(),
+                name: "User123".to_string(),
+                nickname: None,
+                about_me: None,
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        )
+        .await
+        .unwrap();
+
+        // Add a tree to the database
+        let tree_data = TreeData {
+            title: "Test tree".to_string(),
+            description: None,
+            book_name: None,
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: false,
+        };
+        let tree_id = add_tree(&db, tree_data, user_id).await.unwrap();
+
+        // Update the tree data
+        let new_tree_data = TreeData {
+            title: "Updated tree".to_string(),
+            description: Some("Updated description".to_string()),
+            book_name: Some("Updated book".to_string()),
+            book_edition: Some("2nd".to_string()),
+            book_isbn: Some("9780136019701".to_string()),
+            book_chapter: Some("3".to_string()),
+            book_exercise: Some("5b".to_string()),
+            assignment_text: Some("Updated assignment".to_string()),
+            published: true,
+        };
+        update_tree_data(&db, tree_id, new_tree_data.clone())
+            .await
+            .unwrap();
+
+        // Verify the data was updated
+        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+        assert_eq!(found_tree_data, new_tree_data);
     }
 }
