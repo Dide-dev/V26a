@@ -135,3 +135,10 @@ pub struct TreeRemoveCardData {
     pub card_id: i32,
     pub new_structure: TreeStructure,
 }
+
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeAddData {
+    pub tree_data: TreeData,
+    pub tree_structure: TreeStructure,
+}

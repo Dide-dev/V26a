@@ -74,6 +74,29 @@ export type TreeMetadata = {
     genData: TreeGeneratedData;
 };
 
+export type TreeAddData = {
+    treeData: TreeData;
+    treeStructure: TreeStructure;
+};
+
+// Default tree structure used in addTree.
+const defaultTreeStructure: TreeStructure = {
+    rootNodes: [
+        {
+            label: 'Orientation',
+            children: []
+        },
+        {
+            label: 'Making & executing plans',
+            children: []
+        },
+        {
+            label: 'Completion',
+            children: []
+        }
+    ]
+};
+
 export type TreeUpdateMetaData = {
     id: TreeId;
     newData: TreeData;
@@ -91,8 +114,14 @@ export type TreeRemoveCardData = {
 };
 
 /** Add a tree to the database. */
-export function addTree(tree: TreeData): Promise<TreeId> {
-    return apiCallPostTree('add', tree);
+export function addTree(treeData: TreeData): Promise<TreeId> {
+    const treeStructure: TreeStructure = defaultTreeStructure;
+    const treeAddData = {
+        treeData,
+        treeStructure
+    };
+
+    return apiCallPostTree('add', treeAddData);
 }
 
 /** Update the structure of an existing tree. */
