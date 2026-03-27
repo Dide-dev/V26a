@@ -376,20 +376,10 @@ mod test {
             published: false,
         };
         let tree_structure = TreeStructure {
-            root_nodes: vec![
-                RootNode {
-                    label: "Orientation".to_string(),
-                    children: vec![],
-                },
-                RootNode {
-                    label: "Making & executing plans".to_string(),
-                    children: vec![],
-                },
-                RootNode {
-                    label: "Completion".to_string(),
-                    children: vec![],
-                },
-            ],
+            root_nodes: vec![RootNode {
+                label: "RootNode".to_string(),
+                children: vec![],
+            }],
         };
         let tree_add_data = TreeAddData {
             tree_data: tree_data,
