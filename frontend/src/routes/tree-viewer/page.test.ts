@@ -50,7 +50,7 @@ function createTree(): TreeWithCards {
         id: 4,
         ownerId: 2098,
         createdAt: new Date('December 17, 1995 03:24:00'),
-        lastEdited: new Date('December 17, 1995 13:56:34'),
+        lastModified: new Date('December 17, 1995 13:56:34'),
         timesVisited: 5,
         lastVisited: new Date('December 17, 1995 15:09:11')
     };
