@@ -6,17 +6,14 @@
 
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { TreeId, TreeStructure, Node, RootNode } from '$lib/backend/trees';
-    import type { CardGetData, CardId } from '$lib/backend/cards';
+    import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
     import { onMount, tick } from 'svelte';
     import AddCard from "./AddCard.svelte";
 
     //initialization off types
-    let { treeId, treeStructure = $bindable(), node, cards, editingPage }: {
-        treeId: TreeId;
-        treeStructure: TreeStructure;
+    let { tree = $bindable(), node, editingPage }: {
+        tree: TreeWithCards;
         node: Node | RootNode;
-        cards: Record<CardId, CardGetData>
         editingPage: boolean
     } = $props();
 
@@ -39,7 +36,7 @@
         y2: number;
     };
 
-    onMount(() => {
+    /*onMount(() => {
         if (node.children.length === 0) return;
 
         let top = domChildren.getBoundingClientRect().top;
@@ -80,9 +77,8 @@
             x2: svgWidth / 2,
             y2: lineOffset
         });
-    });
+    });*/
 
-    /*
     $effect(() => {
         if (!domChildren) return;
         //handles "shifts" in tree
@@ -135,7 +131,7 @@
         });
         observer.observe(domChildren);
         return () => observer.disconnect();
-    });*/
+    });
 </script>
 
 <div class="flex">
@@ -149,14 +145,14 @@
         <div class="tree__node">
             <button class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50">
                 <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
-                {cards[node.cardId].front}
+                {tree.cards[node.cardId].front}
             </button>
         </div>
     {/if}
 
     {#if editingPage}
         <div class="relative">
-            <AddCard {treeId} {treeStructure} {node} />
+            <AddCard bind:tree={tree} bind:node={node} />
         </div>
     {/if}
 
@@ -177,7 +173,7 @@
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
             <div class="relative">
-                <NodeViewer {treeId} {treeStructure} node={child_node} {cards} {editingPage} />
+                <NodeViewer bind:tree={tree} node={child_node} {editingPage} />
             </div>
         {/each}
     </div>

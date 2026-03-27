@@ -5,12 +5,12 @@
 -->
 
 <script lang="ts">
-    import type { TreeId, TreeStructure, TreeUpdateStructureData, Node, RootNode } from '$lib/backend/trees'
-    import { updateTreeStructure } from "$lib/backend/trees";
-    import { type CardAddData, type CardId, addCard } from '$lib/backend/cards';
+    import type {Node, RootNode, TreeUpdateStructureData, TreeWithCards} from '$lib/backend/trees'
+    import {updateTreeStructure} from "$lib/backend/trees";
+    import {addCard, type CardAddData, type CardId} from '$lib/backend/cards';
 
-    let { treeId, treeStructure = $bindable(), node }:
-        { treeId: TreeId; treeStructure: TreeStructure; node: Node | RootNode } = $props();
+    let { tree = $bindable(), node = $bindable() }:
+        { tree: TreeWithCards, node: Node | RootNode } = $props();
 
     let inputText = $state('');
     let errorMessage = $state('');
@@ -39,7 +39,7 @@
         errorMessage = '';
 
         let card: CardAddData = {
-            treeId: treeId,
+            treeId: tree.genData.id,
             front: text,
             back: '',
         }
@@ -55,19 +55,24 @@
     async function addChild(parent: Node | RootNode, card: CardAddData) {
         addCard(card)
             .then((cardId: CardId) => {
-                //const newStructure = [...parent.children, {card: card.back, children: []}];
-                let newStructure = treeStructure;
+                const newNode: Node = {cardId, children: []};
+                tree.cards[cardId] = {
+                    front: card.front,
+                    back: card.back
+                };
+                parent.children.push(newNode);
                 let update: TreeUpdateStructureData = {
-                    id: treeId,
-                    newStructure: newStructure,
+                    id: tree.genData.id,
+                    newStructure: tree.structure,
                 }
                 return updateTreeStructure(update);
             })
 
             .then(() => {
-                //parent.children = newStructure;
-                //tree = {...tree};
                 action = null;
+                parent = {...parent}
+                parent.children[-1] = {...parent.children[-1]}
+                tree.structure = {...tree.structure};
             })
 
             .catch((reason: Error) => {
@@ -80,20 +85,24 @@
     async function insertChild(parent: Node | RootNode, child: Node, card: CardAddData) {
         addCard(card)
             .then((cardId: CardId) => {
-                //const newNode: Node = { card: card.back, children: [child] };
-                //const newStructure = parent.children.map(c => c === child ? newNode : c) as Node[];
-                let newStructure = treeStructure;
+                const newNode: Node = {cardId, children: [child]};
+                tree.cards[cardId] = {
+                    front: card.front,
+                    back: card.back
+                };
+                parent.children = parent.children.map(c => c === child ? newNode : c) as Node[];
                 let update: TreeUpdateStructureData = {
-                    id: treeId,
-                    newStructure: newStructure,
+                    id: tree.genData.id,
+                    newStructure: tree.structure,
                 }
                 return updateTreeStructure(update);
             })
 
             .then(() => {
-                //parent.children = newStructure;
-                //tree = {...tree};
                 action = null;
+                parent = {...parent}
+                parent.children[-1] = {...parent.children[-1]}
+                tree.structure = {...tree.structure};
             })
 
             .catch((reason: Error) => {
