@@ -27,7 +27,7 @@ test('No submission without password', async () => {
     const user = userEvent.setup();
     render(page);
 
-    const emailInput = screen.getByLabelText('E-mail');
+    const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@test.nl');
     await user.click(screen.getByRole('button', { name: m.login() }));
 
@@ -38,7 +38,7 @@ test('No submission without email', async () => {
     const user = userEvent.setup();
     render(page);
 
-    const passwordInput = screen.getByLabelText('Wachtwoord');
+    const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.login() }));
@@ -50,9 +50,9 @@ test('No submission when e-mail contains no @ and no domain', async () => {
     const user = userEvent.setup();
     render(page);
 
-    const emailInput = screen.getByLabelText('E-mail');
+    const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test');
-    const passwordInput = screen.getByLabelText('Wachtwoord');
+    const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.login() }));
@@ -64,9 +64,9 @@ test('No submission when e-mail contains no domain', async () => {
     const user = userEvent.setup();
     render(page);
 
-    const emailInput = screen.getByLabelText('E-mail');
+    const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@');
-    const passwordInput = screen.getByLabelText('Wachtwoord');
+    const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.login() }));
@@ -78,9 +78,9 @@ test('No submission when e-mail contains a invalid special character other than 
     const user = userEvent.setup();
     render(page);
 
-    const emailInput = screen.getByLabelText('E-mail');
+    const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@te;st.nl');
-    const passwordInput = screen.getByLabelText('Wachtwoord');
+    const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.login() }));
@@ -92,9 +92,9 @@ test('Submission with valid e-mail', async () => {
     const user = userEvent.setup();
     render(page);
 
-    const emailInput = screen.getByLabelText('E-mail');
+    const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@test.nl');
-    const passwordInput = screen.getByLabelText('Wachtwoord');
+    const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.login() }));

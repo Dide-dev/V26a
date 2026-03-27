@@ -38,9 +38,9 @@ test('Submission with correct data', async () => {
     const user = userEvent.setup();
     render(page);
 
-    const titleInput = screen.getByLabelText('Titel');
+    const titleInput = screen.getByTestId('title');
     await user.type(titleInput, 'Test tree title');
-    const descriptionInput = screen.getByLabelText('Beschrijving');
+    const descriptionInput = screen.getByTestId('description')
     await user.type(descriptionInput, 'Test tree description');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
@@ -66,7 +66,7 @@ test('Redirection after succesful creation', async () => {
 
     render(page);
 
-    const titleInput = screen.getByLabelText('Titel');
+    const titleInput = screen.getByTestId('title');
     await user.type(titleInput, 'Test tree title');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
