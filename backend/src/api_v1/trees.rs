@@ -40,8 +40,9 @@ pub fn trees() -> Router<Config> {
 /// The id assigned to the new tree as [`Json`].
 ///
 /// # Error
+/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in [`TreeAddData`] contains cards.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-/// May return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) instead.
 async fn add_new_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
