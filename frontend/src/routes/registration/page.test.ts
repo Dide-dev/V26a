@@ -27,7 +27,7 @@ afterEach(() => {
     vi.resetAllMocks();
 });
 
-test('passwordNoUpper', async () => {
+test('Password without upper case letter shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -43,7 +43,7 @@ test('passwordNoUpper', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordNoLower', async () => {
+test('Password without lower case letter shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -59,7 +59,7 @@ test('passwordNoLower', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordNoSpecialCharacter', async () => {
+test('Password without special character shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -75,7 +75,7 @@ test('passwordNoSpecialCharacter', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordNoNumber', async () => {
+test('Password without number shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -91,7 +91,7 @@ test('passwordNoNumber', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordsNotTheSame', async () => {
+test('Differing password and repeat password shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -107,7 +107,7 @@ test('passwordsNotTheSame', async () => {
     expect(error.textContent).toBe(m.passwordsNotTheSame());
 });
 
-test('passwordsCorrect', async () => {
+test('Submission when password and repeat password are the same', async () => {
     (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
 
     const user = userEvent.setup();
@@ -136,7 +136,7 @@ test('passwordsCorrect', async () => {
     });
 });
 
-test('Redirection after succesful user=adding', async () => {
+test('Redirection after succesful registration', async () => {
     const user = userEvent.setup();
 
     (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
