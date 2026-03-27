@@ -31,20 +31,10 @@ async fn test_new_empty_tree(db: PgPool) {
         published: false,
     };
     let tree_structure = TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_string(),
-                children: vec![],
-            },
-        ],
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
     };
     let tree_add_data = TreeAddData {
         tree_data: tree_data,
@@ -78,20 +68,10 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
         published: true,
     };
     let tree_structure = TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_string(),
-                children: vec![],
-            },
-        ],
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
     };
     let tree_add_data = TreeAddData {
         tree_data: tree_data,
@@ -131,20 +111,10 @@ async fn test_retrieving_owned_trees(db: PgPool) {
         published: false,
     };
     let tree_structure = TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_string(),
-                children: vec![],
-            },
-        ],
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
     };
     let tree_add_data = TreeAddData {
         tree_data: tree_data,
@@ -178,20 +148,10 @@ async fn test_remove_card(db: PgPool) {
         published: false,
     };
     let tree_structure = TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_string(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_string(),
-                children: vec![],
-            },
-        ],
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
     };
     let tree_add_data = TreeAddData {
         tree_data: tree_data,
@@ -318,7 +278,17 @@ async fn test_update_metadata(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data: tree_data,
+        tree_structure: tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
