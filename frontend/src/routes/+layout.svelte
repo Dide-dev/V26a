@@ -29,7 +29,7 @@
     <a href={appLink('/login')}>{m.login()}</a>
     {#each locales as locale (locale)}
         <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
-        <a href={localizeHref(page.url.pathname, { locale })} data-sveltekit-reload>
+        <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
             {locale}
         </a>
     {/each}
