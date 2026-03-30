@@ -179,6 +179,10 @@ pub struct TreeFilters {
     pub book: Vec<String>,
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
+
+    // Needed for optional boolean
+    #[serde(default)]
+    pub show_own_private: bool,
 }
 
 #[cfg(test)]

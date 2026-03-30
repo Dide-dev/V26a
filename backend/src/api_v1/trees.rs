@@ -316,6 +316,7 @@ pub async fn verify_tree_ownership(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_list(
+    claims: Option<Claims>,
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,
     Query(filters): Query<TreeFilters>,
@@ -325,15 +326,17 @@ pub async fn get_list(
     if page.size > 100 {
         return Err(ApiError::MaxPageSizeExceeded(100));
     }
+    
+    let optional_user_id = claims.map(|c| c.sub);
 
     let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let trees_count = get_queried_count(&mut *tx, &filters).await?;
+    let trees_count = get_queried_count(&mut *tx, &filters, optional_user_id).await?;
     if trees_count == 0 {
         return Err(ApiError::NoSearchResults);
     }
 
-    let trees = get_queried_list(&mut *tx, &page, &filters).await?;
+    let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
     let next_page = if trees.has_next {
         Some(page.page + 1)
     } else {

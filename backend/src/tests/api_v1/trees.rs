@@ -485,7 +485,7 @@ async fn test_update_metadata(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    // Update the metadata
+    // Update the metadata`
     let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
         description: Some("Updated description".to_string()),

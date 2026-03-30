@@ -342,6 +342,8 @@ pub async fn is_structure_valid(
 ///
 /// `filters` - The [`TreeFilters`] to apply to the query.
 ///
+/// `user_id` - The logged in user performing the filter, optional.
+///
 /// # Example:
 /// ```rs
 /// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
@@ -355,10 +357,22 @@ pub async fn is_structure_valid(
 ///
 /// # To future developers:
 /// This function can and will become too big, good luck if that happens!
-fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a TreeFilters) {
+fn apply_tree_filters<'a>(
+    builder: &mut QueryBuilder<'a, Postgres>,
+    filters: &'a TreeFilters,
+    user_id: Option<i32>,
+) {
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
-    separated.push("published = true");
+    separated.push("(published = true");
+    if let Some(user_id) = user_id
+        && filters.show_own_private
+    {
+        separated.push_unseparated(" OR (published = false AND owner_id = ");
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated(")");
+    }
+    separated.push_unseparated(")");
     if let Some(owner_id) = filters.owner_id {
         separated
             .push("(owner_id = ")
@@ -392,6 +406,8 @@ fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a
 ///
 /// `filters` - The filters to apply to the trees.
 ///
+/// `user_id` - The logged in user performing the filter, optional.
+///
 /// # Returns
 /// The amount of trees satisfying the filters at the requested page,
 ///
@@ -400,10 +416,11 @@ fn apply_tree_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a
 pub async fn get_queried_count(
     db: impl PgExecutor<'_>,
     filters: &TreeFilters,
+    user_id: Option<i32>,
 ) -> Result<i64, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
 
-    apply_tree_filters(&mut query, filters);
+    apply_tree_filters(&mut query, filters, user_id);
 
     let trees_count: i64 = query
         .build_query_scalar()
@@ -423,6 +440,8 @@ pub async fn get_queried_count(
 ///
 /// `filters` - The filters to apply to the trees.
 ///
+/// `user_id` - The logged in user performing the filter, optional.
+///
 /// # Returns
 /// A list with the trees satisfying the filters at the requested page,
 /// together with a boolean if there exists a next page.
@@ -435,6 +454,7 @@ pub async fn get_queried_list(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
     filters: &TreeFilters,
+    user_id: Option<i32>,
 ) -> Result<TreeList, ApiError> {
     // Prevent overflow errors
     if !page.input_is_valid() {
@@ -446,7 +466,7 @@ pub async fn get_queried_list(
         FROM trees"
     );
 
-    apply_tree_filters(&mut query, filters);
+    apply_tree_filters(&mut query, filters, user_id);
     query
         .push(
             // newest first
@@ -681,11 +701,11 @@ mod test {
         let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let empty_filters = TreeFilters {
             ..Default::default()
-        };
-        apply_tree_filters(&mut no_filters_query, &empty_filters);
+        }; // TODO: test user_id
+        apply_tree_filters(&mut no_filters_query, &empty_filters, None);
         assert_eq!(
             no_filters_query.sql(),
-            "SELECT * FROM trees WHERE published = true"
+            "SELECT * FROM trees WHERE (published = true)"
         );
 
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -694,11 +714,12 @@ mod test {
             book: vec!["1984".to_owned()],
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
+            show_own_private: true,
         };
-        apply_tree_filters(&mut all_filters_query, &all_filters);
+        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123));
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (book_name = ANY($2)) AND (created_at >= $3) AND (created_at <= $4)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_name = ANY($3)) AND (created_at >= $4) AND (created_at <= $5)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -707,10 +728,40 @@ mod test {
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             ..Default::default()
         };
-        apply_tree_filters(&mut partial_filters_query, &partial_filters);
+        apply_tree_filters(&mut partial_filters_query, &partial_filters, None);
         assert_eq!(
             partial_filters_query.sql(),
-            "SELECT * FROM trees WHERE published = true AND (owner_id = $1) AND (created_at >= $2)"
+            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (created_at >= $2)"
+        );
+
+        let mut show_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_no_id_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut show_private_no_id_query,
+            &show_private_no_id_filters,
+            None,
+        );
+        assert_eq!(
+            show_private_no_id_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+
+        let mut hide_private_with_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_no_id_filters = TreeFilters {
+            show_own_private: false,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut hide_private_with_id_query,
+            &show_private_no_id_filters,
+            Some(123),
+        );
+        assert_eq!(
+            hide_private_with_id_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
         );
     }
 
