@@ -307,8 +307,6 @@ mod tests {
         let card_id = initialize_card(&db, tree_id).await;
 
         let found_tree_id = get_tree_of_card(&db, card_id).await;
-        assert!(found_tree_id.is_ok());
-        let found_tree_id = found_tree_id.unwrap();
-        assert_eq!(found_tree_id, tree_id);
+        assert_eq!(found_tree_id, Ok(tree_id));
     }
 }

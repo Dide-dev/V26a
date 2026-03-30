@@ -123,7 +123,7 @@ pub mod test {
             }],
         };
 
-        initialize_tree(db, owner_id, &data, &structure).await
+        initialize_tree_with_data(db, owner_id, &data, &structure).await
     }
 
     /// Initialize a tree in the database.
@@ -140,7 +140,7 @@ pub mod test {
     ///
     /// # Returns
     /// The `tree_id` associated with the newly added tree.
-    pub async fn initialize_tree(
+    pub async fn initialize_tree_with_data(
         db: impl PgExecutor<'_>,
         owner_id: i32,
         tree_data: &TreeData,

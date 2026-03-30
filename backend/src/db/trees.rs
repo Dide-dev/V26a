@@ -350,7 +350,9 @@ pub async fn is_structure_valid(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::db::test::{initialize_basic_user, initialize_card, initialize_db, initialize_tree};
+    use crate::db::test::{
+        initialize_basic_user, initialize_card, initialize_db, initialize_tree_with_data,
+    };
     use crate::db_structs::trees::Node;
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query_as};
@@ -371,10 +373,8 @@ mod test {
             published: true,
         };
 
-        let tree_id = add_tree(&db, &tree_data, user_id).await;
-        assert!(tree_id.is_ok());
+        let tree_id = add_tree(&db, &tree_data, user_id).await.unwrap();
 
-        let tree_id = tree_id.unwrap();
         let found_owner_id = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id)
             .fetch_one(&db)
             .await
@@ -396,8 +396,7 @@ mod test {
             .unwrap()
             .structure;
 
-        let tree_structure = serde_json::from_value::<TreeStructure>(found_structure);
-        assert!(tree_structure.is_ok());
+        serde_json::from_value::<TreeStructure>(found_structure).unwrap();
     }
 
     #[sqlx::test]
@@ -417,16 +416,15 @@ mod test {
         };
 
         let void = update_tree_structure(&db, tree_id, &new_tree_structure).await;
-        assert!(void.is_ok());
+        assert_eq!(void, Ok(()));
 
         let updated_tree_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id)
             .fetch_one(&db)
-            .await;
-        assert!(updated_tree_structure.is_ok());
+            .await
+            .unwrap();
 
-        let updated_tree_structure =
-            serde_json::from_value::<TreeStructure>(updated_tree_structure.unwrap().structure)
-                .unwrap();
+        let updated_tree_structure: TreeStructure =
+            serde_json::from_value(updated_tree_structure.structure).unwrap();
 
         assert_eq!(new_tree_structure, updated_tree_structure);
     }
@@ -454,15 +452,11 @@ mod test {
             }],
         };
 
-        let tree_id = initialize_tree(&db, user_id, &tree_data, &structure).await;
+        let tree_id = initialize_tree_with_data(&db, user_id, &tree_data, &structure).await;
 
-        let all_tree_data = db_get_tree_all_data(&db, tree_id).await;
-        assert!(all_tree_data.is_ok());
+        let (found_tree_data, found_tree_gen_data, found_tree_structure) =
+            db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
 
-        let all_tree_data = all_tree_data.unwrap();
-        assert!(all_tree_data.is_some());
-
-        let (found_tree_data, found_tree_gen_data, found_tree_structure) = all_tree_data.unwrap();
         assert_eq!(tree_data, found_tree_data);
         assert_eq!(tree_id, found_tree_gen_data.id);
         assert_eq!(user_id, found_tree_gen_data.owner_id);
