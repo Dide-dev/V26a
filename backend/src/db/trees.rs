@@ -404,9 +404,6 @@ pub async fn get_queried_count(
 
     apply_tree_filters(&mut query, filters);
 
-    // TODO: remove
-    // dbg!(query.build().sql());
-
     let trees_count: i64 = query
         .build_query_scalar()
         .fetch_one(db)
