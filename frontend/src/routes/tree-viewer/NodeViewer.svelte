@@ -7,7 +7,7 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
-    import { onMount, tick } from 'svelte';
+    import { tick } from 'svelte';
     import AddCard from './AddCard.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
@@ -39,49 +39,6 @@
         x2: number;
         y2: number;
     };
-
-    /*onMount(() => {
-        if (node.children.length === 0) return;
-
-        let top = domChildren.getBoundingClientRect().top;
-
-        // Vertical line from lineOffset to last child
-        {
-            let lastChildBounding =
-                domChildren.children[
-                    domChildren.children.length - 1
-                ].children[0].getBoundingClientRect();
-            let childTop = lastChildBounding.top;
-            svgLines.push({
-                x1: svgWidth / 2,
-                y1: lineOffset,
-                x2: svgWidth / 2,
-                y2: childTop - top + lineOffset
-            });
-            svgHeight = strokeWidth + childTop - top + lineOffset;
-        }
-
-        // Right horizontal line from vertical line to child
-        for (let child of domChildren.children) {
-            let childBounding = child.children[0].getBoundingClientRect();
-            let childTop = childBounding.top;
-
-            svgLines.push({
-                x1: svgWidth / 2,
-                y1: childTop + lineOffset - top,
-                x2: svgWidth,
-                y2: childTop + lineOffset - top
-            });
-        }
-
-        // Left horizontal line from parent to vertical line
-        svgLines.push({
-            x1: 0,
-            y1: lineOffset,
-            x2: svgWidth / 2,
-            y2: lineOffset
-        });
-    });*/
 
     $effect(() => {
         if (!domChildren) return;
