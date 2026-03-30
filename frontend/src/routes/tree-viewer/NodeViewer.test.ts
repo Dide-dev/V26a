@@ -28,8 +28,8 @@ test('NodeViewer', async () => {
         genData: {
             id: 0,
             ownerId: 0,
-            createdAt: Date.prototype,
-            lastEdited: Date.prototype,
+            createdAt: new Date(),
+            lastModified: new Date(),
             timesVisited: 0,
             lastVisited: null
         },
@@ -37,7 +37,7 @@ test('NodeViewer', async () => {
             rootNodes: [rootNode]
         },
         cards: cards
-    }
+    };
     const editingPage = false;
     render(NodeViewer, { tree, node:rootNode, editingPage });
 
@@ -68,8 +68,8 @@ test('NodeViewer with child', async () => {
         genData: {
             id: 0,
             ownerId: 0,
-            createdAt: Date.prototype,
-            lastEdited: Date.prototype,
+            createdAt: new Date(),
+            lastModified: new Date(),
             timesVisited: 0,
             lastVisited: null
         },
@@ -114,8 +114,8 @@ test('NodeViewer with children', async () => {
         genData: {
             id: 0,
             ownerId: 0,
-            createdAt: Date.prototype,
-            lastEdited: Date.prototype,
+            createdAt: new Date(),
+            lastModified: new Date(),
             timesVisited: 0,
             lastVisited: null
         },
@@ -159,8 +159,8 @@ test('NodeViewer with children and add/insert buttons', async () => {
         genData: {
             id: 0,
             ownerId: 0,
-            createdAt: Date.prototype,
-            lastEdited: Date.prototype,
+            createdAt: new Date(),
+            lastModified: new Date(),
             timesVisited: 0,
             lastVisited: null
         },
