@@ -180,11 +180,13 @@
                 <p class="text-red-600">{errorMessage}</p>
             {/if}
             <div class="flex justify-end gap-2">
-                <button onclick={() => (reset())}>Cancel</button>
+                <button onclick={() => reset()}>Cancel</button>
                 <button
-                    onclick={() => {if (backText) acceptCard(frontText, backText);
-                                    else errorMessage = 'Error: back text is required!'}}
-                >Add</button>
+                    onclick={() => {
+                        if (backText) acceptCard(frontText, backText);
+                        else errorMessage = 'Error: back text is required!';
+                    }}>Add</button
+                >
             </div>
         </div>
     </div>
