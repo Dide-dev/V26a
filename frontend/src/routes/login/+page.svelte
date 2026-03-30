@@ -37,6 +37,7 @@
                 bind:value={loginData.email}
                 name="email"
                 type="email"
+                data-testid="email"
                 required
             />
         </label>
@@ -47,6 +48,7 @@
                 bind:value={loginData.password}
                 name="password"
                 type="password"
+                data-testid="password"
                 required
             />
         </label>
