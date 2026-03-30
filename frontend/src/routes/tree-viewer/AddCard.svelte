@@ -142,13 +142,13 @@
 
 <!-- Button to add new card as a child to this card -->
 <button
-    class="absolute top-2 right-2 z-10 h-5 w-5 cursor-pointer rounded-full bg-blue-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
+    class="card__add_button absolute top-2 right-2 z-10 h-5 w-5 cursor-pointer rounded-full bg-blue-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
     onclick={() => handlerAdd(node)}
 >+</button>
 <!-- Buttons to insert a new card between this card and a child to this card -->
 {#each node.children as child_node, index (child_node)}
     <button
-        class="absolute -right-20 z-10 h-5 w-5 cursor-pointer rounded-full bg-green-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
+        class="card__insert_button absolute -right-20 z-10 h-5 w-5 cursor-pointer rounded-full bg-green-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
         style={`top: ${0.5 + 3.5 * index}rem`}
         onclick={() => handlerInsert(node, child_node)}
     >+</button>
