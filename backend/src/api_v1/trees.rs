@@ -51,7 +51,7 @@ async fn add_new_tree(
     if !is_tree_structure_empty(&tree_add_data.tree_structure) {
         return Err(ApiError::NonEmptyStructure);
     }
-    let id = add_tree(&db, tree_add_data, claims.sub).await?;
+    let id = add_tree(&db, &tree_add_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)
@@ -186,7 +186,7 @@ async fn update_structure_if_valid(
         return Err(ApiError::MismatchedStructure);
     }
 
-    db::trees::update_tree_structure(db, tree_id, new_structure).await?;
+    db::trees::update_tree_structure(db, tree_id, &new_structure).await?;
     Ok(())
 }
 

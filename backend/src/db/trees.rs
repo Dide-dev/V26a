@@ -31,26 +31,27 @@ use sqlx::{PgExecutor, query};
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: impl PgExecutor<'_>,
-    tree_add_data: TreeAddData,
+    tree_add_data: &TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    let tree_structure =
-        serde_json::to_value(tree_add_data.tree_structure).map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)
+        .map_err(|_| ApiError::SerdeException)?;
+    let tree_data = &tree_add_data.tree_data;
 
     let tree_id = query!(
         "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
-        tree_add_data.tree_data.published,
-        tree_add_data.tree_data.title,
-        tree_add_data.tree_data.description,
-        tree_add_data.tree_data.book_name,
-        tree_add_data.tree_data.book_edition,
-        tree_add_data.tree_data.book_isbn,
-        tree_add_data.tree_data.book_chapter,
-        tree_add_data.tree_data.book_exercise,
-        tree_add_data.tree_data.assignment_text,
+        tree_data.published,
+        tree_data.title,
+        tree_data.description,
+        tree_data.book_name,
+        tree_data.book_edition,
+        tree_data.book_isbn,
+        tree_data.book_chapter,
+        tree_data.book_exercise,
+        tree_data.assignment_text,
         tree_structure,
     )
     .fetch_one(db)
@@ -79,7 +80,7 @@ pub async fn add_tree(
 pub async fn update_tree_structure(
     db: impl PgExecutor<'_>,
     tree_id: i32,
-    new_tree_structure: TreeStructure,
+    new_tree_structure: &TreeStructure,
 ) -> Result<(), ApiError> {
     let new_tree_structure =
         serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;
@@ -321,7 +322,7 @@ pub async fn is_structure_valid(
         return Err(ApiError::DatabaseMemoryCap);
     }
 
-    // We check whether all cards exist in the `Cards` table and link to the `tree_id`,
+    // We check whether all cards exist in the `cards` table and link to the `tree_id`,
     // by verifying each of the `card_id`'s is contained in `db_card_ids`.
     let all_cards_exist_in_database = structure_card_ids.iter().all(|i| db_card_ids.contains(i));
 
@@ -336,32 +337,199 @@ pub async fn is_structure_valid(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::db::users::add_user;
-    use crate::db_structs::trees::RootNode;
-    use crate::db_structs::users::{UserData, UserLanguage};
-    use sqlx::PgPool;
+    use crate::db::test::{
+        initialize_basic_user, initialize_card, initialize_db, initialize_tree_with_data,
+    };
+    use crate::db_structs::trees::{Node, RootNode};
+    use crate::get_connection_unwrap;
+    use sqlx::{PgPool, query_as};
 
-    /// TODO: rewrite test with initialize functions
+    #[sqlx::test]
+    async fn test_add_tree(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+
+        let tree_data = TreeData {
+            title: "title".to_owned(),
+            description: Some("desc".to_owned()),
+            book_name: Some("book_name".to_owned()),
+            book_edition: Some("book_edition".to_owned()),
+            book_isbn: Some("book_isbn".to_owned()),
+            book_chapter: Some("book_chapter".to_owned()),
+            book_exercise: Some("book_exercise".to_owned()),
+            assignment_text: Some("assignment_text".to_owned()),
+            published: true,
+        };
+
+        let tree_add_data = TreeAddData {
+            tree_data: tree_data.clone(),
+            tree_structure: TreeStructure { root_nodes: vec![] },
+        };
+
+        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
+
+        let found_owner_id = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap()
+            .owner_id;
+
+        assert_eq!(found_owner_id, user_id);
+
+        let found_tree_data = query_as!(TreeData, "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        assert_eq!(found_tree_data, tree_data);
+
+        let found_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap()
+            .structure;
+
+        serde_json::from_value::<TreeStructure>(found_structure).unwrap();
+    }
+
+    #[sqlx::test]
+    async fn test_update_tree_structure(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let card_id = initialize_card(get_connection_unwrap!(db), tree_id).await;
+
+        let new_tree_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![Node {
+                    card_id,
+                    children: vec![],
+                }],
+            }],
+        };
+
+        let void = update_tree_structure(&db, tree_id, &new_tree_structure).await;
+        assert_eq!(void, Ok(()));
+
+        let updated_tree_structure = query!("SELECT structure FROM trees WHERE id = $1", tree_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        let updated_tree_structure: TreeStructure =
+            serde_json::from_value(updated_tree_structure.structure).unwrap();
+
+        assert_eq!(new_tree_structure, updated_tree_structure);
+    }
+
+    #[sqlx::test]
+    async fn test_db_get_tree_all_data(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+
+        let tree_data = TreeData {
+            title: "title".to_owned(),
+            description: Some("desc".to_owned()),
+            book_name: Some("book_name".to_owned()),
+            book_edition: Some("book_edition".to_owned()),
+            book_isbn: Some("book_isbn".to_owned()),
+            book_chapter: Some("book_chapter".to_owned()),
+            book_exercise: Some("book_exercise".to_owned()),
+            assignment_text: Some("assignment_text".to_owned()),
+            published: true,
+        };
+
+        let structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            }],
+        };
+
+        let tree_id = initialize_tree_with_data(&db, user_id, &tree_data, &structure).await;
+
+        let (found_tree_data, found_tree_gen_data, found_tree_structure) =
+            db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+
+        assert_eq!(tree_data, found_tree_data);
+        assert_eq!(tree_id, found_tree_gen_data.id);
+        assert_eq!(user_id, found_tree_gen_data.owner_id);
+        assert_eq!(structure, found_tree_structure);
+    }
+
+    #[sqlx::test]
+    async fn test_get_tree_owner(db: PgPool) {
+        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
+        assert_eq!(found_owner_id, Some(user_id));
+    }
+
+    #[sqlx::test]
+    async fn test_is_structure_valid(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        // Structure containing non-existent card_id should yield `false`.
+        let invalid_structure_with_missing_card = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![Node {
+                    card_id: 1,
+                    children: vec![],
+                }],
+            }],
+        };
+
+        assert!(
+            !is_structure_valid(&db, tree_id, &invalid_structure_with_missing_card)
+                .await
+                .unwrap()
+        );
+
+        // Happy path should yield `true`.
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let valid_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![Node {
+                    card_id,
+                    children: vec![],
+                }],
+            }],
+        };
+
+        assert!(
+            is_structure_valid(&db, tree_id, &valid_structure)
+                .await
+                .unwrap()
+        );
+
+        // Structure containing doubled card should yield `false`.
+        let invalid_structure_with_double_card = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![
+                    Node {
+                        card_id,
+                        children: vec![],
+                    },
+                    Node {
+                        card_id,
+                        children: vec![],
+                    },
+                ],
+            }],
+        };
+
+        assert!(
+            !is_structure_valid(&db, tree_id, &invalid_structure_with_double_card)
+                .await
+                .unwrap()
+        );
+    }
+
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
-        let mut conn = db.acquire().await.unwrap();
-
-        // Create an account
-
-        let user_id = add_user(
-            &mut conn,
-            UserData {
-                email: "test123@gmail.com".to_string(),
-                password: "monkey".to_string(),
-                name: "User123".to_string(),
-                nickname: None,
-                about_me: None,
-                email_visible: false,
-                language: UserLanguage::En,
-            },
-        )
-        .await
-        .unwrap();
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
         let tree_data = TreeData {
@@ -382,10 +550,10 @@ mod test {
             }],
         };
         let tree_add_data = TreeAddData {
-            tree_data: tree_data,
-            tree_structure: tree_structure,
+            tree_data,
+            tree_structure,
         };
-        let tree_id = add_tree(&db, tree_add_data, user_id).await.unwrap();
+        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
 
         // Update the tree data
         let new_tree_data = TreeData {
