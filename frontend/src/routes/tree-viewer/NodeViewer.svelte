@@ -28,7 +28,7 @@
     /** Y-offset from the top of the nodecards, used for the horizontal lines connecting the nodes. */
     const lineOffset = 15;
 
-    /** Stroke width to set the thickness of the lines connecting the nodes. Also used to calculate the svgHeight*/
+    /** Stroke width to set the thickness of the lines connecting the nodes. Also used to calculate the svgHeight */
     const strokeWidth = 4;
 
     let domChildren: Element;
