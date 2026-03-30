@@ -11,7 +11,7 @@ use crate::db::trees::{
     get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::trees::{
-    TreeData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
     TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
@@ -43,16 +43,29 @@ pub fn trees() -> Router<Config> {
 /// The id assigned to the new tree as [`Json`].
 ///
 /// # Error
+/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in [`TreeAddData`] contains cards.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_data): Json<TreeData>,
+    Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    let id = add_tree(&db, tree_data, claims.sub).await?;
+    if !is_tree_structure_empty(&tree_add_data.tree_structure) {
+        return Err(ApiError::NonEmptyStructure);
+    }
+    let id = add_tree(&db, tree_add_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)
+}
+
+/// Check whether a tree structure contains no cards.
+///
+/// # Returns
+/// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
+fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
+    tree_structure.flatten().is_empty()
 }
 
 /// Update the structure of an existing tree in the database.

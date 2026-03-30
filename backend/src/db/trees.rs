@@ -7,7 +7,8 @@
 use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
-        RootNode, TreeData, TreeFilters, TreeGeneratedData, TreeList, TreeMetadata, TreeStructure,
+        TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeList, TreeMetadata,
+        TreeStructure,
     },
     errors::ApiError,
 };
@@ -21,6 +22,8 @@ use std::collections::HashSet;
 ///
 /// `tree_data` - The data assigned to the new tree as [`TreeData`].
 ///
+/// `tree_structure` - The tree structure with cards as [`TreeStructure`].
+///
 /// `owner_id` - The id of the owner of the tree.
 ///
 /// # Returns
@@ -30,43 +33,27 @@ use std::collections::HashSet;
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: impl PgExecutor<'_>,
-    tree_data: TreeData,
+    tree_add_data: TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
-    let structure = serde_json::to_value(TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_owned(),
-                children: vec![],
-            },
-        ],
-    })
-    .map_err(|_| ApiError::SerdeException)?;
+    let tree_structure =
+        serde_json::to_value(tree_add_data.tree_structure).map_err(|_| ApiError::SerdeException)?;
 
     let tree_id = query!(
         "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
-        tree_data.published,
-        tree_data.title,
-        tree_data.description,
-        tree_data.book_name,
-        tree_data.book_edition,
-        tree_data.book_isbn,
-        tree_data.book_chapter,
-        tree_data.book_exercise,
-        tree_data.assignment_text,
-        structure
+        tree_add_data.tree_data.published,
+        tree_add_data.tree_data.title,
+        tree_add_data.tree_data.description,
+        tree_add_data.tree_data.book_name,
+        tree_add_data.tree_data.book_edition,
+        tree_add_data.tree_data.book_isbn,
+        tree_add_data.tree_data.book_chapter,
+        tree_add_data.tree_data.book_exercise,
+        tree_add_data.tree_data.assignment_text,
+        tree_structure,
     )
         .fetch_one(db)
         .await
@@ -500,6 +487,7 @@ pub async fn get_queried_list(
 mod test {
     use super::*;
     use crate::db::users::add_user;
+    use crate::db_structs::trees::RootNode;
     use crate::db_structs::users::{UserData, UserLanguage};
     use sqlx::PgPool;
 
@@ -577,7 +565,17 @@ mod test {
             assignment_text: None,
             published: false,
         };
-        let tree_id = add_tree(&db, tree_data, user_id).await.unwrap();
+        let tree_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "RootNode".to_string(),
+                children: vec![],
+            }],
+        };
+        let tree_add_data = TreeAddData {
+            tree_data,
+            tree_structure,
+        };
+        let tree_id = add_tree(&db, tree_add_data, user_id).await.unwrap();
 
         // Update the tree data
         let new_tree_data = TreeData {
