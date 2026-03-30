@@ -41,7 +41,7 @@ async fn add_new_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, card_data.tree_id, claims.sub).await?;
 
-    let id = add_card(&db, card_data).await?;
+    let id = add_card(&db, &card_data).await?;
 
     Ok(Json(id))
 }
@@ -70,7 +70,7 @@ async fn update_existing_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, tree_id, claims.sub).await?;
 
-    update_card(get_connection!(db), card_data).await?;
+    update_card(get_connection!(db), &card_data).await?;
 
     Ok(())
 }

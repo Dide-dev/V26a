@@ -180,3 +180,43 @@ pub struct TreeFilters {
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_flatten_tree_structure() {
+        let tree_structure = TreeStructure {
+            root_nodes: vec![
+                RootNode {
+                    label: "Orientation".to_owned(),
+                    children: vec![
+                        Node {
+                            card_id: 1,
+                            children: vec![],
+                        },
+                        Node {
+                            card_id: 2,
+                            children: vec![Node {
+                                card_id: 3,
+                                children: vec![],
+                            }],
+                        },
+                    ],
+                },
+                RootNode {
+                    label: "Problem".to_owned(),
+                    children: vec![Node {
+                        card_id: 5,
+                        children: vec![],
+                    }],
+                },
+            ],
+        };
+
+        let mut flattened = tree_structure.flatten();
+        flattened.sort_unstable();
+        assert_eq!(&flattened, &[1, 2, 3, 5]);
+    }
+}

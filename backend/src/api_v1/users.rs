@@ -30,5 +30,5 @@ async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<UserData>,
 ) -> Result<Json<i32>, ApiError> {
-    add_user(get_connection!(db), user_data).await.map(Json)
+    add_user(get_connection!(db), &user_data).await.map(Json)
 }

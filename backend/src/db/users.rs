@@ -25,7 +25,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// May return a [`HashException`](ApiError::HashException) instead.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32, ApiError> {
+pub async fn add_user(db: &mut PgConnection, user_data: &UserData) -> Result<i32, ApiError> {
     // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
     // constraint is placed on the `email` field.
     // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
@@ -39,7 +39,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: UserData) -> Result<i32,
     // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
     // Put a limit on password length.
     let hashed_password =
-        hash(user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
+        hash(&user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
 
     // Insert user into database.
     let user_id = query!(
@@ -84,4 +84,77 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
     .map_err(|_| ApiError::DatabaseException)?
     .exists
     .ok_or(ApiError::DatabaseException)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::db::test::initialize_user;
+    use crate::db_structs::users::{UserData, UserLanguage};
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_add_user(db: PgPool) {
+        let user_data = UserData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: Some("nickname".to_owned()),
+            about_me: Some("about_me".to_owned()),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &user_data).await;
+
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        let found_user_data = UserData {
+            email: all_found_user_data.email,
+            // We test the password separately, as it has been hashed.
+            password: user_data.password.clone(),
+            name: all_found_user_data.name,
+            nickname: all_found_user_data.nickname,
+            about_me: all_found_user_data.about_me,
+            email_visible: all_found_user_data.email_visible,
+            language: all_found_user_data.language.parse().unwrap(),
+        };
+        assert_eq!(found_user_data, user_data);
+
+        let password_matches = bcrypt::verify(
+            user_data.password,
+            all_found_user_data.password_hash.as_str(),
+        )
+        .unwrap();
+
+        assert!(password_matches);
+    }
+
+    #[sqlx::test]
+    async fn test_user_exists(db: PgPool) {
+        let email = "email".to_owned();
+
+        let user_data = UserData {
+            email: email.clone(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: None,
+            about_me: None,
+            email_visible: false,
+            language: UserLanguage::Nl,
+        };
+
+        // Assert user does not exist before adding to the database.
+        let does_user_exist = user_exists(&db, &email).await.unwrap();
+        assert!(!does_user_exist);
+
+        initialize_user(&db, &user_data).await;
+
+        // Assert user does exist after adding to the database.
+        let does_user_exist = user_exists(&db, &email).await.unwrap();
+        assert!(does_user_exist);
+    }
 }

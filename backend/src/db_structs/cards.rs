@@ -14,7 +14,7 @@ pub struct CardAddData {
 }
 
 /// The basic data required to update an existing card.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CardUpdateData {
     pub card_id: i32,
