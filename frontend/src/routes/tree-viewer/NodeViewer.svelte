@@ -7,7 +7,6 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
-    import { tick } from 'svelte';
     import AddCard from './AddCard.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
