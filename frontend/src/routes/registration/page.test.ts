@@ -1,10 +1,33 @@
-import { userEvent } from '@testing-library/user-event';
+/*
+    This program has been developed by students from the bachelor Computer Science at Utrecht
+    University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import { render, screen } from '@testing-library/svelte';
-import { expect, test, vi } from 'vitest';
+import { test, vi, afterEach, expect } from 'vitest';
+import type { MockedFunction } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
+import { addUser } from '$lib/backend/users';
+import { goto } from '$app/navigation';
+import { appLink } from '$lib';
+import { getLocale } from '$lib/paraglide/runtime.js';
 
-test('passwordNoUpper', async () => {
+vi.mock('$lib/backend/users', () => {
+    return {
+        addUser: vi.fn()
+    };
+});
+vi.mock('$app/navigation', () => ({
+    goto: vi.fn()
+}));
+afterEach(() => {
+    vi.resetAllMocks();
+});
+
+test('Password without upper case letter shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -20,7 +43,7 @@ test('passwordNoUpper', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordNoLower', async () => {
+test('Password without lower case letter shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -36,7 +59,7 @@ test('passwordNoLower', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordNoSpecialCharacter', async () => {
+test('Password without special character shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -52,7 +75,7 @@ test('passwordNoSpecialCharacter', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordNoNumber', async () => {
+test('Password without number shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -68,7 +91,7 @@ test('passwordNoNumber', async () => {
     expect(error.textContent).toBe(m.missingCharacter());
 });
 
-test('passwordsNotTheSame', async () => {
+test('Differing password and repeat password shows error', async () => {
     const user = userEvent.setup();
     render(page);
 
@@ -84,26 +107,119 @@ test('passwordsNotTheSame', async () => {
     expect(error.textContent).toBe(m.passwordsNotTheSame());
 });
 
-test('passwordsCorrect', async () => {
-    let test = '';
-    global.fetch = vi.fn().mockImplementation((path: string) => {
-        if (path === '/api/v1/users/add') {
-            test = 'Correct password';
-        }
-    });
+test('Redirection after succesful registration', async () => {
+    const user = userEvent.setup();
+
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
+
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(goto).toHaveBeenCalledWith(appLink('/login'));
+});
+
+test('Submission with correct data', async () => {
     const user = userEvent.setup();
     render(page);
 
-    await user.type(screen.getByTestId('email'), 'test@test.test');
-    await user.type(screen.getByTestId('name'), 'test');
-    await user.type(screen.getByTestId('password'), 'aaaaaaaA1!');
-    await user.type(screen.getByTestId('repeat password'), 'aaaaaaaA1!');
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
 
-    const button = screen.getByRole('button');
-    await user.click(button);
+    await user.click(screen.getByRole('button', { name: m.register() }));
     const error = screen.getByTestId('error');
 
-    expect(error.textContent).not.toBe(m.missingCharacter());
-    expect(error.textContent).not.toBe(m.passwordsNotTheSame());
-    expect(test).toBe('Correct password');
+    expect(error.textContent).toBe('');
+    expect(error.textContent).toBe('');
+
+    expect(addUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+            email: 'test@email.nl',
+            password: 'ThisIsAVerySecureP@ssword123',
+            name: 'Tree Maker',
+            nickname: '',
+            aboutMe: null,
+            emailVisible: false,
+            language: getLocale()
+        })
+    );
+});
+
+test('No submission without password', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
+});
+
+test('No submission without repeat password', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
+});
+
+test('No submission without name', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const emailInput = screen.getByTestId('email');
+    await user.type(emailInput, 'test@email.nl');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
+});
+
+test('No submission without email', async () => {
+    const user = userEvent.setup();
+    render(page);
+
+    const nameInput = screen.getByTestId('name');
+    await user.type(nameInput, 'Tree Maker');
+    const passwordInput = screen.getByTestId('password');
+    await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
+    const repeatPasswordInput = screen.getByTestId('repeat password');
+    await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
+
+    await user.click(screen.getByRole('button', { name: m.register() }));
+
+    expect(addUser).not.toHaveBeenCalled();
 });

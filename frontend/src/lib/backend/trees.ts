@@ -64,7 +64,7 @@ export type TreeGeneratedData = {
     id: TreeId;
     ownerId: UserId;
     createdAt: Date;
-    lastEdited: Date;
+    lastModified: Date;
     timesVisited: number;
     lastVisited: Option<Date>;
 };
@@ -72,6 +72,34 @@ export type TreeGeneratedData = {
 export type TreeMetadata = {
     data: TreeData;
     genData: TreeGeneratedData;
+};
+
+export type TreeAddData = {
+    treeData: TreeData;
+    treeStructure: TreeStructure;
+};
+
+// Default tree structure used in addTree.
+const defaultTreeStructure: TreeStructure = {
+    rootNodes: [
+        {
+            label: 'Orientation',
+            children: []
+        },
+        {
+            label: 'Making & executing plans',
+            children: []
+        },
+        {
+            label: 'Completion',
+            children: []
+        }
+    ]
+};
+
+export type TreeUpdateMetaData = {
+    id: TreeId;
+    newData: TreeData;
 };
 
 export type TreeUpdateStructureData = {
@@ -86,8 +114,14 @@ export type TreeRemoveCardData = {
 };
 
 /** Add a tree to the database. */
-export function addTree(tree: TreeData): Promise<TreeId> {
-    return apiCallPostTree('add', tree);
+export function addTree(treeData: TreeData): Promise<TreeId> {
+    const treeStructure: TreeStructure = defaultTreeStructure;
+    const treeAddData = {
+        treeData,
+        treeStructure
+    };
+
+    return apiCallPostTree('add', treeAddData);
 }
 
 /** Update the structure of an existing tree. */
@@ -104,6 +138,11 @@ export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
+}
+
+/** Update the metadata of a specific tree. */
+export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
+    return apiCallPostTree('update-data', newTreeData);
 }
 
 /** Request all trees owned by the logged-in user. */
