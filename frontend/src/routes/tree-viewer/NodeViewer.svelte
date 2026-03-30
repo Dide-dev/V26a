@@ -10,7 +10,7 @@
     import { onMount, tick } from 'svelte';
     import AddCard from "./AddCard.svelte";
 
-    //initialization off types
+    /** Variables used to contain data about the entire tree that is needed for API calls. */
     let { tree = $bindable(), node, editingPage }: {
         tree: TreeWithCards;
         node: Node | RootNode;
@@ -150,6 +150,7 @@
         </div>
     {/if}
 
+    <!-- Adds buttons to manage the cards of the tree if in editing mode -->
     {#if editingPage}
         <div class="relative">
             <AddCard bind:tree={tree} bind:node={node} />
