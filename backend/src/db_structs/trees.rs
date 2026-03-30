@@ -148,21 +148,8 @@ pub struct TreeAddData {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeListResponse {
-    /// The API url to request for the next page of the tree search.
-    pub next_page: Option<i32>,
-    /// The requested amount of trees per page.
-    pub page_size: i32,
     /// The total amount of trees that are visible in the query.
     pub total_trees: i32,
-    pub trees: Vec<TreeData>,
-}
-
-/// The data internally used to return a list of trees.
-#[derive(serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeList {
-    /// The API url to request for the next page of the tree search.
-    pub has_next: bool,
     pub trees: Vec<TreeData>,
 }
 

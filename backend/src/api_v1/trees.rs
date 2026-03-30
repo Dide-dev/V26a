@@ -326,7 +326,7 @@ pub async fn get_list(
     if page.size > 100 {
         return Err(ApiError::MaxPageSizeExceeded(100));
     }
-    
+
     let optional_user_id = claims.map(|c| c.sub);
 
     let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
@@ -337,19 +337,12 @@ pub async fn get_list(
     }
 
     let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
-    let next_page = if trees.has_next {
-        Some(page.page + 1)
-    } else {
-        None
-    };
 
     tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
 
     let list = TreeListResponse {
-        next_page,
-        page_size: page.size,
         total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
-        trees: trees.trees,
+        trees,
     };
 
     Ok(Json(list))

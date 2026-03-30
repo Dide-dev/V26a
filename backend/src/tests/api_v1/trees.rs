@@ -324,19 +324,16 @@ async fn test_filter_tree(db: PgPool) {
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.trees, trees_data);
-    assert_eq!(requested_trees.next_page, None);
 
     let response = server.get("/trees/get-list?page=1&size=1").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.trees, first_tree);
-    assert_eq!(requested_trees.next_page, Some(2));
 
     let response = server.get("/trees/get-list?page=2&size=1").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.trees, second_tree);
-    assert_eq!(requested_trees.next_page, None);
 
     // Filter on book with space
     let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;

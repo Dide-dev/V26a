@@ -7,8 +7,7 @@
 use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
-        TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeList, TreeMetadata,
-        TreeStructure,
+        TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeMetadata, TreeStructure,
     },
     errors::ApiError,
 };
@@ -455,7 +454,7 @@ pub async fn get_queried_list(
     page: &PaginationOptions,
     filters: &TreeFilters,
     user_id: Option<i32>,
-) -> Result<TreeList, ApiError> {
+) -> Result<Vec<TreeData>, ApiError> {
     // Prevent overflow errors
     if !page.input_is_valid() {
         return Err(ApiError::InvalidPage);
@@ -473,13 +472,12 @@ pub async fn get_queried_list(
             " ORDER BY created_at DESC \
               LIMIT ",
         )
-        // Return an extra entry to the API so it can efficiently know if there is a next page.
-        .push_bind(i64::from(page.size + 1))
+        .push_bind(i64::from(page.size))
         .push(" OFFSET ")
         // Page is 1-based
         .push_bind(i64::from((page.page - 1) * page.size));
 
-    let mut trees = query
+    let trees = query
         .build_query_as::<TreeData>()
         .fetch_all(db)
         .await
@@ -491,14 +489,7 @@ pub async fn get_queried_list(
         return Err(ApiError::InvalidPage);
     }
 
-    // Check if there is a next page to be requested by the client, and remove the extra added entry if there is.
-    // The "unwrap" should not ever trigger an exception, as it is checked to be > 0 at the start of the function.
-    let has_next = trees.len() > usize::try_from(page.size).unwrap();
-    if has_next {
-        trees.pop();
-    }
-
-    Ok(TreeList { has_next, trees })
+    Ok(trees)
 }
 
 #[cfg(test)]
