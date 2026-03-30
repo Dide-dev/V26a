@@ -37,6 +37,7 @@
         "prettier": "^3.8.1",
         "prettier-plugin-svelte": "^3.4.1",
         "prettier-plugin-tailwindcss": "^0.7.2",
+        "resize-observer-polyfill": "^1.5.1",
         "svelte": "^5.49.2",
         "svelte-check": "^4.3.6",
         "tailwindcss": "^4.1.18",
