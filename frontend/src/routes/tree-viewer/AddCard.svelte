@@ -93,10 +93,10 @@
             })
 
             .then(() => {
-                action = null;
                 parent = { ...parent };
                 parent.children[-1] = { ...parent.children[-1] };
                 tree.structure = { ...tree.structure };
+                reset();
             })
 
             .catch((reason: Error) => {
@@ -128,16 +128,23 @@
             })
 
             .then(() => {
-                action = null;
                 parent = { ...parent };
                 parent.children[-1] = { ...parent.children[-1] };
                 tree.structure = { ...tree.structure };
+                reset();
             })
 
             .catch((reason: Error) => {
                 errorMessage = reason.toString();
                 console.error('Error: ', reason);
             });
+    }
+
+    /** Reset function to clear the popup */
+    function reset() {
+        action = null;
+        frontText = '';
+        backText = '';
     }
 </script>
 
@@ -173,7 +180,7 @@
                 <p class="text-red-600">{errorMessage}</p>
             {/if}
             <div class="flex justify-end gap-2">
-                <button onclick={() => (action = null)}>Cancel</button>
+                <button onclick={() => (reset())}>Cancel</button>
                 <button
                     onclick={() => acceptCard(frontText, backText)}
                     disabled={!frontText || !backText}>Add</button

@@ -46,48 +46,46 @@
         const observer = new ResizeObserver(() => {
             if (node.children.length === 0) return;
 
-            tick().then(() => {
-                svgLines = [];
-                svgHeight = 0;
+            svgLines = [];
+            svgHeight = 0;
 
-                let top = domChildren.getBoundingClientRect().top;
+            let top = domChildren.getBoundingClientRect().top;
 
-                // Vertical line from lineOffset to last child
-                {
-                    let lastChildBounding =
-                        domChildren.children[
-                            domChildren.children.length - 1
-                        ].children[0].getBoundingClientRect();
-                    let childTop = lastChildBounding.top;
-                    svgLines.push({
-                        x1: svgWidth / 2,
-                        y1: lineOffset,
-                        x2: svgWidth / 2,
-                        y2: childTop - top + lineOffset
-                    });
-                    svgHeight = strokeWidth + childTop - top + lineOffset;
-                }
-
-                // Right horizontal line from vertical line to child
-                for (let child of domChildren.children) {
-                    let childBounding = child.children[0].getBoundingClientRect();
-                    let childTop = childBounding.top;
-
-                    svgLines.push({
-                        x1: svgWidth / 2,
-                        y1: childTop + lineOffset - top,
-                        x2: svgWidth,
-                        y2: childTop + lineOffset - top
-                    });
-                }
-
-                // Left horizontal line from parent to vertical line
+            // Vertical line from lineOffset to last child
+            {
+                let lastChildBounding =
+                    domChildren.children[
+                        domChildren.children.length - 1
+                    ].children[0].getBoundingClientRect();
+                let childTop = lastChildBounding.top;
                 svgLines.push({
-                    x1: 0,
+                    x1: svgWidth / 2,
                     y1: lineOffset,
                     x2: svgWidth / 2,
-                    y2: lineOffset
+                    y2: childTop - top + lineOffset
                 });
+                svgHeight = strokeWidth + childTop - top + lineOffset;
+            }
+
+            // Right horizontal line from vertical line to child
+            for (let child of domChildren.children) {
+                let childBounding = child.children[0].getBoundingClientRect();
+                let childTop = childBounding.top;
+
+                svgLines.push({
+                    x1: svgWidth / 2,
+                    y1: childTop + lineOffset - top,
+                    x2: svgWidth,
+                    y2: childTop + lineOffset - top
+                });
+            }
+
+            // Left horizontal line from parent to vertical line
+            svgLines.push({
+                x1: 0,
+                y1: lineOffset,
+                x2: svgWidth / 2,
+                y2: lineOffset
             });
         });
         observer.observe(domChildren);
