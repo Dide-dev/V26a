@@ -101,7 +101,7 @@
         <!-- Standard Node -->
     {:else}
         <div class="tree__node">
-            <button class="h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
+            <button class="h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1">
                 <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
                 {tree.cards[node.cardId].front}
             </button>
