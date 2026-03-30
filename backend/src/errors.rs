@@ -24,6 +24,8 @@ pub enum ApiError {
     MissingCard(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
+    /// An error to return when a tree is added with a default structure containing cards.
+    NonEmptyStructure,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -81,6 +83,10 @@ impl Display for ApiError {
             ),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::NonEmptyStructure => write!(
+                f,
+                "The tree structure contains cards, make sure to initialize a tree without cards."
+            ),
 
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
@@ -114,7 +120,8 @@ impl ApiError {
             ApiError::EmailAlreadyUsed
             | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
-            | ApiError::MissingCard(_) => StatusCode::BAD_REQUEST,
+            | ApiError::MissingCard(_)
+            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
 
             ApiError::MissingCredentials
             | ApiError::MissingAuthentication

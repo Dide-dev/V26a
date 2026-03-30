@@ -4,6 +4,7 @@
     "title": "Title",
     "description": "Description",
     "bookname": "Book name",
+    "bookedition": "Book edition",
     "bookIsbn": "ISBN",
     "bookChapter": "Chapter",
     "bookExercise": "Exercise",

@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
-use crate::db_structs::trees::{TreeData, TreeWithCards};
+use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure, TreeWithCards};
 use crate::tests::api_v1::setup_login;
 use sqlx::PgPool;
 use std::collections::BTreeMap;
@@ -36,7 +36,11 @@ async fn test_new_card(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure: TreeStructure { root_nodes: vec![] },
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
@@ -82,7 +86,11 @@ async fn test_update_existing_card(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure: TreeStructure { root_nodes: vec![] },
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 

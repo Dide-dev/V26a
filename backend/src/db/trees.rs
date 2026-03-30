@@ -5,12 +5,12 @@
 */
 
 use crate::{
-    db_structs::trees::{TreeData, TreeGeneratedData, TreeStructure},
+    db_structs::trees::{TreeAddData, TreeData, TreeGeneratedData, TreeStructure},
     errors::ApiError,
 };
 use std::collections::HashSet;
 
-use crate::db_structs::trees::{RootNode, TreeMetadata};
+use crate::db_structs::trees::TreeMetadata;
 use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
@@ -19,6 +19,8 @@ use sqlx::{PgExecutor, query};
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `tree_data` - The data assigned to the new tree as [`TreeData`].
+///
+/// `tree_structure` - The tree structure with cards as [`TreeStructure`].
 ///
 /// `owner_id` - The id of the owner of the tree.
 ///
@@ -29,27 +31,12 @@ use sqlx::{PgExecutor, query};
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: impl PgExecutor<'_>,
-    tree_data: &TreeData,
+    tree_add_data: &TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    // TODO: This is hardcoded for now, but should come from the front-end along with the api-call.
-    let structure = serde_json::to_value(TreeStructure {
-        root_nodes: vec![
-            RootNode {
-                label: "Orientation".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Making & executing plans".to_owned(),
-                children: vec![],
-            },
-            RootNode {
-                label: "Completion".to_owned(),
-                children: vec![],
-            },
-        ],
-    })
-    .map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)
+        .map_err(|_| ApiError::SerdeException)?;
+    let tree_data = &tree_add_data.tree_data;
 
     let tree_id = query!(
         "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
@@ -65,7 +52,7 @@ pub async fn add_tree(
         tree_data.book_chapter,
         tree_data.book_exercise,
         tree_data.assignment_text,
-        structure,
+        tree_structure,
     )
     .fetch_one(db)
     .await
@@ -353,7 +340,7 @@ mod test {
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_tree_with_data,
     };
-    use crate::db_structs::trees::Node;
+    use crate::db_structs::trees::{Node, RootNode};
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query_as};
 
@@ -373,7 +360,12 @@ mod test {
             published: true,
         };
 
-        let tree_id = add_tree(&db, &tree_data, user_id).await.unwrap();
+        let tree_add_data = TreeAddData {
+            tree_data: tree_data.clone(),
+            tree_structure: TreeStructure { root_nodes: vec![] },
+        };
+
+        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
 
         let found_owner_id = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id)
             .fetch_one(&db)
@@ -537,7 +529,31 @@ mod test {
 
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
-        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+
+        // Add a tree to the database
+        let tree_data = TreeData {
+            title: "Test tree".to_string(),
+            description: None,
+            book_name: None,
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: false,
+        };
+        let tree_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "RootNode".to_string(),
+                children: vec![],
+            }],
+        };
+        let tree_add_data = TreeAddData {
+            tree_data,
+            tree_structure,
+        };
+        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
 
         // Update the tree data
         let new_tree_data = TreeData {

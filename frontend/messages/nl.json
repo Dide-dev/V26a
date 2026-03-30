@@ -4,6 +4,7 @@
     "title": "Titel",
     "description": "Beschrijving",
     "bookname": "Naam boek",
+    "bookedition": "Editie boek",
     "bookIsbn": "ISBN",
     "bookChapter": "Hoofdstuk",
     "bookExercise": "Opdracht",

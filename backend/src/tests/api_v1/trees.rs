@@ -8,8 +8,8 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateData,
-    TreeUpdateStructureData, TreeWithCards,
+    Node, RootNode, TreeAddData, TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use crate::tests::api_v1::setup_login;
@@ -31,14 +31,24 @@ async fn test_new_empty_tree(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let id: i32 = response.json();
 
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_data);
+    assert_eq!(full_tree.data, tree_add_data.tree_data);
     assert_eq!(full_tree.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
@@ -58,14 +68,24 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
         assignment_text: Some("Try to solve the following equation".to_string()),
         published: true,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let id: i32 = response.json();
 
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_data);
+    assert_eq!(full_tree.data, tree_add_data.tree_data);
     assert_eq!(full_tree.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
@@ -91,7 +111,17 @@ async fn test_retrieving_owned_trees(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
@@ -100,7 +130,7 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     let vec: Vec<TreeMetadata> = response.json();
     let tree_metadata: &TreeMetadata = vec.first().unwrap();
     assert_eq!(tree_id, tree_metadata.gen_data.id);
-    assert_eq!(tree_data, tree_metadata.data);
+    assert_eq!(tree_add_data.tree_data, tree_metadata.data);
 }
 
 #[sqlx::test]
@@ -118,7 +148,17 @@ async fn test_remove_card(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
@@ -238,7 +278,11 @@ async fn test_update_and_get_tree(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_add_data = TreeAddData {
+        tree_data: tree_data.clone(),
+        tree_structure: TreeStructure { root_nodes: vec![] },
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
@@ -345,7 +389,17 @@ async fn test_update_metadata(db: PgPool) {
         assignment_text: None,
         published: false,
     };
-    let response = server.post("/trees/add").json(&tree_data).await;
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
