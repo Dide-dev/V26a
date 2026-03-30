@@ -55,7 +55,7 @@
 
     <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree={tree} node={root} {editingPage} />
+            <NodeViewer bind:tree node={root} {editingPage} />
         {/each}
     </div>
 {/if}

@@ -8,13 +8,17 @@
     import NodeViewer from './NodeViewer.svelte';
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
     import { onMount, tick } from 'svelte';
-    import AddCard from "./AddCard.svelte";
+    import AddCard from './AddCard.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
-    let { tree = $bindable(), node, editingPage }: {
+    let {
+        tree = $bindable(),
+        node,
+        editingPage
+    }: {
         tree: TreeWithCards;
         node: Node | RootNode;
-        editingPage: boolean
+        editingPage: boolean;
     } = $props();
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
@@ -140,10 +144,10 @@
         <div class="tree__node h-fit w-32 shrink-0 cursor-default">
             <strong>{node.label}</strong>
         </div>
-    <!-- Standard Node -->
+        <!-- Standard Node -->
     {:else}
         <div class="tree__node">
-            <button class="h-fit w-xl border-2 border-green-800 p-1 bg-green-50">
+            <button class="h-fit w-xl border-2 border-green-800 bg-green-50 p-1">
                 <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
                 {tree.cards[node.cardId].front}
             </button>
@@ -153,7 +157,7 @@
     <!-- Adds buttons to manage the cards of the tree if in editing mode -->
     {#if editingPage}
         <div class="relative">
-            <AddCard bind:tree={tree} bind:node={node} />
+            <AddCard bind:tree bind:node />
         </div>
     {/if}
 
@@ -174,7 +178,7 @@
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
             <div class="relative">
-                <NodeViewer bind:tree={tree} node={child_node} {editingPage} />
+                <NodeViewer bind:tree node={child_node} {editingPage} />
             </div>
         {/each}
     </div>

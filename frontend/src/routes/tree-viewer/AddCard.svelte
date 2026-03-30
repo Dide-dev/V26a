@@ -5,23 +5,28 @@
 -->
 
 <script lang="ts">
-    import type { Node, RootNode, TreeUpdateStructureData, TreeWithCards } from '$lib/backend/trees';
-    import { updateTreeStructure } from "$lib/backend/trees";
+    import type {
+        Node,
+        RootNode,
+        TreeUpdateStructureData,
+        TreeWithCards
+    } from '$lib/backend/trees';
+    import { updateTreeStructure } from '$lib/backend/trees';
     import { addCard, type CardAddData, type CardId } from '$lib/backend/cards';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
-    let { tree = $bindable(), node = $bindable() }:
-        { tree: TreeWithCards, node: Node | RootNode } = $props();
+    let { tree = $bindable(), node = $bindable() }: { tree: TreeWithCards; node: Node | RootNode } = $props();
 
     let frontText = $state('');
     let backText = $state('');
     let errorMessage = $state('');
 
     /** Variable to have the add/insert action on hold. */
-    let action = $state<null |
-        { type: 'add', parent: Node | RootNode } |
-        { type: 'insert', parent: Node | RootNode, child: Node }>(null);
-
+    let action = $state<
+        | null
+        | { type: 'add'; parent: Node | RootNode }
+        | { type: 'insert'; parent: Node | RootNode; child: Node }
+    >(null);
 
     /** Gets called when the button to add a card is clicked;
      * Sets the action to the 'add' type.
@@ -55,8 +60,8 @@
         let card: CardAddData = {
             treeId: tree.genData.id,
             front: front,
-            back: back,
-        }
+            back: back
+        };
 
         if (action.type === 'add') {
             addChild(action.parent, card);
@@ -73,7 +78,7 @@
     async function addChild(parent: Node | RootNode, card: CardAddData) {
         addCard(card)
             .then((cardId: CardId) => {
-                const newNode: Node = {cardId, children: []};
+                const newNode: Node = { cardId, children: [] };
                 tree.cards[cardId] = {
                     front: card.front,
                     back: card.back
@@ -81,16 +86,16 @@
                 parent.children.push(newNode);
                 let update: TreeUpdateStructureData = {
                     id: tree.genData.id,
-                    newStructure: tree.structure,
-                }
+                    newStructure: tree.structure
+                };
                 return updateTreeStructure(update);
             })
 
             .then(() => {
                 action = null;
-                parent = {...parent}
-                parent.children[-1] = {...parent.children[-1]}
-                tree.structure = {...tree.structure};
+                parent = { ...parent };
+                parent.children[-1] = { ...parent.children[-1] };
+                tree.structure = { ...tree.structure };
             })
 
             .catch((reason: Error) => {
@@ -108,24 +113,24 @@
     async function insertChild(parent: Node | RootNode, child: Node, card: CardAddData) {
         addCard(card)
             .then((cardId: CardId) => {
-                const newNode: Node = {cardId, children: [child]};
+                const newNode: Node = { cardId, children: [child] };
                 tree.cards[cardId] = {
                     front: card.front,
                     back: card.back
                 };
-                parent.children = parent.children.map(c => c === child ? newNode : c) as Node[];
+                parent.children = parent.children.map((c) => (c === child ? newNode : c)) as Node[];
                 let update: TreeUpdateStructureData = {
                     id: tree.genData.id,
-                    newStructure: tree.structure,
-                }
+                    newStructure: tree.structure
+                };
                 return updateTreeStructure(update);
             })
 
             .then(() => {
                 action = null;
-                parent = {...parent}
-                parent.children[-1] = {...parent.children[-1]}
-                tree.structure = {...tree.structure};
+                parent = { ...parent };
+                parent.children[-1] = { ...parent.children[-1] };
+                tree.structure = { ...tree.structure };
             })
 
             .catch((reason: Error) => {
@@ -137,13 +142,13 @@
 
 <!-- Button to add new card as a child to this card -->
 <button
-    class="absolute top-2 right-2 z-10 h-5 w-5 rounded-full bg-blue-500 text-white text-xs opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
+    class="absolute top-2 right-2 z-10 h-5 w-5 cursor-pointer rounded-full bg-blue-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
     onclick={() => handlerAdd(node)}
 >+</button>
 <!-- Buttons to insert a new card between this card and a child to this card -->
 {#each node.children as child_node, index (child_node)}
     <button
-        class="absolute -right-20 z-10 h-5 w-5 rounded-full bg-green-500 text-white text-xs opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
+        class="absolute -right-20 z-10 h-5 w-5 cursor-pointer rounded-full bg-green-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
         style={`top: ${0.5 + 3.5 * index}rem`}
         onclick={() => handlerInsert(node, child_node)}
     >+</button>
@@ -151,24 +156,27 @@
 
 <!-- Add/Insert card popup -->
 {#if action}
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white rounded p-4 flex flex-col gap-2">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="flex flex-col gap-2 rounded bg-white p-4">
             <textarea
-                class="border rounded p-1"
+                class="rounded border p-1"
                 placeholder="Enter card front text..."
                 bind:value={frontText}
             ></textarea>
             <textarea
-                class="border rounded p-1"
+                class="rounded border p-1"
                 placeholder="Enter card back text..."
                 bind:value={backText}
             ></textarea>
             {#if errorMessage}
                 <p class="text-red-600">{errorMessage}</p>
             {/if}
-            <div class="flex gap-2 justify-end">
-                <button onclick={() => action = null}>Cancel</button>
-                <button onclick={() => acceptCard(frontText, backText)} disabled={!frontText || !backText}>Add</button>
+            <div class="flex justify-end gap-2">
+                <button onclick={() => (action = null)}>Cancel</button>
+                <button
+                    onclick={() => acceptCard(frontText, backText)}
+                    disabled={!frontText || !backText}
+                >Add</button>
             </div>
         </div>
     </div>
