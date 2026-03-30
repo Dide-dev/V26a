@@ -265,7 +265,7 @@ async fn test_remove_card(db: PgPool) {
 
 #[sqlx::test]
 async fn test_filter_tree(db: PgPool) {
-    let server = crate::tests::api_v1::setup_login(db).await;
+    let server = setup_login(db).await;
 
     let trees_data = vec![
         TreeData {
@@ -282,7 +282,7 @@ async fn test_filter_tree(db: PgPool) {
         TreeData {
             title: "Test tree 2".to_string(),
             description: None,
-            book_name: Some("vwo 4".to_string()), // TODO: fix name to camelCase
+            book_name: Some("vwo 4".to_string()),
             book_edition: None,
             book_isbn: None,
             book_chapter: None,
@@ -291,17 +291,29 @@ async fn test_filter_tree(db: PgPool) {
             published: true,
         },
     ];
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
 
     // Add in reverse order because trees are ordered with newest on top
     server
         .post("/trees/add")
-        .json(&trees_data[1].clone())
+        .json(&TreeAddData {
+            tree_data: trees_data[1].clone(),
+            tree_structure: tree_structure.clone(),
+        })
         .await
         .assert_status_ok();
 
     server
         .post("/trees/add")
-        .json(&trees_data[0].clone())
+        .json(&TreeAddData {
+            tree_data: trees_data[0].clone(),
+            tree_structure,
+        })
         .await
         .assert_status_ok();
 
@@ -333,6 +345,7 @@ async fn test_filter_tree(db: PgPool) {
     assert_eq!(requested_trees.trees, second_tree);
 }
 
+#[sqlx::test]
 async fn test_update_and_get_tree(db: PgPool) {
     let server = setup_login(db).await;
 
