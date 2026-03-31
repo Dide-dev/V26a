@@ -22,7 +22,7 @@ pub struct RegisterData {
 }
 
 /// Data received when getting user data from the database.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
     pub email: String,

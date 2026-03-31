@@ -8,6 +8,7 @@
 
 mod cards;
 mod trees;
+mod users;
 
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
