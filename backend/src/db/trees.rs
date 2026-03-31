@@ -335,7 +335,7 @@ pub async fn is_structure_valid(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_tree_with_data,

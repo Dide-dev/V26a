@@ -44,7 +44,7 @@ macro_rules! get_connection_unwrap {
 pub mod test {
     use crate::db_structs::cards::CardAddData;
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
-    use crate::db_structs::users::UserData;
+    use crate::db_structs::users::RegisterData;
     use sqlx::{PgConnection, PgExecutor, query};
 
     /// Initialize a database with a user and a tree.
@@ -79,18 +79,18 @@ pub mod test {
     ///
     /// # Returns
     /// The `user_id` associated with the newly added user.
-    pub async fn initialize_user(db: impl PgExecutor<'_>, user_data: &UserData) -> i32 {
-        let password_hash = bcrypt::hash(user_data.password.clone(), 6).unwrap();
+    pub async fn initialize_user(db: impl PgExecutor<'_>, register_data: &RegisterData) -> i32 {
+        let password_hash = bcrypt::hash(register_data.password.clone(), 6).unwrap();
 
         query!(
             "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-            user_data.email,
+            register_data.email,
             password_hash,
-            user_data.name,
-            user_data.nickname,
-            user_data.about_me,
-            user_data.email_visible,
-            user_data.language.to_string(),
+            register_data.name,
+            register_data.nickname,
+            register_data.about_me,
+            register_data.email_visible,
+            register_data.language.to_string(),
         )
         .fetch_one(db)
         .await
