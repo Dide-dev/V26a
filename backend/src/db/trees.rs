@@ -222,6 +222,7 @@ pub async fn get_tree_owner(
     Ok(owner)
 }
 
+// TODO: unit tests
 /// Get the list of all trees owned by some owner.
 /// Should only be called if the user is authorised to see private trees!
 ///
@@ -496,7 +497,8 @@ pub async fn get_queried_list(
 mod test {
     use super::*;
     use crate::db::test::{
-        initialize_basic_user, initialize_card, initialize_db, initialize_tree_with_data,
+        initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
+        initialize_tree_with_data,
     };
     use crate::db_structs::trees::{Node, RootNode};
     use crate::get_connection_unwrap;
@@ -577,6 +579,56 @@ mod test {
             serde_json::from_value(updated_tree_structure.structure).unwrap();
 
         assert_eq!(new_tree_structure, updated_tree_structure);
+    }
+
+    /// TODO: rewrite test with initialize functions
+    #[sqlx::test]
+    async fn test_update_tree_data(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+
+        // Add a tree to the database
+        let tree_data = TreeData {
+            title: "Test tree".to_string(),
+            description: None,
+            book_name: None,
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: false,
+        };
+        let tree_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "RootNode".to_string(),
+                children: vec![],
+            }],
+        };
+        let tree_add_data = TreeAddData {
+            tree_data,
+            tree_structure,
+        };
+        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
+
+        // Update the tree data
+        let new_tree_data = TreeData {
+            title: "Updated tree".to_string(),
+            description: Some("Updated description".to_string()),
+            book_name: Some("Updated book".to_string()),
+            book_edition: Some("2nd".to_string()),
+            book_isbn: Some("9780136019701".to_string()),
+            book_chapter: Some("3".to_string()),
+            book_exercise: Some("5b".to_string()),
+            assignment_text: Some("Updated assignment".to_string()),
+            published: true,
+        };
+        update_tree_data(&db, tree_id, new_tree_data.clone())
+            .await
+            .unwrap();
+
+        // Verify the data was updated
+        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+        assert_eq!(found_tree_data, new_tree_data);
     }
 
     #[sqlx::test]
@@ -686,7 +738,7 @@ mod test {
     }
 
     #[test]
-    fn test_filter_query_builder() {
+    fn test_apply_tree_filters() {
         use chrono::{DateTime, Utc};
 
         let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -756,14 +808,65 @@ mod test {
         );
     }
 
-    /// TODO: rewrite test with initialize functions
     #[sqlx::test]
-    async fn test_update_tree_data(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+    async fn test_get_queried_count(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let empty_filters = TreeFilters {
+            ..Default::default()
+        };
+        let show_private_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        let basis_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            }],
+        };
 
-        // Add a tree to the database
-        let tree_data = TreeData {
-            title: "Test tree".to_string(),
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            0
+        );
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            0
+        );
+
+        initialize_empty_tree(&db, user_id).await;
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            0
+        );
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            1
+        );
+        // Show private enabled, but not logged in
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, None)
+                .await
+                .unwrap(),
+            0
+        );
+
+        for _ in 0..100 {
+            initialize_empty_tree(&db, user_id).await;
+        }
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            101
+        );
+
+        let public_tree = TreeData {
+            title: String::new(),
             description: None,
             book_name: None,
             book_edition: None,
@@ -771,38 +874,40 @@ mod test {
             book_chapter: None,
             book_exercise: None,
             assignment_text: None,
-            published: false,
-        };
-        let tree_structure = TreeStructure {
-            root_nodes: vec![RootNode {
-                label: "RootNode".to_string(),
-                children: vec![],
-            }],
-        };
-        let tree_add_data = TreeAddData {
-            tree_data,
-            tree_structure,
-        };
-        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
-
-        // Update the tree data
-        let new_tree_data = TreeData {
-            title: "Updated tree".to_string(),
-            description: Some("Updated description".to_string()),
-            book_name: Some("Updated book".to_string()),
-            book_edition: Some("2nd".to_string()),
-            book_isbn: Some("9780136019701".to_string()),
-            book_chapter: Some("3".to_string()),
-            book_exercise: Some("5b".to_string()),
-            assignment_text: Some("Updated assignment".to_string()),
             published: true,
         };
-        update_tree_data(&db, tree_id, new_tree_data.clone())
-            .await
-            .unwrap();
+        initialize_tree_with_data(&db, user_id, &public_tree, &basis_structure).await;
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            102
+        );
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            1
+        );
 
-        // Verify the data was updated
-        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
-        assert_eq!(found_tree_data, new_tree_data);
+        let book_filter = TreeFilters {
+            book: vec!["Dikkie dik".to_owned()],
+            ..Default::default()
+        };
+        let book_tree = TreeData {
+            title: String::new(),
+            description: None,
+            book_name: Some("Dikkie dik".to_owned()),
+            book_edition: None,
+            book_isbn: None,
+            book_chapter: None,
+            book_exercise: None,
+            assignment_text: None,
+            published: true,
+        };
+        initialize_tree_with_data(&db, user_id, &book_tree, &basis_structure).await;
+        assert_eq!(get_queried_count(&db, &book_filter, None).await.unwrap(), 1);
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            2
+        );
     }
 }
