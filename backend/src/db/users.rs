@@ -97,7 +97,7 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`Userdata`] object containing the user's data.
+/// A [`UserData`] object containing the user's data.
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -191,5 +191,32 @@ mod tests {
         // Assert user does exist after adding to the database.
         let does_user_exist = user_exists(&db, &email).await.unwrap();
         assert!(does_user_exist);
+    }
+
+    #[sqlx::test]
+    async fn test_get_user(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: Some("nickname".to_owned()),
+            about_me: Some("about_me".to_owned()),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+        let user_data = get_user(&db, user_id).await.unwrap();
+
+        let expected_user_data = UserData {
+            email: register_data.email,
+            name: register_data.name,
+            nickname: register_data.nickname,
+            about_me: register_data.about_me,
+            email_visible: register_data.email_visible,
+            language: register_data.language,
+        };
+
+        assert_eq!(user_data, expected_user_data);
     }
 }
