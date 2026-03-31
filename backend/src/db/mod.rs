@@ -104,17 +104,7 @@ pub mod test {
     /// # Returns
     /// The `tree_id` associated with the newly added tree.
     pub async fn initialize_empty_tree(db: impl PgExecutor<'_>, owner_id: i32) -> i32 {
-        let data = TreeData {
-            title: "title".to_string(),
-            description: None,
-            book_name: None,
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
-            published: false,
-        };
+        let data = TreeData::default();
 
         let structure = TreeStructure {
             root_nodes: vec![RootNode {

@@ -20,17 +20,7 @@ use std::collections::BTreeMap;
 async fn test_new_empty_tree(db: PgPool) {
     let server = setup_login(db).await;
 
-    let tree_data = TreeData {
-        title: "Test tree".to_string(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_structure = TreeStructure {
         root_nodes: vec![RootNode {
             label: "RootNode".to_string(),
@@ -100,17 +90,7 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     let empty: Vec<TreeMetadata> = Vec::new();
     assert_eq!(empty, vec);
 
-    let tree_data = TreeData {
-        title: "Test tree".to_string(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_structure = TreeStructure {
         root_nodes: vec![RootNode {
             label: "RootNode".to_string(),
@@ -137,17 +117,7 @@ async fn test_retrieving_owned_trees(db: PgPool) {
 async fn test_remove_card(db: PgPool) {
     let server = setup_login(db).await;
 
-    let tree_data = TreeData {
-        title: "Test tree".to_string(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_structure = TreeStructure {
         root_nodes: vec![RootNode {
             label: "RootNode".to_string(),
@@ -269,26 +239,13 @@ async fn test_filter_tree(db: PgPool) {
 
     let trees_data = vec![
         TreeData {
-            title: "Test tree".to_string(),
-            description: None,
-            book_name: None,
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
             published: true,
+            ..Default::default()
         },
         TreeData {
-            title: "Test tree 2".to_string(),
-            description: None,
             book_name: Some("vwo 4".to_string()),
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
             published: true,
+            ..Default::default()
         },
     ];
     let tree_structure = TreeStructure {
@@ -346,17 +303,7 @@ async fn test_filter_tree(db: PgPool) {
 async fn test_update_and_get_tree(db: PgPool) {
     let server = setup_login(db).await;
 
-    let tree_data = TreeData {
-        title: "Test tree 2".to_string(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_add_data = TreeAddData {
         tree_data: tree_data.clone(),
         tree_structure: TreeStructure { root_nodes: vec![] },
@@ -457,17 +404,7 @@ async fn test_update_metadata(db: PgPool) {
     let server = setup_login(db).await;
 
     // Create a tree
-    let tree_data = TreeData {
-        title: "Test tree".to_string(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_structure = TreeStructure {
         root_nodes: vec![RootNode {
             label: "RootNode".to_string(),
@@ -482,7 +419,7 @@ async fn test_update_metadata(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    // Update the metadata`
+    // Update the metadata
     let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
         description: Some("Updated description".to_string()),

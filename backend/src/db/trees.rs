@@ -508,17 +508,7 @@ mod test {
     async fn test_add_tree(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
-        let tree_data = TreeData {
-            title: "title".to_owned(),
-            description: Some("desc".to_owned()),
-            book_name: Some("book_name".to_owned()),
-            book_edition: Some("book_edition".to_owned()),
-            book_isbn: Some("book_isbn".to_owned()),
-            book_chapter: Some("book_chapter".to_owned()),
-            book_exercise: Some("book_exercise".to_owned()),
-            assignment_text: Some("assignment_text".to_owned()),
-            published: true,
-        };
+        let tree_data = TreeData::default();
 
         let tree_add_data = TreeAddData {
             tree_data: tree_data.clone(),
@@ -587,17 +577,7 @@ mod test {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
-        let tree_data = TreeData {
-            title: "Test tree".to_string(),
-            description: None,
-            book_name: None,
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
-            published: false,
-        };
+        let tree_data = TreeData::default();
         let tree_structure = TreeStructure {
             root_nodes: vec![RootNode {
                 label: "RootNode".to_string(),
@@ -636,15 +616,8 @@ mod test {
         let user_id = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
-            title: "title".to_owned(),
-            description: Some("desc".to_owned()),
-            book_name: Some("book_name".to_owned()),
-            book_edition: Some("book_edition".to_owned()),
-            book_isbn: Some("book_isbn".to_owned()),
-            book_chapter: Some("book_chapter".to_owned()),
-            book_exercise: Some("book_exercise".to_owned()),
-            assignment_text: Some("assignment_text".to_owned()),
             published: true,
+            ..Default::default()
         };
 
         let structure = TreeStructure {
@@ -866,15 +839,8 @@ mod test {
         );
 
         let public_tree = TreeData {
-            title: String::new(),
-            description: None,
-            book_name: None,
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
             published: true,
+            ..Default::default()
         };
         initialize_tree_with_data(&db, user_id, &public_tree, &basis_structure).await;
         assert_eq!(
@@ -893,15 +859,9 @@ mod test {
             ..Default::default()
         };
         let book_tree = TreeData {
-            title: String::new(),
-            description: None,
             book_name: Some("Dikkie dik".to_owned()),
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
             published: true,
+            ..Default::default()
         };
         initialize_tree_with_data(&db, user_id, &book_tree, &basis_structure).await;
         assert_eq!(get_queried_count(&db, &book_filter, None).await.unwrap(), 1);
