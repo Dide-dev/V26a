@@ -134,9 +134,9 @@ pub async fn update_tree_data(
         new_tree_data.assignment_text,
         new_tree_data.published,
     )
-    .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+        .execute(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
@@ -502,6 +502,7 @@ mod test {
     };
     use crate::db_structs::trees::{Node, RootNode};
     use crate::get_connection_unwrap;
+    use chrono::{TimeDelta, Utc};
     use sqlx::{PgPool, query_as};
 
     #[sqlx::test]
@@ -791,7 +792,7 @@ mod test {
             show_own_private: true,
             ..Default::default()
         };
-        let basis_structure = TreeStructure {
+        let basic_structure = TreeStructure {
             root_nodes: vec![RootNode {
                 label: "Orientation".to_owned(),
                 children: vec![],
@@ -842,7 +843,7 @@ mod test {
             published: true,
             ..Default::default()
         };
-        initialize_tree_with_data(&db, user_id, &public_tree, &basis_structure).await;
+        initialize_tree_with_data(&db, user_id, &public_tree, &basic_structure).await;
         assert_eq!(
             get_queried_count(&db, &show_private_filters, Some(user_id))
                 .await
@@ -863,11 +864,127 @@ mod test {
             published: true,
             ..Default::default()
         };
-        initialize_tree_with_data(&db, user_id, &book_tree, &basis_structure).await;
+        initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
         assert_eq!(get_queried_count(&db, &book_filter, None).await.unwrap(), 1);
         assert_eq!(
             get_queried_count(&db, &empty_filters, None).await.unwrap(),
             2
         );
+    }
+
+    #[sqlx::test]
+    async fn test_get_queried_list(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let empty_filters = TreeFilters {
+            ..Default::default()
+        };
+        let show_private_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        let basic_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            }],
+        };
+        let first_page = PaginationOptions { page: 1, size: 50 };
+        let one_item_page1 = PaginationOptions { page: 1, size: 1 };
+        let one_item_page2 = PaginationOptions { page: 2, size: 1 };
+
+        let no_trees = get_queried_list(&db, &first_page, &empty_filters, None).await;
+        assert_eq!(no_trees, Err(ApiError::InvalidPage));
+
+        let private_tree = TreeData::default();
+        let public_tree = TreeData {
+            published: true,
+            ..Default::default()
+        };
+        initialize_tree_with_data(&db, user_id, &private_tree, &basic_structure).await;
+        initialize_tree_with_data(&db, user_id, &public_tree, &basic_structure).await;
+
+        let private_tree_list =
+            get_queried_list(&db, &first_page, &show_private_filters, Some(user_id))
+                .await
+                .unwrap();
+        assert_eq!(
+            private_tree_list,
+            vec![public_tree.clone(), private_tree.clone()]
+        );
+
+        let public_tree_list = get_queried_list(&db, &first_page, &empty_filters, None)
+            .await
+            .unwrap();
+        assert_eq!(public_tree_list, vec![public_tree.clone()]);
+
+        let private_tree_list_one_item1 =
+            get_queried_list(&db, &one_item_page1, &show_private_filters, Some(user_id))
+                .await
+                .unwrap();
+        let private_tree_list_one_item2 =
+            get_queried_list(&db, &one_item_page2, &show_private_filters, Some(user_id))
+                .await
+                .unwrap();
+        assert_eq!(private_tree_list_one_item1, vec![public_tree.clone()]);
+        assert_eq!(private_tree_list_one_item2, vec![private_tree.clone()]);
+
+        // Test all filters from here, owner_id is tested in integration tests.
+        let future_filter = TreeFilters {
+            created_after: Some(Utc::now() + TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let future_tree_list =
+            get_queried_list(&db, &first_page, &future_filter, Some(user_id)).await;
+        assert_eq!(future_tree_list, Err(ApiError::InvalidPage));
+        let recent_filter = TreeFilters {
+            created_after: Some(Utc::now() - TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(user_id))
+            .await
+            .unwrap();
+        assert_eq!(
+            recent_tree_list,
+            vec![public_tree.clone(), private_tree.clone()]
+        );
+
+        let ancient_filter = TreeFilters {
+            created_before: Some(Utc::now() - TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let ancient_tree_list =
+            get_queried_list(&db, &first_page, &ancient_filter, Some(user_id)).await;
+        assert_eq!(ancient_tree_list, Err(ApiError::InvalidPage));
+        let existing_filter = TreeFilters {
+            created_before: Some(Utc::now() + TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let existing_tree_list =
+            get_queried_list(&db, &first_page, &existing_filter, Some(user_id))
+                .await
+                .unwrap();
+        assert_eq!(
+            existing_tree_list,
+            vec![public_tree.clone(), private_tree.clone()]
+        );
+
+        let book_filter = TreeFilters {
+            book: vec!["boek".to_owned()],
+            ..Default::default()
+        };
+        let book_tree = TreeData {
+            book_name: Some("boek".to_owned()),
+            published: true,
+            ..Default::default()
+        };
+        initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
+        let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(user_id))
+            .await
+            .unwrap();
+        assert_eq!(book_tree_list, vec![book_tree]);
     }
 }
