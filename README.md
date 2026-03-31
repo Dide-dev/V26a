@@ -11,8 +11,8 @@ trees_.
 
 A _heuristic tree_ is a set of flash cards arranged in a tree-shape. It can help students solve problems, without
 giving away the answer, by providing them with _heuristics_. The website can be used by teachers and authors of study
-material to create their own trees, to help their students tackle specific problems. Students, on their end, are then
-able to explore these trees to help them with their exercises.
+material to create their own trees, which can help their students tackle specific problems. Students are then able to
+explore these trees to help them with their exercises.
 
 More on the research behind the use of _heuristic trees_ to help students solve problems can be
 read [here](https://doi.org/10.1007/s40751-022-00101-6).
@@ -23,15 +23,15 @@ The project consists of both a back-end and a front-end, which can be found in t
 Both need to be correctly installed and configured to get the project running.
 
 1. Create a `.env` file by copying the `.env.example` file.
-   The variables can be edited for a different database setup.
+   The variables can be edited to change the database setup or any other environment variables.
 
-2. Compile the svelte front-end. For this, you need to have node.js installed.
+2. Install the dependencies for the front-end. For this, you need to have node.js installed.
    In the `frontend` directory, run `npm install`.
 
 3. Setup and run the database. For this, you need to have Docker installed.
    In the directory containing `docker-compose.yml`, run `docker compose up`.
 
-4. Compile and run the back-end. For this you need to have Rust installed.
+4. Compile and run the back-end. For this, you need to have Rust installed.
    First install the `sqlx` utility command, by running
    `cargo install sqlx-cli --no-default-features --features postgres`.
    Go to the `backend` directory.
@@ -84,6 +84,7 @@ For end-to-end testing, Playwright is used.
 To run the tests in the front-end, run `npm run test` in the `frontend` directory.
 To run the tests in the back-end, run `cargo test` in the `backend` directory.
 To run the end-to-end tests, run `npx playwright test` in the `frontend` directory.
+Before running the end-to-end tests the first time, `npx playwright install` must be run in the `frontend` directory.
 
 When working on the front-end, the command `npm run dev` in the `frontend` directory can be used.
 This will spin up a front-end-only server that automatically reloads pages as source files are saved.
@@ -94,12 +95,12 @@ This will create files in the `backend/.sqlx` directory, which contain the types
 
 ## License
 
-The project is distributed under the GNU General Public License (GPLv3) can be read [here](license.txt).
+The project is distributed under the GNU General Public License (GPLv3), which can be read [here](license.txt).
 
 ## Acknowledgements
 
-The project has been made possible with the support of Roxana Radulescu, Guido Mintjes and the people of the _Project
-Bureau_ (Hieke Keuning, Heysem Kaya & Johan van Rooij).
+This project was commissioned by Rogier Bos & Theo van den Bogaart, and has been made possible with the support of
+Roxana Radulescu, Guido Mintjes and the people of the _Project Bureau_ (Hieke Keuning, Heysem Kaya & Johan van Rooij).
 
 This program has been developed by students from the bachelor Computer Science at
 Utrecht University within the Software Project course.
