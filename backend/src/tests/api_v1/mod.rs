@@ -7,7 +7,6 @@
 #![cfg(test)]
 
 mod cards;
-mod demo;
 mod trees;
 
 use crate::db_structs::auth::LoginRequestBody;
