@@ -43,6 +43,8 @@ async fn add_new_user(
 /// The user's data as [`Json`].
 ///
 /// # Error
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_own_user_data(
     Extension(db): Extension<PgPool>,
