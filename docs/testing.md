@@ -33,7 +33,7 @@ the user is capable of, like navigating between pages and pressing buttons. Here
 to worry about timings, since the library will automatically retry actions until they succeed or
 are timed out.
 
-Examples can be found in `tests/demo.spec.ts` and the Playwright documentation.
+Examples can be found in `tests/home.spec.ts` and the Playwright documentation.
 
 # Backend
 For testing the backend we use the built-in testing functionality of cargo, which can be invoked by
@@ -48,13 +48,14 @@ run and cleaned up after it is done. Separate tests using the database therefore
 other.
 
 ## Unit tests
-Unit tests are written in the same file as the unit they're testing, in a submodule called `test`
+Unit tests are written in the same file as the unit they're testing, in a submodule called `tests`
 with the `#[cfg(test)]` attribute.
 
-These are supposed to test only one API endpoint at a time. If needed, the database can be set up
+These are supposed to test only one function or endpoint at a time.
+If needed, the database can be set up
 before making a request by running one or more queries.
 
-Examples can be found in `src/api_v1/demo.rs` and in the `axum_test` documentation.
+Examples can be found in `src/db/trees.rs` and in the `axum_test` documentation.
 
 ## Integration tests
 Integration tests are written in separate files within the `src/tests` directory. Note that here
