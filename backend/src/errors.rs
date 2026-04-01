@@ -40,8 +40,6 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a protected endpoint is accessed without providing
     /// a session.
     MissingAuthentication,
-    /// An error to return when a user tries to log in with missing credentials.
-    MissingCredentials,
 
     //----------------//
     // 403: FORBIDDEN //
@@ -93,7 +91,6 @@ impl Display for ApiError {
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
-            ApiError::MissingCredentials => write!(f, "Missing credentials."),
 
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
@@ -125,8 +122,7 @@ impl ApiError {
             | ApiError::NonEmptyStructure
             | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 
-            ApiError::MissingCredentials
-            | ApiError::MissingAuthentication
+            ApiError::MissingAuthentication
             | ApiError::ExpiredSession
             | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
 

@@ -30,11 +30,6 @@ async fn login(
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
 ) -> Result<CookieJar, ApiError> {
-    // Check if the user sent the credentials
-    if body.email.is_empty() || body.password.is_empty() {
-        return Err(ApiError::MissingCredentials);
-    }
-
     let (user_id, password_hash) = get_user_id_and_password(&db, body.email).await?;
     let password_valid = bcrypt::verify(body.password, password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
