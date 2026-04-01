@@ -114,14 +114,21 @@ export type TreeRemoveCardData = {
 };
 
 export type TreeList = {
+    totalTrees: number;
     list: TreeData[];
 };
 
+export type PaginationOptions = {
+    page: Option<number>;
+    size: Option<number>;
+};
+
 export type FilterOptions = {
-    ownerId: number;
+    ownerId: Option<number>;
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
+    showOwnPrivate: Option<boolean>;
 };
 
 /** Add a tree to the database. */
@@ -161,13 +168,43 @@ export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
     return apiCallGetTree(`get-mine-all`);
 }
 
+export function isNullOrEmpty(value: unknown): boolean {
+    return value == null || (Array.isArray(value) && value.length === 0);
+}
+
+export function getPaginationAndFilterParams(
+    pageOptions: PaginationOptions,
+    filterOptions: FilterOptions
+): string {
+    const params = new URLSearchParams();
+
+    Object.entries(pageOptions).forEach(([key, value]) => {
+        if (value !== null) {
+            params.append(key, String(value));
+        }
+    });
+
+    Object.entries(filterOptions).forEach(([key, value]) => {
+        if (!isNullOrEmpty(value)) {
+            // For array values, all items need their own query parameter.
+            if (Array.isArray(value)) {
+                value.forEach((item) => params.append(key, String(item)));
+            } else {
+                // The JSON stringify is needed to get the dates in rfc3339 format instead of ISO format
+                // because there is a different implementation of toJSON and toString
+                params.append(key, JSON.parse(JSON.stringify(value)));
+            }
+        }
+    });
+
+    return String(params);
+}
+
 /** Get the list of all trees satisfying some filters at a given page. */
-export function getFilteredList(filterOptions: FilterOptions): Promise<TreeList> {
-    // The JSON stringify is needed to get the dates in rfc3339 format instead of ISO format
-    // because there is a different implementation of toJSON and toString
-    const params: URLSearchParams = new URLSearchParams(
-        JSON.parse(JSON.stringify(filterOptions)) as Record<string, string>
-    );
-    // TODO: add pagination options in request
-    return apiCallGetTree(`get-list?page=1&size=50&${params}`);
+export function getFilteredList(
+    pageOptions: PaginationOptions,
+    filterOptions: FilterOptions
+): Promise<TreeList> {
+    const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
+    return apiCallGetTree(`get-list?${params}`);
 }
