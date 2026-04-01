@@ -27,18 +27,15 @@ fn setup(db: PgPool) -> TestServer {
     TestServer::builder().save_cookies().build(router)
 }
 
-/// Sets up an API test server with the given mock database, creates an account and logs in.
+/// Creates an account with the given test server
 ///
 /// # Returns
-/// A [`TestServer`] that can handle all the API endpoints, including ones
-/// that require being logged in, and saves cookies.
-async fn setup_login(db: PgPool) -> TestServer {
-    let server = setup(db);
-
-    let response = server
+/// An i32 representing the id of the user created.
+async fn register(test_server: &TestServer, email: String) -> i32 {
+    let response = test_server
         .post("/users/add")
         .json(&UserData {
-            email: "testing@gmail.com".to_string(),
+            email,
             password: "a$$word".to_string(),
             name: "John Test".to_string(),
             nickname: None,
@@ -49,14 +46,31 @@ async fn setup_login(db: PgPool) -> TestServer {
         .await;
     response.assert_status_ok();
 
-    let response = server
+    response.json::<i32>()
+}
+
+async fn login(test_server: &TestServer, email: String) {
+    let response = test_server
         .post("/auth/login")
         .json(&LoginRequestBody {
-            email: "testing@gmail.com".to_string(),
+            email,
             password: "a$$word".to_string(),
         })
         .await;
     response.assert_status_ok();
+}
+
+/// Sets up an API test server with the given mock database, creates an account and logs in.
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints, including ones
+/// that require being logged in, and saves cookies.
+async fn setup_login(db: PgPool) -> TestServer {
+    let server = setup(db);
+
+    let test_email = "testing@gmail.com".to_owned();
+    register(&server, test_email.clone()).await;
+    login(&server, test_email).await;
 
     server
 }
