@@ -457,7 +457,7 @@ pub async fn get_queried_list(
     user_id: Option<i32>,
 ) -> Result<Vec<TreeData>, ApiError> {
     // Prevent overflow errors
-    if !page.input_is_valid() {
+    if !page.is_valid() {
         return Err(ApiError::InvalidPage);
     }
 

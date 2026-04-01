@@ -256,7 +256,7 @@ async fn test_remove_card(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_filter_tree(db: PgPool) {
+async fn test_filter_tree_list(db: PgPool) {
     let server = setup(db);
     let emails = ["test@one".to_owned(), "test@two".to_owned()];
     let account_ids = [

@@ -322,8 +322,9 @@ pub async fn get_list(
 ) -> Result<Json<TreeListResponse>, ApiError> {
     let page = page.to_some_with_default(1, 50);
 
-    if page.size > 100 {
-        return Err(ApiError::MaxPageSizeExceeded(100));
+    let tree_list_max_page_size = 100;
+    if page.size > tree_list_max_page_size {
+        return Err(ApiError::MaxPageSizeExceeded(tree_list_max_page_size));
     }
 
     let optional_user_id = claims.map(|c| c.sub);

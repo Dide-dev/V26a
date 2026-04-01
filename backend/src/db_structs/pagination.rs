@@ -48,7 +48,7 @@ impl OptionalPaginationOptions {
 impl PaginationOptions {
     /// Returns true if the page number and size are both greater than 0,
     /// and if both do not exceed 1000.
-    pub fn input_is_valid(&self) -> bool {
+    pub fn is_valid(&self) -> bool {
         self.page > 0 && self.size > 0
         // global maxima that should never be exceeded.
         && self.page <= GLOBAL_MAX_PAGE_COUNT && self.size <= GLOBAL_MAX_PAGE_SIZE
@@ -101,30 +101,30 @@ mod tests {
     #[test]
     fn test_pagination_options_valid() {
         let one = PaginationOptions { page: 1, size: 1 };
-        assert!(one.input_is_valid());
+        assert!(one.is_valid());
 
         let big = PaginationOptions {
             page: 500,
             size: 500,
         };
-        assert!(big.input_is_valid());
+        assert!(big.is_valid());
 
         let zero = PaginationOptions { page: 0, size: 0 };
-        assert!(!zero.input_is_valid());
+        assert!(!zero.is_valid());
 
         let single_zero = PaginationOptions { page: 0, size: 1 };
-        assert!(!single_zero.input_is_valid());
+        assert!(!single_zero.is_valid());
 
         let page_too_big = PaginationOptions {
             page: 10000,
             size: 0,
         };
-        assert!(!page_too_big.input_is_valid());
+        assert!(!page_too_big.is_valid());
 
         let size_too_big = PaginationOptions {
             page: 0,
             size: 100000,
         };
-        assert!(!size_too_big.input_is_valid());
+        assert!(!size_too_big.is_valid());
     }
 }
