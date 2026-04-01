@@ -19,6 +19,7 @@
     "email": "E-mail",
     "name": "Name",
     "nickname": "Nickname",
+    "aboutMe": "About me",
     "password": "Password",
     "language": "Language",
     "emailVisible": "My viewable trees may show my email address. (This is useful for students to contact you, e.g., for feedback or signaling of errors.)",
@@ -42,5 +43,6 @@
     "loadingTree": "The tree is growing...",
     "repeatPassword": "Repeat password",
     "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
-    "passwordsNotTheSame": "Passwords are not the same"
+    "passwordsNotTheSame": "Passwords are not the same",
+    "profile": "Profile"
 }

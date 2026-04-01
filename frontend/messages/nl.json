@@ -19,6 +19,7 @@
     "email": "E-mail",
     "name": "Naam",
     "nickname": "Pseudoniem",
+    "aboutMe": "Over mij",
     "password": "Wachtwoord",
     "language": "Taal",
     "emailVisible": "Mijn zichtbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jou te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
@@ -42,5 +43,6 @@
     "loadingTree": "De boom groeit...",
     "repeatPassword": "Herhaal wachtwoord",
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
-    "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde"
+    "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
+    "profile": "Profiel"
 }
