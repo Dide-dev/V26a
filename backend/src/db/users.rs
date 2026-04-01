@@ -252,8 +252,9 @@ mod tests {
         assert_eq!(user_data, expected_user_data);
     }
 
+    #[sqlx::test]
     async fn test_get_user_account_type(db: PgPool) {
-        let user_data = UserData {
+        let register_data = RegisterData {
             email: "test123@gmail.com".to_string(),
             password: "password".to_string(),
             name: "name".to_string(),
@@ -265,7 +266,7 @@ mod tests {
 
         // Add an user
         let mut conn = db.acquire().await.unwrap();
-        let user_id = add_user(&mut conn, &user_data).await.unwrap();
+        let user_id = add_user(&mut conn, &register_data).await.unwrap();
 
         // Assert user does have a (default) account type.
         let account_type = get_user_account_type(&db, user_id).await.unwrap();
