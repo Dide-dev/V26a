@@ -12,7 +12,7 @@ use crate::tests::api_v1::setup;
 use sqlx::PgPool;
 
 #[sqlx::test]
-async fn test_own_user_data(db: PgPool) {
+async fn test_get_own_user_data(db: PgPool) {
     let server = setup(db);
 
     let register_data = RegisterData {

@@ -30,7 +30,7 @@ export type RegisterData = {
     language: string;
 };
 
-/** The data of the user */
+/** The data of the user that is returned when requesting it */
 export type UserData = {
     email: string;
     name: string;

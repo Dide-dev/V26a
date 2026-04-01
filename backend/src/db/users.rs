@@ -8,9 +8,10 @@ extern crate bcrypt;
 
 use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
 use crate::errors::ApiError;
-use bcrypt::{DEFAULT_COST, hash};
 
+use bcrypt::{DEFAULT_COST, hash};
 use sqlx::{PgConnection, PgExecutor, query};
+use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
 ///
@@ -89,7 +90,7 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
     .ok_or(ApiError::DatabaseException)
 }
 
-/// Returns the data for the given user id in the given database.
+/// Query the data for the given user id in the given database.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
@@ -97,9 +98,11 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`UserData`] object containing the user's data.
+/// A [`UserData`] object containing the user's data, minus their password.
 ///
 /// # Error
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserData, ApiError> {
     let record = query!(
@@ -116,8 +119,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserData, ApiE
         nickname: record.nickname,
         about_me: record.about_me,
         email_visible: record.email_visible,
-        language: UserLanguage::try_parse(record.language.as_str())
-            .ok_or(ApiError::DatabaseException)?,
+        language: UserLanguage::from_str(record.language.as_str())?,
     })
 }
 
@@ -142,26 +144,26 @@ mod tests {
 
         let user_id = initialize_user(&db, &register_data).await;
 
-        let all_found_register_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
             .fetch_one(&db)
             .await
             .unwrap();
 
         let found_register_data = RegisterData {
-            email: all_found_register_data.email,
+            email: all_found_user_data.email,
             // We test the password separately, as it has been hashed.
             password: register_data.password.clone(),
-            name: all_found_register_data.name,
-            nickname: all_found_register_data.nickname,
-            about_me: all_found_register_data.about_me,
-            email_visible: all_found_register_data.email_visible,
-            language: all_found_register_data.language.parse().unwrap(),
+            name: all_found_user_data.name,
+            nickname: all_found_user_data.nickname,
+            about_me: all_found_user_data.about_me,
+            email_visible: all_found_user_data.email_visible,
+            language: all_found_user_data.language.parse().unwrap(),
         };
         assert_eq!(found_register_data, register_data);
 
         let password_matches = bcrypt::verify(
             register_data.password,
-            all_found_register_data.password_hash.as_str(),
+            all_found_user_data.password_hash.as_str(),
         )
         .unwrap();
 
