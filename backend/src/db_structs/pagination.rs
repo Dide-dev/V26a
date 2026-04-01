@@ -61,42 +61,42 @@ impl Default for PaginationOptions {
     }
 }
 
-#[test]
-fn test_pagination_options_conversion() {
-    let correct = PaginationOptions { page: 67, size: 67 };
-
-    let empty_optional = OptionalPaginationOptions {
-        page: None,
-        size: None,
-    };
-    let empty_some = empty_optional.to_some_with_default(67, 67);
-    assert_eq!(empty_some, correct);
-
-    let page_only_optional = OptionalPaginationOptions {
-        page: Some(67),
-        size: None,
-    };
-    let page_only_some = page_only_optional.to_some_with_default(0, 67);
-    assert_eq!(page_only_some, correct);
-
-    let size_only_optional = OptionalPaginationOptions {
-        page: None,
-        size: Some(67),
-    };
-    let size_only_some = size_only_optional.to_some_with_default(67, 0);
-    assert_eq!(size_only_some, correct);
-
-    let filled_optional = OptionalPaginationOptions {
-        page: Some(67),
-        size: Some(67),
-    };
-    let filled_some = filled_optional.to_some_with_default(0, 0);
-    assert_eq!(filled_some, correct);
-}
-
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
+
+    #[test]
+    fn test_pagination_options_conversion() {
+        let correct = PaginationOptions { page: 67, size: 67 };
+
+        let empty_optional = OptionalPaginationOptions {
+            page: None,
+            size: None,
+        };
+        let empty_some = empty_optional.to_some_with_default(67, 67);
+        assert_eq!(empty_some, correct);
+
+        let page_only_optional = OptionalPaginationOptions {
+            page: Some(67),
+            size: None,
+        };
+        let page_only_some = page_only_optional.to_some_with_default(0, 67);
+        assert_eq!(page_only_some, correct);
+
+        let size_only_optional = OptionalPaginationOptions {
+            page: None,
+            size: Some(67),
+        };
+        let size_only_some = size_only_optional.to_some_with_default(67, 0);
+        assert_eq!(size_only_some, correct);
+
+        let filled_optional = OptionalPaginationOptions {
+            page: Some(67),
+            size: Some(67),
+        };
+        let filled_some = filled_optional.to_some_with_default(0, 0);
+        assert_eq!(filled_some, correct);
+    }
 
     #[test]
     fn test_pagination_options_valid() {
