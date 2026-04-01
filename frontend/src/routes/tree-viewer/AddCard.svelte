@@ -22,6 +22,9 @@
     let backText = $state('');
     let errorMessage = $state('');
 
+    const frontMaxLength = 1024;
+    const backMaxLength = 5000;
+
     /** Variable to have the add/insert action on hold. */
     let action = $state<
         | null
@@ -77,6 +80,15 @@
      * @param card The data used to construct the new node.
      */
     async function addChild(parent: Node | RootNode, card: CardAddData) {
+        if (card.front.length > frontMaxLength) {
+            errorMessage = `Error: front text cannot contain more than ${frontMaxLength} characters`;
+            return;
+        }
+        if (card.back.length > backMaxLength) {
+            errorMessage = `Error: backText cannot contain more than ${backMaxLength} characters`;
+            return;
+        }
+
         addCard(card)
             .then((cardId: CardId) => {
                 const newNode: Node = { cardId, children: [] };
