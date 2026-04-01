@@ -10,6 +10,7 @@ use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count, get_queried_list,
     get_tree_owner, is_structure_valid,
 };
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
     TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
     TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
@@ -21,8 +22,6 @@ use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
-
-use crate::db_structs::pagination::OptionalPaginationOptions;
 use sqlx::{PgConnection, PgExecutor, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
