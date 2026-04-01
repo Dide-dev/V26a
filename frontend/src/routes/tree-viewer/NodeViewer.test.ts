@@ -39,7 +39,7 @@ test('NodeViewer', async () => {
         cards: cards
     };
     const editingPage = false;
-    render(NodeViewer, { tree, node: rootNode, editingPage });
+    render(NodeViewer, { tree, parent: rootNode, node: rootNode, editingPage });
 
     expect(document.getElementsByClassName('tree__node')).toHaveLength(1); // Count the number of cards
 });
@@ -80,7 +80,7 @@ test('NodeViewer with child', async () => {
     };
     const editingPage = false;
 
-    render(NodeViewer, { tree, node: rootNode, editingPage });
+    render(NodeViewer, { tree, parent: rootNode, node: rootNode, editingPage });
 
     expect(document.getElementsByClassName('tree__node')).toHaveLength(2); // Count the number of cards
 });
@@ -125,7 +125,7 @@ test('NodeViewer with children', async () => {
         cards: cards
     };
     const editingPage = false;
-    render(NodeViewer, { tree, node: rootNode, editingPage });
+    render(NodeViewer, { tree, parent: rootNode, node: rootNode, editingPage });
 
     expect(document.getElementsByClassName('tree__node')).toHaveLength(3); // Count the number of cards
 });
@@ -170,7 +170,7 @@ test('NodeViewer with children and add/insert buttons', async () => {
         cards: cards
     };
     const editingPage = true;
-    render(NodeViewer, { tree, node: rootNode, editingPage });
+    render(NodeViewer, { tree, parent: rootNode, node: rootNode, editingPage });
 
     expect(document.getElementsByClassName('card__add_button')).toHaveLength(3); // Count the number of add buttons
     expect(document.getElementsByClassName('card__insert_button')).toHaveLength(2); // Count the number of insert buttons

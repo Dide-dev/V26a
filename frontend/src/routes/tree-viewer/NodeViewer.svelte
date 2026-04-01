@@ -17,7 +17,7 @@
         editingPage
     }: {
         tree: TreeWithCards;
-        parent: Node | RootNode | undefined;
+        parent: Node | RootNode;
         node: Node | RootNode;
         editingPage: boolean;
     } = $props();
