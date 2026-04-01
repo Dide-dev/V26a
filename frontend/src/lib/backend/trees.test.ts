@@ -9,7 +9,7 @@ import {
     type FilterOptions,
     getPaginationAndFilterParams,
     type PaginationOptions
-} from '$lib/backend/trees.ts';
+} from '$lib/backend/trees';
 
 test('Pagination & Filter link generator', () => {
     const noPage: PaginationOptions = {
