@@ -8,10 +8,10 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { updateTreeMetaData, getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
+    import {updateTreeMetaData, getTreeWithCards, type TreeWithCards, type TreeData} from '$lib/backend/trees';
     import NodeViewer from '../NodeViewer.svelte';
 
-    let treeData = $state({
+    let treeData: TreeData = $state({
         title: '',
         description: '',
         bookName: '',
@@ -27,9 +27,6 @@
     let error: Error | null = $state(null);
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
-
-    // The old tree data that is restored when canceling the edit.
-    let oldData: typeof treeData;
     let dropDown = $state(false);
 
     onMount(async () => {
@@ -67,7 +64,6 @@
                 assignmentText: tree.data.assignmentText ?? '',
                 published: tree.data.published ?? false
             };
-            oldData = $state.snapshot(treeData);
         }
 
         loading = false;
@@ -75,17 +71,17 @@
 
     async function saveData() {
         if (!id || !tree) return;
-        oldData = $state.snapshot(treeData);
         dropDown = false;
         await updateTreeMetaData({
             id: id,
             newData: { ...treeData }
         });
+        tree.data = { ...treeData };
     }
 
     // Restores treeData to its original value.
     function cancelEdit() {
-        treeData = { ...oldData };
+        treeData = tree!.data;
         dropDown = false;
     }
 </script>
