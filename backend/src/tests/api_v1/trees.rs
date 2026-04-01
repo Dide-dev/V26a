@@ -293,7 +293,7 @@ async fn test_filter_tree(db: PgPool) {
 
     // All trees (including private)
     let response = server
-        .get("/trees/get-list?page=1&size=100&show_own_private=true")
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -370,7 +370,7 @@ async fn test_filter_tree(db: PgPool) {
     let response = server
         .get(
             format!(
-                "/trees/get-list?page=1&size=100&owner_id={}&show_own_private=true",
+                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
                 account_ids[0]
             )
             .as_str(),
@@ -389,7 +389,7 @@ async fn test_filter_tree(db: PgPool) {
     let response = server
         .get(
             format!(
-                "/trees/get-list?page=1&size=100&owner_id={}&show_own_private=true",
+                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
                 account_ids[0]
             )
             .as_str(),
@@ -403,7 +403,7 @@ async fn test_filter_tree(db: PgPool) {
     let response = server
         .get(
             format!(
-                "/trees/get-list?page=1&size=100&owner_id={}&show_own_private=true",
+                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
                 account_ids[1]
             )
             .as_str(),
