@@ -347,6 +347,25 @@ async fn test_filter_tree(db: PgPool) {
         ]
     );
 
+    // Multiple books
+    let response = server
+        .get("/trees/get-list?page=1&size=100&book=vwo+4&book=vwo+5")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(
+        requested_trees.trees,
+        vec![other_user_trees_data[0].clone(), trees_data[1].clone(),]
+    );
+
+    // Multiple books, incorrectly formatted
+    let response = server
+        .get("/trees/get-list?page=1&size=100&book=vwo+4,vwo+5")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, Vec::new());
+
     // All public trees from user 0
     let response = server
         .get(
