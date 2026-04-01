@@ -4,12 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::errors::ApiError;
 use std::fmt::Display;
+use std::str::FromStr;
 
 /// Data needed to add a user to the database.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UserData {
+pub struct RegisterData {
     pub email: String,
     pub password: String,
     pub name: String,
@@ -19,8 +21,20 @@ pub struct UserData {
     pub language: UserLanguage,
 }
 
+/// Data received when getting user data from the database.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserData {
+    pub email: String,
+    pub name: String,
+    pub nickname: Option<String>,
+    pub about_me: Option<String>,
+    pub email_visible: bool,
+    pub language: UserLanguage,
+}
+
 /// The possible values of the `language` field of a user.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum UserLanguage {
     Nl,
@@ -32,6 +46,18 @@ impl Display for UserLanguage {
         match &self {
             UserLanguage::Nl => write!(f, "nl"),
             UserLanguage::En => write!(f, "en"),
+        }
+    }
+}
+
+impl FromStr for UserLanguage {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_ref() {
+            "nl" => Ok(UserLanguage::Nl),
+            "en" => Ok(UserLanguage::En),
+            _ => Err(ApiError::InvalidDataFound),
         }
     }
 }

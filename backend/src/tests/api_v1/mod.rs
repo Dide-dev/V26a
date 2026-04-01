@@ -6,11 +6,12 @@
 
 #![cfg(test)]
 
-mod demo;
+mod cards;
 mod trees;
+mod users;
 
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::users::{UserData, UserLanguage};
+use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
 use axum_test::TestServer;
 use sqlx::PgPool;
@@ -36,7 +37,7 @@ async fn setup_login(db: PgPool) -> TestServer {
 
     let response = server
         .post("/users/add")
-        .json(&UserData {
+        .json(&RegisterData {
             email: "testing@gmail.com".to_string(),
             password: "a$$word".to_string(),
             name: "John Test".to_string(),

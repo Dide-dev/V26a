@@ -10,7 +10,7 @@ use std::fmt::Display;
 
 /// The Error type to be returned by our application. Converts to various HTTP status codes and
 /// error messages to be displayed on a frontend.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
@@ -26,6 +26,8 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
+    /// An error to return when a wrong e-mail or password is provided while trying to log in.
+    WrongCredentials,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -38,8 +40,6 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a protected endpoint is accessed without providing
     /// a session.
     MissingAuthentication,
-    /// An error to return when a user tries to log in with missing credentials.
-    MissingCredentials,
 
     //----------------//
     // 403: FORBIDDEN //
@@ -47,9 +47,6 @@ pub enum ApiError {
     /// An error to return when a user tries to do something for which they are not properly
     /// authorized.
     NoPermission,
-    /// An error to return when the API if the user does not have the right permissions to
-    /// access something.
-    WrongCredentials,
 
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
@@ -62,6 +59,8 @@ pub enum ApiError {
     DatabaseMemoryCap,
     /// An error to return when hashing fails (on creating or verifying a hash).
     HashException,
+    /// An error to return when invalid data is found in the database.
+    InvalidDataFound,
     /// An exception to return when serde fails on something unexpected.
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
@@ -85,13 +84,14 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
+            ApiError::WrongCredentials => {
+                write!(f, "The e-mail or password provided was incorrect.")
+            }
 
-            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
-            ApiError::MissingCredentials => write!(f, "Missing credentials."),
+            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
 
-            ApiError::WrongCredentials => write!(f, "Wrong credentials."),
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
@@ -100,6 +100,7 @@ impl Display for ApiError {
                 "Request was denied, because a database memory cap was exceeded."
             ),
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
+            ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
             }
@@ -118,18 +119,19 @@ impl ApiError {
             | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
-            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure
+            | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 
-            ApiError::MissingCredentials
-            | ApiError::MissingAuthentication
+            ApiError::MissingAuthentication
             | ApiError::ExpiredSession
             | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
 
-            ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
+            ApiError::NoPermission => StatusCode::FORBIDDEN,
 
             ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap
             | ApiError::HashException
+            | ApiError::InvalidDataFound
             | ApiError::SerdeException
             | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }

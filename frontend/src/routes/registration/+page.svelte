@@ -6,12 +6,12 @@
 
 <script lang="ts">
     import { locales, getLocale } from '$lib/paraglide/runtime.js';
-    import { addUser, type UserData } from '$lib/backend/users';
+    import { addUser, type RegisterData } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
 
-    let formData: UserData = $state({
+    let formData: RegisterData = $state({
         email: '',
         password: '',
         name: '',
