@@ -494,7 +494,7 @@ pub async fn get_queried_list(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,

@@ -8,9 +8,10 @@
 
 mod cards;
 mod trees;
+mod users;
 
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::users::{UserData, UserLanguage};
+use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
 use axum_test::TestServer;
 use sqlx::PgPool;
@@ -33,7 +34,7 @@ fn setup(db: PgPool) -> TestServer {
 async fn register(test_server: &TestServer, email: String) -> i32 {
     let response = test_server
         .post("/users/add")
-        .json(&UserData {
+        .json(&RegisterData {
             email,
             password: "a$$word".to_string(),
             name: "John Test".to_string(),
