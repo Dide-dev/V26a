@@ -23,7 +23,7 @@
     <a href={appLink('/')}>{m.home()}</a>
     <a href={appLink('/api-testing')}>{m.apiTesting()}</a>
     <a href={appLink('/counter')}>{m.globalCounter()}</a>
-    <a href={appLink('/tree-viewer')}>{m.viewExampleTree()}</a>
+    <a href={appLink('/tree-page/viewer')}>{m.viewExampleTree()}</a>
     <a href={appLink('/tree-generator')}>{m.createTree()}</a>
     <a href={appLink('/registration')}>{m.register()}</a>
     <a href={appLink('/login')}>{m.login()}</a>

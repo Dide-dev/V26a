@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import NodeViewer from './NodeViewer.svelte';
+    import NodeViewer from '../NodeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
     import { page } from '$app/state';
