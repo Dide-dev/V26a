@@ -283,6 +283,14 @@ async fn test_filter_tree(db: PgPool) {
 
     add_multiple_trees(&server, &trees_data).await;
 
+    // A search that yields no results
+    let response = server
+        .get("/trees/get-list?page=1&size=1&book=no+results")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, Vec::new());
+
     // All trees (including private)
     let response = server
         .get("/trees/get-list?page=1&size=100&show_own_private=true")

@@ -55,12 +55,6 @@ pub enum ApiError {
     /// access something.
     WrongCredentials,
 
-    //----------------//
-    // 404: Not Found //
-    //----------------//
-    /// An error to returned when the user performs a search that yields no results.
-    NoSearchResults,
-
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
@@ -128,9 +122,6 @@ impl Display for ApiError {
                     "You may not request more than {max_size} items per page."
                 )
             }
-            ApiError::NoSearchResults => {
-                write!(f, "No results.")
-            }
         }
     }
 }
@@ -153,8 +144,6 @@ impl ApiError {
             | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
 
             ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
-
-            ApiError::NoSearchResults => StatusCode::NOT_FOUND,
 
             ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap

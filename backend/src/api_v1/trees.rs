@@ -333,7 +333,10 @@ pub async fn get_list(
 
     let trees_count = get_queried_count(&mut *tx, &filters, optional_user_id).await?;
     if trees_count == 0 {
-        return Err(ApiError::NoSearchResults);
+        return Ok(Json(TreeListResponse {
+            total_trees: 0,
+            trees: Vec::new(),
+        }));
     }
 
     let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
