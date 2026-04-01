@@ -39,7 +39,15 @@ async fn login(
         return Err(ApiError::WrongCredentials);
     }
 
+    // Get account type
     let account_type = get_user_account_type(&db, user_id).await?;
+
+    // Create data fields for second cookie
+    let user_info = serde_json::json!({
+        "userId": user_id,
+        "accountType": account_type
+    });
+
 
     let claims = Claims {
         sub: user_id,
@@ -58,5 +66,11 @@ async fn login(
         .max_age(time::Duration::new(config.session_duration, 0))
         .http_only(true);
 
-    Ok(jar.add(cookie))
+    // not http cookie
+    let user_cookie = Cookie::build(("user_info", user_info.to_string()))
+        .path("/")
+        .secure(false)
+        .http_only(false);
+
+    Ok(jar.add(cookie).add(user_cookie))
 }
