@@ -8,10 +8,10 @@ import { test, expect, type Page } from '@playwright/test';
 
 test('check that login creates user_info cookie', async ({ page }) => {
     // Account
-    const email = 'test123@gmail.com'; 
+    const email = 'test123@gmail.com';
     const password = 'Monkey123!';
 
-    // Function that fills in the login UI 
+    // Function that fills in the login UI
     async function login(page: Page, email: string, password: string) {
         await page.goto('/login');
         await page.getByTestId('email').fill(email);
@@ -36,7 +36,7 @@ test('check that login creates user_info cookie', async ({ page }) => {
     // Set the cookie
     async function getUserInfoCookie(page: Page) {
         const cookies = await page.context().cookies();
-        return cookies.find(c => c.name === 'user_info');
+        return cookies.find((c) => c.name === 'user_info');
     }
 
     // Try login

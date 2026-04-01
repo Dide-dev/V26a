@@ -48,7 +48,6 @@ async fn login(
         "accountType": account_type
     });
 
-
     let claims = Claims {
         sub: user_id,
         exp: Utc::now().timestamp() + config.session_duration,
