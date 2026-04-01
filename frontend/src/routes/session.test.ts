@@ -1,4 +1,4 @@
-import { expect, test, vi, beforeEach } from 'vitest';
+import { expect, test, beforeEach } from 'vitest';
 import { getUserInfo } from '$lib/backend/users';
 
 beforeEach(() => {

@@ -38,7 +38,7 @@ export type UserData = {
     aboutMe: Option<string>;
     emailVisible: boolean;
     language: string;
-}
+};
 
 /** The data in the cookie */
 export type UserInfo = {
