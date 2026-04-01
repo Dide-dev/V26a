@@ -15,8 +15,11 @@
     import { addCard, type CardAddData, type CardId } from '$lib/backend/cards';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
-    let { tree = $bindable(), node = $bindable() }: { tree: TreeWithCards; node: Node | RootNode } =
-        $props();
+    let {
+        tree = $bindable(),
+        parent = $bindable(),
+        node = $bindable()
+    }: { tree: TreeWithCards; parent: Node | RootNode; node: Node | RootNode } = $props();
 
     let frontText = $state('');
     let backText = $state('');
@@ -166,13 +169,12 @@
     onclick={() => handlerAdd(node)}>+</button
 >
 <!-- Buttons to insert a new card between this card and a child to this card -->
-{#each node.children as child_node, index (child_node)}
+{#if !('label' in node)}
     <button
-        class="card__insert_button absolute -right-20 z-10 h-5 w-5 cursor-pointer rounded-full bg-green-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
-        style={`top: ${0.5 + 3.5 * index}rem`}
-        onclick={() => handlerInsert(node, child_node)}>+</button
+        class="card__insert_button absolute top-2 right-[548] z-10 h-5 w-5 cursor-pointer rounded-full bg-green-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
+        onclick={() => handlerInsert(parent, node)}>+</button
     >
-{/each}
+{/if}
 
 <!-- Add/Insert card popup -->
 {#if action}

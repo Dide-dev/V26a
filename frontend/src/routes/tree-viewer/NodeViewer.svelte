@@ -12,10 +12,12 @@
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         tree = $bindable(),
+        parent,
         node,
         editingPage
     }: {
         tree: TreeWithCards;
+        parent: Node | RootNode | undefined;
         node: Node | RootNode;
         editingPage: boolean;
     } = $props();
@@ -111,7 +113,7 @@
     <!-- Adds buttons to manage the cards of the tree if in editing mode -->
     {#if editingPage}
         <div class="relative">
-            <AddCard bind:tree bind:node />
+            <AddCard bind:tree bind:parent bind:node />
         </div>
     {/if}
 
@@ -132,7 +134,7 @@
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
             <div class="relative">
-                <NodeViewer bind:tree node={child_node} {editingPage} />
+                <NodeViewer bind:tree parent={node} node={child_node} {editingPage} />
             </div>
         {/each}
     </div>
