@@ -11,27 +11,27 @@
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
 
-    let editingPage = true;
     let loading = $state(true);
     let error: Error | null = $state(null);
+    let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
 
     onMount(async () => {
-        const id = page.url.searchParams.get('id');
+        const pageId = page.url.searchParams.get('id');
 
-        if (!id) {
+        if (!pageId) {
             error = new Error('No tree id provided');
             return;
         }
 
-        const idNumber = Number(id);
+        id = Number(pageId);
 
-        if (Number.isNaN(idNumber)) {
+        if (Number.isNaN(id)) {
             error = new Error('Invalid tree id');
             return;
         }
 
-        tree = await getTreeWithCards(idNumber).then(
+        tree = await getTreeWithCards(id).then(
             (treeWithCards) => treeWithCards,
             (e) => {
                 error = e;
@@ -55,7 +55,7 @@
 
     <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree parent={root} node={root} {editingPage} />
+            <NodeViewer bind:tree parent={root} node={root} editingPage={false} />
         {/each}
     </div>
 {/if}
