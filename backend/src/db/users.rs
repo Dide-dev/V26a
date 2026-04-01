@@ -225,7 +225,7 @@ mod tests {
         assert!(does_user_exist);
     }
 
-     #[sqlx::test]
+    #[sqlx::test]
     async fn test_get_user(db: PgPool) {
         let register_data = RegisterData {
             email: "email".to_owned(),
