@@ -29,7 +29,7 @@
         try {
             const treeId = await addTree(treeData);
             console.log('Tree created with ID:', treeId);
-            goto(appLink(`/editor?id=${treeId}`));
+            goto(appLink(`/tree-page/editor?id=${treeId}`));
         } catch (e) {
             error = e as Error;
             console.error('Failed to create tree:', e);
