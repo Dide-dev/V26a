@@ -8,7 +8,12 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import {updateTreeMetaData, getTreeWithCards, type TreeWithCards, type TreeData} from '$lib/backend/trees';
+    import {
+        updateTreeMetaData,
+        getTreeWithCards,
+        type TreeWithCards,
+        type TreeData
+    } from '$lib/backend/trees';
     import NodeViewer from '../NodeViewer.svelte';
 
     let treeData: TreeData = $state({
