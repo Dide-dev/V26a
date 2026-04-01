@@ -12,9 +12,31 @@ use crate::db_structs::trees::{
     TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
-use crate::tests::api_v1::setup_login;
+use crate::tests::api_v1::{login, register, setup, setup_login};
+use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::BTreeMap;
+
+async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
+    let basic_tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+
+    // Add in reverse order because trees are ordered with newest on top
+    for t in trees_data.iter() {
+        test_server
+            .post("/trees/add")
+            .json(&TreeAddData {
+                tree_data: t.clone(),
+                tree_structure: basic_tree_structure.clone(),
+            })
+            .await
+            .assert_status_ok();
+    }
+}
 
 #[sqlx::test]
 async fn test_new_empty_tree(db: PgPool) {
@@ -235,7 +257,13 @@ async fn test_remove_card(db: PgPool) {
 
 #[sqlx::test]
 async fn test_filter_tree(db: PgPool) {
-    let server = setup_login(db).await;
+    let server = setup(db);
+    let emails = ["test@one".to_owned(), "test@two".to_owned()];
+    let account_ids = [
+        register(&server, emails[0].clone()).await,
+        register(&server, emails[1].clone()).await,
+    ];
+    login(&server, emails[0].clone()).await;
 
     let trees_data = vec![
         TreeData {
@@ -247,56 +275,119 @@ async fn test_filter_tree(db: PgPool) {
             published: true,
             ..Default::default()
         },
+        TreeData {
+            published: false,
+            ..Default::default()
+        },
     ];
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
 
-    // Add in reverse order because trees are ordered with newest on top
-    server
-        .post("/trees/add")
-        .json(&TreeAddData {
-            tree_data: trees_data[1].clone(),
-            tree_structure: tree_structure.clone(),
-        })
-        .await
-        .assert_status_ok();
+    add_multiple_trees(&server, &trees_data).await;
 
-    server
-        .post("/trees/add")
-        .json(&TreeAddData {
-            tree_data: trees_data[0].clone(),
-            tree_structure,
-        })
-        .await
-        .assert_status_ok();
-
-    let first_tree = vec![trees_data[0].clone()];
-    let second_tree = vec![trees_data[1].clone()];
-
-    let response = server.get("/trees/get-list?page=1&size=100").await;
+    // All trees (including private)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&show_own_private=true")
+        .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, trees_data);
+    // Reverse because the received trees are in reverse order (newest first).
+    let rev_tree_data: Vec<TreeData> = trees_data.iter().rev().cloned().collect();
+    assert_eq!(requested_trees.trees, rev_tree_data);
 
+    // Newest public tree
     let response = server.get("/trees/get-list?page=1&size=1").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, first_tree);
+    assert_eq!(requested_trees.trees, vec![trees_data[1].clone()]);
 
+    // Second newest public tree
     let response = server.get("/trees/get-list?page=2&size=1").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, second_tree);
+    assert_eq!(requested_trees.trees, vec![trees_data[0].clone()]);
 
     // Filter on book with space
     let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, second_tree);
+    assert_eq!(requested_trees.trees, vec![trees_data[1].clone()]);
+
+    login(&server, emails[1].clone()).await;
+    let other_user_trees_data = vec![
+        TreeData {
+            book_name: Some("vwo 5".to_string()),
+            published: true,
+            ..Default::default()
+        },
+        TreeData {
+            published: false,
+            ..Default::default()
+        },
+    ];
+
+    add_multiple_trees(&server, &other_user_trees_data).await;
+
+    // All public trees
+    let response = server.get("/trees/get-list?page=1&size=100").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(
+        requested_trees.trees,
+        vec![
+            other_user_trees_data[0].clone(),
+            trees_data[1].clone(),
+            trees_data[0].clone()
+        ]
+    );
+
+    // All public trees from user 0
+    let response = server
+        .get(
+            format!(
+                "/trees/get-list?page=1&size=100&owner_id={}&show_own_private=true",
+                account_ids[0]
+            )
+            .as_str(),
+        )
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(
+        requested_trees.trees,
+        vec![trees_data[1].clone(), trees_data[0].clone()]
+    );
+
+    login(&server, emails[0].clone()).await;
+
+    // All trees from user 0 using filter
+    let response = server
+        .get(
+            format!(
+                "/trees/get-list?page=1&size=100&owner_id={}&show_own_private=true",
+                account_ids[0]
+            )
+            .as_str(),
+        )
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.trees, rev_tree_data);
+
+    // All public trees from user 1
+    let response = server
+        .get(
+            format!(
+                "/trees/get-list?page=1&size=100&owner_id={}&show_own_private=true",
+                account_ids[1]
+            )
+            .as_str(),
+        )
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(
+        requested_trees.trees,
+        vec![other_user_trees_data[0].clone()]
+    );
 }
 
 #[sqlx::test]
