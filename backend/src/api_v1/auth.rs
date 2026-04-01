@@ -7,6 +7,7 @@
 use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_id_and_password;
+use crate::db::users::get_user_account_type;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -38,9 +39,12 @@ async fn login(
         return Err(ApiError::WrongCredentials);
     }
 
+    let account_type = get_user_account_type(&db, user_id).await?;
+
     let claims = Claims {
         sub: user_id,
         exp: Utc::now().timestamp() + config.session_duration,
+        account_type,
     };
 
     // Create the authorization token.

@@ -66,6 +66,36 @@ pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result
     Ok(user_id)
 }
 
+/// Get a user from the database, return its assigned id and account type.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+///
+/// `user_id` - The id of the user.
+///
+/// # Returns
+/// The type assigned to the user.
+///
+/// # Error
+/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if credentials are wrong.
+///
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_account_type(
+    db: impl PgExecutor<'_>,
+    userid: i32,
+) -> Result<String, ApiError> {
+    // Get account type
+    let record = query!("SELECT account_type FROM users WHERE id = $1", userid,)
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .ok_or(ApiError::WrongCredentials)?;
+
+    Ok(record.account_type)
+}
+
 /// Checks if a user with a given e-mail exists in the given database.
 ///
 /// # Arguments
@@ -220,5 +250,31 @@ mod tests {
         };
 
         assert_eq!(user_data, expected_user_data);
+    }
+
+    async fn test_get_user_account_type(db: PgPool) {
+        let user_data = UserData {
+            email: "test123@gmail.com".to_string(),
+            password: "password".to_string(),
+            name: "name".to_string(),
+            nickname: None,
+            about_me: None,
+            email_visible: false,
+            language: UserLanguage::En,
+        };
+
+        // Add an user
+        let mut conn = db.acquire().await.unwrap();
+        let user_id = add_user(&mut conn, &user_data).await.unwrap();
+
+        // Assert user does have a (default) account type.
+        let account_type = get_user_account_type(&db, user_id).await.unwrap();
+        assert_eq!(account_type, "author");
+    }
+
+    #[sqlx::test]
+    async fn test_get_user_account_type_not_found(db: PgPool) {
+        let result = get_user_account_type(&db, 999).await;
+        assert!(matches!(result, Err(ApiError::WrongCredentials)));
     }
 }

@@ -38,6 +38,12 @@ export type UserData = {
     aboutMe: Option<string>;
     emailVisible: boolean;
     language: string;
+}
+
+/** The data in the cookie */
+export type UserInfo = {
+    userId: number;
+    accountType: 'author' | 'admin';
 };
 
 /** Add a user to the database */
@@ -48,4 +54,17 @@ export function addUser(user: RegisterData): Promise<UserId> {
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserData> {
     return apiCallGetUser('me');
+}
+
+/** read the userinfo from the cookie */
+/** if logged in return id & type and if not logged in return null */
+export function getUserInfo(): UserInfo | null {
+    if (typeof document === 'undefined') return null;
+    const cookie = document.cookie.split('; ').find((row) => row.startsWith('user_info='));
+    if (!cookie) return null;
+    try {
+        return JSON.parse(decodeURIComponent(cookie.split('=')[1]));
+    } catch {
+        return null;
+    }
 }

@@ -38,6 +38,8 @@ pub struct Claims {
     pub sub: i32,
     /// The expiration time (as UTC timestamp).
     pub exp: i64,
+    /// the account type
+    pub account_type: String,
 }
 
 impl FromRequestParts<Config> for Claims {

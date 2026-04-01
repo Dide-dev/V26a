@@ -18,6 +18,7 @@ CREATE TABLE users
     about_me      VARCHAR(160)           DEFAULT NULL,  -- current longest is 127 characters
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     email_visible BOOLEAN       NOT NULL DEFAULT FALSE, -- default false because AVG (`emailvermelding` in prototype)
+    account_type  VARCHAR(32)   NOT NULL DEFAULT 'author', -- default is author
     language      CHAR(2)       NOT NULL DEFAULT 'nl'   -- ISO 639-1
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
