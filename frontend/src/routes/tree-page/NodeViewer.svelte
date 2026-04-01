@@ -8,6 +8,7 @@
     import NodeViewer from './NodeViewer.svelte';
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
     import AddCard from './AddCard.svelte';
+    import { onMount } from "svelte";
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -41,7 +42,7 @@
         y2: number;
     };
 
-    $effect(() => {
+    onMount(() => {
         if (!domChildren) return;
         //handles "shifts" in tree
         const observer = new ResizeObserver(() => {
