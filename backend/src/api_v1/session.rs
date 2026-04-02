@@ -5,6 +5,7 @@
 */
 
 use crate::Config;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -38,6 +39,8 @@ pub struct Claims {
     pub sub: i32,
     /// The expiration time (as UTC timestamp).
     pub exp: i64,
+    /// the account type
+    pub account_type: AccountType,
 }
 
 async fn get_claims(parts: &mut Parts, state: &Config) -> Result<Claims, ApiError> {
