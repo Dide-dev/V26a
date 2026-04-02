@@ -8,9 +8,8 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_id_and_password;
 use crate::db::users::get_user_account_type;
-use crate::db_structs::users::AccountType;
-use std::str::FromStr;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::State;
 use axum::routing::post;
@@ -19,6 +18,7 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use sqlx::PgPool;
+use std::str::FromStr;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {

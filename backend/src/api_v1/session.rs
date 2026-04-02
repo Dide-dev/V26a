@@ -5,13 +5,13 @@
 */
 
 use crate::Config;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
-use crate::db_structs::users::AccountType;
 
 /// A struct containing the [`EncodingKey`] and [`DecodingKey`] used for encoding and decoding the
 /// `JsonWebToken`.
