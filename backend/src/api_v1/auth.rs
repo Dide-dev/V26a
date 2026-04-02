@@ -48,25 +48,27 @@ async fn login(
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
+    let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
+
     // Age of a cookie (same for the two cookies)
     let time = time::Duration::new(config.session_duration, 0);
 
-    // Set the authorization token as a cookie.
+    // The properties of the cookies are important to get right.
+    // `Secure`: cookie is only sent over HTTPS, so it should always be set
+    // `HttpOnly`: if set it prevents javascript from accessing the cookie
+    // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
+
     let cookie = Cookie::build(("session", token))
-        .path("/")
+        .path("/api/")
         .secure(true)
         .max_age(time)
         .http_only(true);
 
-    // not http cookie
-    let user_cookie = Cookie::build((
-        "user_info",
-        serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?,
-    ))
-    .path("/")
-    .secure(true)
-    .max_age(time)
-    .http_only(false);
+    let user_cookie = Cookie::build(("user_info", user_info))
+        .path("/")
+        .secure(true)
+        .max_age(time)
+        .http_only(false);
 
     Ok(jar.add(cookie).add(user_cookie))
 }

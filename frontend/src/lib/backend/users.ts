@@ -42,7 +42,9 @@ export type UserData = {
 
 /** The data in the cookie */
 export type UserInfo = {
-    sub: number;
+    /** This corresponds to userid of the current login. */
+    sub: UserId;
+    /** Experation datetime for the current login, represented as number of seconds since unix epoch. */
     exp: number;
     accountType: 'author' | 'admin';
 };
@@ -57,8 +59,10 @@ export function getOwnUserData(): Promise<UserData> {
     return apiCallGetUser('me');
 }
 
-/** read the userinfo from the cookie */
-/** if logged in return id & type and if not logged in return null */
+/**
+ * Read the userinfo from the cookie.
+ * If logged in return id & type and if not logged in return null.
+ */
 export function getUserInfo(): UserInfo | null {
     if (typeof document === 'undefined') return null;
     const cookie = document.cookie.split('; ').find((row) => row.startsWith('user_info='));

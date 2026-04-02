@@ -14,7 +14,7 @@ pub struct LoginRequestBody {
     pub password: String,
 }
 
-/// The body for a login request that contains the email address and password.
+/// User information to check password and permissions.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UserCredentials {
     pub user_id: i32,

@@ -17,7 +17,7 @@ use std::str::FromStr;
 /// `email` - The user's email address.
 ///
 /// # Returns
-/// A tuple containing the user id and the password hash.
+/// A struct containing the user id, password hash and account type.
 ///
 /// # Error
 /// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
@@ -36,6 +36,6 @@ pub async fn get_user_credentials(
     Ok(UserCredentials {
         user_id: credentials.id,
         password_hash: credentials.password_hash,
-        account_type: AccountType::from_str(credentials.account_type.as_str())?,
+        account_type: AccountType::from_str(&credentials.account_type)?,
     })
 }
