@@ -26,7 +26,7 @@ async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
     };
 
     // Add in reverse order because trees are ordered with newest on top
-    for t in trees_data.iter() {
+    for t in trees_data {
         test_server
             .post("/trees/add")
             .json(&TreeAddData {

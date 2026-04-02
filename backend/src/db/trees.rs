@@ -572,7 +572,6 @@ mod tests {
         assert_eq!(new_tree_structure, updated_tree_structure);
     }
 
-    /// TODO: rewrite test with initialize functions
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
@@ -718,7 +717,7 @@ mod tests {
         let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let empty_filters = TreeFilters {
             ..Default::default()
-        }; // TODO: test user_id
+        };
         apply_tree_filters(&mut no_filters_query, &empty_filters, None);
         assert_eq!(
             no_filters_query.sql(),

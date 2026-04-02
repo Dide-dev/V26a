@@ -116,14 +116,14 @@ mod tests {
         assert!(!single_zero.is_valid());
 
         let page_too_big = PaginationOptions {
-            page: 10000,
+            page: 10_000,
             size: 0,
         };
         assert!(!page_too_big.is_valid());
 
         let size_too_big = PaginationOptions {
             page: 0,
-            size: 100000,
+            size: 100_000,
         };
         assert!(!size_too_big.is_valid());
     }
