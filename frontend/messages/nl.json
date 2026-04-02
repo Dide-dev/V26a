@@ -38,5 +38,7 @@
     "loadingTree": "De boom groeit...",
     "repeatPassword": "Herhaal wachtwoord",
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
-    "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde"
+    "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
+    "unexpectedErrorOccurred": "Er deed zich een onverwachte fout voor :(",
+    "close": "Sluiten"
 }
