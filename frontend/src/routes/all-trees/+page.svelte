@@ -9,18 +9,25 @@
     import icon from '$lib/assets/editIcon.svg?raw';
     import { appLink } from '$lib/index';
 
+    //I need to give page number and page size
+    //I will get next page, page size(same as I give), total trees, trees (TreeMetaData(TreeData en TreeGeneratedData))
     const values = getTreesFromUser();
 
     function parseBooleanToString(value: boolean) {
         if (value) return m.yes();
         return m.no();
     }
+    let totalTrees = $state(100);
+    let pageSize = $state(20);
     let thisPage = $state(1);
-    let totalPages = $state(10);
+    let totalPages = $derived(calcTotalPages(totalTrees, pageSize));
     function prevPage() {
         if (thisPage > 1) {
             thisPage -= 1;
         }
+    }
+    function calcTotalPages(totalTrees: number, pageSize: number): number {
+        return Math.ceil(totalTrees / pageSize);
     }
     function nextPage() {
         if (thisPage < totalPages) {
