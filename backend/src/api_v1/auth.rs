@@ -8,6 +8,8 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_id_and_password;
 use crate::db::users::get_user_account_type;
+use crate::db_structs::users::AccountType;
+use std::str::FromStr;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -42,16 +44,10 @@ async fn login(
     // Get account type
     let account_type = get_user_account_type(&db, user_id).await?;
 
-    // Create data fields for second cookie
-    let user_info = serde_json::json!({
-        "userId": user_id,
-        "accountType": account_type
-    });
-
     let claims = Claims {
         sub: user_id,
         exp: Utc::now().timestamp() + config.session_duration,
-        account_type,
+        account_type: AccountType::from_str(&account_type)?,
     };
 
     // Create the authorization token.
@@ -67,6 +63,12 @@ async fn login(
         .secure(true)
         .max_age(time)
         .http_only(true);
+
+    // Create data fields for second cookie
+    let user_info = serde_json::json!({
+        "userId": user_id,
+        "accountType": AccountType::from_str(&account_type)?
+    });
 
     // not http cookie
     let user_cookie = Cookie::build(("user_info", user_info.to_string()))

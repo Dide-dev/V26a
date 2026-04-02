@@ -61,3 +61,32 @@ impl FromStr for UserLanguage {
         }
     }
 }
+
+/// The possible values of the account type field of a user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AccountType {
+    Admin,
+    Author,
+}
+
+impl Display for AccountType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            AccountType::Admin => write!(f, "admin"),
+            AccountType::Author => write!(f, "author"),
+        }
+    }
+}
+
+impl FromStr for AccountType {
+    type Err = ApiError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_ref() {
+            "admin" => Ok(AccountType::Admin),
+            "author" => Ok(AccountType::Author),
+            _ => Err(ApiError::InvalidDataFound),
+        }
+    }
+}

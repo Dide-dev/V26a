@@ -39,12 +39,15 @@ test('check that login creates user_info cookie', async ({ page }) => {
         return cookies.find((c) => c.name === 'user_info');
     }
 
-    // Try login
+    // Try login (to check if there is an existing account)
+    // This is called, because playwright runs 3 browsers for the tests
+    // So the other test already have an account because of 1st browser run (test)
+    // Not calling login again would fail register (if there is an existing account)
     await login(page, email, password);
 
     let cookie = await getUserInfoCookie(page);
 
-    // If cookie not set, user does not exist
+    // If cookie not set, user does not exist (no existing account)
     // Register and login are then called again
     if (!cookie) {
         await register(page, email, password);

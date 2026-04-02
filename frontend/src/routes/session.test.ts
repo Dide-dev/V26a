@@ -9,11 +9,16 @@ beforeEach(() => {
     });
 });
 
-test('getUserInfo returns null when no cookie exists', () => {
+test('getUserInfo returns null when cookie is empty', () => {
     Object.defineProperty(document, 'cookie', {
         writable: true,
         value: ''
     });
+    const result = getUserInfo();
+    expect(result).toBeNull();
+});
+
+test('getUserInfo returns null when no cookie exists', () => {
     const result = getUserInfo();
     expect(result).toBeNull();
 });

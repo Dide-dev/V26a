@@ -11,6 +11,7 @@ use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
+use crate::db_structs::users::AccountType;
 
 /// A struct containing the [`EncodingKey`] and [`DecodingKey`] used for encoding and decoding the
 /// `JsonWebToken`.
@@ -39,7 +40,7 @@ pub struct Claims {
     /// The expiration time (as UTC timestamp).
     pub exp: i64,
     /// the account type
-    pub account_type: String,
+    pub account_type: AccountType,
 }
 
 impl FromRequestParts<Config> for Claims {
