@@ -42,7 +42,8 @@ export type UserData = {
 
 /** The data in the cookie */
 export type UserInfo = {
-    userId: number;
+    sub: number;
+    exp: number;
     accountType: 'author' | 'admin';
 };
 

@@ -60,6 +60,6 @@ test('check that login creates user_info cookie', async ({ page }) => {
 
     // Checks if the content of the cookie is the expected default (author)
     const userInfo = JSON.parse(decodeURIComponent(cookie!.value));
-    expect(userInfo.userId).toBeDefined();
+    expect(userInfo.sub).toBeDefined();
     expect(userInfo.accountType).toBe('author');
 });

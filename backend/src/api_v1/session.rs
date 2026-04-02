@@ -34,6 +34,7 @@ impl Keys {
 /// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
 /// expiration time.
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Claims {
     /// The subject (whom the token refers to).
     pub sub: i32,

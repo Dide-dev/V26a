@@ -6,10 +6,8 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_id_and_password;
-use crate::db::users::get_user_account_type;
+use crate::db::auth::get_user_credentials;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::State;
 use axum::routing::post;
@@ -18,7 +16,6 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use sqlx::PgPool;
-use std::str::FromStr;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
@@ -33,21 +30,18 @@ async fn login(
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
 ) -> Result<CookieJar, ApiError> {
-    let (user_id, password_hash) = get_user_id_and_password(&db, body.email).await?;
-    let password_valid = bcrypt::verify(body.password, password_hash.as_str())
+    let credentials = get_user_credentials(&db, body.email).await?;
+    let password_valid = bcrypt::verify(body.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
         return Err(ApiError::WrongCredentials);
     }
 
-    // Get account type
-    let account_type = get_user_account_type(&db, user_id).await?;
-
     let claims = Claims {
-        sub: user_id,
+        sub: credentials.user_id,
         exp: Utc::now().timestamp() + config.session_duration,
-        account_type: AccountType::from_str(&account_type)?,
+        account_type: credentials.account_type,
     };
 
     // Create the authorization token.
@@ -64,18 +58,15 @@ async fn login(
         .max_age(time)
         .http_only(true);
 
-    // Create data fields for second cookie
-    let user_info = serde_json::json!({
-        "userId": user_id,
-        "accountType": AccountType::from_str(&account_type)?
-    });
-
     // not http cookie
-    let user_cookie = Cookie::build(("user_info", user_info.to_string()))
-        .path("/")
-        .secure(false)
-        .max_age(time)
-        .http_only(false);
+    let user_cookie = Cookie::build((
+        "user_info",
+        serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?,
+    ))
+    .path("/")
+    .secure(true)
+    .max_age(time)
+    .http_only(false);
 
     Ok(jar.add(cookie).add(user_cookie))
 }

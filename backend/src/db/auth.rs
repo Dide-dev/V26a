@@ -3,9 +3,11 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
+use crate::db_structs::auth::UserCredentials;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use sqlx::{PgExecutor, query};
+use std::str::FromStr;
 
 /// Fetch a user's password from the given database.
 ///
@@ -19,20 +21,21 @@ use sqlx::{PgExecutor, query};
 ///
 /// # Error
 /// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
-pub async fn get_user_id_and_password(
+pub async fn get_user_credentials(
     db: impl PgExecutor<'_>,
     email: String,
-) -> Result<(i32, String), ApiError> {
-    let record = query!(
-        "SELECT id, password_hash FROM users WHERE email = $1",
+) -> Result<UserCredentials, ApiError> {
+    let credentials = query!(
+        "SELECT id, password_hash, account_type FROM users WHERE email = $1",
         email
     )
     .fetch_one(db)
     .await
     .map_err(|_| ApiError::WrongCredentials)?;
 
-    let user_id = record.id;
-    let password_hash = record.password_hash;
-
-    Ok((user_id, password_hash))
+    Ok(UserCredentials {
+        user_id: credentials.id,
+        password_hash: credentials.password_hash,
+        account_type: AccountType::from_str(credentials.account_type.as_str())?,
+    })
 }

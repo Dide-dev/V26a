@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db_structs::users::AccountType;
 use serde::{Deserialize, Serialize};
 
 /// The body for a login request that contains the email address and password.
@@ -11,4 +12,12 @@ use serde::{Deserialize, Serialize};
 pub struct LoginRequestBody {
     pub email: String,
     pub password: String,
+}
+
+/// The body for a login request that contains the email address and password.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct UserCredentials {
+    pub user_id: i32,
+    pub password_hash: String,
+    pub account_type: AccountType,
 }
