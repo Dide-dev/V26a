@@ -25,17 +25,7 @@ async fn test_new_card(db: PgPool) {
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_bad_request();
 
-    let tree_data = TreeData {
-        title: "title".to_owned(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_add_data = TreeAddData {
         tree_data,
         tree_structure: TreeStructure { root_nodes: vec![] },
@@ -75,17 +65,7 @@ async fn test_new_card(db: PgPool) {
 async fn test_update_existing_card(db: PgPool) {
     let server = setup_login(db).await;
 
-    let tree_data = TreeData {
-        title: "title".to_owned(),
-        description: None,
-        book_name: None,
-        book_edition: None,
-        book_isbn: None,
-        book_chapter: None,
-        book_exercise: None,
-        assignment_text: None,
-        published: false,
-    };
+    let tree_data = TreeData::default();
     let tree_add_data = TreeAddData {
         tree_data,
         tree_structure: TreeStructure { root_nodes: vec![] },

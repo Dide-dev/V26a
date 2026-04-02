@@ -4,8 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-extern crate bcrypt;
-
 use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
 use crate::errors::ApiError;
 

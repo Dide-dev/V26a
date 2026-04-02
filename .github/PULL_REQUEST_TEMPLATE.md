@@ -24,7 +24,8 @@ work, and example inputs.
 - [ ] Frontend is correctly formatted and does not produce TS errors or eslint warnings (run `npx prettier -w .`,
   `npm run check` and `npm run lint`)
 - [ ] Frontend has no failing tests (run `npm run test` and `npx playwright test`)
-- [ ] Backend is correctly formatted and does not produce clippy warnings (run `cargo fmt` and `cargo clippy`)
+- [ ] Backend is correctly formatted and does not produce clippy warnings (run `cargo fmt` and
+  `cargo clippy --all-targets`)
 - [ ] Backend has no failing tests (run `cargo test`)
 - [ ] Backend sqlx queries are up-to-date (`cargo sqlx prepare` has been run if necessary)
 - [ ] Branch is up-to-date with main

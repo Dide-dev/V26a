@@ -45,6 +45,10 @@ CREATE TABLE trees
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
 
+CREATE INDEX trees_filter_owner ON trees (owner_id);
+CREATE INDEX trees_filter_order_created_at ON trees (created_at);
+CREATE INDEX trees_filter_book_name ON trees (book_name);
+
 CREATE TABLE cards
 (
     id              SERIAL PRIMARY KEY,
