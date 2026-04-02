@@ -24,6 +24,8 @@ pub enum ApiError {
     MissingCard(i32),
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
+    /// An error to return when the user requests a page number that exceeds the defined maximum.
+    MaxPageNumberExceeded(i32),
     /// An error to return when the user requests a page size that exceeds the defined maximum.
     MaxPageSizeExceeded(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
@@ -114,6 +116,9 @@ impl Display for ApiError {
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
             }
+            ApiError::MaxPageNumberExceeded(max_page) => {
+                write!(f, "You may not request a page higher than {max_page}.")
+            }
             ApiError::MaxPageSizeExceeded(max_size) => {
                 write!(
                     f,
@@ -134,6 +139,7 @@ impl ApiError {
             | ApiError::MissingCard(_)
             | ApiError::NonEmptyStructure
             | ApiError::InvalidPage
+            | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 

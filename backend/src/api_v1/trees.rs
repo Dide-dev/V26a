@@ -320,12 +320,7 @@ pub async fn get_list(
     Query(page): Query<OptionalPaginationOptions>,
     Query(filters): Query<TreeFilters>,
 ) -> Result<Json<TreeListResponse>, ApiError> {
-    let page = page.to_some_with_default(1, 50);
-
-    let tree_list_max_page_size = 100;
-    if page.size > tree_list_max_page_size {
-        return Err(ApiError::MaxPageSizeExceeded(tree_list_max_page_size));
-    }
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
     let optional_user_id = claims.map(|c| c.sub);
 

@@ -456,11 +456,6 @@ pub async fn get_queried_list(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<Vec<TreeData>, ApiError> {
-    // Prevent overflow errors
-    if !page.is_valid() {
-        return Err(ApiError::InvalidPage);
-    }
-
     let mut query = QueryBuilder::<Postgres>::new("
         SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
         FROM trees"
@@ -473,10 +468,10 @@ pub async fn get_queried_list(
             " ORDER BY created_at DESC \
               LIMIT ",
         )
-        .push_bind(i64::from(page.size))
+        .push_bind(i64::from(page.get_size()))
         .push(" OFFSET ")
         // Page is 1-based
-        .push_bind(i64::from((page.page - 1) * page.size));
+        .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
 
     let trees = query
         .build_query_as::<TreeData>()
@@ -887,9 +882,9 @@ mod tests {
                 children: vec![],
             }],
         };
-        let first_page = PaginationOptions { page: 1, size: 50 };
-        let one_item_page1 = PaginationOptions { page: 1, size: 1 };
-        let one_item_page2 = PaginationOptions { page: 2, size: 1 };
+        let first_page = PaginationOptions::new(1, 50, 1000, 500).unwrap();
+        let one_item_page1 = PaginationOptions::new(1, 1, 1000, 500).unwrap();
+        let one_item_page2 = PaginationOptions::new(2, 1, 1000, 500).unwrap();
 
         let no_trees = get_queried_list(&db, &first_page, &empty_filters, None).await;
         assert_eq!(no_trees, Err(ApiError::InvalidPage));
