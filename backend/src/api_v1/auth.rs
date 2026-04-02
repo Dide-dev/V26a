@@ -58,17 +58,21 @@ async fn login(
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
+    // Age of a cookie (same for the two cookies)
+    let time = time::Duration::new(config.session_duration, 0);
+
     // Set the authorization token as a cookie.
     let cookie = Cookie::build(("session", token))
         .path("/")
         .secure(true)
-        .max_age(time::Duration::new(config.session_duration, 0))
+        .max_age(time)
         .http_only(true);
 
     // not http cookie
     let user_cookie = Cookie::build(("user_info", user_info.to_string()))
         .path("/")
         .secure(false)
+        .max_age(time)
         .http_only(false);
 
     Ok(jar.add(cookie).add(user_cookie))
