@@ -71,15 +71,13 @@ pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result
 /// # Arguments
 /// `db` - A connection to a Postgres database.
 ///
-///
 /// `user_id` - The id of the user.
 ///
 /// # Returns
 /// The type assigned to the user.
 ///
 /// # Error
-/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if credentials are wrong.
-///
+/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if `user_id` does not exist.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_account_type(
@@ -276,6 +274,6 @@ mod tests {
     #[sqlx::test]
     async fn test_get_user_account_type_not_found(db: PgPool) {
         let result = get_user_account_type(&db, 999).await;
-        assert!(matches!(result, Err(ApiError::WrongCredentials)));
+        assert_eq!(result, Err(ApiError::WrongCredentials));
     }
 }
