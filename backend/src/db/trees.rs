@@ -362,18 +362,24 @@ fn apply_tree_filters<'a>(
     filters: &'a TreeFilters,
     user_id: Option<i32>,
 ) {
+    let TreeFilters {
+        owner_id,
+        book,
+        created_after,
+        created_before,
+        show_own_private,
+    } = filters;
+
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
     separated.push("(published = true");
-    if let Some(user_id) = user_id
-        && filters.show_own_private
-    {
+    if *show_own_private && let Some(user_id) = user_id {
         separated.push_unseparated(" OR (published = false AND owner_id = ");
         separated.push_bind_unseparated(user_id);
         separated.push_unseparated(")");
     }
     separated.push_unseparated(")");
-    if let Some(owner_id) = filters.owner_id {
+    if let Some(owner_id) = owner_id {
         separated
             .push("(owner_id = ")
             .push_bind_unseparated(owner_id)
@@ -382,16 +388,16 @@ fn apply_tree_filters<'a>(
     if !filters.book.is_empty() {
         separated
             .push("(book_name = ANY(")
-            .push_bind_unseparated(&filters.book)
+            .push_bind_unseparated(book)
             .push_unseparated("))");
     }
-    if let Some(created_after) = filters.created_after {
+    if let Some(created_after) = created_after {
         separated
             .push("(created_at >= ")
             .push_bind_unseparated(created_after)
             .push_unseparated(")");
     }
-    if let Some(created_before) = filters.created_before {
+    if let Some(created_before) = created_before {
         separated
             .push("(created_at <= ")
             .push_bind_unseparated(created_before)
