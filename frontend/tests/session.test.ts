@@ -28,20 +28,18 @@ test('check that login creates user_info cookie', async ({ page }) => {
         await page.getByTestId('email').fill(email);
         await page.getByTestId('password').fill(password);
         await page.getByRole('button').click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForURL('/');
     }
 
     // Function that fills in the register UI
     async function register(page: Page, email: string, password: string) {
         await page.goto('/registration');
-
         await page.getByTestId('email').fill(email);
         await page.getByTestId('name').fill('Test User');
         await page.getByTestId('password').fill(password);
         await page.getByTestId('repeat password').fill(password);
         await page.getByRole('button').click();
-
-        await page.goto('/login');
+        await page.waitForURL('/login/');
     }
 
     // Set the cookie
