@@ -30,8 +30,6 @@
     "no": "No",
     "noTreesFound": "We couldn't find any trees, it's time to make one!",
     "loading": "Loading",
-    "addCardSymbol": "+",
-    "insertCardSymbol": "+",
     "enterFrontText": "Enter card front text...",
     "enterBackText": "Enter card back text...",
     "backTextRequired": "Back text is required!",
