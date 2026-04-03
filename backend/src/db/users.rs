@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
+use crate::db_structs::users::{RegisterData, UserGetData, UserLanguage, UserUpdateData};
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
@@ -124,13 +124,13 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`UserData`] object containing the user's data, minus their password.
+/// A [`UserGetData`] object containing the user's data, minus their password.
 ///
 /// # Error
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserData, ApiError> {
+pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, ApiError> {
     let record = query!(
         "SELECT email, name, nickname, about_me, email_visible, language FROM users WHERE id = $1",
         id,
@@ -139,7 +139,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserData, ApiE
     .await
     .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(UserData {
+    Ok(UserGetData {
         email: record.email,
         name: record.name,
         nickname: record.nickname,
@@ -149,11 +149,41 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserData, ApiE
     })
 }
 
+/// Updates a user in the database.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `new_data` - The new data to be assigned, including the id of the user to be updated.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_user(
+    db: impl PgExecutor<'_>,
+    new_data: &UserUpdateData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = COALESCE($6, account_type) WHERE id = $7",
+        new_data.name,
+        new_data.nickname,
+        new_data.about_me,
+        new_data.email_visible,
+        new_data.language.to_string(),
+        new_data.account_type.map(|t| t.to_string()),
+        new_data.id,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::test::initialize_user;
-    use crate::db_structs::users::{RegisterData, UserLanguage};
+    use crate::db::test::{initialize_basic_user, initialize_user};
+    use crate::db_structs::users::{AccountType, RegisterData, UserLanguage};
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -236,7 +266,7 @@ mod tests {
         let user_id = initialize_user(&db, &register_data).await;
         let user_data = get_user(&db, user_id).await.unwrap();
 
-        let expected_user_data = UserData {
+        let expected_user_data = UserGetData {
             email: register_data.email,
             name: register_data.name,
             nickname: register_data.nickname,
@@ -246,6 +276,65 @@ mod tests {
         };
 
         assert_eq!(user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_update_user(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+
+        // Test not updating the account type
+        let new_user_data = UserUpdateData {
+            id: user_id,
+            name: "name".to_owned(),
+            nickname: None,
+            about_me: None,
+            email_visible: false,
+            language: UserLanguage::Nl,
+            account_type: None,
+        };
+        update_user(&db, &new_user_data).await.unwrap();
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        let found_update_data = UserUpdateData {
+            id: user_id,
+            name: all_found_user_data.name,
+            nickname: all_found_user_data.nickname,
+            about_me: all_found_user_data.about_me,
+            email_visible: all_found_user_data.email_visible,
+            language: all_found_user_data.language.parse().unwrap(),
+            account_type: new_user_data.account_type, // This is checked separately
+        };
+        assert_eq!(found_update_data, new_user_data);
+        assert_eq!(all_found_user_data.account_type, "author");
+
+        // Test updating the account type
+        let new_user_data = UserUpdateData {
+            id: user_id,
+            name: "john smith".to_owned(),
+            nickname: Some("john".to_owned()),
+            about_me: Some("Nothing interesting".to_owned()),
+            email_visible: true,
+            language: UserLanguage::En,
+            account_type: Some(AccountType::Admin),
+        };
+        update_user(&db, &new_user_data).await.unwrap();
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        let found_update_data = UserUpdateData {
+            id: user_id,
+            name: all_found_user_data.name,
+            nickname: all_found_user_data.nickname,
+            about_me: all_found_user_data.about_me,
+            email_visible: all_found_user_data.email_visible,
+            language: all_found_user_data.language.parse().unwrap(),
+            account_type: new_user_data.account_type, // This is checked separately
+        };
+        assert_eq!(found_update_data, new_user_data);
+        assert_eq!(all_found_user_data.account_type, "admin");
     }
 
     #[sqlx::test]

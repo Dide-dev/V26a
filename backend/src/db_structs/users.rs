@@ -24,13 +24,26 @@ pub struct RegisterData {
 /// Data received when getting user data from the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UserData {
+pub struct UserGetData {
     pub email: String,
     pub name: String,
     pub nickname: Option<String>,
     pub about_me: Option<String>,
     pub email_visible: bool,
     pub language: UserLanguage,
+}
+
+/// Data needed to update a user in the database.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserUpdateData {
+    pub id: i32,
+    pub name: String,
+    pub nickname: Option<String>,
+    pub about_me: Option<String>,
+    pub email_visible: bool,
+    pub language: UserLanguage,
+    pub account_type: Option<AccountType>,
 }
 
 /// The possible values of the `language` field of a user.
@@ -63,7 +76,7 @@ impl FromStr for UserLanguage {
 }
 
 /// The possible values of the account type field of a user.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AccountType {
     Admin,
