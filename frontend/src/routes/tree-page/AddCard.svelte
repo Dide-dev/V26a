@@ -13,6 +13,7 @@
     } from '$lib/backend/trees';
     import { updateTreeStructure } from '$lib/backend/trees';
     import { addCard, type CardAddData, type CardId } from '$lib/backend/cards';
+    import { m } from '$lib/paraglide/messages.js';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -84,11 +85,11 @@
      */
     async function addChild(parent: Node | RootNode, card: CardAddData) {
         if (card.front.length > frontMaxLength) {
-            errorMessage = `Error: front text cannot contain more than ${frontMaxLength} characters`;
+            errorMessage = `Front text cannot contain more than ${frontMaxLength} characters`;
             return;
         }
         if (card.back.length > backMaxLength) {
-            errorMessage = `Error: backText cannot contain more than ${backMaxLength} characters`;
+            errorMessage = `Back text cannot contain more than ${backMaxLength} characters`;
             return;
         }
 
@@ -127,6 +128,15 @@
      * @param card The data used to construct the new node.
      */
     async function insertChild(parent: Node | RootNode, child: Node, card: CardAddData) {
+        if (card.front.length > frontMaxLength) {
+            errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
+            return;
+        }
+        if (card.back.length > backMaxLength) {
+            errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
+            return;
+        }
+
         addCard(card)
             .then((cardId: CardId) => {
                 const newNode: Node = { cardId, children: [child] };
@@ -166,28 +176,28 @@
 <!-- Button to add new card as a child to this card -->
 <button
     class="card__add_button absolute top-2 right-2 h-5 w-5 cursor-pointer rounded-full bg-blue-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
-    onclick={() => handlerAdd(node)}>+</button
+    onclick={() => handlerAdd(node)}>{m.addCardSymbol}</button
 >
 <!-- Buttons to insert a new card between this card and a child to this card -->
 {#if !('label' in node)}
     <button
         class="card__insert_button absolute top-2 right-[548] h-5 w-5 cursor-pointer rounded-full bg-green-500 text-xs text-white opacity-30 transition-opacity hover:opacity-100"
-        onclick={() => handlerInsert(parent, node)}>+</button
+        onclick={() => handlerInsert(parent, node)}>{m.insertCardSymbol}</button
     >
 {/if}
 
 <!-- Add/Insert card popup -->
 {#if action}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div class="flex flex-col gap-2 rounded bg-white p-4">
+        <div class="card__popup flex flex-col gap-2 rounded bg-white p-4">
             <textarea
-                class="rounded border p-1"
-                placeholder="Enter card front text..."
+                class="card__front_text_box rounded border p-1"
+                placeholder={m.enterFrontText()}
                 bind:value={frontText}
             ></textarea>
             <textarea
-                class="rounded border p-1"
-                placeholder="Enter card back text..."
+                class="card__back_text_box rounded border p-1"
+                placeholder={m.enterBackText()}
                 bind:value={backText}
             ></textarea>
             {#if errorMessage}
@@ -196,9 +206,10 @@
             <div class="flex justify-end gap-2">
                 <button onclick={() => reset()}>Cancel</button>
                 <button
+                    class="card__confirm_button"
                     onclick={() => {
-                        if (backText) acceptCard(frontText, backText);
-                        else errorMessage = 'Error: back text is required!';
+                        if (backText.trim()) acceptCard(frontText.trim(), backText.trim());
+                        else errorMessage = m.backTextRequired();
                     }}>Add</button
                 >
             </div>
