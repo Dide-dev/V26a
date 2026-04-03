@@ -5,8 +5,8 @@
 */
 
 use crate::api_v1::session::Claims;
-use crate::db::users::{add_user, get_user};
-use crate::db_structs::users::{RegisterData, UserData};
+use crate::db::users::{add_user, get_user, update_user};
+use crate::db_structs::users::{AccountType, RegisterData, UserGetData, UserUpdateData};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
 
@@ -19,6 +19,7 @@ pub fn users() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_user))
         .route("/me", get(get_own_user_data))
+        .route("/update", post(update_user_data))
 }
 
 /// Add a user to the database.
@@ -49,6 +50,30 @@ async fn add_new_user(
 async fn get_own_user_data(
     Extension(db): Extension<PgPool>,
     claims: Claims,
-) -> Result<Json<UserData>, ApiError> {
+) -> Result<Json<UserGetData>, ApiError> {
     get_user(get_connection!(db), claims.sub).await.map(Json)
+}
+
+/// Update a user's data in the database.
+///
+/// # Error
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the given user's data.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn update_user_data(
+    Extension(db): Extension<PgPool>,
+    claims: Claims,
+    Json(new_data): Json<UserUpdateData>,
+) -> Result<(), ApiError> {
+    if claims.sub != new_data.id && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    // The account type can only be changed by an admin.
+    if new_data.account_type.is_some() && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    update_user(get_connection!(db), &new_data).await
 }

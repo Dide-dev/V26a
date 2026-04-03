@@ -63,9 +63,6 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
 /// `test_server` - The [`TestServer`] to use for making the API calls.
 ///
 /// `email` - The new user's email address.
-///
-/// # Returns
-/// An i32 representing the id of the user created.
 async fn login(test_server: &TestServer, email: String) {
     let response = test_server
         .post("/auth/login")

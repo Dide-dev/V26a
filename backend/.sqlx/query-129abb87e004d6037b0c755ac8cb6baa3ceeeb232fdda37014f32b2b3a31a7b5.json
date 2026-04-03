@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = COALESCE($6, account_type) WHERE id = $7",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Bpchar",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "129abb87e004d6037b0c755ac8cb6baa3ceeeb232fdda37014f32b2b3a31a7b5"
+}

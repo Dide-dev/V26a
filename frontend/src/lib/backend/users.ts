@@ -18,6 +18,7 @@ function apiCallGetUser(path: string) {
 }
 
 export type UserId = number;
+export type AccountType = 'author' | 'admin';
 
 /** The data needed to register a new user */
 export type RegisterData = {
@@ -31,7 +32,7 @@ export type RegisterData = {
 };
 
 /** The data of the user that is returned when requesting it */
-export type UserData = {
+export type UserGetData = {
     email: string;
     name: string;
     nickname: Option<string>;
@@ -40,10 +41,21 @@ export type UserData = {
     language: string;
 };
 
+/** The data needed to update a user */
+export type UserUpdateData = {
+    id: number;
+    name: string;
+    nickname: Option<string>;
+    aboutMe: Option<string>;
+    emailVisible: boolean;
+    language: string;
+    accountType: Option<AccountType>;
+};
+
 /** The data in the cookie */
 export type UserInfo = {
-    userId: number;
-    accountType: 'author' | 'admin';
+    userId: UserId;
+    accountType: AccountType;
 };
 
 /** Add a user to the database */
@@ -52,7 +64,7 @@ export function addUser(user: RegisterData): Promise<UserId> {
 }
 
 /** Get the user's own data */
-export function getOwnUserData(): Promise<UserData> {
+export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
 }
 
