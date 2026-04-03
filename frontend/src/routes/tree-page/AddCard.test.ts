@@ -5,10 +5,15 @@
 */
 
 import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { afterEach, expect, type MockedFunction, test, vi } from 'vitest';
 import NodeViewer from './NodeViewer.svelte';
-import type { RootNode, Node, TreeWithCards } from '$lib/backend/trees';
-import type { CardGetData, CardId } from '$lib/backend/cards';
+import {
+    type RootNode,
+    type Node,
+    type TreeWithCards,
+    updateTreeStructure
+} from '$lib/backend/trees';
+import { addCard, type CardGetData, type CardId } from '$lib/backend/cards';
 import { userEvent } from '@testing-library/user-event/dist/cjs/index.js';
 
 function renderTree(): TreeWithCards {
@@ -55,6 +60,20 @@ function renderTree(): TreeWithCards {
     return tree;
 }
 
+vi.mock('$lib/backend/cards', () => {
+    return {
+        addCard: vi.fn()
+    };
+});
+vi.mock('$lib/backend/trees', () => {
+    return {
+        updateTreeStructure: vi.fn()
+    };
+});
+afterEach(() => {
+    vi.resetAllMocks();
+});
+
 test('NodeViewer with correct amount of add/insert buttons', async () => {
     renderTree();
     expect(document.getElementsByClassName('card__add_button')).toHaveLength(3); // Count the number of add buttons
@@ -64,31 +83,35 @@ test('NodeViewer with correct amount of add/insert buttons', async () => {
 test('Add card successfully', async () => {
     const user = userEvent.setup();
     const tree = renderTree();
+    (addCard as MockedFunction<typeof addCard>).mockResolvedValue(3);
+    (updateTreeStructure as MockedFunction<typeof updateTreeStructure>).mockResolvedValue();
+
     await screen.findByText('Root');
     expect(tree.structure.rootNodes[0].children.length === 2);
 
-    user.click(document.getElementsByClassName('card__add_button')[0]);
+    await user.click(document.getElementsByClassName('card__add_button')[0]);
     await screen.findByText('Add');
     const backTextBox = document.getElementsByClassName(
         'card__back_text_box'
     )[0] as HTMLTextAreaElement;
-    user.click(backTextBox);
-    user.type(backTextBox, 'Kevin was here');
-    user.click(document.getElementsByClassName('card__confirm_button')[0]);
+    await user.type(backTextBox, 'Kevin was here');
+    await user.click(document.getElementsByClassName('card__confirm_button')[0]);
     expect(tree.structure.rootNodes[0].children.length === 3);
 });
 
 test('Insert card successfully', async () => {
     const user = userEvent.setup();
     const tree = renderTree();
+    (addCard as MockedFunction<typeof addCard>).mockResolvedValue(3);
+    (updateTreeStructure as MockedFunction<typeof updateTreeStructure>).mockResolvedValue();
+
     await screen.findByText('foo');
     expect(tree.structure.rootNodes[0].children[0].children.length === 0);
 
-    user.click(document.getElementsByClassName('card__insert_button')[0]);
+    await user.click(document.getElementsByClassName('card__insert_button')[0]);
     await screen.findByText('Add');
     const backTextBox = document.getElementsByClassName('card__back_text_box')[0];
-    user.click(backTextBox);
-    user.type(backTextBox, 'Kevin was here');
-    user.click(document.getElementsByClassName('card__confirm_button')[0]);
+    await user.type(backTextBox, 'Kevin was here');
+    await user.click(document.getElementsByClassName('card__confirm_button')[0]);
     expect(tree.structure.rootNodes[0].children[0].children.length === 1);
 });
