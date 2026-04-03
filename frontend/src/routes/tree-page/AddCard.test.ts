@@ -72,7 +72,6 @@ test('Add card successfully', async () => {
     const backTextBox = document.getElementsByClassName(
         'card__back_text_box'
     )[0] as HTMLTextAreaElement;
-    user.click(backTextBox);
     user.type(backTextBox, 'Kevin was here');
     user.click(document.getElementsByClassName('card__confirm_button')[0]);
     expect(tree.structure.rootNodes[0].children.length === 3);
@@ -87,7 +86,6 @@ test('Insert card successfully', async () => {
     user.click(document.getElementsByClassName('card__insert_button')[0]);
     await screen.findByText('Add');
     const backTextBox = document.getElementsByClassName('card__back_text_box')[0];
-    user.click(backTextBox);
     user.type(backTextBox, 'Kevin was here');
     user.click(document.getElementsByClassName('card__confirm_button')[0]);
     expect(tree.structure.rootNodes[0].children[0].children.length === 1);
