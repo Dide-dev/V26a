@@ -179,6 +179,11 @@
     </div>
 {/if}
 
+<!--
+    Here we add a few css classes to the body,
+    to make sure that the element above here with the `overflow-auto` class can be
+    growing in height until the scroll bar is at the bottom of the screen.
+-->
 <style>
     :global(body) {
         min-height: 100vh;
