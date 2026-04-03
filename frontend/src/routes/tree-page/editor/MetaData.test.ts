@@ -39,7 +39,7 @@ test('dropdown opens when edit metadata button is clicked', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText(m.editMetadata());
+    await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await waitFor(() => {
         expect(document.getElementsByClassName('meta-dropdown').length).toBeGreaterThan(0);
@@ -50,7 +50,7 @@ test('fields are prefilled with tree data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText(m.editMetadata());
+    await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     expect((screen.getByLabelText(m.bookname()) as HTMLInputElement).value).toBe('Monkey');
     expect((screen.getByLabelText(m.bookIsbn()) as HTMLInputElement).value).toBe('123-456');
@@ -60,7 +60,7 @@ test('cancel restores original values', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText(m.editMetadata());
+    await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await user.clear(screen.getByLabelText(m.bookname()));
     await user.type(screen.getByLabelText(m.bookname()), 'Changed Book');
@@ -75,7 +75,7 @@ test('save calls updateTreeMetaData with correct data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText(m.editMetadata());
+    await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await user.clear(screen.getByLabelText(m.bookname()));
     await user.type(screen.getByLabelText(m.bookname()), 'New Apple');
@@ -91,7 +91,7 @@ test('dropdown closes after save', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText(m.editMetadata());
+    await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await user.click(screen.getByText(m.save()));
     await waitFor(() => {
@@ -103,7 +103,7 @@ test('dropdown closes after cancel', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    screen.findByText(m.editMetadata());
+    await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await user.click(screen.getByText(m.cancel()));
     await waitFor(() => {
