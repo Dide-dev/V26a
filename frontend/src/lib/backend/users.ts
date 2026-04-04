@@ -43,8 +43,8 @@ export type UserGetData = {
 
 /**
  * The data needed to update a user
- * `account_type` is only updated if a non-null value is passed.
- * `nickname` and `about_me` are always updated, where null values are stored as-is in the
+ * `accountType` and `enabled` are only updated if a non-null value is passed.
+ * `nickname` and `aboutMe` are always updated, where null values are stored as-is in the
  * database.
  */
 export type UserUpdateData = {
@@ -54,6 +54,7 @@ export type UserUpdateData = {
     emailVisible: boolean;
     language: string;
     accountType: Option<AccountType>;
+    enabled: Option<boolean>;
 };
 
 /** The data in the cookie */
@@ -73,8 +74,8 @@ export function getOwnUserData(): Promise<UserGetData> {
 }
 
 /** Get the user's own data */
-export function updateUser(id: UserId, newData: UserUpdateData): Promise<UserGetData> {
-    return apiCallPostUser('update/' + id, newData);
+export function updateUser(userId: UserId, newData: UserUpdateData): Promise<UserGetData> {
+    return apiCallPostUser(`update/${userId}`, newData);
 }
 
 /** read the userinfo from the cookie */

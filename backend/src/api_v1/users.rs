@@ -61,6 +61,8 @@ async fn get_own_user_data(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the given user's data.
 ///
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
     Extension(db): Extension<PgPool>,
@@ -68,12 +70,15 @@ async fn update_user_data(
     Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
 ) -> Result<(), ApiError> {
+    // A user can only update another user's data if they are an administrator.
     if claims.sub != user_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
-    // The account type can only be changed by an admin.
-    if new_data.account_type.is_some() && claims.account_type != AccountType::Admin {
+    // The account type and enabled flag can only be changed by an admin.
+    if (new_data.account_type.is_some() || new_data.enabled.is_some())
+        && claims.account_type != AccountType::Admin
+    {
         return Err(ApiError::NoPermission);
     }
 

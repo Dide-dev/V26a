@@ -17,6 +17,12 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
+    /// An error to return when the user requests a page that doesn't exist.
+    InvalidPage,
+    /// An error to return when the user requests a page number that exceeds the defined maximum.
+    MaxPageNumberExceeded(i32),
+    /// An error to return when the user requests a page size that exceeds the defined maximum.
+    MaxPageSizeExceeded(i32),
     /// An error to return when the new tree structure doesn't match the list of cards matched
     /// to the tree in the cards table.
     MismatchedStructure,
@@ -26,12 +32,6 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
     MissingUser(i32),
-    /// An error to return when the user requests a page that doesn't exist.
-    InvalidPage,
-    /// An error to return when the user requests a page number that exceeds the defined maximum.
-    MaxPageNumberExceeded(i32),
-    /// An error to return when the user requests a page size that exceeds the defined maximum.
-    MaxPageSizeExceeded(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
     /// An error to return when a wrong e-mail or password is provided while trying to log in.

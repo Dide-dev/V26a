@@ -13,6 +13,7 @@ CREATE TABLE users
     id            SERIAL PRIMARY KEY,
     email         CITEXT UNIQUE NOT NULL,               -- emails are case-insensitive
     password_hash VARCHAR(255)  NOT NULL,               -- https://www.php.net/manual/en/function.password-hash.php
+    enabled       BOOLEAN       NOT NULL DEFAULT TRUE,  -- if set to false, this user cannot log in
     name          VARCHAR(128)  NOT NULL,               -- current longest name in the database is 25 characters, might consider shortening this
     nickname      VARCHAR(128)           DEFAULT NULL,  -- current longest is 31 characters
     about_me      VARCHAR(160)           DEFAULT NULL,  -- current longest is 127 characters
