@@ -4,13 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::cards::{add_card, get_tree_of_card, update_card};
-use crate::db_structs::cards::{CardAddData, CardUpdateData};
-use crate::{Config, get_connection};
-
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_ownership;
+use crate::db::cards::{add_card, get_tree_of_card, update_card};
+use crate::db_structs::cards::{CardAddData, CardUpdateData};
 use crate::errors::ApiError;
+use crate::{Config, get_connection};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
@@ -42,7 +41,7 @@ async fn add_new_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, card_data.tree_id, claims.sub).await?;
 
-    let id = add_card(&db, card_data).await?;
+    let id = add_card(&db, &card_data).await?;
 
     Ok(Json(id))
 }
@@ -71,7 +70,7 @@ async fn update_existing_card(
     // Check whether the tree of which a card is being updated exists and is owned by the user.
     verify_tree_ownership(&db, tree_id, claims.sub).await?;
 
-    update_card(get_connection!(db), card_data).await?;
+    update_card(get_connection!(db), &card_data).await?;
 
     Ok(())
 }

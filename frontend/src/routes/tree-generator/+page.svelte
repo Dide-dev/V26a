@@ -29,7 +29,7 @@
         try {
             const treeId = await addTree(treeData);
             console.log('Tree created with ID:', treeId);
-            goto(appLink(`/editor?id=${treeId}`));
+            goto(appLink(`/tree-page/editor?id=${treeId}`));
         } catch (e) {
             error = e as Error;
             console.error('Failed to create tree:', e);
@@ -46,6 +46,7 @@
                 bind:value={treeData.title}
                 name="title"
                 type="title"
+                data-testid="title"
                 maxlength="256"
                 required
             />
@@ -55,7 +56,8 @@
             <textarea
                 class="size-64 rounded-md border-2"
                 bind:value={treeData.description}
-                name="desctiption"
+                name="description"
+                data-testid="description"
                 maxlength="128"
                 placeholder={m.optional()}
             ></textarea>
@@ -67,6 +69,19 @@
                 bind:value={treeData.bookName}
                 name="bookname"
                 type="bookname"
+                data-testid="bookname"
+                placeholder={m.optional()}
+                maxlength="128"
+            />
+        </label>
+        <label>
+            {m.bookedition()}
+            <input
+                class="rounded-md border-2"
+                bind:value={treeData.bookEdition}
+                name="bookedition"
+                type="bookedition"
+                data-testid="bookedition"
                 placeholder={m.optional()}
                 maxlength="128"
             />
@@ -78,6 +93,7 @@
                 bind:value={treeData.bookIsbn}
                 name="bookIsbn"
                 type="bookIsbn"
+                data-testid="bookIsbn"
                 placeholder={m.optional()}
                 maxlength="128"
             />
@@ -89,6 +105,7 @@
                 bind:value={treeData.bookChapter}
                 name="chapter"
                 type="chapter"
+                data-testid="chapter"
                 maxlength="128"
                 placeholder={m.optional()}
             />
@@ -100,6 +117,7 @@
                 bind:value={treeData.bookExercise}
                 name="exercise"
                 type="exercise"
+                data-testid="exercise"
                 maxlength="128"
                 placeholder={m.optional()}
             />
@@ -111,6 +129,7 @@
                 bind:value={treeData.assignmentText}
                 name="assignment"
                 type="assignment"
+                data-testid="assignment"
                 maxlength="128"
                 placeholder={m.optional()}
             />

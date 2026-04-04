@@ -7,20 +7,21 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
+    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count, get_queried_list,
+    get_tree_owner, is_structure_valid,
 };
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
-    TreeData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateStructureData,
-    TreeWithCards,
+    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
-use crate::{Config, db};
-
 use crate::errors::ApiError;
+use crate::{Config, db};
 
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-
+use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgExecutor, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -30,6 +31,8 @@ pub fn trees() -> Router<Config> {
         .route("/update-structure", post(update_tree_structure))
         .route("/remove-card", post(remove_card_from_tree))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
+        .route("/get-list", get(get_list))
+        .route("/update-data", post(update_tree_data))
         .route("/get-mine-all", get(get_all_owned_trees))
 }
 
@@ -39,16 +42,29 @@ pub fn trees() -> Router<Config> {
 /// The id assigned to the new tree as [`Json`].
 ///
 /// # Error
+/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in [`TreeAddData`] contains cards.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_data): Json<TreeData>,
+    Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    let id = add_tree(&db, tree_data, claims.sub).await?;
+    if !is_tree_structure_empty(&tree_add_data.tree_structure) {
+        return Err(ApiError::NonEmptyStructure);
+    }
+    let id = add_tree(&db, &tree_add_data, claims.sub).await?;
 
     let json_id = Json(id);
     Ok(json_id)
+}
+
+/// Check whether a tree structure contains no cards.
+///
+/// # Returns
+/// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
+fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
+    tree_structure.flatten().is_empty()
 }
 
 /// Update the structure of an existing tree in the database.
@@ -172,8 +188,31 @@ async fn update_structure_if_valid(
         return Err(ApiError::MismatchedStructure);
     }
 
-    db::trees::update_tree_structure(db, tree_id, new_structure).await?;
+    db::trees::update_tree_structure(db, tree_id, &new_structure).await?;
+    Ok(())
+}
 
+/// Update the data of an existing tree in the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the tree for the given `tree_id`.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn update_tree_data(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(tree_update_data): Json<TreeUpdateData>,
+) -> Result<(), ApiError> {
+    // Verify the tree's existence and the user's permissions.
+    verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
+
+    db::trees::update_tree_data(&db, tree_update_data.id, tree_update_data.new_data).await?;
     Ok(())
 }
 
@@ -254,4 +293,55 @@ pub async fn verify_tree_ownership(
     }
 
     Ok(())
+}
+
+/// Get the list of all trees satisfying some filters at a given page.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`].
+///
+/// `filters` - The requested filters to apply to the trees, given as [`TreeFilters`].
+///
+/// # Returns
+/// A list with the trees satisfying the filters at the requested page,
+/// together with an integer with the next page num, or [`None`] if it doesn't exist.
+///
+/// # Error
+/// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than 100 items per page.
+///
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_list(
+    claims: Option<Claims>,
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+    Query(filters): Query<TreeFilters>,
+) -> Result<Json<TreeListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let optional_user_id = claims.map(|c| c.sub);
+
+    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let trees_count = get_queried_count(&mut *tx, &filters, optional_user_id).await?;
+    if trees_count == 0 {
+        return Ok(Json(TreeListResponse {
+            total_trees: 0,
+            trees: Vec::new(),
+        }));
+    }
+
+    let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
+
+    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let list = TreeListResponse {
+        total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
+        trees,
+    };
+
+    Ok(Json(list))
 }

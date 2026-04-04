@@ -7,3 +7,6 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Test coverage report
+htmlReport/

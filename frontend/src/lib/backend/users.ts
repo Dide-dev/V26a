@@ -13,16 +13,14 @@ function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
-// TODO: remove next line when the function is used
-// eslint-disable-next-line
 function apiCallGetUser(path: string) {
     return apiCallGet(prefix + path);
 }
 
 export type UserId = number;
 
-/** The data of the user */
-export type UserData = {
+/** The data needed to register a new user */
+export type RegisterData = {
     email: string;
     password: string;
     name: string;
@@ -32,7 +30,41 @@ export type UserData = {
     language: string;
 };
 
+/** The data of the user that is returned when requesting it */
+export type UserData = {
+    email: string;
+    name: string;
+    nickname: Option<string>;
+    aboutMe: Option<string>;
+    emailVisible: boolean;
+    language: string;
+};
+
+/** The data in the cookie */
+export type UserInfo = {
+    userId: number;
+    accountType: 'author' | 'admin';
+};
+
 /** Add a user to the database */
-export function addUser(user: UserData): Promise<UserId> {
+export function addUser(user: RegisterData): Promise<UserId> {
     return apiCallPostUser('add', user);
+}
+
+/** Get the user's own data */
+export function getOwnUserData(): Promise<UserData> {
+    return apiCallGetUser('me');
+}
+
+/** read the userinfo from the cookie */
+/** if logged in return id & type and if not logged in return null */
+export function getUserInfo(): UserInfo | null {
+    if (typeof document === 'undefined') return null;
+    const cookie = document.cookie.split('; ').find((row) => row.startsWith('user_info='));
+    if (!cookie) return null;
+    try {
+        return JSON.parse(decodeURIComponent(cookie.split('=')[1]));
+    } catch {
+        return null;
+    }
 }

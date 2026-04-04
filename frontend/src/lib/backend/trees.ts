@@ -64,7 +64,7 @@ export type TreeGeneratedData = {
     id: TreeId;
     ownerId: UserId;
     createdAt: Date;
-    lastEdited: Date;
+    lastModified: Date;
     timesVisited: number;
     lastVisited: Option<Date>;
 };
@@ -72,6 +72,34 @@ export type TreeGeneratedData = {
 export type TreeMetadata = {
     data: TreeData;
     genData: TreeGeneratedData;
+};
+
+export type TreeAddData = {
+    treeData: TreeData;
+    treeStructure: TreeStructure;
+};
+
+// Default tree structure used in addTree.
+const defaultTreeStructure: TreeStructure = {
+    rootNodes: [
+        {
+            label: 'Orientation',
+            children: []
+        },
+        {
+            label: 'Making & executing plans',
+            children: []
+        },
+        {
+            label: 'Completion',
+            children: []
+        }
+    ]
+};
+
+export type TreeUpdateMetaData = {
+    id: TreeId;
+    newData: TreeData;
 };
 
 export type TreeUpdateStructureData = {
@@ -85,9 +113,33 @@ export type TreeRemoveCardData = {
     newStructure: TreeStructure;
 };
 
+export type TreeList = {
+    totalTrees: number;
+    list: TreeData[];
+};
+
+export type PaginationOptions = {
+    page: Option<number>;
+    size: Option<number>;
+};
+
+export type FilterOptions = {
+    ownerId: Option<number>;
+    book: string[];
+    createdAfter: Option<Date>;
+    createdBefore: Option<Date>;
+    showOwnPrivate: Option<boolean>;
+};
+
 /** Add a tree to the database. */
-export function addTree(tree: TreeData): Promise<TreeId> {
-    return apiCallPostTree('add', tree);
+export function addTree(treeData: TreeData): Promise<TreeId> {
+    const treeStructure: TreeStructure = defaultTreeStructure;
+    const treeAddData = {
+        treeData,
+        treeStructure
+    };
+
+    return apiCallPostTree('add', treeAddData);
 }
 
 /** Update the structure of an existing tree. */
@@ -106,7 +158,53 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`get-with-cards/${treeId}`);
 }
 
+/** Update the metadata of a specific tree. */
+export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
+    return apiCallPostTree('update-data', newTreeData);
+}
+
 /** Request all trees owned by the logged-in user. */
 export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
     return apiCallGetTree(`get-mine-all`);
+}
+
+export function isNullOrEmpty(value: unknown): boolean {
+    return value == null || (Array.isArray(value) && value.length === 0);
+}
+
+export function getPaginationAndFilterParams(
+    pageOptions: PaginationOptions,
+    filterOptions: FilterOptions
+): string {
+    const params = new URLSearchParams();
+
+    Object.entries(pageOptions).forEach(([key, value]) => {
+        if (value !== null) {
+            params.append(key, String(value));
+        }
+    });
+
+    Object.entries(filterOptions).forEach(([key, value]) => {
+        if (!isNullOrEmpty(value)) {
+            // For array values, all items need their own query parameter.
+            if (Array.isArray(value)) {
+                value.forEach((item) => params.append(key, String(item)));
+            } else {
+                // The JSON stringify is needed to get the dates in rfc3339 format instead of ISO format
+                // because there is a different implementation of toJSON and toString
+                params.append(key, JSON.parse(JSON.stringify(value)));
+            }
+        }
+    });
+
+    return String(params);
+}
+
+/** Get the list of all trees satisfying some filters at a given page. */
+export function getFilteredList(
+    pageOptions: PaginationOptions,
+    filterOptions: FilterOptions
+): Promise<TreeList> {
+    const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
+    return apiCallGetTree(`get-list?${params}`);
 }
