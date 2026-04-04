@@ -14,7 +14,7 @@ use crate::tests::api_v1::{login, register, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
-async fn test_get_own_user_data(db: PgPool) {
+async fn test_get_and_update_own_user_data(db: PgPool) {
     let server = setup(db);
 
     // Create an account
@@ -60,7 +60,6 @@ async fn test_get_own_user_data(db: PgPool) {
 
     // Update our own user data
     let update_data = UserUpdateData {
-        id: user_id,
         name: "John Smith".to_owned(),
         nickname: Some("John".to_owned()),
         about_me: None,
@@ -69,7 +68,10 @@ async fn test_get_own_user_data(db: PgPool) {
         account_type: None,
     };
 
-    let response = server.post("/users/update").json(&update_data).await;
+    let response = server
+        .post(&format!("/users/update/{user_id}"))
+        .json(&update_data)
+        .await;
     response.assert_status_ok();
 
     let expected_user_data = UserGetData {
@@ -100,7 +102,6 @@ async fn test_update_other_user(db: PgPool) {
 
     // Update the other user's data.
     let update_data = UserUpdateData {
-        id: user_id_1,
         name: "John Smith".to_owned(),
         nickname: None,
         about_me: None,
@@ -109,7 +110,10 @@ async fn test_update_other_user(db: PgPool) {
         account_type: Some(AccountType::Admin),
     };
 
-    let response = server.post("/users/update").json(&update_data).await;
+    let response = server
+        .post(&format!("/users/update/{user_id_1}"))
+        .json(&update_data)
+        .await;
     // Changing the other user's data should fail.
     response.assert_status_forbidden();
 }
@@ -122,7 +126,6 @@ async fn test_change_account_type(db: PgPool) {
 
     // Update our own user data
     let update_data = UserUpdateData {
-        id: user_id,
         name: "John Smith".to_owned(),
         nickname: None,
         about_me: None,
@@ -131,7 +134,10 @@ async fn test_change_account_type(db: PgPool) {
         account_type: Some(AccountType::Admin),
     };
 
-    let response = server.post("/users/update").json(&update_data).await;
+    let response = server
+        .post(&format!("/users/update/{user_id}"))
+        .json(&update_data)
+        .await;
     // Making ourselves admin should fail.
     response.assert_status_forbidden();
 }

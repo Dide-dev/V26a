@@ -34,10 +34,12 @@ pub struct UserGetData {
 }
 
 /// Data needed to update a user in the database.
+/// `account_type` is only updated if a `Some` value is passed.
+/// `nickname` and `about_me` are always updated, where `None` is translated into `NULL` in the
+/// database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUpdateData {
-    pub id: i32,
     pub name: String,
     pub nickname: Option<String>,
     pub about_me: Option<String>,
