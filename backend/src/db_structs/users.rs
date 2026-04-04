@@ -34,7 +34,7 @@ pub struct UserGetData {
 }
 
 /// Data needed to update a user in the database.
-/// `account_type` is only updated if a `Some` value is passed.
+/// `account_type` and `enabled` are only updated if a `Some` value is passed.
 /// `nickname` and `about_me` are always updated, where `None` is translated into `NULL` in the
 /// database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -46,6 +46,7 @@ pub struct UserUpdateData {
     pub email_visible: bool,
     pub language: UserLanguage,
     pub account_type: Option<AccountType>,
+    pub enabled: Option<bool>,
 }
 
 /// The possible values of the `language` field of a user.
