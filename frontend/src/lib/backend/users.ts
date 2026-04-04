@@ -41,9 +41,13 @@ export type UserGetData = {
     language: string;
 };
 
-/** The data needed to update a user */
+/**
+ * The data needed to update a user
+ * `account_type` is only updated if a non-null value is passed.
+ * `nickname` and `about_me` are always updated, where null values are stored as-is in the
+ * database.
+ */
 export type UserUpdateData = {
-    id: number;
     name: string;
     nickname: Option<string>;
     aboutMe: Option<string>;
@@ -66,6 +70,11 @@ export function addUser(user: RegisterData): Promise<UserId> {
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
+}
+
+/** Get the user's own data */
+export function updateUser(id: UserId, newData: UserUpdateData): Promise<UserGetData> {
+    return apiCallPostUser('update/' + id, newData);
 }
 
 /** read the userinfo from the cookie */

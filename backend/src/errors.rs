@@ -22,14 +22,16 @@ pub enum ApiError {
     MismatchedStructure,
     /// An error to return when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
+    /// An error to return when a non-existing `tree_id` is used to access a tree.
+    MissingTree(i32),
+    /// An error to return when a non-existing `user_id` is used to access a user.
+    MissingUser(i32),
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page number that exceeds the defined maximum.
     MaxPageNumberExceeded(i32),
     /// An error to return when the user requests a page size that exceeds the defined maximum.
     MaxPageSizeExceeded(i32),
-    /// An error to return when a non-existing `tree_id` is used to access a tree.
-    MissingTree(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
     /// An error to return when a wrong e-mail or password is provided while trying to log in.
@@ -86,6 +88,7 @@ impl Display for ApiError {
             ),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
             ApiError::NonEmptyStructure => write!(
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
@@ -137,6 +140,7 @@ impl ApiError {
             | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
+            | ApiError::MissingUser(_)
             | ApiError::NonEmptyStructure
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)

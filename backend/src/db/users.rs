@@ -32,7 +32,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result
     // constraint is placed on the `email` field.
     // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
     // will be returned instead of an `ApiError::EmailAlreadyUsed`.
-    let exists = user_exists(&mut *db, &user_data.email).await?;
+    let exists = user_email_exists(&mut *db, &user_data.email).await?;
 
     if exists {
         return Err(ApiError::EmailAlreadyUsed);
@@ -104,7 +104,7 @@ pub async fn get_user_account_type(
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool, ApiError> {
+pub async fn user_email_exists(db: impl PgExecutor<'_>, email: &str) -> Result<bool, ApiError> {
     query!(
         "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
         email,
@@ -114,6 +114,27 @@ pub async fn user_exists(db: impl PgExecutor<'_>, email: &String) -> Result<bool
     .map_err(|_| ApiError::DatabaseException)?
     .exists
     .ok_or(ApiError::DatabaseException)
+}
+
+/// Checks if a user with a given id exists in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user being checked.
+///
+/// # Returns
+/// `true` if the user exists or `false` if they do not.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn user_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
+    query!("SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)", id,)
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .exists
+        .ok_or(ApiError::DatabaseException)
 }
 
 /// Query the data for the given user id in the given database.
@@ -154,14 +175,19 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// # Arguments
 /// `db` - A connection to a Postgres database.
 ///
-/// `new_data` - The new data to be assigned, including the id of the user to be updated.
+/// `new_data` - The new data to be assigned as [`UserUpdateData`], including the id of the user to be updated.
+///
+/// # Returns
+/// Nothing.
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_user(
     db: impl PgExecutor<'_>,
+    id: i32,
     new_data: &UserUpdateData,
 ) -> Result<(), ApiError> {
+    // COALESCE is used here to update the account_type only if it is not None.
     query!(
         "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = COALESCE($6, account_type) WHERE id = $7",
         new_data.name,
@@ -170,7 +196,7 @@ pub async fn update_user(
         new_data.email_visible,
         new_data.language.to_string(),
         new_data.account_type.map(|t| t.to_string()),
-        new_data.id,
+        id,
     )
     .execute(db)
     .await
@@ -227,7 +253,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn test_user_exists(db: PgPool) {
+    async fn test_user_email_exists(db: PgPool) {
         let email = "email".to_owned();
 
         let register_data = RegisterData {
@@ -241,13 +267,35 @@ mod tests {
         };
 
         // Assert user does not exist before adding to the database.
-        let does_user_exist = user_exists(&db, &email).await.unwrap();
+        let does_user_exist = user_email_exists(&db, &email).await.unwrap();
         assert!(!does_user_exist);
 
         initialize_user(&db, &register_data).await;
 
         // Assert user does exist after adding to the database.
-        let does_user_exist = user_exists(&db, &email).await.unwrap();
+        let does_user_exist = user_email_exists(&db, &email).await.unwrap();
+        assert!(does_user_exist);
+    }
+
+    #[sqlx::test]
+    async fn test_user_id_exists(db: PgPool) {
+        // Assert user does not exist before adding to the database.
+        let does_user_exist = user_id_exists(&db, 420).await.unwrap();
+        assert!(!does_user_exist);
+
+        let register_data = RegisterData {
+            email: "test@test.com".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: None,
+            about_me: None,
+            email_visible: false,
+            language: UserLanguage::Nl,
+        };
+        let user_id = initialize_user(&db, &register_data).await;
+
+        // Assert user does exist after adding to the database.
+        let does_user_exist = user_id_exists(&db, user_id).await.unwrap();
         assert!(does_user_exist);
     }
 
@@ -284,7 +332,6 @@ mod tests {
 
         // Test not updating the account type
         let new_user_data = UserUpdateData {
-            id: user_id,
             name: "name".to_owned(),
             nickname: None,
             about_me: None,
@@ -292,13 +339,12 @@ mod tests {
             language: UserLanguage::Nl,
             account_type: None,
         };
-        update_user(&db, &new_user_data).await.unwrap();
+        update_user(&db, user_id, &new_user_data).await.unwrap();
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
             .fetch_one(&db)
             .await
             .unwrap();
         let found_update_data = UserUpdateData {
-            id: user_id,
             name: all_found_user_data.name,
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
@@ -311,7 +357,6 @@ mod tests {
 
         // Test updating the account type
         let new_user_data = UserUpdateData {
-            id: user_id,
             name: "john smith".to_owned(),
             nickname: Some("john".to_owned()),
             about_me: Some("Nothing interesting".to_owned()),
@@ -319,22 +364,20 @@ mod tests {
             language: UserLanguage::En,
             account_type: Some(AccountType::Admin),
         };
-        update_user(&db, &new_user_data).await.unwrap();
+        update_user(&db, user_id, &new_user_data).await.unwrap();
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
             .fetch_one(&db)
             .await
             .unwrap();
         let found_update_data = UserUpdateData {
-            id: user_id,
             name: all_found_user_data.name,
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
             language: all_found_user_data.language.parse().unwrap(),
-            account_type: new_user_data.account_type, // This is checked separately
+            account_type: Some(AccountType::from_str(&all_found_user_data.account_type).unwrap()),
         };
         assert_eq!(found_update_data, new_user_data);
-        assert_eq!(all_found_user_data.account_type, "admin");
     }
 
     #[sqlx::test]

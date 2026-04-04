@@ -5,11 +5,12 @@
 */
 
 use crate::api_v1::session::Claims;
-use crate::db::users::{add_user, get_user, update_user};
+use crate::db::users::{add_user, get_user, update_user, user_id_exists};
 use crate::db_structs::users::{AccountType, RegisterData, UserGetData, UserUpdateData};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
 
+use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
@@ -19,7 +20,7 @@ pub fn users() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_user))
         .route("/me", get(get_own_user_data))
-        .route("/update", post(update_user_data))
+        .route("/update/{user_id}", post(update_user_data))
 }
 
 /// Add a user to the database.
@@ -51,7 +52,7 @@ async fn get_own_user_data(
     Extension(db): Extension<PgPool>,
     claims: Claims,
 ) -> Result<Json<UserGetData>, ApiError> {
-    get_user(get_connection!(db), claims.sub).await.map(Json)
+    get_user(&db, claims.sub).await.map(Json)
 }
 
 /// Update a user's data in the database.
@@ -64,9 +65,10 @@ async fn get_own_user_data(
 async fn update_user_data(
     Extension(db): Extension<PgPool>,
     claims: Claims,
+    Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
 ) -> Result<(), ApiError> {
-    if claims.sub != new_data.id && claims.account_type != AccountType::Admin {
+    if claims.sub != user_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -75,5 +77,9 @@ async fn update_user_data(
         return Err(ApiError::NoPermission);
     }
 
-    update_user(get_connection!(db), &new_data).await
+    if !user_id_exists(&db, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+
+    update_user(&db, user_id, &new_data).await
 }
