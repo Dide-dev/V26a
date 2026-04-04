@@ -7,6 +7,7 @@
 pub mod auth;
 pub mod cards;
 pub mod demo;
+pub mod images;
 pub mod trees;
 pub mod users;
 

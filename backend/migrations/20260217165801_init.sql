@@ -54,3 +54,11 @@ CREATE TABLE cards
     back            VARCHAR(5000) NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree deletes its cards
 );
+
+CREATE TABLE images
+(
+    id SERIAL PRIMARY KEY,
+    filename TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -16,13 +16,16 @@ use crate::api_v1::{session::Keys, v1_api};
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
 use std::env;
+use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use axum::extract::DefaultBodyLimit;
 
 #[derive(Clone)]
 pub struct Config {
     session_duration: i64,
     jwt_keys: Keys,
+    upload_dir: String,
 }
 
 impl Config {
@@ -43,6 +46,7 @@ impl Config {
                     .expect("JWT_SECRET must be set")
                     .as_bytes(),
             ),
+            upload_dir: env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string()),
         }
     }
 }
@@ -61,6 +65,7 @@ async fn main() {
 
     // Build our application with a route.
     let app = Router::new()
+        .nest_service("/uploads", ServeDir::new("./uploads"))
         .merge(static_frontend())
         .nest("/api", backend().await);
 
@@ -101,5 +106,6 @@ async fn backend() -> Router {
     Router::new()
         .nest("/v1", v1_api())
         .layer(Extension(db))
+        .layer(DefaultBodyLimit::max(20 * 1024 * 1024))
         .with_state(config)
 }

@@ -10,3 +10,7 @@ Thumbs.db
 
 # Test coverage report
 htmlReport/
+
+# Keep backend/uploads folder, but ignore contents
+backend/uploads/*
+!backend/uploads/.gitkeep
