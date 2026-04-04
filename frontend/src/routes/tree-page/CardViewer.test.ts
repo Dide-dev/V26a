@@ -1,10 +1,15 @@
-import {render, screen} from '@testing-library/svelte';
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
+import { render, screen } from '@testing-library/svelte';
 import type { CardGetData, CardId } from '$lib/backend/cards';
 import NodeViewer from './NodeViewer.svelte';
 import type { Node, RootNode, TreeWithCards } from '$lib/backend/trees';
 import { userEvent } from '@testing-library/user-event/dist/cjs/index.js';
 import { expect, test } from 'vitest';
-
 
 function renderTree(): TreeWithCards {
     /* eslint-disable @typescript-eslint/naming-convention */
@@ -87,7 +92,7 @@ function renderTree(): TreeWithCards {
     return tree;
 }
 
-test('CardViewer viewer', async() => {
+test('CardViewer viewer', async () => {
     const user = userEvent.setup();
     const tree = renderTree();
 
@@ -100,6 +105,6 @@ test('CardViewer viewer', async() => {
     await user.click(await screen.findByText('bar'));
     await user.click((await screen.findAllByText('Visible'))[4]);
     expect((await screen.findAllByText('Visible')).length === 3);
-    expect((await screen.findAllByText("Extra Hidden")).length === 1);
+    expect((await screen.findAllByText('Extra Hidden')).length === 1);
     expect(await screen.findByText('Hidden Gem'));
 });
