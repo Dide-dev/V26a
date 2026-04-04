@@ -9,19 +9,24 @@
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
     import AddCard from './AddCard.svelte';
     import { onMount } from 'svelte';
+    import CardViewer from "./CardViewer.svelte";
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         tree = $bindable(),
         parent,
         node,
+        parentIsVisible = false,
         editingPage
     }: {
         tree: TreeWithCards;
         parent: Node | RootNode;
         node: Node | RootNode;
+        parentIsVisible?: boolean;
         editingPage: boolean;
     } = $props();
+
+    let visible = $derived("label" in node);
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -103,12 +108,13 @@
         </div>
         <!-- Standard Node -->
     {:else}
-        <div class="tree__node">
+<!--        <div class="tree__node">
             <button class="h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1">
-                <!-- Only shows front right now, needs to be extended to front and back when card reveals are being implemented. -->
+                &lt;!&ndash; Only shows front right now, needs to be extended to front and back when card reveals are being implemented. &ndash;&gt;
                 {tree.cards[node.cardId].front}
             </button>
-        </div>
+        </div>-->
+        <CardViewer {tree} {node} visibleParent={parentIsVisible} bind:visible={visible} {editingPage}/>
     {/if}
 
     <!-- Adds buttons to manage the cards of the tree if in editing mode -->
@@ -123,7 +129,7 @@
             {#each svgLines as line (line)}
                 <line
                     {...line}
-                    class="stroke-yellow-950"
+                    class="stroke-yellow-900"
                     stroke-linecap="round"
                     stroke-width={strokeWidth}
                 />
@@ -135,7 +141,7 @@
     <div bind:this={domChildren} class="flex flex-col gap-5">
         {#each node.children as child_node (child_node)}
             <div class="relative">
-                <NodeViewer bind:tree parent={node} node={child_node} {editingPage} />
+                <NodeViewer bind:tree parent={node} node={child_node} parentIsVisible={visible} {editingPage} />
             </div>
         {/each}
     </div>
