@@ -34,17 +34,17 @@
         <div
             class="tree__node h-fit w-xl border-2 border-green-800 bg-green-50 p-1 text-center wrap-anywhere"
         >
-            <button class="cursor-pointer" onclick={toggleVisible}
-                >{tree.cards[node.cardId].back}</button
-            >
+            <button class="min-h-6 cursor-pointer" onclick={toggleVisible}>
+                {tree.cards[node.cardId].back}
+            </button>
         </div>
     {:else}
         <div
             class="tree__node h-fit w-xl border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
         >
-            <button class="cursor-pointer" onclick={toggleVisible}
-                >{tree.cards[node.cardId].front}</button
-            >
+            <button class="min-h-6 cursor-pointer" onclick={toggleVisible}>
+                {tree.cards[node.cardId].front}
+            </button>
         </div>
     {/if}
 {:else}
@@ -57,9 +57,9 @@
         <div
             class="tree__node h-fit w-fit max-w-xl border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
         >
-            <button class="cursor-pointer" onclick={setVisible}
-                >{tree.cards[node.cardId].front}</button
-            >
+            <button class="min-h-6 min-w-50 cursor-pointer" onclick={setVisible}>
+                {tree.cards[node.cardId].front}
+            </button>
         </div>
     {:else}
         <div class="tree-node h-fit w-4 border-2 border-green-800 bg-green-800 p-1">
