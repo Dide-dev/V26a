@@ -34,7 +34,7 @@
         <div
             class="tree__node h-fit w-xl border-2 border-green-800 bg-green-50 p-1 text-center wrap-anywhere"
         >
-            <button class="min-h-6 cursor-pointer" onclick={toggleVisible}>
+            <button class="min-h-6 w-xl cursor-pointer" onclick={toggleVisible}>
                 {tree.cards[node.cardId].back}
             </button>
         </div>
@@ -42,7 +42,7 @@
         <div
             class="tree__node h-fit w-xl border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
         >
-            <button class="min-h-6 cursor-pointer" onclick={toggleVisible}>
+            <button class="min-h-6 w-xl cursor-pointer" onclick={toggleVisible}>
                 {tree.cards[node.cardId].front}
             </button>
         </div>
