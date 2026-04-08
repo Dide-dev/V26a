@@ -12,7 +12,7 @@ use sqlx::{PgExecutor, query};
 /// Add a new image to the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool).
 ///
 /// `image_data` - The data assigned to the new image as [`ImageAddData`].
 ///
