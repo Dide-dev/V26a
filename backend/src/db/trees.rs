@@ -63,6 +63,28 @@ pub async fn add_tree(
     Ok(tree_id)
 }
 
+/// Removes a tree and all of its cards from the database.
+/// Does **not** check if the tree existed in the first place.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - the id of the tree to remove
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+///
+pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), ApiError> {
+    // When this tree is delted from database, the cards are automatically deleted with it.
+    // This is because of the `ON DELETE CASCADE` in the foreign key of the 'cards' table.
+    query!("DELETE FROM trees WHERE id=$1", tree_id)
+        .execute(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments

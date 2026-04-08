@@ -12,8 +12,8 @@ use crate::db::trees::{
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
-    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
-    TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeRemoveData,
+    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
@@ -29,6 +29,7 @@ use sqlx::{PgConnection, PgExecutor, PgPool};
 pub fn trees() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_tree))
+        .route("/remove", post(remove_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/remove-card", post(remove_card_from_tree))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
@@ -58,6 +59,17 @@ async fn add_new_tree(
 
     let json_id = Json(id);
     Ok(json_id)
+}
+
+async fn remove_tree(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(tree_remove_data): Json<TreeRemoveData>,
+) -> Result<(), ApiError> {
+    let TreeRemoveData { tree_id } = tree_remove_data;
+    verify_tree_permissions(&db, tree_id, claims).await?;
+
+    crate::db::trees::remove_tree(&db, tree_id).await
 }
 
 /// Check whether a tree structure contains no cards.

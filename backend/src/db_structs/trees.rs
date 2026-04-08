@@ -144,6 +144,12 @@ pub struct TreeAddData {
     pub tree_structure: TreeStructure,
 }
 
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeRemoveData {
+    pub tree_id: i32,
+}
+
 /// The data returned when requesting a list of trees.
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]

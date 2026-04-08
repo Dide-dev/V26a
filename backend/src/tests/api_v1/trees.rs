@@ -9,7 +9,7 @@
 use crate::db_structs::cards::{CardAddData, CardGetData};
 use crate::db_structs::trees::{
     Node, RootNode, TreeAddData, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData,
-    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    TreeRemoveData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use crate::tests::api_v1::{login, register, setup, setup_login};
@@ -131,6 +131,69 @@ async fn test_unpublished_trees(db: PgPool) {
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
+}
+
+#[sqlx::test]
+async fn test_deleting_trees_works(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let tree_add_data = TreeAddData {
+        tree_data: TreeData::default(),
+        tree_structure: TreeStructure { root_nodes: vec![] },
+    };
+    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+
+    // We also add a card, to ensure that it does not prevent the tree from being deleted.
+    let card_add_data = CardAddData {
+        tree_id,
+        front: "abc".to_owned(),
+        back: "def".to_owned(),
+    };
+    server
+        .post("/cards/add")
+        .json(&card_add_data)
+        .await
+        .assert_status_ok();
+
+    let tree_remove_data = TreeRemoveData { tree_id };
+    server
+        .post("/trees/remove")
+        .json(&tree_remove_data)
+        .await
+        .assert_status_ok();
+
+    let response = server
+        .get(&format!("/trees/get-with-cards/{tree_id}"))
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingTree(tree_id).to_string());
+}
+
+#[sqlx::test]
+async fn test_deleting_trees_denied(db: PgPool) {
+    let mut server = setup_login(db).await;
+
+    let tree_add_data = TreeAddData {
+        tree_data: TreeData {
+            published: true,
+            ..Default::default()
+        },
+        tree_structure: TreeStructure { root_nodes: vec![] },
+    };
+    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+
+    server.clear_cookies();
+    let tree_remove_data = TreeRemoveData { tree_id };
+    server
+        .post("/trees/remove")
+        .json(&tree_remove_data)
+        .await
+        .assert_status_unauthorized();
+
+    let response = server
+        .get(&format!("/trees/get-with-cards/{tree_id}"))
+        .await;
+    response.assert_status_ok();
 }
 
 #[sqlx::test]
