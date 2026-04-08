@@ -17,6 +17,12 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
+    /// An error to return when the user requests a page that doesn't exist.
+    InvalidPage,
+    /// An error to return when the user requests a page number that exceeds the defined maximum.
+    MaxPageNumberExceeded(i32),
+    /// An error to return when the user requests a page size that exceeds the defined maximum.
+    MaxPageSizeExceeded(i32),
     /// An error to return when the new tree structure doesn't match the list of cards matched
     /// to the tree in the cards table.
     MismatchedStructure,
@@ -24,6 +30,8 @@ pub enum ApiError {
     MissingCard(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
+    /// An error to return when a non-existing `user_id` is used to access a user.
+    MissingUser(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
     /// An error to be returned when a file is too big to be uploaded.
@@ -32,6 +40,8 @@ pub enum ApiError {
     MultipartException,
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
+    /// An error to return when a wrong e-mail or password is provided while trying to log in.
+    WrongCredentials,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -44,8 +54,6 @@ pub enum ApiError {
     /// An error to be returned by `Axum` when a protected endpoint is accessed without providing
     /// a session.
     MissingAuthentication,
-    /// An error to return when a user tries to log in with missing credentials.
-    MissingCredentials,
 
     //----------------//
     // 403: FORBIDDEN //
@@ -53,9 +61,6 @@ pub enum ApiError {
     /// An error to return when a user tries to do something for which they are not properly
     /// authorized.
     NoPermission,
-    /// An error to return when the API if the user does not have the right permissions to
-    /// access something.
-    WrongCredentials,
 
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
@@ -86,15 +91,31 @@ pub enum ApiError {
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
+            //------------------//
+            // 400: BAD REQUEST //
+            //------------------//
             ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
+            }
+            ApiError::InvalidPage => {
+                write!(f, "This page does not exist.")
+            }
+            ApiError::MaxPageNumberExceeded(max_page) => {
+                write!(f, "You may not request a page higher than {max_page}.")
+            }
+            ApiError::MaxPageSizeExceeded(max_size) => {
+                write!(
+                    f,
+                    "You may not request more than {max_size} items per page."
+                )
             }
             ApiError::MismatchedStructure => write!(
                 f,
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
             ),
-            ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
+            ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
             ApiError::NonEmptyStructure => write!(
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
@@ -111,15 +132,25 @@ impl Display for ApiError {
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
             }
+            ApiError::WrongCredentials => {
+                write!(f, "The e-mail or password provided was incorrect.")
+            }
 
-            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
+            //-------------------//
+            // 401: UNAUTHORIZED //
+            //-------------------//
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
-            ApiError::MissingCredentials => write!(f, "Missing credentials."),
+            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
 
-            ApiError::WrongCredentials => write!(f, "Wrong credentials."),
+            //----------------//
+            // 403: FORBIDDEN //
+            //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
+            //----------------------------//
+            // 500: INTERNAL SERVER ERROR //
+            //----------------------------//
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::DatabaseMemoryCap => write!(
                 f,
@@ -157,20 +188,24 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed
+            | ApiError::InvalidPage
+            | ApiError::MaxPageNumberExceeded(_)
+            | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
-            | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
-            | ApiError::NonEmptyStructure
             | ApiError::FileTooBigException
             | ApiError::InvalidImageType
-            | ApiError::MultipartException => StatusCode::BAD_REQUEST,
+            | ApiError::MultipartException
+            | ApiError::MissingTree(_)
+            | ApiError::MissingUser(_)
+            | ApiError::NonEmptyStructure
+            | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 
-            ApiError::MissingCredentials
-            | ApiError::MissingAuthentication
-            | ApiError::ExpiredSession
-            | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
+            ApiError::ExpiredSession
+            | ApiError::InvalidSession
+            | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
-            ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
+            ApiError::NoPermission => StatusCode::FORBIDDEN,
 
             ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap

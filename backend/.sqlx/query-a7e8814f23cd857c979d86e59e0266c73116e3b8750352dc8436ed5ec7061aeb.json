@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS(SELECT 1 FROM counters WHERE id = 0)",
+  "query": "SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,13 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Int4"
+      ]
     },
     "nullable": [
       null
     ]
   },
-  "hash": "41ef1adbdae027f7263fc8f699b2533722fc37d3f3528fbb2366957ba7924f20"
+  "hash": "a7e8814f23cd857c979d86e59e0266c73116e3b8750352dc8436ed5ec7061aeb"
 }

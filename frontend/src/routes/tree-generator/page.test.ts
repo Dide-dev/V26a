@@ -82,5 +82,5 @@ test('Redirection after succesful creation', async () => {
     await user.type(titleInput, 'Test tree title');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
-    expect(goto).toHaveBeenCalledWith('/editor?id=1');
+    expect(goto).toHaveBeenCalledWith('/tree-page/editor?id=1');
 });

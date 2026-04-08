@@ -4,13 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::cards::{add_card, get_tree_of_card, update_card};
-use crate::db_structs::cards::{CardAddData, CardUpdateData};
-use crate::{Config, get_connection};
-
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_ownership;
+use crate::db::cards::{add_card, get_tree_of_card, update_card};
+use crate::db_structs::cards::{CardAddData, CardUpdateData};
 use crate::errors::ApiError;
+use crate::{Config, get_connection};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
