@@ -59,7 +59,10 @@ export type UserUpdateData = {
 
 /** The data in the cookie */
 export type UserInfo = {
-    userId: UserId;
+    /** This corresponds to userid of the current login. */
+    sub: UserId;
+    /** Expiration datetime for the current login, represented as number of seconds since unix epoch. */
+    exp: number;
     accountType: AccountType;
 };
 
@@ -73,13 +76,15 @@ export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
 }
 
-/** Get the user's own data */
+/** Update a user's data */
 export function updateUser(userId: UserId, newData: UserUpdateData): Promise<UserGetData> {
     return apiCallPostUser(`update/${userId}`, newData);
 }
 
-/** read the userinfo from the cookie */
-/** if logged in return id & type and if not logged in return null */
+/**
+ * Read the userinfo from the cookie.
+ * If logged in return id & type and if not logged in return null.
+ */
 export function getUserInfo(): UserInfo | null {
     if (typeof document === 'undefined') return null;
     const cookie = document.cookie.split('; ').find((row) => row.startsWith('user_info='));

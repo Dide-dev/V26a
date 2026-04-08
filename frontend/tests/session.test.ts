@@ -6,9 +6,20 @@
 
 import { test, expect, type Page } from '@playwright/test';
 
+/** Will only use ascii alphanumerical characters in resulting string. */
+function generateRandomString(length: number): string {
+    let result = '';
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    for (let i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+}
+
 test('check that login creates user_info cookie', async ({ page }) => {
-    // Account
-    const email = 'test123@gmail.com';
+    // The email is randomized, because playwright runs multiple browsers for the tests.
+    // Between tests the database is not reset so that would result in failure to register with the same email.
+    const email = `test123+${generateRandomString(20)}@gmail.com`;
     const password = 'Monkey123!';
 
     // Function that fills in the login UI
@@ -17,20 +28,18 @@ test('check that login creates user_info cookie', async ({ page }) => {
         await page.getByTestId('email').fill(email);
         await page.getByTestId('password').fill(password);
         await page.getByRole('button').click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForURL('/');
     }
 
     // Function that fills in the register UI
     async function register(page: Page, email: string, password: string) {
         await page.goto('/registration');
-
         await page.getByTestId('email').fill(email);
         await page.getByTestId('name').fill('Test User');
         await page.getByTestId('password').fill(password);
         await page.getByTestId('repeat password').fill(password);
         await page.getByRole('button').click();
-
-        await page.goto('/login');
+        await page.waitForURL('/login/');
     }
 
     // Set the cookie
@@ -39,27 +48,17 @@ test('check that login creates user_info cookie', async ({ page }) => {
         return cookies.find((c) => c.name === 'user_info');
     }
 
-    // Try login (to check if there is an existing account)
-    // This is called, because playwright runs 3 browsers for the tests
-    // So the other test already have an account because of 1st browser run (test)
-    // Not calling login again would fail register (if there is an existing account)
+    await register(page, email, password);
     await login(page, email, password);
-
-    let cookie = await getUserInfoCookie(page);
-
-    // If cookie not set, user does not exist (no existing account)
-    // Register and login are then called again
-    if (!cookie) {
-        await register(page, email, password);
-        await login(page, email, password);
-        cookie = await getUserInfoCookie(page);
-    }
+    const cookie = await getUserInfoCookie(page);
 
     // Validate that the cookie exists
+    // For whatever reason this fails in CI but works fine locally and from manual testing outside playwright.
+    // The inconsistency is why we have removed playwright from the CI.
     expect(cookie).toBeDefined();
 
     // Checks if the content of the cookie is the expected default (author)
     const userInfo = JSON.parse(decodeURIComponent(cookie!.value));
-    expect(userInfo.userId).toBeDefined();
+    expect(userInfo.sub).toBeDefined();
     expect(userInfo.accountType).toBe('author');
 });
