@@ -5,10 +5,8 @@
 -->
 
 <script lang="ts">
-    import { locales, getLocale } from '$lib/paraglide/runtime.js';
+    import { locales } from '$lib/paraglide/runtime.js';
     import { getOwnUserData, getUserInfo, updateUser, type UserGetData } from '$lib/backend/users';
-    import { goto } from '$app/navigation';
-    import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
 
     let error: null | Error = $state(null);
@@ -16,21 +14,26 @@
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
-        try {
-            await updateUser(getUserInfo()!.userId, {
-                name: userData.name,
-                nickname: userData.nickname,
-                aboutMe: userData.aboutMe,
-                emailVisible: userData.emailVisible,
-                language: userData.language,
-                accountType: null,
-                enabled: null
-            });
+        const userInfo = getUserInfo();
+        if (userInfo === null) {
+            error = new Error('You are not logged in!');
+        } else {
+            try {
+                await updateUser(userInfo.userId, {
+                    name: userData.name,
+                    nickname: userData.nickname,
+                    aboutMe: userData.aboutMe,
+                    emailVisible: userData.emailVisible,
+                    language: userData.language,
+                    accountType: null,
+                    enabled: null
+                });
 
-            // Effectively reloads the page
-            userDataPromise = getOwnUserData();
-        } catch (e) {
-            error = e as Error;
+                // Effectively reloads the page
+                userDataPromise = getOwnUserData();
+            } catch (e) {
+                error = e as Error;
+            }
         }
     }
 </script>
@@ -52,7 +55,7 @@
                 <label>
                     <p class="font-bold">{m.name()}</p>
                     <input
-                        class="rounded-md border-2 w-full"
+                        class="w-full rounded-md border-2"
                         bind:value={userData.name}
                         name="name"
                         type="text"
@@ -64,7 +67,7 @@
                 <label>
                     <p class="font-bold">{m.nickname()}</p>
                     <input
-                        class="rounded-md border-2 w-full"
+                        class="w-full rounded-md border-2"
                         bind:value={userData.nickname}
                         name="nickname"
                         type="text"
@@ -75,7 +78,7 @@
                 <label>
                     <p class="font-bold">{m.aboutMe()}</p>
                     <textarea
-                        class="rounded-md border-2 w-full"
+                        class="w-full rounded-md border-2"
                         bind:value={userData.aboutMe}
                         name="aboutMe"
                         placeholder={m.optional()}
@@ -102,7 +105,7 @@
                     {m.emailVisible()}
                 </label>
                 <button class="rounded-sm bg-emerald-500 p-1">Update</button>
-                <p class="text-red-600" data-testid="error">{error?.message}</p>
+                <p class="text-red-600">{error?.message}</p>
             </form>
         </div>
     </div>
