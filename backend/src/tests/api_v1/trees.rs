@@ -103,6 +103,37 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_unpublished_trees(db: PgPool) {
+    let mut server = setup_login(db).await;
+
+    let tree_data = TreeData {
+        published: false,
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure { root_nodes: vec![] };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+
+    let endpoint = format!("/trees/get-with-cards/{tree_id}");
+    server.get(&endpoint).await.assert_status_ok();
+
+    server.clear_cookies();
+    let response = server.get(&endpoint).await;
+    response.assert_status_unauthorized();
+    assert_eq!(response.text(), ApiError::MissingAuthentication.to_string());
+
+    let second_user_email = "second_user@localhost";
+    register(&server, second_user_email.to_owned()).await;
+    login(&server, second_user_email.to_owned()).await;
+    let response = server.get(&endpoint).await;
+    response.assert_status_forbidden();
+    assert_eq!(response.text(), ApiError::NoPermission.to_string());
+}
+
+#[sqlx::test]
 async fn test_retrieving_owned_trees(db: PgPool) {
     let server = setup_login(db).await;
 

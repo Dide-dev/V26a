@@ -224,14 +224,30 @@ async fn update_tree_data(
 /// # Error
 /// Returns [`MissingTree`](ApiError::MissingTree) if `tree_id` does not exist.
 ///
-/// May return an [`ApiError`] instead.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the tree is not published and the user is not logged in.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published and an user that is not the owner is logged in.
+///
+/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
+    claims: Option<Claims>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
     let (data, gen_data, structure) = db_get_tree_all_data(&db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
+
+    if !data.published {
+        // If the tree is not published, only the author is allowed access
+        let Some(claims) = claims else {
+            return Err(ApiError::MissingAuthentication);
+        };
+
+        if claims.sub != gen_data.owner_id {
+            return Err(ApiError::NoPermission);
+        }
+    }
 
     let tree_cards = get_tree_cards(&db, tree_id).await?;
 
