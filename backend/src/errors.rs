@@ -26,6 +26,13 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
+    /// An error to be returned when a file is to big to be uploaded.
+    FileToBigException,
+    /// An error to return when something goes wrong while parsing multipart data.
+    MultipartException,
+/// An error to return when an invalid image type is attempted to be put in the database.
+    InvalidImageType,
+    
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -68,6 +75,12 @@ pub enum ApiError {
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
     TokenCreationException,
+    /// An error to be returned by `create_dir_all` when it is unable to find or create a directory.
+    CreateDirException,
+    /// An error to be return by `File::create` or `File::write_all` when it is unable to create or write to a file.
+    FileWriteException,
+    /// An error to be returned by `tokio::fs::rename` when a file cannot be renamed.
+    FileRenameException
 }
 
 // Define how errors should be converted to messages.
@@ -87,6 +100,15 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
+            ApiError::FileToBigException=>{
+                write!(f, "The file being uploaded is too big.")
+            }
+            ApiError::MultipartException=>{
+                write!(f, "Something went wrong parsing multipartdata. Check whether the multipart request is valid and whether the multipart body is not corrupt")
+            }
+            ApiError::InvalidImageType=>{
+                write!(f, "An invalid image type was uploaded.")
+            }
 
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
@@ -109,6 +131,15 @@ impl Display for ApiError {
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
             }
+            ApiError::CreateDirException =>{
+                write!(f, "An unexpected directory creation error occurred.")
+            }
+            ApiError::FileWriteException =>{
+                write!(f, "An unexpected error occurred while writing a file. Check if you have write permisions, the path is valid and whether the disk has space.")
+            }
+            ApiError::FileRenameException =>{
+                write!(f, "An unexpected error occurred while renaming a file. Check whether the file exists and whether you have permisions.")
+            }
         }
     }
 }
@@ -121,7 +152,10 @@ impl ApiError {
             | ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
-            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure 
+            |ApiError::FileToBigException
+            |ApiError::InvalidImageType
+            |ApiError::MultipartException => StatusCode::BAD_REQUEST,
 
             ApiError::MissingCredentials
             | ApiError::MissingAuthentication
@@ -135,7 +169,10 @@ impl ApiError {
             | ApiError::HashException
             | ApiError::InvalidDataFound
             | ApiError::SerdeException
-            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
+            | ApiError::TokenCreationException
+            | ApiError::CreateDirException
+            |ApiError::FileWriteException
+            |ApiError::FileRenameException => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
