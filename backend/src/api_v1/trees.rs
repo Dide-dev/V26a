@@ -224,10 +224,11 @@ async fn update_tree_data(
 /// # Error
 /// Returns [`MissingTree`](ApiError::MissingTree) if `tree_id` does not exist.
 ///
-/// If the tree is not published, and the user is not logged in, returns [`MissingAuthentication`](ApiError::MissingAuthentication).
-/// If the user is logged in but the wrong user, returns [`NoPermission`](ApiError::NoPermission)
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the tree is not published and the user is not logged in.
 ///
-/// May return an [`ApiError`] instead.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published and an user that is not the owner is logged in.
+///
+/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
