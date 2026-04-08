@@ -61,7 +61,7 @@ export type UserUpdateData = {
 export type UserInfo = {
     /** This corresponds to userid of the current login. */
     sub: UserId;
-    /** Experation datetime for the current login, represented as number of seconds since unix epoch. */
+    /** Expiration datetime for the current login, represented as number of seconds since unix epoch. */
     exp: number;
     accountType: AccountType;
 };

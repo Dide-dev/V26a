@@ -54,8 +54,12 @@ async fn login(
     let time = time::Duration::new(config.session_duration, 0);
 
     // The properties of the cookies are important to get right.
-    // `Secure`: cookie is only sent over HTTPS, so it should always be set
-    // `HttpOnly`: if set it prevents javascript from accessing the cookie
+    // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
+    //           There is no reason to not set this property, now that every website is using HTTPS.
+    // `HttpOnly`: This prevents javascript from accessing the cookie.
+    // `Path`: The cookie is only sent along requests when the request path starts with this string.
+    //         The cookie is also only available to the JavaScript when the webpage url starts with this string.
+    // `MaxAge`: After this much time has passed, the browser will automatically delete the cookie.
     // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
 
     let cookie = Cookie::build(("session", token))
