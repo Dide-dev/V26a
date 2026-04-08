@@ -23,13 +23,13 @@
         if (response.succeeded) {
             loginFailed = false;
             // Redirect to given url if valid
-            let redirect_url = page.url.searchParams.get('redirect');
-            if (!redirect_url) {
+            let redirectUrl = page.url.searchParams.get('redirect');
+            if (!redirectUrl) {
                 goto(appLink('/'));
             } else {
                 // redirect_url should be just a relative path, not a complete url
-                if (!URL.canParse(redirect_url)) {
-                    goto(appLink(redirect_url));
+                if (!URL.canParse(redirectUrl)) {
+                    goto(appLink(redirectUrl));
                 } else {
                     goto(appLink('/'));
                 }

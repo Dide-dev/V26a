@@ -10,6 +10,7 @@ mod cards;
 mod trees;
 mod users;
 
+use crate::api_v1::users::AddUserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
@@ -54,7 +55,12 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         .await;
     response.assert_status_ok();
 
-    response.json::<i32>()
+    let response = response.json::<AddUserResponse>();
+    let AddUserResponse::Success { user_id } = response else {
+        // Adding a user should never fail in a test
+        panic!()
+    };
+    user_id
 }
 
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.

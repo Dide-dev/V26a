@@ -61,7 +61,6 @@
         } else if (!checkSamePassword()) {
             passwordNotSame = true;
         } else {
-            
             let addResponse = await addUser(formData);
             if (addResponse.type === 'Success') {
                 emailAlreadyExists = false;
@@ -71,7 +70,6 @@
             } else {
                 throw new Error('ERROR: Unexpected output from API.');
             }
-
         }
     }
 </script>

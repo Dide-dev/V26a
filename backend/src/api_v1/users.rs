@@ -13,7 +13,7 @@ use crate::errors::ApiError;
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the user category.
@@ -24,9 +24,9 @@ pub fn users() -> Router<Config> {
         .route("/update/{user_id}", post(update_user_data))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
-enum AddUserResponse {
+pub enum AddUserResponse {
     Success { user_id: i32 },
     EmailAlreadyUsed,
 }

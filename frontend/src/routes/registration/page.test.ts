@@ -130,6 +130,9 @@ test('Redirection after succesful registration', async () => {
 
 test('Submission with correct data', async () => {
     const user = userEvent.setup();
+
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Success', userId: 1 });
+
     render(page);
 
     const emailInput = screen.getByTestId('email');
@@ -142,10 +145,8 @@ test('Submission with correct data', async () => {
     await user.type(repeatPasswordInput, 'ThisIsAVerySecureP@ssword123');
 
     await user.click(screen.getByRole('button', { name: m.register() }));
-    const error = screen.getByTestId('error');
-
-    expect(error.textContent).toBe('');
-    expect(error.textContent).toBe('');
+    const errors = screen.queryByTestId('error');
+    expect(errors).toBeFalsy();
 
     expect(addUser).toHaveBeenCalledWith(
         expect.objectContaining({
