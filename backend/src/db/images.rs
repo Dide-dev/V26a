@@ -38,7 +38,7 @@ pub async fn add_image(db: impl PgExecutor<'_>, image_data: &ImageAddData) -> Re
 /// Check whether an image already exists in the database based on its hash.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool).
 ///
 /// `hash` - The hash of the image.
 ///
