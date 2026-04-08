@@ -5,7 +5,7 @@
 */
 
 use crate::api_v1::session::Claims;
-use crate::api_v1::trees::verify_tree_ownership;
+use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{add_card, get_tree_of_card, update_card};
 use crate::db_structs::cards::{CardAddData, CardUpdateData};
 use crate::errors::ApiError;
@@ -39,7 +39,7 @@ async fn add_new_card(
     Json(card_data): Json<CardAddData>,
 ) -> Result<Json<i32>, ApiError> {
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_ownership(&db, card_data.tree_id, claims.sub).await?;
+    verify_tree_permissions(&db, card_data.tree_id, claims).await?;
 
     let id = add_card(&db, &card_data).await?;
 
@@ -68,7 +68,7 @@ async fn update_existing_card(
     let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
 
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_ownership(&db, tree_id, claims.sub).await?;
+    verify_tree_permissions(&db, tree_id, claims).await?;
 
     update_card(get_connection!(db), &card_data).await?;
 
