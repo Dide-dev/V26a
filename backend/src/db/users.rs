@@ -29,16 +29,6 @@ use sqlx::{PgConnection, PgExecutor, query};
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_user(db: &mut PgConnection, user_data: &UserData) -> Result<i32, ApiError> {
-    // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
-    // constraint is placed on the `email` field.
-    // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
-    // will be returned instead of an `ApiError::EmailAlreadyUsed`.
-    let exists = user_exists(&mut *db, &user_data.email).await?;
-
-    if exists {
-        return Err(ApiError::EmailAlreadyUsed);
-    }
-
     // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
     // Put a limit on password length.
     let hashed_password =

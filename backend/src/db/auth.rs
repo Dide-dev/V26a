@@ -22,17 +22,21 @@ use sqlx::{PgExecutor, query};
 pub async fn get_user_id_and_password(
     db: impl PgExecutor<'_>,
     email: String,
-) -> Result<(i32, String), ApiError> {
+) -> Result<Option<(i32, String)>, ApiError> {
     let record = query!(
         "SELECT id, password_hash FROM users WHERE email = $1",
         email
     )
-    .fetch_one(db)
+    .fetch_optional(db)
     .await
-    .map_err(|_| ApiError::WrongCredentials)?;
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    let Some(record) = record else {
+        return Ok(None);
+    };
 
     let user_id = record.id;
     let password_hash = record.password_hash;
 
-    Ok((user_id, password_hash))
+    Ok(Some((user_id, password_hash)))
 }

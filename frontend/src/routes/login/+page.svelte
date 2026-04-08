@@ -14,16 +14,17 @@
         email: '',
         password: ''
     });
-    let error: null | Error = $state(null);
+    let loginFailed: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        try {
-            await login(loginData);
+        let response = await login(loginData);
+        if (response.succeeded) {
+            loginFailed = false;
             // TODO: this should redirect to the previous page after login.
             goto(appLink('/'));
-        } catch (e) {
-            error = e as Error;
+        } else {
+            loginFailed = true;
         }
     }
 </script>
@@ -53,6 +54,8 @@
             />
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.login()}</button>
-        <p class="text-red-600">{error?.message}</p>
+        {#if loginFailed}
+            <p class="text-red-600">{m.invalidCredentials()}</p>
+        {/if}
     </form>
 </div>

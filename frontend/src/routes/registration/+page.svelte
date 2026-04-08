@@ -21,6 +21,8 @@
         language: getLocale()
     });
     let repeatPassword = $state('');
+
+    // TODO: split this error in different types
     let error: null | Error = $state(null);
 
     function checkSamePassword(): boolean {
@@ -54,12 +56,17 @@
         } else if (!checkSamePassword()) {
             error = new Error(m.passwordsNotTheSame());
         } else {
-            try {
-                await addUser(formData);
+            
+            let addResponse = await addUser(formData);
+            if (addResponse.type === 'Success') {
+                error = null;
                 await goto(appLink('/login'));
-            } catch (e) {
-                error = e as Error;
+            } else if (addResponse.type === 'EmailAlreadyUsed') {
+                error = new Error(m.emailAlreadyExists())
+            } else {
+                throw new Error('ERROR: Unexpected output from API.');
             }
+
         }
     }
 </script>

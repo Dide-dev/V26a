@@ -110,7 +110,7 @@ test('Differing password and repeat password shows error', async () => {
 test('Redirection after succesful registration', async () => {
     const user = userEvent.setup();
 
-    (addUser as MockedFunction<typeof addUser>).mockResolvedValue(1);
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Success', userId: 1 });
 
     render(page);
 

@@ -32,7 +32,16 @@ export type UserData = {
     language: string;
 };
 
+export type AddUserSuccess = {
+    type: 'Success';
+    userId: UserId;
+};
+
+export type AddUserEmailInvalid = {
+    type: 'EmailAlreadyUsed';
+};
+
 /** Add a user to the database */
-export function addUser(user: UserData): Promise<UserId> {
+export function addUser(user: UserData): Promise<AddUserSuccess | AddUserEmailInvalid> {
     return apiCallPostUser('add', user);
 }

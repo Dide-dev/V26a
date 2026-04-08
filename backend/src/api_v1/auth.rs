@@ -15,6 +15,7 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use jsonwebtoken::{Header, encode};
+use serde::Serialize;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
@@ -22,25 +23,41 @@ pub fn auth() -> Router<Config> {
     Router::new().route("/login", post(login))
 }
 
+#[derive(Serialize)]
+struct LoginResponse {
+    succeeded: bool,
+}
+
 /// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
 /// with an encoded JWT.
+///
+/// # Returns
+/// A [`LoginResponse`] whether the combination of email and password is correct.
+///
+/// # Error
+/// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
-) -> Result<CookieJar, ApiError> {
+) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
     // Check if the user sent the credentials
     if body.email.is_empty() || body.password.is_empty() {
         return Err(ApiError::MissingCredentials);
     }
 
-    let (user_id, password_hash) = get_user_id_and_password(&db, body.email).await?;
+    let Some((user_id, password_hash)) = get_user_id_and_password(&db, body.email).await? else {
+        return Ok((jar, Json(LoginResponse { succeeded: false })));
+    };
+
     let password_valid = bcrypt::verify(body.password, password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
-        return Err(ApiError::WrongCredentials);
+        return Ok((jar, Json(LoginResponse { succeeded: false })));
     }
 
     let claims = Claims {
@@ -59,5 +76,5 @@ async fn login(
         .max_age(time::Duration::new(config.session_duration, 0))
         .http_only(true);
 
-    Ok(jar.add(cookie))
+    Ok((jar.add(cookie), Json(LoginResponse { succeeded: true })))
 }

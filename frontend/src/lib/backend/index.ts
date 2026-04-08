@@ -4,6 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+import { goto } from '$app/navigation';
+import { page } from '$app/state';
+import { appLink } from '$lib';
+
 /** This can be changed locally if api lives somewhere else */
 const prefix = '/api/v1/';
 
@@ -11,32 +15,44 @@ const prefix = '/api/v1/';
 export async function apiCallGet(path: string) {
     const response = await fetch(prefix + path, {
         method: 'GET',
-        // eslint-disable-next-line
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         headers: { Accept: 'application/json' }
     });
 
-    if (!response.ok) {
-        throw new Error(await response.text());
-    }
+    checkError(response);
 
     return await response.json();
 }
 
 /** This function is for the rest of the backend to call upon, do not call from UI! */
 export async function apiCallPost(path: string, body: unknown) {
+    // export async function apiCallPost(path: string, body: unknown) {
     const response = await fetch(prefix + path, {
         method: 'POST',
-        // eslint-disable-next-line
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
 
-    if (!response.ok) {
-        throw new Error(await response.text());
-    }
+    checkError(response);
 
     // Only return if some content is sent back
     if (response.headers.get('Content-Type') === 'application/json') {
         return await response.json();
+    } else {
+        return null;
+    }
+}
+
+/** Handle errors */
+async function checkError(response: Response) {
+    // Redirect to login page when user is not logged in while that is needed to perform action
+    if (response.status === 401) {
+        const encodedURI = encodeURI(page.url.pathname + page.url.search + page.url.hash);
+        await goto(appLink(`/login?redirect=${encodedURI}`));
+    }
+
+    if (!response.ok) {
+        throw new Error(await response.text());
     }
 }

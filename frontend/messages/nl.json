@@ -38,7 +38,9 @@
     "loadingTree": "De boom groeit...",
     "repeatPassword": "Herhaal wachtwoord",
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
+    "emailAlreadyExists": "Dit emailadres is al in gebruik",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
     "unexpectedErrorOccurred": "Er deed zich een onverwachte fout voor :(",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw."
 }

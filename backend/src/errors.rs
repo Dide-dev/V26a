@@ -15,8 +15,6 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when an e-mail has already been used and cannot be used again.
-    EmailAlreadyUsed,
     /// An error to return when the new tree structure doesn't match the list of cards matched
     /// to the tree in the cards table.
     MismatchedStructure,
@@ -47,9 +45,6 @@ pub enum ApiError {
     /// An error to return when a user tries to do something for which they are not properly
     /// authorized.
     NoPermission,
-    /// An error to return when the API if the user does not have the right permissions to
-    /// access something.
-    WrongCredentials,
 
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
@@ -74,9 +69,6 @@ pub enum ApiError {
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            ApiError::EmailAlreadyUsed => {
-                write!(f, "A user with this e-mail address already exists.")
-            }
             ApiError::MismatchedStructure => write!(
                 f,
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
@@ -93,7 +85,6 @@ impl Display for ApiError {
             ApiError::MissingCredentials => write!(f, "Missing credentials."),
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
 
-            ApiError::WrongCredentials => write!(f, "Wrong credentials."),
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
@@ -117,8 +108,7 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed
-            | ApiError::MismatchedStructure
+            ApiError::MismatchedStructure
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
             | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
@@ -128,7 +118,7 @@ impl ApiError {
             | ApiError::ExpiredSession
             | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
 
-            ApiError::WrongCredentials | ApiError::NoPermission => StatusCode::FORBIDDEN,
+            ApiError::NoPermission => StatusCode::FORBIDDEN,
 
             ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap
