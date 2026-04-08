@@ -36,9 +36,6 @@
     class="m-1 flex justify-end gap-2 bg-sky-400 p-1 *:rounded-sm *:border-zinc-900 *:bg-sky-600 *:p-1"
 >
     <a href={appLink('/')}>{m.home()}</a>
-    <a href={appLink('/api-testing')}>{m.apiTesting()}</a>
-    <a href={appLink('/counter')}>{m.globalCounter()}</a>
-    <a href={appLink('/tree-viewer')}>{m.viewExampleTree()}</a>
     <a href={appLink('/tree-generator')}>{m.createTree()}</a>
     <a href={appLink('/registration')}>{m.register()}</a>
     <a href={appLink('/login')}>{m.login()}</a>

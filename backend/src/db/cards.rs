@@ -5,10 +5,9 @@
 */
 
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
-use std::collections::BTreeMap;
-
 use crate::errors::ApiError;
 use sqlx::{PgConnection, PgExecutor, query};
+use std::collections::BTreeMap;
 
 /// Add a new card to the database.
 ///

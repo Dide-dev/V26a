@@ -7,20 +7,21 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_tree_owner, is_structure_valid,
+    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count, get_queried_list,
+    get_tree_owner, is_structure_valid,
 };
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
-    TreeAddData, TreeMetadata, TreeRemoveCardData, TreeStructure, TreeUpdateData,
-    TreeUpdateStructureData, TreeWithCards,
+    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
-use crate::{Config, db};
-
 use crate::errors::ApiError;
+use crate::{Config, db};
 
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-
+use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgExecutor, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -30,6 +31,7 @@ pub fn trees() -> Router<Config> {
         .route("/update-structure", post(update_tree_structure))
         .route("/remove-card", post(remove_card_from_tree))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
+        .route("/get-list", get(get_list))
         .route("/update-data", post(update_tree_data))
         .route("/get-mine-all", get(get_all_owned_trees))
 }
@@ -291,4 +293,55 @@ pub async fn verify_tree_ownership(
     }
 
     Ok(())
+}
+
+/// Get the list of all trees satisfying some filters at a given page.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`].
+///
+/// `filters` - The requested filters to apply to the trees, given as [`TreeFilters`].
+///
+/// # Returns
+/// A list with the trees satisfying the filters at the requested page,
+/// together with an integer with the next page num, or [`None`] if it doesn't exist.
+///
+/// # Error
+/// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than 100 items per page.
+///
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_list(
+    claims: Option<Claims>,
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+    Query(filters): Query<TreeFilters>,
+) -> Result<Json<TreeListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let optional_user_id = claims.map(|c| c.sub);
+
+    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let trees_count = get_queried_count(&mut *tx, &filters, optional_user_id).await?;
+    if trees_count == 0 {
+        return Ok(Json(TreeListResponse {
+            total_trees: 0,
+            trees: Vec::new(),
+        }));
+    }
+
+    let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
+
+    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let list = TreeListResponse {
+        total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
+        trees,
+    };
+
+    Ok(Json(list))
 }
