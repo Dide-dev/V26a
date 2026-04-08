@@ -14,6 +14,7 @@ import {
     getOwnUserData,
     getUserInfo,
     type UserGetData,
+    type UserUpdateData,
     type UserInfo
 } from '$lib/backend/users';
 
@@ -40,11 +41,12 @@ test('No submission without name', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        userId: 1,
+        sub: 1,
+        exp: 42,
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
-    mockGetInfo.mockResolvedValue(userInfo);
+    mockGetInfo.mockReturnValue(userInfo);
 
     const user = userEvent.setup();
     render(page);
@@ -68,16 +70,28 @@ test('Submission with full data', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        userId: 1,
+        sub: 1,
+        exp: 42,
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
-    mockGetInfo.mockResolvedValue(userInfo);
+    mockGetInfo.mockReturnValue(userInfo);
 
     const user = userEvent.setup();
     render(page);
 
+    const aboutMeInput = await screen.findByTestId('about-me');
+    await user.type(aboutMeInput, 'Some interesting backstory');
     await user.click(await screen.findByRole('button'));
 
-    expect(updateUser).toHaveBeenCalled();
+    const expectedUpdateData: UserUpdateData = {
+        name: 'John Test',
+        nickname: 'Johnny',
+        aboutMe: 'Some interesting backstory',
+        emailVisible: false,
+        language: 'en',
+        accountType: null,
+        enabled: null
+    };
+    expect(updateUser).toHaveBeenCalledWith(userInfo.sub, expectedUpdateData);
 });

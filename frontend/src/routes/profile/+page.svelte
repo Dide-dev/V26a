@@ -19,7 +19,7 @@
             error = new Error('You are not logged in!');
         } else {
             try {
-                await updateUser(userInfo.userId, {
+                await updateUser(userInfo.sub, {
                     name: userData.name,
                     nickname: userData.nickname,
                     aboutMe: userData.aboutMe,
@@ -84,6 +84,7 @@
                         placeholder={m.optional()}
                         maxlength="160"
                         rows="4"
+                        data-testid="about-me"
                     ></textarea>
                 </label>
                 <label>

@@ -62,7 +62,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
     let update_data = UserUpdateData {
         name: "John Smith".to_owned(),
         nickname: "John".to_owned(),
-        about_me: "".to_owned(),
+        about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
         account_type: None,
@@ -104,8 +104,8 @@ async fn test_update_other_user(db: PgPool) {
     // Update the other user's data.
     let update_data = UserUpdateData {
         name: "John Smith".to_owned(),
-        nickname: "".to_owned(),
-        about_me: "".to_owned(),
+        nickname: String::new(),
+        about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
         account_type: None,
@@ -129,8 +129,8 @@ async fn test_change_account_type(db: PgPool) {
     // Update our own user data
     let update_data = UserUpdateData {
         name: "John Smith".to_owned(),
-        nickname: "".to_owned(),
-        about_me: "".to_owned(),
+        nickname: String::new(),
+        about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
         account_type: Some(AccountType::Admin),
@@ -154,8 +154,8 @@ async fn test_change_enabled_flag(db: PgPool) {
     // Update our own user data
     let update_data = UserUpdateData {
         name: "John Smith".to_owned(),
-        nickname: "".to_owned(),
-        about_me: "".to_owned(),
+        nickname: String::new(),
+        about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
         account_type: None,
