@@ -9,6 +9,7 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
+    import { page } from '$app/state';
 
     let loginData: LoginData = $state({
         email: '',
@@ -21,8 +22,18 @@
         let response = await login(loginData);
         if (response.succeeded) {
             loginFailed = false;
-            // TODO: this should redirect to the previous page after login.
-            goto(appLink('/'));
+            // Redirect to given url if valid
+            let redirect_url = page.url.searchParams.get('redirect');
+            if (!redirect_url) {
+                goto(appLink('/'));
+            } else {
+                // redirect_url should be just a relative path, not a complete url
+                if (!URL.canParse(redirect_url)) {
+                    goto(appLink(redirect_url));
+                } else {
+                    goto(appLink('/'));
+                }
+            }
         } else {
             loginFailed = true;
         }
