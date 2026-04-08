@@ -18,6 +18,7 @@ function apiCallGetUser(path: string) {
 }
 
 export type UserId = number;
+export type AccountType = 'author' | 'admin';
 
 /** The data needed to register a new user */
 export type RegisterData = {
@@ -31,7 +32,7 @@ export type RegisterData = {
 };
 
 /** The data of the user that is returned when requesting it */
-export type UserData = {
+export type UserGetData = {
     email: string;
     name: string;
     nickname: Option<string>;
@@ -40,13 +41,29 @@ export type UserData = {
     language: string;
 };
 
+/**
+ * The data needed to update a user
+ * `accountType` and `enabled` are only updated if a non-null value is passed.
+ * `nickname` and `aboutMe` are always updated, where null values are stored as-is in the
+ * database.
+ */
+export type UserUpdateData = {
+    name: string;
+    nickname: Option<string>;
+    aboutMe: Option<string>;
+    emailVisible: boolean;
+    language: string;
+    accountType: Option<AccountType>;
+    enabled: Option<boolean>;
+};
+
 /** The data in the cookie */
 export type UserInfo = {
     /** This corresponds to userid of the current login. */
     sub: UserId;
     /** Experation datetime for the current login, represented as number of seconds since unix epoch. */
     exp: number;
-    accountType: 'author' | 'admin';
+    accountType: AccountType;
 };
 
 /** Add a user to the database */
@@ -55,8 +72,13 @@ export function addUser(user: RegisterData): Promise<UserId> {
 }
 
 /** Get the user's own data */
-export function getOwnUserData(): Promise<UserData> {
+export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
+}
+
+/** Update a user's data */
+export function updateUser(userId: UserId, newData: UserUpdateData): Promise<UserGetData> {
+    return apiCallPostUser(`update/${userId}`, newData);
 }
 
 /**

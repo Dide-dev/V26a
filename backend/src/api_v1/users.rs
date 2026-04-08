@@ -5,11 +5,12 @@
 */
 
 use crate::api_v1::session::Claims;
-use crate::db::users::{add_user, get_user};
-use crate::db_structs::users::{RegisterData, UserData};
+use crate::db::users::{add_user, get_user, update_user, user_id_exists};
+use crate::db_structs::users::{AccountType, RegisterData, UserGetData, UserUpdateData};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
 
+use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
@@ -19,6 +20,7 @@ pub fn users() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_user))
         .route("/me", get(get_own_user_data))
+        .route("/update/{user_id}", post(update_user_data))
 }
 
 /// Add a user to the database.
@@ -49,6 +51,40 @@ async fn add_new_user(
 async fn get_own_user_data(
     Extension(db): Extension<PgPool>,
     claims: Claims,
-) -> Result<Json<UserData>, ApiError> {
-    get_user(get_connection!(db), claims.sub).await.map(Json)
+) -> Result<Json<UserGetData>, ApiError> {
+    get_user(&db, claims.sub).await.map(Json)
+}
+
+/// Update a user's data in the database.
+///
+/// # Error
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the given user's data.
+///
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn update_user_data(
+    Extension(db): Extension<PgPool>,
+    claims: Claims,
+    Path(user_id): Path<i32>,
+    Json(new_data): Json<UserUpdateData>,
+) -> Result<(), ApiError> {
+    // A user can only update another user's data if they are an administrator.
+    if claims.sub != user_id && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    // The account type and enabled flag can only be changed by an admin.
+    if (new_data.account_type.is_some() || new_data.enabled.is_some())
+        && claims.account_type != AccountType::Admin
+    {
+        return Err(ApiError::NoPermission);
+    }
+
+    if !user_id_exists(&db, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+
+    update_user(&db, user_id, &new_data).await
 }

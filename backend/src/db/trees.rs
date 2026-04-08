@@ -4,14 +4,15 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db_structs::pagination::PaginationOptions;
 use crate::{
-    db_structs::trees::{TreeAddData, TreeData, TreeGeneratedData, TreeStructure},
+    db_structs::trees::{
+        TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeMetadata, TreeStructure,
+    },
     errors::ApiError,
 };
+use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
 use std::collections::HashSet;
-
-use crate::db_structs::trees::TreeMetadata;
-use sqlx::{PgExecutor, query};
 
 /// Add a new tree to the database.
 ///
@@ -54,10 +55,10 @@ pub async fn add_tree(
         tree_data.assignment_text,
         tree_structure,
     )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .id;
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .id;
 
     Ok(tree_id)
 }
@@ -133,9 +134,9 @@ pub async fn update_tree_data(
         new_tree_data.assignment_text,
         new_tree_data.published,
     )
-    .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+        .execute(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
@@ -165,7 +166,6 @@ pub async fn db_get_tree_all_data(
     .fetch_optional(db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
-
     let Some(field) = field else {
         return Ok(None);
     };
@@ -222,6 +222,7 @@ pub async fn get_tree_owner(
     Ok(owner)
 }
 
+// TODO: unit tests
 /// Get the list of all trees owned by some owner.
 /// Should only be called if the user is authorised to see private trees!
 ///
@@ -334,31 +335,182 @@ pub async fn is_structure_valid(
     Ok(all_cards_exist_in_database && no_duplicates_in_structure)
 }
 
+/// Adds [`TreeFilters`] to a Postgres [`QueryBuilder`]
+///
+/// # Arguments
+/// `builder` - The [`QueryBuilder`] to be mutated in-place.
+///
+/// `filters` - The [`TreeFilters`] to apply to the query.
+///
+/// `user_id` - The logged in user performing the filter, optional.
+///
+/// # Example:
+/// ```rs
+/// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+/// apply_tree_filters(query, &filters);
+/// let trees_count: i64 = query
+///         .build_query_scalar()
+///         .fetch_one(db)
+///         .await
+///         .map_err(|_| ApiError::DatabaseException)?;
+/// ```
+///
+/// # To future developers:
+/// This function can and will become too big, good luck if that happens!
+fn apply_tree_filters<'a>(
+    builder: &mut QueryBuilder<'a, Postgres>,
+    filters: &'a TreeFilters,
+    user_id: Option<i32>,
+) {
+    let TreeFilters {
+        owner_id,
+        book,
+        created_after,
+        created_before,
+        show_own_private,
+    } = filters;
+
+    builder.push(" WHERE ");
+    let mut separated = builder.separated(" AND ");
+    separated.push("(published = true");
+    if *show_own_private && let Some(user_id) = user_id {
+        separated.push_unseparated(" OR (published = false AND owner_id = ");
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated(")");
+    }
+    separated.push_unseparated(")");
+    if let Some(owner_id) = owner_id {
+        separated
+            .push("(owner_id = ")
+            .push_bind_unseparated(owner_id)
+            .push_unseparated(")");
+    }
+    if !filters.book.is_empty() {
+        separated
+            .push("(book_name = ANY(")
+            .push_bind_unseparated(book)
+            .push_unseparated("))");
+    }
+    if let Some(created_after) = created_after {
+        separated
+            .push("(created_at >= ")
+            .push_bind_unseparated(created_after)
+            .push_unseparated(")");
+    }
+    if let Some(created_before) = created_before {
+        separated
+            .push("(created_at <= ")
+            .push_bind_unseparated(created_before)
+            .push_unseparated(")");
+    }
+}
+
+/// Get the amount of trees satisfying some filters.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// `user_id` - The logged in user performing the filter, optional.
+///
+/// # Returns
+/// The amount of trees satisfying the filters at the requested page,
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_queried_count(
+    db: impl PgExecutor<'_>,
+    filters: &TreeFilters,
+    user_id: Option<i32>,
+) -> Result<i64, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+
+    apply_tree_filters(&mut query, filters, user_id);
+
+    let trees_count: i64 = query
+        .build_query_scalar()
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(trees_count)
+}
+
+/// Get the list of all trees satisfying some filters at a given page.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// `user_id` - The logged in user performing the filter, optional.
+///
+/// # Returns
+/// A list with the trees satisfying the filters at the requested page,
+/// together with a boolean if there exists a next page.
+///
+/// # Error
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_queried_list(
+    db: impl PgExecutor<'_>,
+    page: &PaginationOptions,
+    filters: &TreeFilters,
+    user_id: Option<i32>,
+) -> Result<Vec<TreeData>, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("
+        SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
+        FROM trees"
+    );
+
+    apply_tree_filters(&mut query, filters, user_id);
+    query
+        .push(
+            // newest first
+            " ORDER BY created_at DESC \
+              LIMIT ",
+        )
+        .push_bind(i64::from(page.get_size()))
+        .push(" OFFSET ")
+        // Page is 1-based
+        .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
+
+    let trees = query
+        .build_query_as::<TreeData>()
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    // User requested a page that yields no results. This should only occur if the user requests a
+    // page that is too high, as get_queried_count should be used to confirm results exist.
+    if trees.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    Ok(trees)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::db::test::{
-        initialize_basic_user, initialize_card, initialize_db, initialize_tree_with_data,
+        initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
+        initialize_tree_with_data,
     };
     use crate::db_structs::trees::{Node, RootNode};
     use crate::get_connection_unwrap;
+    use chrono::{TimeDelta, Utc};
     use sqlx::{PgPool, query_as};
 
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
-        let tree_data = TreeData {
-            title: "title".to_owned(),
-            description: Some("desc".to_owned()),
-            book_name: Some("book_name".to_owned()),
-            book_edition: Some("book_edition".to_owned()),
-            book_isbn: Some("book_isbn".to_owned()),
-            book_chapter: Some("book_chapter".to_owned()),
-            book_exercise: Some("book_exercise".to_owned()),
-            assignment_text: Some("assignment_text".to_owned()),
-            published: true,
-        };
+        let tree_data = TreeData::default();
 
         let tree_add_data = TreeAddData {
             tree_data: tree_data.clone(),
@@ -422,19 +574,51 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_update_tree_data(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+
+        // Add a tree to the database
+        let tree_data = TreeData::default();
+        let tree_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "RootNode".to_string(),
+                children: vec![],
+            }],
+        };
+        let tree_add_data = TreeAddData {
+            tree_data,
+            tree_structure,
+        };
+        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
+
+        // Update the tree data
+        let new_tree_data = TreeData {
+            title: "Updated tree".to_string(),
+            description: Some("Updated description".to_string()),
+            book_name: Some("Updated book".to_string()),
+            book_edition: Some("2nd".to_string()),
+            book_isbn: Some("9780136019701".to_string()),
+            book_chapter: Some("3".to_string()),
+            book_exercise: Some("5b".to_string()),
+            assignment_text: Some("Updated assignment".to_string()),
+            published: true,
+        };
+        update_tree_data(&db, tree_id, new_tree_data.clone())
+            .await
+            .unwrap();
+
+        // Verify the data was updated
+        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+        assert_eq!(found_tree_data, new_tree_data);
+    }
+
+    #[sqlx::test]
     async fn test_db_get_tree_all_data(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
-            title: "title".to_owned(),
-            description: Some("desc".to_owned()),
-            book_name: Some("book_name".to_owned()),
-            book_edition: Some("book_edition".to_owned()),
-            book_isbn: Some("book_isbn".to_owned()),
-            book_chapter: Some("book_chapter".to_owned()),
-            book_exercise: Some("book_exercise".to_owned()),
-            assignment_text: Some("assignment_text".to_owned()),
             published: true,
+            ..Default::default()
         };
 
         let structure = TreeStructure {
@@ -527,52 +711,280 @@ mod tests {
         );
     }
 
-    #[sqlx::test]
-    async fn test_update_tree_data(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+    #[test]
+    fn test_apply_tree_filters() {
+        use chrono::{DateTime, Utc};
 
-        // Add a tree to the database
-        let tree_data = TreeData {
-            title: "Test tree".to_string(),
-            description: None,
-            book_name: None,
-            book_edition: None,
-            book_isbn: None,
-            book_chapter: None,
-            book_exercise: None,
-            assignment_text: None,
-            published: false,
+        let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let empty_filters = TreeFilters {
+            ..Default::default()
         };
-        let tree_structure = TreeStructure {
+        apply_tree_filters(&mut no_filters_query, &empty_filters, None);
+        assert_eq!(
+            no_filters_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+
+        let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let all_filters = TreeFilters {
+            owner_id: Some(67),
+            book: vec!["1984".to_owned()],
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            created_before: Some(DateTime::<Utc>::MAX_UTC),
+            show_own_private: true,
+        };
+        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123));
+        assert_eq!(
+            all_filters_query.sql(),
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_name = ANY($3)) AND (created_at >= $4) AND (created_at <= $5)"
+        );
+
+        let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let partial_filters = TreeFilters {
+            owner_id: Some(67),
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            ..Default::default()
+        };
+        apply_tree_filters(&mut partial_filters_query, &partial_filters, None);
+        assert_eq!(
+            partial_filters_query.sql(),
+            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (created_at >= $2)"
+        );
+
+        let mut show_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_no_id_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut show_private_no_id_query,
+            &show_private_no_id_filters,
+            None,
+        );
+        assert_eq!(
+            show_private_no_id_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+
+        let mut hide_private_with_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_no_id_filters = TreeFilters {
+            show_own_private: false,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut hide_private_with_id_query,
+            &show_private_no_id_filters,
+            Some(123),
+        );
+        assert_eq!(
+            hide_private_with_id_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+    }
+
+    #[sqlx::test]
+    async fn test_get_queried_count(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let empty_filters = TreeFilters {
+            ..Default::default()
+        };
+        let show_private_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        let basic_structure = TreeStructure {
             root_nodes: vec![RootNode {
-                label: "RootNode".to_string(),
+                label: "Orientation".to_owned(),
                 children: vec![],
             }],
         };
-        let tree_add_data = TreeAddData {
-            tree_data,
-            tree_structure,
-        };
-        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
 
-        // Update the tree data
-        let new_tree_data = TreeData {
-            title: "Updated tree".to_string(),
-            description: Some("Updated description".to_string()),
-            book_name: Some("Updated book".to_string()),
-            book_edition: Some("2nd".to_string()),
-            book_isbn: Some("9780136019701".to_string()),
-            book_chapter: Some("3".to_string()),
-            book_exercise: Some("5b".to_string()),
-            assignment_text: Some("Updated assignment".to_string()),
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            0
+        );
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            0
+        );
+
+        initialize_empty_tree(&db, user_id).await;
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            0
+        );
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            1
+        );
+        // Show private enabled, but not logged in
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, None)
+                .await
+                .unwrap(),
+            0
+        );
+
+        for _ in 0..100 {
+            initialize_empty_tree(&db, user_id).await;
+        }
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            101
+        );
+
+        let public_tree = TreeData {
             published: true,
+            ..Default::default()
         };
-        update_tree_data(&db, tree_id, new_tree_data.clone())
+        initialize_tree_with_data(&db, user_id, &public_tree, &basic_structure).await;
+        assert_eq!(
+            get_queried_count(&db, &show_private_filters, Some(user_id))
+                .await
+                .unwrap(),
+            102
+        );
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            1
+        );
+
+        let book_filter = TreeFilters {
+            book: vec!["Dikkie dik".to_owned()],
+            ..Default::default()
+        };
+        let book_tree = TreeData {
+            book_name: Some("Dikkie dik".to_owned()),
+            published: true,
+            ..Default::default()
+        };
+        initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
+        assert_eq!(get_queried_count(&db, &book_filter, None).await.unwrap(), 1);
+        assert_eq!(
+            get_queried_count(&db, &empty_filters, None).await.unwrap(),
+            2
+        );
+    }
+
+    #[sqlx::test]
+    async fn test_get_queried_list(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let empty_filters = TreeFilters {
+            ..Default::default()
+        };
+        let show_private_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        let basic_structure = TreeStructure {
+            root_nodes: vec![RootNode {
+                label: "Orientation".to_owned(),
+                children: vec![],
+            }],
+        };
+        let first_page = PaginationOptions::new(1, 50, 1000, 500).unwrap();
+        let one_item_page1 = PaginationOptions::new(1, 1, 1000, 500).unwrap();
+        let one_item_page2 = PaginationOptions::new(2, 1, 1000, 500).unwrap();
+
+        let no_trees = get_queried_list(&db, &first_page, &empty_filters, None).await;
+        assert_eq!(no_trees, Err(ApiError::InvalidPage));
+
+        let private_tree = TreeData::default();
+        let public_tree = TreeData {
+            published: true,
+            ..Default::default()
+        };
+        initialize_tree_with_data(&db, user_id, &private_tree, &basic_structure).await;
+        initialize_tree_with_data(&db, user_id, &public_tree, &basic_structure).await;
+
+        let private_tree_list =
+            get_queried_list(&db, &first_page, &show_private_filters, Some(user_id))
+                .await
+                .unwrap();
+        assert_eq!(
+            private_tree_list,
+            vec![public_tree.clone(), private_tree.clone()]
+        );
+
+        let public_tree_list = get_queried_list(&db, &first_page, &empty_filters, None)
             .await
             .unwrap();
+        assert_eq!(public_tree_list, vec![public_tree.clone()]);
 
-        // Verify the data was updated
-        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
-        assert_eq!(found_tree_data, new_tree_data);
+        let private_tree_list_one_item1 =
+            get_queried_list(&db, &one_item_page1, &show_private_filters, Some(user_id))
+                .await
+                .unwrap();
+        let private_tree_list_one_item2 =
+            get_queried_list(&db, &one_item_page2, &show_private_filters, Some(user_id))
+                .await
+                .unwrap();
+        assert_eq!(private_tree_list_one_item1, vec![public_tree.clone()]);
+        assert_eq!(private_tree_list_one_item2, vec![private_tree.clone()]);
+
+        // Test all filters from here, owner_id is tested in integration tests.
+        let future_filter = TreeFilters {
+            created_after: Some(Utc::now() + TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let future_tree_list =
+            get_queried_list(&db, &first_page, &future_filter, Some(user_id)).await;
+        assert_eq!(future_tree_list, Err(ApiError::InvalidPage));
+        let recent_filter = TreeFilters {
+            created_after: Some(Utc::now() - TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(user_id))
+            .await
+            .unwrap();
+        assert_eq!(
+            recent_tree_list,
+            vec![public_tree.clone(), private_tree.clone()]
+        );
+
+        let ancient_filter = TreeFilters {
+            created_before: Some(Utc::now() - TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let ancient_tree_list =
+            get_queried_list(&db, &first_page, &ancient_filter, Some(user_id)).await;
+        assert_eq!(ancient_tree_list, Err(ApiError::InvalidPage));
+        let existing_filter = TreeFilters {
+            created_before: Some(Utc::now() + TimeDelta::seconds(2)),
+            show_own_private: true,
+            ..Default::default()
+        };
+        let existing_tree_list =
+            get_queried_list(&db, &first_page, &existing_filter, Some(user_id))
+                .await
+                .unwrap();
+        assert_eq!(
+            existing_tree_list,
+            vec![public_tree.clone(), private_tree.clone()]
+        );
+
+        let book_filter = TreeFilters {
+            book: vec!["boek".to_owned()],
+            ..Default::default()
+        };
+        let book_tree = TreeData {
+            book_name: Some("boek".to_owned()),
+            published: true,
+            ..Default::default()
+        };
+        initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
+        let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(user_id))
+            .await
+            .unwrap();
+        assert_eq!(book_tree_list, vec![book_tree]);
     }
 }
