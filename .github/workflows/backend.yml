@@ -26,6 +26,12 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/ht_ci
+      LISTENING_IP: localhost
+      LISTENING_PORT: 3000
+      RUST_LOG: INFO
+      JWT_SECRET: secret
+      SESSION_EXPIRATION_SECONDS: 604800
+
       RUSTFLAGS: -D warnings
       RUSTDOCFLAGS: -D warnings
 
@@ -68,6 +74,6 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets
       - name: Run tests
-        run: cp ../.env.example ../.env && cargo test
+        run: cargo test
       - name: Check documentation
         run: cargo doc --no-deps
