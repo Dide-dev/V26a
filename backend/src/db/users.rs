@@ -22,8 +22,6 @@ use std::str::FromStr;
 /// The id assigned to the new user.
 ///
 /// # Error
-/// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
-///
 /// May return a [`HashException`](ApiError::HashException) instead.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

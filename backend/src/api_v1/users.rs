@@ -34,10 +34,11 @@ pub enum AddUserResponse {
 /// Add a user to the database.
 ///
 /// # Returns
-/// The id assigned to the new user as [`Json`].
+/// An [`AddUserResponse::Success`] with the id assigned to the new user
+/// if the email not already exists, otherwise an [`AddUserResponse::EmailAlreadyUsed`].
 ///
 /// # Error
-/// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
+/// May return a [`HashException`](ApiError::HashException) instead.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
