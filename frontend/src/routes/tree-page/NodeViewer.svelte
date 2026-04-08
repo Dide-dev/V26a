@@ -109,7 +109,7 @@
         </div>
         <!-- Standard Node -->
     {:else}
-        <CardViewer {tree} {node} visibleParent={parentIsVisible} bind:visible {editingPage} />
+        <CardViewer {tree} {node} {parentIsVisible} bind:visible {editingPage} />
     {/if}
 
     <!-- Adds buttons to manage the cards of the tree if in editing mode -->

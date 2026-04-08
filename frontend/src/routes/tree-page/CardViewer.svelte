@@ -10,13 +10,13 @@
         tree,
         node,
         visible = $bindable(),
-        visibleParent = false,
+        parentIsVisible = false,
         editingPage
     }: {
         tree: TreeWithCards;
         node: Node;
         visible: boolean;
-        visibleParent: boolean;
+        parentIsVisible: boolean;
         editingPage: boolean;
     } = $props();
 
@@ -31,39 +31,36 @@
 {#if editingPage}
     <!-- Cards layout in the editor -->
     {#if visible}
-        <div
-            class="tree__node h-fit w-xl border-2 border-green-800 bg-green-50 p-1 text-center wrap-anywhere"
+        <button
+            class="tree__node h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-center wrap-anywhere"
+            onclick={toggleVisible}
         >
-            <button class="min-h-6 w-xl cursor-pointer" onclick={toggleVisible}>
-                {tree.cards[node.cardId].back}
-            </button>
-        </div>
+            {tree.cards[node.cardId].back}
+        </button>
     {:else}
-        <div
-            class="tree__node h-fit w-xl border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+        <button
+            class="tree__node h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            onclick={toggleVisible}
         >
-            <button class="min-h-6 w-xl cursor-pointer" onclick={toggleVisible}>
-                {tree.cards[node.cardId].front}
-            </button>
-        </div>
+            {tree.cards[node.cardId].front}
+        </button>
     {/if}
 {:else}
     <!-- Cards layout in the viewer -->
     {#if visible}
-        <div class="tree__node h-fit w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere">
-            <p>{tree.cards[node.cardId].back}</p>
-        </div>
-    {:else if visibleParent}
-        <div
-            class="tree__node h-fit w-fit max-w-xl border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+        <p
+            class="tree__node h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
         >
-            <button class="min-h-6 min-w-50 cursor-pointer" onclick={setVisible}>
-                {tree.cards[node.cardId].front}
-            </button>
-        </div>
+            {tree.cards[node.cardId].back}
+        </p>
+    {:else if parentIsVisible}
+        <button
+            class="tree__node h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            onclick={setVisible}
+        >
+            {tree.cards[node.cardId].front}
+        </button>
     {:else}
-        <div class="tree-node h-fit w-4 border-2 border-green-800 bg-green-800 p-1">
-            <p><br /></p>
-        </div>
+        <p class="tree-node h-fit min-h-9 w-4 border-2 border-green-800 bg-green-800 p-1"><br /></p>
     {/if}
 {/if}
