@@ -26,8 +26,8 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
-    /// An error to be returned when a file is to big to be uploaded.
-    FileToBigException,
+    /// An error to be returned when a file is too big to be uploaded.
+    FileTooBigException,
     /// An error to return when something goes wrong while parsing multipart data.
     MultipartException,
     /// An error to return when an invalid image type is attempted to be put in the database.
@@ -99,7 +99,7 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
-            ApiError::FileToBigException => {
+            ApiError::FileTooBigException => {
                 write!(f, "The file being uploaded is too big.")
             }
             ApiError::MultipartException => {
@@ -161,7 +161,7 @@ impl ApiError {
             | ApiError::MissingTree(_)
             | ApiError::MissingCard(_)
             | ApiError::NonEmptyStructure
-            | ApiError::FileToBigException
+            | ApiError::FileTooBigException
             | ApiError::InvalidImageType
             | ApiError::MultipartException => StatusCode::BAD_REQUEST,
 

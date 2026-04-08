@@ -16,9 +16,9 @@ use axum::{Extension, Router, extract::Multipart};
 use infer;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
+use std::fmt::Write;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use tracing::info;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
@@ -35,23 +35,21 @@ async fn add_new_image(
     Extension(db): Extension<PgPool>,
     mut multipart: Multipart,
 ) -> Result<String, ApiError> {
+    const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
     let upload_directory = &config.upload_dir;
 
     tokio::fs::create_dir_all(upload_directory)
         .await
-        .map_err(|_| ApiError::CreateDirException)?;;
+        .map_err(|_| ApiError::CreateDirException)?;
 
-    const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
     let original_filename: Option<String>;
     while let Some(field) = multipart
         .next_field()
         .await
         .map_err(|_| ApiError::MultipartException)?
     {
-        info!("Field name: {:?}", field.name());
-        info!("File name: {:?}", field.file_name());
         if field.name().unwrap_or("") == "file" {
-            original_filename = field.file_name().map(|s| s.to_string());
+            original_filename = field.file_name().map(&str::to_string);
             let uuid = Uuid::new_v4();
             let temp_filename = format!("{uuid}.tmp");
             let temp_filepath = format!("{upload_directory}/{temp_filename}");
@@ -75,9 +73,8 @@ async fn add_new_image(
                 size += chunk.len();
 
                 if size > MAX_FILE_SIZE {
-                    info!("File size of {size} is too big");
                     tokio::fs::remove_file(&temp_filepath).await.ok();
-                    return Err(ApiError::FileToBigException);
+                    return Err(ApiError::FileTooBigException);
                 }
 
                 if first_chunk.is_none() {
@@ -98,10 +95,10 @@ async fn add_new_image(
             }
 
             let hash = hasher.finalize();
-            let hash = hash
-                .iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<String>();
+            let hash = hash.iter().fold(String::new(), |mut output, b| {
+                let _ = write!(output, "{b:02X}");
+                output
+            });
 
             if let Some(existing_filename) = check_image_existence(&db, &hash).await? {
                 tokio::fs::remove_file(&temp_filepath).await.ok();
@@ -110,7 +107,7 @@ async fn add_new_image(
 
             let extension = original_filename
                 .as_ref()
-                .and_then(|name| name.split('.').last())
+                .and_then(|name| name.split('.').next_back())
                 .unwrap_or("bin");
 
             let filename = format!("{uuid}.{extension}");
@@ -119,7 +116,7 @@ async fn add_new_image(
             tokio::fs::rename(&temp_filepath, &filepath)
                 .await
                 .map_err(|_| ApiError::FileRenameException)?;
-            
+
             let image_add_data = ImageAddData {
                 file_name: filename.clone(),
                 hash,
@@ -127,7 +124,7 @@ async fn add_new_image(
 
             add_image(&db, &image_add_data).await?;
 
-            return Ok(format!("{filepath}"));
+            return Ok(filepath.clone());
         }
     }
     Err(ApiError::DatabaseException)

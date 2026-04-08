@@ -8,6 +8,7 @@
 
 mod cards;
 mod demo;
+mod images;
 mod trees;
 
 use crate::db_structs::auth::LoginRequestBody;
