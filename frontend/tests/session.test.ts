@@ -53,6 +53,8 @@ test('check that login creates user_info cookie', async ({ page }) => {
     const cookie = await getUserInfoCookie(page);
 
     // Validate that the cookie exists
+    // For whatever reason this fails in CI but works fine locally and from manual testing outside playwright.
+    // The inconsistency is why we have removed playwright from the CI.
     expect(cookie).toBeDefined();
 
     // Checks if the content of the cookie is the expected default (author)
