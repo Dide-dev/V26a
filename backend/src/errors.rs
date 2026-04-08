@@ -77,12 +77,27 @@ pub enum ApiError {
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
+            //------------------//
+            // 400: BAD REQUEST //
+            //------------------//
+            ApiError::InvalidPage => {
+                write!(f, "This page does not exist.")
+            }
+            ApiError::MaxPageNumberExceeded(max_page) => {
+                write!(f, "You may not request a page higher than {max_page}.")
+            }
+            ApiError::MaxPageSizeExceeded(max_size) => {
+                write!(
+                    f,
+                    "You may not request more than {max_size} items per page."
+                )
+            }
             ApiError::MismatchedStructure => write!(
                 f,
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
             ),
-            ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
             ApiError::NonEmptyStructure => write!(
                 f,
@@ -92,12 +107,21 @@ impl Display for ApiError {
                 write!(f, "The e-mail or password provided was incorrect.")
             }
 
+            //-------------------//
+            // 401: UNAUTHORIZED //
+            //-------------------//
             ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
             ApiError::InvalidSession => write!(f, "Invalid authorisation."),
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
 
+            //----------------//
+            // 403: FORBIDDEN //
+            //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
+            //----------------------------//
+            // 500: INTERNAL SERVER ERROR //
+            //----------------------------//
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::DatabaseMemoryCap => write!(
                 f,
@@ -111,18 +135,6 @@ impl Display for ApiError {
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
             }
-            ApiError::InvalidPage => {
-                write!(f, "This page does not exist.")
-            }
-            ApiError::MaxPageNumberExceeded(max_page) => {
-                write!(f, "You may not request a page higher than {max_page}.")
-            }
-            ApiError::MaxPageSizeExceeded(max_size) => {
-                write!(
-                    f,
-                    "You may not request more than {max_size} items per page."
-                )
-            }
         }
     }
 }
@@ -131,19 +143,19 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::MismatchedStructure
-            | ApiError::MissingTree(_)
-            | ApiError::MissingCard(_)
-            | ApiError::MissingUser(_)
-            | ApiError::NonEmptyStructure
-            | ApiError::InvalidPage
+            ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
+            | ApiError::MismatchedStructure
+            | ApiError::MissingCard(_)
+            | ApiError::MissingTree(_)
+            | ApiError::MissingUser(_)
+            | ApiError::NonEmptyStructure
             | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 
-            ApiError::MissingAuthentication
-            | ApiError::ExpiredSession
-            | ApiError::InvalidSession => StatusCode::UNAUTHORIZED,
+            ApiError::ExpiredSession
+            | ApiError::InvalidSession
+            | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
 
