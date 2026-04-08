@@ -79,6 +79,10 @@ export type TreeAddData = {
     treeStructure: TreeStructure;
 };
 
+export type TreeRemoveData = {
+    treeId: TreeId;
+};
+
 // Default tree structure used in addTree.
 const defaultTreeStructure: TreeStructure = {
     rootNodes: [
@@ -140,6 +144,11 @@ export function addTree(treeData: TreeData): Promise<TreeId> {
     };
 
     return apiCallPostTree('add', treeAddData);
+}
+
+/** Remove a tree and all of its cards from the database. */
+export function removeTree(treeRemoveData: TreeRemoveData): Promise<void> {
+    return apiCallPostTree('remove', treeRemoveData);
 }
 
 /** Update the structure of an existing tree. */
