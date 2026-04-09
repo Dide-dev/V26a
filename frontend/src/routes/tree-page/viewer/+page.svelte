@@ -5,12 +5,13 @@
 -->
 
 <script lang="ts">
-    import NodeViewer from '../NodeViewer.svelte';
+    import NodeViewer from './NodeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
+     import { getUserInfo } from '$lib/backend/users';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getCurrentUser } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 
@@ -19,26 +20,24 @@
 
     let loading = $state(true);
     let error: Error | null = $state(null);
-    let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
 
     onMount(async () => {
+        const id = page.url.searchParams.get('id');
 
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
+        if (!id) {
             error = new Error('No tree id provided');
             return;
         }
 
-        id = Number(pageId);
+        const idNumber = Number(id);
 
-        if (Number.isNaN(id)) {
+        if (Number.isNaN(idNumber)) {
             error = new Error('Invalid tree id');
             return;
         }
 
-        tree = await getTreeWithCards(id).then(
+        tree = await getTreeWithCards(idNumber).then(
             (treeWithCards) => treeWithCards,
             (e) => {
                 error = e;
@@ -62,10 +61,11 @@
 
     <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree parent={root} node={root} editingPage={false} />
+            <NodeViewer node={root} cards={tree.cards} />
         {/each}
     </div>
 {/if}
+
 
 {#if userInfo !== null}
     <button
@@ -75,6 +75,7 @@
         Edit
     </button>
 {/if}
+
 
 <!--
     Here we add a few css classes to the body,

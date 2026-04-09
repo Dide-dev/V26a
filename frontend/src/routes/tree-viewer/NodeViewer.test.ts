@@ -9,8 +9,13 @@ import { expect, test, vi } from 'vitest';
 import NodeViewer from './NodeViewer.svelte';
 import type { RootNode, Node } from '$lib/backend/trees';
 import type { CardGetData, CardId } from '$lib/backend/cards';
-import type { UserId } from '$lib/backend/users';
+import type { UserId, getUserInfo } from '$lib/backend/users';
 import TreePage from './+page.svelte';
+
+// mock the logging check
+vi.mock('$lib/backend/users', () => ({
+    getUserInfo: vi.fn(),
+}));
 
 test('NodeViewer', async () => {
     const node: RootNode = { label: 'Root', children: [] };
@@ -54,17 +59,19 @@ test('NodeViewer with children', async () => {
 });
 
 test('shows Edit button when user is logged in', async () => {
-    render(TreePage, { currentUser: 12 });
+    vi.mocked(getUserInfo).mockReturnValue({ userId: 12, accountType: 'author' });
+    render(TreePage);
 
     await new Promise((r) => setTimeout(r));
 
-     expect(document.getElementsByClassName('edit_button').length).toBeGreaterThan(0);
+    expect(document.getElementsByClassName('edit_button').length).toBeGreaterThan(0);
 });
 
 test('does not show Edit button when user is not logged in', async () => {
-    render(TreePage, { currentUser: null });
+    vi.mocked(getUserInfo).mockReturnValue(null);
+    render(TreePage);
 
-    await new Promise((r) => setTimeout(r)); 
+    await new Promise((r) => setTimeout(r));
 
     expect(document.getElementsByClassName('edit_button')).toHaveLength(0);
 });
