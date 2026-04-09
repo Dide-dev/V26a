@@ -37,7 +37,7 @@
                         <tr>
                             <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
                                 <a
-                                    href={appLink(`/tree-viewer?id=${tree.genData.id}`)}
+                                    href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
                                     target="_blank">{tree.data.title}</a
                                 >
                             </td>
@@ -50,7 +50,7 @@
                             <td class="pr-4">{booleanToString(tree.data.published)}</td>
                             <td class="min-w-2 hover:fill-blue-800">
                                 <a
-                                    href={appLink(`/editor?id=${tree.genData.id}`)}
+                                    href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
                                     target="_blank"
                                     aria-label="edit"
                                 >
