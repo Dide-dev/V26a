@@ -17,6 +17,10 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
+    /// An error to be returned when a file is too big to be uploaded.
+    FileTooBigException,
+    /// An error to return when an invalid image type is attempted to be put in the database.
+    InvalidImageType,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page number that exceeds the defined maximum.
@@ -32,14 +36,10 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
     MissingUser(i32),
-    /// An error to return when a tree is added with a default structure containing cards.
-    NonEmptyStructure,
-    /// An error to be returned when a file is too big to be uploaded.
-    FileTooBigException,
     /// An error to return when something goes wrong while parsing multipart data.
     MultipartException,
-    /// An error to return when an invalid image type is attempted to be put in the database.
-    InvalidImageType,
+    /// An error to return when a tree is added with a default structure containing cards.
+    NonEmptyStructure,
     /// An error to return when a wrong e-mail or password is provided while trying to log in.
     WrongCredentials,
 
@@ -65,12 +65,18 @@ pub enum ApiError {
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
+    /// An error to be returned by `create_dir_all` when it is unable to find or create a directory.
+    CreateDirException,
     /// A generic exception to return when the database fails on something unexpected.
     /// Do not use this in place of proper error handling.
     DatabaseException,
     /// An error to return when a request is denied because a limit on the database memory
     /// disallows it.
     DatabaseMemoryCap,
+    /// An error to be returned by `tokio::fs::rename` when a file cannot be renamed.
+    FileRenameException,
+    /// An error to be return by `File::create` or `File::write_all` when it is unable to create or write to a file.
+    FileWriteException,
     /// An error to return when hashing fails (on creating or verifying a hash).
     HashException,
     /// An error to return when invalid data is found in the database.
@@ -79,12 +85,6 @@ pub enum ApiError {
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
     TokenCreationException,
-    /// An error to be returned by `create_dir_all` when it is unable to find or create a directory.
-    CreateDirException,
-    /// An error to be return by `File::create` or `File::write_all` when it is unable to create or write to a file.
-    FileWriteException,
-    /// An error to be returned by `tokio::fs::rename` when a file cannot be renamed.
-    FileRenameException,
 }
 
 // Define how errors should be converted to messages.
@@ -96,6 +96,12 @@ impl Display for ApiError {
             //------------------//
             ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
+            }
+            ApiError::FileTooBigException => {
+                write!(f, "The file being uploaded is too big.")
+            }
+            ApiError::InvalidImageType => {
+                write!(f, "An invalid image type was uploaded.")
             }
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
@@ -116,22 +122,16 @@ impl Display for ApiError {
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
-            ApiError::NonEmptyStructure => write!(
-                f,
-                "The tree structure contains cards, make sure to initialize a tree without cards."
-            ),
-            ApiError::FileTooBigException => {
-                write!(f, "The file being uploaded is too big.")
-            }
             ApiError::MultipartException => {
                 write!(
                     f,
                     "Something went wrong parsing multipartdata. Check whether the multipart request is valid and whether the multipart body is not corrupt"
                 )
             }
-            ApiError::InvalidImageType => {
-                write!(f, "An invalid image type was uploaded.")
-            }
+            ApiError::NonEmptyStructure => write!(
+                f,
+                "The tree structure contains cards, make sure to initialize a tree without cards."
+            ),
             ApiError::WrongCredentials => {
                 write!(f, "The e-mail or password provided was incorrect.")
             }
@@ -151,22 +151,14 @@ impl Display for ApiError {
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
             //----------------------------//
+            ApiError::CreateDirException => {
+                write!(f, "An unexpected directory creation error occurred.")
+            }
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::DatabaseMemoryCap => write!(
                 f,
                 "Request was denied, because a database memory cap was exceeded."
             ),
-            ApiError::HashException => write!(f, "An unexpected hash error occurred."),
-            ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
-            ApiError::SerdeException => {
-                write!(f, "An unexpected (de)serialization error occurred.")
-            }
-            ApiError::TokenCreationException => {
-                write!(f, "An unexpected session creation error occurred.")
-            }
-            ApiError::CreateDirException => {
-                write!(f, "An unexpected directory creation error occurred.")
-            }
             ApiError::FileWriteException => {
                 write!(
                     f,
@@ -179,6 +171,14 @@ impl Display for ApiError {
                     "An unexpected error occurred while renaming a file. Check whether the file exists and whether you have permisions."
                 )
             }
+            ApiError::HashException => write!(f, "An unexpected hash error occurred."),
+            ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
+            ApiError::SerdeException => {
+                write!(f, "An unexpected (de)serialization error occurred.")
+            }
+            ApiError::TokenCreationException => {
+                write!(f, "An unexpected session creation error occurred.")
+            }
         }
     }
 }
@@ -188,16 +188,16 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed
+            | ApiError::FileTooBigException
+            | ApiError::InvalidImageType
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
             | ApiError::MissingCard(_)
-            | ApiError::FileTooBigException
-            | ApiError::InvalidImageType
-            | ApiError::MultipartException
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
+            | ApiError::MultipartException
             | ApiError::NonEmptyStructure
             | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 
@@ -207,15 +207,15 @@ impl ApiError {
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
 
-            ApiError::DatabaseException
+            ApiError::CreateDirException
+            | ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap
+            | ApiError::FileWriteException
+            | ApiError::FileRenameException
             | ApiError::HashException
             | ApiError::InvalidDataFound
             | ApiError::SerdeException
-            | ApiError::TokenCreationException
-            | ApiError::CreateDirException
-            | ApiError::FileWriteException
-            | ApiError::FileRenameException => StatusCode::INTERNAL_SERVER_ERROR,
+            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
