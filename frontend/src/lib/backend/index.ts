@@ -50,6 +50,7 @@ async function checkError(response: Response) {
     if (response.status === 401) {
         const encodedURI = encodeURI(page.url.pathname + page.url.search + page.url.hash);
         await goto(appLink(`/login?redirect=${encodedURI}`));
+        return;
     }
 
     if (!response.ok) {
