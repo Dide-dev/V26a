@@ -24,7 +24,7 @@ test('getUserInfo returns null when no cookie exists', () => {
 });
 
 test('getUserInfo returns userinfo when cookie exists', () => {
-    const userInfo = { userId: 1, accountType: 'author' };
+    const userInfo = { sub: 1, exp: 123, accountType: 'author' };
     Object.defineProperty(document, 'cookie', {
         writable: true,
         value: `user_info=${encodeURIComponent(JSON.stringify(userInfo))}`

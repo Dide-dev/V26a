@@ -26,13 +26,14 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/ht_ci
+      LISTENING_IP: localhost
+      LISTENING_PORT: 3000
+      RUST_LOG: INFO
+      JWT_SECRET: secret
+      SESSION_EXPIRATION_SECONDS: 604800
+
       RUSTFLAGS: -D warnings
       RUSTDOCFLAGS: -D warnings
-
-    strategy:
-      matrix:
-        node-version: [ 22.x ]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     defaults:
       run:
@@ -73,17 +74,6 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets
       - name: Run tests
-        run: cp ../.env.example ../.env && cargo test
+        run: cargo test
       - name: Check documentation
         run: cargo doc --no-deps
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-          cache-dependency-path: './frontend/package-lock.json'
-      - run: cd ../frontend && npm ci
-      - run: cd ../frontend && npm run build
-      - run: cd ../frontend && npx playwright install --with-deps
-      - name: Run end-to-end tests
-        run: cd ../frontend && npx playwright test

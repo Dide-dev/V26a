@@ -6,10 +6,8 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_id_and_password;
-use crate::db::users::get_user_account_type;
+use crate::db::auth::get_user_credentials;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::State;
 use axum::routing::post;
@@ -19,7 +17,6 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::Serialize;
 use sqlx::PgPool;
-use std::str::FromStr;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
@@ -47,50 +44,50 @@ async fn login(
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
-    let Some((user_id, password_hash)) = get_user_id_and_password(&db, body.email).await? else {
+    let Some(credentials) = get_user_credentials(&db, body.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
 
-    let password_valid = bcrypt::verify(body.password, password_hash.as_str())
+    let password_valid = bcrypt::verify(body.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     }
 
-    // Get account type
-    let account_type = get_user_account_type(&db, user_id).await?;
-
     let claims = Claims {
-        sub: user_id,
+        sub: credentials.user_id,
         exp: Utc::now().timestamp() + config.session_duration,
-        account_type: AccountType::from_str(&account_type)?,
+        account_type: credentials.account_type,
     };
 
     // Create the authorization token.
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
+    let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
+
     // Age of a cookie (same for the two cookies)
     let time = time::Duration::new(config.session_duration, 0);
 
-    // Set the authorization token as a cookie.
+    // The properties of the cookies are important to get right.
+    // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
+    //           There is no reason to not set this property, now that every website is using HTTPS.
+    // `HttpOnly`: This prevents javascript from accessing the cookie.
+    // `Path`: The cookie is only sent along requests when the request path starts with this string.
+    //         The cookie is also only available to the JavaScript when the webpage url starts with this string.
+    // `MaxAge`: After this much time has passed, the browser will automatically delete the cookie.
+    // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
+
     let cookie = Cookie::build(("session", token))
-        .path("/")
+        .path("/api/")
         .secure(true)
         .max_age(time)
         .http_only(true);
 
-    // Create data fields for second cookie
-    let user_info = serde_json::json!({
-        "userId": user_id,
-        "accountType": AccountType::from_str(&account_type)?
-    });
-
-    // not http cookie
-    let user_cookie = Cookie::build(("user_info", user_info.to_string()))
+    let user_cookie = Cookie::build(("user_info", user_info))
         .path("/")
-        .secure(false)
+        .secure(true)
         .max_age(time)
         .http_only(false);
 
