@@ -13,23 +13,38 @@
     import { m } from '$lib/paraglide/messages.js';
 
     let { children } = $props();
+    let menuOpen = $state(false);
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav
-    class="m-1 flex justify-end gap-2 bg-sky-400 p-1 *:rounded-sm *:border-zinc-900 *:bg-sky-600 *:p-1"
->
-    <a href={appLink('/')}>{m.home()}</a>
-    <a href={appLink('/tree-generator')}>{m.createTree()}</a>
-    <a href={appLink('/registration')}>{m.register()}</a>
-    <a href={appLink('/login')}>{m.login()}</a>
-    {#each locales as locale (locale)}
-        <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
-        <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
-            {locale}
-        </a>
-    {/each}
+<nav class="m-1 bg-sky-400 p-1">
+    <div class="flex justify-end">
+        <button
+            class="rounded-sm bg-sky-600 p-1 md:hidden"
+            onclick={() => menuOpen = !menuOpen}
+            aria-label="Toggle menu"
+        >
+            {#if menuOpen}✕{:else}☰{/if}
+        </button>
+    </div>
+
+    <div class="
+        flex-col gap-2 *:rounded-sm *:bg-sky-600 *:p-1
+        {menuOpen ? 'flex' : 'hidden'}
+        md:flex md:flex-row md:justify-end
+    ">
+        <a href={appLink('/')}>{m.home()}</a>
+        <a href={appLink('/tree-generator')}>{m.createTree()}</a>
+        <a href={appLink('/registration')}>{m.register()}</a>
+        <a href={appLink('/login')}>{m.login()}</a>
+        {#each locales as locale (locale)}
+            <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
+            <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
+                {locale}
+            </a>
+        {/each}
+    </div>
 </nav>
 
 {@render children()}
