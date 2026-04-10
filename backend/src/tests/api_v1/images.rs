@@ -30,7 +30,7 @@ async fn test_upload_image_success(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_image_upload_no_file(db: PgPool) {
+async fn test_image_upload_empty_body(db: PgPool) {
     let server = setup_login(db).await;
 
     let response = server.post("/images/add").bytes(Bytes::from(vec![])).await;

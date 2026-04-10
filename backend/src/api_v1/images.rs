@@ -38,9 +38,9 @@ pub fn images() -> Router<Config> {
 /// 
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
 /// 
-/// May return a [`InvalidImageType`](ApiError:InvalidImageType) if the uploaded image is not of a image/ MIME-type.
+/// May return a [`InvalidImageType`](ApiError::InvalidImageType) if the uploaded image is not of a image/ MIME-type.
 /// 
-/// May return a [`FileWriteException`](ApiError:FileWriteException) if the uploaded image cannot be written to the uploads directory.
+/// May return a [`FileWriteException`](ApiError::FileWriteException) if the uploaded image cannot be written to the uploads directory.
 /// 
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(

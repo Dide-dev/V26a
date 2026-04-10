@@ -16,6 +16,7 @@ use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
 use axum_test::TestServer;
 use sqlx::PgPool;
+use tempfile::tempdir;
 
 /// Sets up an API test server with the given mock database.
 ///
@@ -25,9 +26,14 @@ use sqlx::PgPool;
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints and saves cookies.
 fn setup(db: PgPool) -> TestServer {
+    let temp_dir = tempdir().unwrap();
+
+    let mut config = crate::Config::load();
+    config.upload_dir = temp_dir.path().to_string_lossy().to_string();
+
     let router = crate::api_v1::v1_api()
         .layer(Extension(db))
-        .with_state(crate::Config::load());
+        .with_state(config);
     TestServer::builder().save_cookies().build(router)
 }
 
