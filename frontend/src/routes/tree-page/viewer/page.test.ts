@@ -14,7 +14,6 @@ import type {
 import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
 import { getUserInfo } from '$lib/backend/users';
-import TreePage from './+page.svelte';
 
 // mock the logging check
 vi.mock('$lib/backend/users', () => ({
@@ -146,11 +145,7 @@ test('shows Edit button when user is logged in', async () => {
         exp: 2000000000
     });
 
-    render(PageComponent);
-
-    await new Promise((r) => setTimeout(r));
-
-    expect(document.getElementsByClassName('edit_button').length).toBeGreaterThan(0);
+    screen.findByTestId('edit-button');
 });
 
 test('does not show Edit button when user is not logged in', async () => {
@@ -162,9 +157,5 @@ test('does not show Edit button when user is not logged in', async () => {
 
     vi.mocked(getUserInfo).mockReturnValue(null);
 
-    render(PageComponent);
-
-    await new Promise((r) => setTimeout(r));
-
-    expect(document.getElementsByClassName('edit_button')).toHaveLength(0);
+    expect(() => screen.getByTestId('edit-button')).toThrow();
 });

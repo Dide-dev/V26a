@@ -18,6 +18,7 @@
     let userInfo = $state(getUserInfo());
 
     let loading = $state(true);
+    let allowed = $state(false);
     let error: Error | null = $state(null);
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
@@ -46,13 +47,17 @@
         );
 
         loading = false;
-    });
 
-    // navigate user to editor when logged in
-    async function gotoEditor() {
-        const id = page.url.searchParams.get('id');
-        goto(appLink(`/tree-page/editor?id=${id}`));
-    }
+        //checks if logged in user is owner of tree
+        const isOwner = tree && userInfo && tree.genData.ownerId === userInfo.sub;
+
+        //checks if user is admin
+        const isAdmin = userInfo?.accountType === 'admin';
+
+        if (isOwner || isAdmin) {
+            allowed = true;
+        }
+    });
 </script>
 
 {#if error == null && loading}
@@ -72,12 +77,13 @@
     </div>
 {/if}
 
-{#if error == null && userInfo !== null}
+{#if error == null && allowed}
     <button
-        class="edit_button fixed top-16 right-4 z-50 rounded bg-blue-600 px-4 py-2 text-white shadow"
-        onclick={() => gotoEditor()}
+        data-testid="edit-button"
+        class="fixed top-16 right-4 z-50 rounded bg-blue-600 px-4 py-2 text-white shadow"
+        onclick={() => goto(appLink(`/tree-page/editor?id=${id}`))}
     >
-        Edit
+        {m.edit()}
     </button>
 {/if}
 
