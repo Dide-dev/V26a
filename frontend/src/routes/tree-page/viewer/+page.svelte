@@ -5,13 +5,12 @@
 -->
 
 <script lang="ts">
-    import NodeViewer from './NodeViewer.svelte';
+    import NodeViewer from '../NodeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
-     import { getUserInfo } from '$lib/backend/users';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
-    import { getCurrentUser } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 
@@ -20,24 +19,25 @@
 
     let loading = $state(true);
     let error: Error | null = $state(null);
+    let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
 
     onMount(async () => {
-        const id = page.url.searchParams.get('id');
+        const pageId = page.url.searchParams.get('id');
 
-        if (!id) {
+        if (!pageId) {
             error = new Error('No tree id provided');
             return;
         }
 
-        const idNumber = Number(id);
+        id = Number(pageId);
 
-        if (Number.isNaN(idNumber)) {
+        if (Number.isNaN(id)) {
             error = new Error('Invalid tree id');
             return;
         }
 
-        tree = await getTreeWithCards(idNumber).then(
+        tree = await getTreeWithCards(id).then(
             (treeWithCards) => treeWithCards,
             (e) => {
                 error = e;
@@ -47,6 +47,12 @@
 
         loading = false;
     });
+
+    // navigate user to editor when logged in
+    async function gotoEditor() {
+        const id = page.url.searchParams.get('id');
+        goto(appLink(`/tree-page/editor?id=${id}`));
+    }
 </script>
 
 {#if error == null && loading}
@@ -61,21 +67,19 @@
 
     <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer node={root} cards={tree.cards} />
+            <NodeViewer bind:tree parent={root} node={root} editingPage={false} />
         {/each}
     </div>
 {/if}
 
-
-{#if userInfo !== null}
+{#if error == null && userInfo !== null}
     <button
         class="edit_button fixed top-16 right-4 z-50 rounded bg-blue-600 px-4 py-2 text-white shadow"
-        onclick={() => goto(appLink(`/editor`))}
+        onclick={() => gotoEditor()}
     >
         Edit
     </button>
 {/if}
-
 
 <!--
     Here we add a few css classes to the body,

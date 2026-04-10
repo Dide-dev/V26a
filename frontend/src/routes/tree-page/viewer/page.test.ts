@@ -13,6 +13,13 @@ import type {
 } from '$lib/backend/trees';
 import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
+import { getUserInfo } from '$lib/backend/users';
+import TreePage from './+page.svelte';
+
+// mock the logging check
+// vi.mock('$lib/backend/users', () => ({
+//     getUserInfo: vi.fn(),
+// }));
 
 function createTree(): TreeWithCards {
     // eslint-disable as CardId's are seen as object literal property, and should therefore follow camelCase.
@@ -125,3 +132,25 @@ test('No tree returned is handled correctly', async () => {
 
     expect(error.textContent).toBe('Error: The tree with id 5 could not be found.');
 });
+
+// test('shows Edit button when user is logged in', async () => {
+//     vi.mocked(getUserInfo).mockReturnValue({
+//         accountType: 'author',
+//         sub: 0,
+//         exp: 0
+//     });
+//     render(TreePage);
+
+//     await new Promise((r) => setTimeout(r));
+
+//     expect(document.getElementsByClassName('edit_button').length).toBeGreaterThan(0);
+// });
+
+// test('does not show Edit button when user is not logged in', async () => {
+//     vi.mocked(getUserInfo).mockReturnValue(null);
+//     render(TreePage);
+
+//     await new Promise((r) => setTimeout(r));
+
+//     expect(document.getElementsByClassName('edit_button')).toHaveLength(0);
+// });
