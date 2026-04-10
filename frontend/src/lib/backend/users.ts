@@ -86,7 +86,7 @@ export function getOwnUserData(): Promise<UserGetData> {
 }
 
 /** Update a user's data */
-export function updateUser(userId: UserId, newData: UserUpdateData): Promise<UserGetData> {
+export function updateUser(userId: UserId, newData: UserUpdateData): Promise<void> {
     return apiCallPostUser(`update/${userId}`, newData);
 }
 

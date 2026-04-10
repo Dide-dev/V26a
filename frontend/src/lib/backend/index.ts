@@ -19,7 +19,7 @@ export async function apiCallGet(path: string) {
         headers: { Accept: 'application/json' }
     });
 
-    checkError(response);
+    await checkError(response);
 
     return await response.json();
 }
@@ -34,7 +34,7 @@ export async function apiCallPost(path: string, body: unknown) {
         body: JSON.stringify(body)
     });
 
-    checkError(response);
+    await checkError(response);
 
     // Only return if some content is sent back
     if (response.headers.get('Content-Type') === 'application/json') {
@@ -47,13 +47,20 @@ export async function apiCallPost(path: string, body: unknown) {
 /** Handle errors */
 async function checkError(response: Response) {
     // Redirect to login page when user is not logged in while that is needed to perform action
-    if (response.status === 401) {
-        const encodedURI = encodeURI(page.url.pathname + page.url.search + page.url.hash);
-        await goto(appLink(`/login?redirect=${encodedURI}`));
+    if (response.status === 404) {
+        await redirectLogin(page.url);
         return;
     }
 
     if (!response.ok) {
         throw new Error(await response.text());
     }
+}
+
+/** Go to the login page with a redirect to the given url when successfully logged in. */
+export async function redirectLogin(redirectToURL: URL) {
+    const encodedURI = encodeURI(
+        redirectToURL.pathname + redirectToURL.search + redirectToURL.hash
+    );
+    await goto(appLink(`/login?redirect=${encodedURI}`));
 }
