@@ -63,8 +63,8 @@ CREATE TABLE cards
 
 CREATE TABLE images
 (
-    id SERIAL PRIMARY KEY,
-    filename TEXT NOT NULL,
-    hash TEXT NOT NULL,
+    hash TEXT PRIMARY KEY,
+    owner_id INTEGER NOT NULL,
+    filename TEXT NOT NULL UNIQUE,
     added_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

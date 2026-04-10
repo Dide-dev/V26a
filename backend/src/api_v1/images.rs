@@ -30,8 +30,21 @@ pub fn images() -> Router<Config> {
 ///
 /// # Returns
 /// A permanent URL on which the image can be found.
+/// 
+/// # Error
+/// May return a  [`FileTooBigException`](ApiError::FileTooBigException) if the uploaded file was too big.
+/// 
+/// May return a  [`CreateDirException`](ApiError::CreateDirException) if the upload directory cannot be found and created.
+/// 
+/// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
+/// 
+/// May return a [`InvalidImageType`](ApiError:InvalidImageType) if the uploaded image is not of a image/ MIME-type.
+/// 
+/// May return a [`FileWriteException`](ApiError:FileWriteException) if the uploaded image cannot be written to the uploads directory.
+/// 
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(
-    _claims: Claims,
+    claims: Claims,
     State(config): State<Config>,
     Extension(db): Extension<PgPool>,
     body: Bytes,
@@ -47,7 +60,7 @@ async fn add_new_image(
         .await
         .map_err(|_| ApiError::CreateDirException)?;
 
-    let image_type = infer::get(&body).ok_or(ApiError::InvalidImageType)?;
+    let image_type = infer::get(&body).ok_or(ApiError::NoImageBodyProvidedException)?;
     if !image_type.mime_type().starts_with("image/") {
         return Err(ApiError::InvalidImageType);
     }
@@ -79,7 +92,7 @@ async fn add_new_image(
         hash,
     };
 
-    add_image(&db, &image_add_data).await?;
+    add_image(&db, &image_add_data, claims.sub).await?;
 
     Ok(format!("/uploads/{filename}"))
 }

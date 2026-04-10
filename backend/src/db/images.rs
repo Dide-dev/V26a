@@ -15,18 +15,21 @@ use sqlx::{PgExecutor, query};
 /// `db` - Either a [`&PgPool`](sqlx::PgPool).
 ///
 /// `image_data` - The data assigned to the new image as [`ImageAddData`].
+/// 
+/// `owner_id` - The id of the user that added the image originally.
 ///
 /// # Returns
 /// The URL on which the image can be found if succesful.
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_image(db: impl PgExecutor<'_>, image_data: &ImageAddData) -> Result<(), ApiError> {
+pub async fn add_image(db: impl PgExecutor<'_>, image_data: &ImageAddData, owner_id: i32) -> Result<(), ApiError> {
     query!(
-        "INSERT INTO images (filename, hash)
-        VALUES ($1, $2)",
-        image_data.file_name,
+        "INSERT INTO images (hash, owner_id, filename)
+        VALUES ($1, $2, $3)",
         image_data.hash,
+        owner_id,
+        image_data.file_name,
     )
     .execute(db)
     .await
