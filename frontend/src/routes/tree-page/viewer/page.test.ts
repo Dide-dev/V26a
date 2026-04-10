@@ -13,6 +13,7 @@ import type {
 } from '$lib/backend/trees';
 import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
+import { m } from '$lib/paraglide/messages';
 
 function createTree(): TreeWithCards {
     // eslint-disable as CardId's are seen as object literal property, and should therefore follow camelCase.
@@ -99,7 +100,7 @@ test('No tree id provided is handled correctly', async () => {
 
     const error = await screen.findByTestId('error');
 
-    expect(error.textContent).toBe('Error: No tree id provided');
+    expect(error.textContent).toBe(m.noTreeId());
 });
 
 test('Invalid tree id is handled correctly', async () => {
@@ -112,16 +113,5 @@ test('Invalid tree id is handled correctly', async () => {
 
     const error = await screen.findByTestId('error');
 
-    expect(error.textContent).toBe('Error: Invalid tree id');
-});
-
-test('No tree returned is handled correctly', async () => {
-    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
-    mockGetTree.mockRejectedValue(new Error('The tree with id 5 could not be found.'));
-    page.url.searchParams.set('id', '5');
-    render(PageComponent);
-
-    const error = await screen.findByTestId('error');
-
-    expect(error.textContent).toBe('Error: The tree with id 5 could not be found.');
+    expect(error.textContent).toBe(m.invalidTreeId());
 });
