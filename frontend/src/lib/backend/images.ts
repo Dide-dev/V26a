@@ -6,10 +6,10 @@
 
 const prefix = 'images/';
 
-async function apiCallAddImage(body: FormData) {
+async function apiCallAddImage(imageFile: File) {
     const response = await fetch(`/api/v1/${prefix}add`, {
         method: 'POST',
-        body: body
+        body: imageFile
     });
 
     if (!response.ok) {
@@ -21,9 +21,6 @@ async function apiCallAddImage(body: FormData) {
 }
 
 /** Add an image to the database. Returns the path on which the image can be found. */
-export function uploadImage(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return apiCallAddImage(formData);
+export function uploadImage(imageFile: File): Promise<string> {
+    return apiCallAddImage(imageFile);
 }

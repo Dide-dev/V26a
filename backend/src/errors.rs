@@ -17,8 +17,6 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an e-mail has already been used and cannot be used again.
     EmailAlreadyUsed,
-    /// An error to be returned when a file is too big to be uploaded.
-    FileTooBigException,
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
     /// An error to return when the user requests a page that doesn't exist.
@@ -36,8 +34,8 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
     MissingUser(i32),
-    /// An error to return when something goes wrong while parsing multipart data.
-    MultipartException,
+    /// An error to return when `add_new_image` has been called with an empty body.
+    NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
     /// An error to return when a wrong e-mail or password is provided while trying to log in.
@@ -61,6 +59,12 @@ pub enum ApiError {
     /// An error to return when a user tries to do something for which they are not properly
     /// authorized.
     NoPermission,
+
+    //-----------------------//
+    // 413: PAYLOAD TO LARGE //
+    //-----------------------//
+    /// An error to be returned when a file is too big to be uploaded.
+    FileTooBigException,
 
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
@@ -97,9 +101,6 @@ impl Display for ApiError {
             ApiError::EmailAlreadyUsed => {
                 write!(f, "A user with this e-mail address already exists.")
             }
-            ApiError::FileTooBigException => {
-                write!(f, "The file being uploaded is too big.")
-            }
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
             }
@@ -122,11 +123,8 @@ impl Display for ApiError {
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
-            ApiError::MultipartException => {
-                write!(
-                    f,
-                    "Something went wrong parsing multipartdata. Check whether the multipart request is valid and whether the multipart body is not corrupt"
-                )
+            ApiError::NoImageBodyProvidedException => {
+                write!(f, "No image body has been provided.")
             }
             ApiError::NonEmptyStructure => write!(
                 f,
@@ -147,6 +145,13 @@ impl Display for ApiError {
             // 403: FORBIDDEN //
             //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
+
+            //-----------------------//
+            // 413: PAYLOAD TO LARGE //
+            //-----------------------//
+            ApiError::FileTooBigException => {
+                write!(f, "The file being uploaded is too big.")
+            }
 
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
@@ -188,7 +193,6 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailAlreadyUsed
-            | ApiError::FileTooBigException
             | ApiError::InvalidImageType
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
@@ -197,7 +201,7 @@ impl ApiError {
             | ApiError::MissingCard(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
-            | ApiError::MultipartException
+            | ApiError::NoImageBodyProvidedException
             | ApiError::NonEmptyStructure
             | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
 
@@ -206,6 +210,8 @@ impl ApiError {
             | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
+
+            ApiError::FileTooBigException => StatusCode::PAYLOAD_TOO_LARGE,
 
             ApiError::CreateDirException
             | ApiError::DatabaseException
