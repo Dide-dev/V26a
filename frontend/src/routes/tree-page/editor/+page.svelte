@@ -29,7 +29,11 @@
     });
 
     let loading = $state(true);
-    let error: Error | null = $state(null);
+
+    // errors
+    let noTreeId: boolean = $state(false);
+    let invalidTreeId: boolean = $state(false);
+
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
     let dropDown = $state(false);
@@ -38,38 +42,30 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            error = new Error('No tree id provided');
+            noTreeId = true;
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            error = new Error('Invalid tree id');
+            invalidTreeId = true;
             return;
         }
 
-        tree = await getTreeWithCards(id).then(
-            (treeWithCards) => treeWithCards,
-            (e) => {
-                error = e;
-                return null;
-            }
-        );
+        tree = await getTreeWithCards(id);
 
-        if (tree) {
-            treeData = {
-                title: tree.data.title ?? '',
-                description: tree.data.description ?? '',
-                bookName: tree.data.bookName ?? '',
-                bookEdition: tree.data.bookEdition ?? '',
-                bookIsbn: tree.data.bookIsbn ?? '',
-                bookChapter: tree.data.bookChapter ?? '',
-                bookExercise: tree.data.bookExercise ?? '',
-                assignmentText: tree.data.assignmentText ?? '',
-                published: tree.data.published ?? false
-            };
-        }
+        treeData = {
+            title: tree.data.title ?? '',
+            description: tree.data.description ?? '',
+            bookName: tree.data.bookName ?? '',
+            bookEdition: tree.data.bookEdition ?? '',
+            bookIsbn: tree.data.bookIsbn ?? '',
+            bookChapter: tree.data.bookChapter ?? '',
+            bookExercise: tree.data.bookExercise ?? '',
+            assignmentText: tree.data.assignmentText ?? '',
+            published: tree.data.published ?? false
+        };
 
         loading = false;
     });
@@ -91,10 +87,12 @@
     }
 </script>
 
-{#if error == null && loading}
+{#if noTreeId}
+    <p class="text-red-700" data-testid="error">{m.noTreeId()}</p>
+{:else if invalidTreeId}
+    <p class="text-red-700" data-testid="error">{m.invalidTreeId()}</p>
+{:else if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
-{:else if error != null}
-    <p class="text-red-700" data-testid="error">{error}</p>
 {:else if tree}
     <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">

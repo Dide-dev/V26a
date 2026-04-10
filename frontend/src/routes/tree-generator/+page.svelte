@@ -22,18 +22,11 @@
         published: false
     });
 
-    let error: null | Error = $state(null);
-
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        try {
-            const treeId = await addTree(treeData);
-            console.log('Tree created with ID:', treeId);
-            goto(appLink(`/tree-page/editor?id=${treeId}`));
-        } catch (e) {
-            error = e as Error;
-            console.error('Failed to create tree:', e);
-        }
+
+        const treeId = await addTree(treeData);
+        goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
 </script>
 
@@ -135,6 +128,5 @@
             />
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.createTree()}</button>
-        <p class="text-red-600">{error?.message}</p>
     </form>
 </div>

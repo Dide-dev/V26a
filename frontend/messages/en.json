@@ -46,5 +46,7 @@
     "passwordsNotTheSame": "Passwords are not the same",
     "unexpectedErrorOccurred": "An unexpected error occurred :(",
     "close": "Close",
-    "invalidCredentials": "Email or password is invalid. Please try again."
+    "invalidCredentials": "Email or password is invalid. Please try again.",
+    "noTreeId": "No tree id provided.",
+    "invalidTreeId": "The tree id cannot be parsed into a number."
 }

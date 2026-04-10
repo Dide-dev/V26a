@@ -46,5 +46,7 @@
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
     "unexpectedErrorOccurred": "Er deed zich een onverwachte fout voor :(",
     "close": "Sluiten",
-    "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw."
+    "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
+    "noTreeId": "Er mist een boom id.",
+    "invalidTreeId": "De boom id kan niet worden omgezet in een getal."
 }
