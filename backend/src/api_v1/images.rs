@@ -30,18 +30,18 @@ pub fn images() -> Router<Config> {
 ///
 /// # Returns
 /// A permanent URL on which the image can be found.
-/// 
+///
 /// # Error
 /// May return a  [`FileTooBigException`](ApiError::FileTooBigException) if the uploaded file was too big.
-/// 
+///
 /// May return a  [`CreateDirException`](ApiError::CreateDirException) if the upload directory cannot be found and created.
-/// 
+///
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
-/// 
+///
 /// May return a [`InvalidImageType`](ApiError::InvalidImageType) if the uploaded image is not of a image/ MIME-type.
-/// 
+///
 /// May return a [`FileWriteException`](ApiError::FileWriteException) if the uploaded image cannot be written to the uploads directory.
-/// 
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(
     claims: Claims,
@@ -49,44 +49,34 @@ async fn add_new_image(
     Extension(db): Extension<PgPool>,
     body: Bytes,
 ) -> Result<String, ApiError> {
-    const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
-    if body.len() > MAX_FILE_SIZE {
-        return Err(ApiError::FileTooBigException);
-    }
-
     let upload_directory = &config.upload_dir;
 
-    tokio::fs::create_dir_all(upload_directory)
-        .await
-        .map_err(|_| ApiError::CreateDirException)?;
+    // First check whether the directory exists, creates it if not.
+    check_directory_existence(upload_directory).await?;
 
-    let image_type = infer::get(&body).ok_or(ApiError::NoImageBodyProvidedException)?;
-    if !image_type.mime_type().starts_with("image/") {
-        return Err(ApiError::InvalidImageType);
-    }
-    let extension = image_type.extension();
+    // Checks whether the image is of MIME-type image/ and saves the image extension.
+    let image_type = validate_image(&body);
+    let extension = image_type?.extension().to_string();
 
-    let mut hasher = Sha256::new();
-    hasher.update(&body);
-    let hash = hasher.finalize();
+    // Creates a hash of the image.
+    let hash = create_hash(&body);
 
-    let hash = hash.iter().fold(String::new(), |mut output, b| {
-        let _ = write!(output, "{b:02X}");
-        output
-    });
-
+    // Checks whether the image already exists in de database based on its hash. If so, returns the URL where the already excisting image can be found.
     if let Some(existing_filename) = check_image_existence(&db, &hash).await? {
         return Ok(format!("/uploads/{existing_filename}"));
     }
 
+    // Create image filename using a uuid and extension.
     let uuid = Uuid::new_v4();
     let filename = format!("{uuid}.{extension}");
     let filepath = format!("{upload_directory}/{filename}");
 
+    // Write the image to the directory.
     tokio::fs::write(&filepath, &body)
         .await
         .map_err(|_| ApiError::FileWriteException)?;
 
+    // Add the image metadata to the database
     let image_add_data = ImageAddData {
         file_name: filename.clone(),
         hash,
@@ -94,5 +84,53 @@ async fn add_new_image(
 
     add_image(&db, &image_add_data, claims.sub).await?;
 
+    // Return where the image can be found
     Ok(format!("/uploads/{filename}"))
+}
+
+/// Check whether the upload directory configured in config exists. If not, creates the directory.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return an [`CreateDirException`](ApiError::CreateDirException) if the upload directory can not be found and created.
+async fn check_directory_existence(upload_directory: &String) -> Result<(), ApiError> {
+    tokio::fs::create_dir_all(upload_directory)
+        .await
+        .map_err(|_| ApiError::CreateDirException)?;
+
+    Ok(())
+}
+
+/// Check whether the image type is a valid image of MIME-type image/.
+///
+/// # Returns
+/// The type of the image.
+///
+/// # Error
+/// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
+///
+/// May return a [`InvalidImageType`](ApiError::InvalidImageType) if the uploaded image is not of a image/ MIME-type.
+fn validate_image(image: &Bytes) -> Result<infer::Type, ApiError> {
+    let image_type = infer::get(image).ok_or(ApiError::NoImageBodyProvidedException)?;
+    if !image_type.mime_type().starts_with("image/") {
+        return Err(ApiError::InvalidImageType);
+    }
+    Ok(image_type)
+}
+
+/// Creates a Sha256 hash of the image used as argument.
+///
+/// # Returns
+/// A string containing the hash of the image.
+fn create_hash(body: &Bytes) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(body);
+    let hash = hasher.finalize();
+
+    hash.iter().fold(String::new(), |mut output, b| {
+        let _ = write!(output, "{b:02X}");
+        output
+    })
 }
