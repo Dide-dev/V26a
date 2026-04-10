@@ -23,6 +23,9 @@ pub fn auth() -> Router<Config> {
     Router::new().route("/login", post(login))
 }
 
+/// Return body, where the `succeeded`-field signals whether the request was successful.
+/// - If the flag is `false`, the wrong credentials were passed.
+/// - If the flag is `true`, the login was successful, and both a `session` and `user_info` cookie have been created.
 #[derive(Serialize)]
 struct LoginResponse {
     succeeded: bool,
@@ -32,7 +35,7 @@ struct LoginResponse {
 /// with an encoded JWT.
 ///
 /// # Returns
-/// A [`LoginResponse`] whether the combination of email and password is correct.
+/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
 ///
 /// # Error
 /// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.

@@ -58,7 +58,7 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
     let response = response.json::<AddUserResponse>();
     let AddUserResponse::Success { user_id } = response else {
         // Adding a user should never fail in a test
-        panic!()
+        panic!("Something unexpected failed while adding a user")
     };
     user_id
 }

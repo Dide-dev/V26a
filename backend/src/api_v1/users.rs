@@ -27,15 +27,17 @@ pub fn users() -> Router<Config> {
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AddUserResponse {
+    /// Return body signaling the user has been successfully added with the contained `user_id`.
     Success { user_id: i32 },
+    /// Return body signaling the user could not be added, as the e-mail was already in use.
     EmailAlreadyUsed,
 }
 
 /// Add a user to the database.
 ///
 /// # Returns
-/// An [`AddUserResponse::Success`] with the id assigned to the new user
-/// if the email not already exists, otherwise an [`AddUserResponse::EmailAlreadyUsed`].
+/// [`Success`](AddUserResponse::Success) with the id assigned to the new user
+/// if the email has not yet been used, or [`EmailAlreadyUsed`](AddUserResponse::EmailAlreadyUsed) otherwise.
 ///
 /// # Error
 /// May return a [`HashException`](ApiError::HashException) instead.

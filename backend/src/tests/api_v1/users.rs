@@ -34,7 +34,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
     let response = response.json::<AddUserResponse>();
     let AddUserResponse::Success { user_id } = response else {
         // Adding a user should never fail in a test
-        panic!()
+        panic!("Something unexpected failed while adding a user")
     };
 
     let expected_user_data = UserGetData {
