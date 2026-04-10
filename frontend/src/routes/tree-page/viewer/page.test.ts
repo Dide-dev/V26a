@@ -15,7 +15,7 @@ import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
 import { getUserInfo } from '$lib/backend/users';
 
-// mock the logging check
+// Mock the logging check
 vi.mock('$lib/backend/users', () => ({
     getUserInfo: vi.fn()
 }));

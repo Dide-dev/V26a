@@ -14,7 +14,7 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 
-    //checks if user is logged in or not
+    // Checks if user is logged in or not
     let userInfo = $state(getUserInfo());
 
     let loading = $state(true);
