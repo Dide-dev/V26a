@@ -53,8 +53,8 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
             email,
             password: "a$$word".to_string(),
             name: "John Test".to_string(),
-            nickname: None,
-            about_me: None,
+            nickname: String::new(),
+            about_me: String::new(),
             email_visible: false,
             language: UserLanguage::En,
         })

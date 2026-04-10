@@ -193,8 +193,8 @@ mod tests {
             email: "email".to_owned(),
             password: "password".to_owned(),
             name: "name".to_owned(),
-            nickname: Some("nickname".to_owned()),
-            about_me: Some("about_me".to_owned()),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
             email_visible: true,
             language: UserLanguage::En,
         };
@@ -235,8 +235,8 @@ mod tests {
             email: email.clone(),
             password: "password".to_owned(),
             name: "name".to_owned(),
-            nickname: None,
-            about_me: None,
+            nickname: String::new(),
+            about_me: String::new(),
             email_visible: false,
             language: UserLanguage::Nl,
         };
@@ -262,8 +262,8 @@ mod tests {
             email: "test@test.com".to_owned(),
             password: "password".to_owned(),
             name: "name".to_owned(),
-            nickname: None,
-            about_me: None,
+            nickname: String::new(),
+            about_me: String::new(),
             email_visible: false,
             language: UserLanguage::Nl,
         };
@@ -280,8 +280,8 @@ mod tests {
             email: "email".to_owned(),
             password: "password".to_owned(),
             name: "name".to_owned(),
-            nickname: Some("nickname".to_owned()),
-            about_me: Some("about_me".to_owned()),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
             email_visible: true,
             language: UserLanguage::En,
         };
@@ -308,8 +308,8 @@ mod tests {
         // Test not updating the account type and the enabled flag
         let new_user_data = UserUpdateData {
             name: "name".to_owned(),
-            nickname: None,
-            about_me: None,
+            nickname: String::new(),
+            about_me: String::new(),
             email_visible: false,
             language: UserLanguage::Nl,
             account_type: None,
@@ -340,8 +340,8 @@ mod tests {
         // Test updating the account type and enabled flag
         let new_user_data = UserUpdateData {
             name: "john smith".to_owned(),
-            nickname: Some("john".to_owned()),
-            about_me: Some("Nothing interesting".to_owned()),
+            nickname: "john".to_owned(),
+            about_me: "Nothing interesting".to_owned(),
             email_visible: true,
             language: UserLanguage::En,
             account_type: Some(AccountType::Admin),
@@ -372,8 +372,8 @@ mod tests {
             email: email.clone(),
             password: "password".to_string(),
             name: "name".to_string(),
-            nickname: None,
-            about_me: None,
+            nickname: String::new(),
+            about_me: String::new(),
             email_visible: false,
             language: UserLanguage::En,
         };

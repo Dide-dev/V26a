@@ -15,11 +15,12 @@ use crate::db_structs::trees::{
     TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
     TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::{Config, db};
 
 use axum::extract::Path;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgExecutor, PgPool};
@@ -28,6 +29,7 @@ use sqlx::{PgConnection, PgExecutor, PgPool};
 pub fn trees() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_tree))
+        .route("/remove/{tree_id}", delete(remove_tree))
         .route("/update-structure", post(update_tree_structure))
         .route("/remove-card", post(remove_card_from_tree))
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
@@ -57,6 +59,23 @@ async fn add_new_tree(
 
     let json_id = Json(id);
     Ok(json_id)
+}
+
+/// Remove a tree together with its cards from the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn remove_tree(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(tree_id): Path<i32>,
+) -> Result<(), ApiError> {
+    verify_tree_permissions(&db, tree_id, claims).await?;
+
+    crate::db::trees::remove_tree(&db, tree_id).await
 }
 
 /// Check whether a tree structure contains no cards.
@@ -92,7 +111,7 @@ async fn update_tree_structure(
     Json(tree_update_data): Json<TreeUpdateStructureData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
+    verify_tree_permissions(&db, tree_update_data.id, claims).await?;
 
     let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
@@ -133,7 +152,7 @@ async fn remove_card_from_tree(
     Json(tree_card_removal_data): Json<TreeRemoveCardData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_ownership(&db, tree_card_removal_data.id, claims.sub).await?;
+    verify_tree_permissions(&db, tree_card_removal_data.id, claims).await?;
 
     let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
@@ -210,7 +229,7 @@ async fn update_tree_data(
     Json(tree_update_data): Json<TreeUpdateData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
+    verify_tree_permissions(&db, tree_update_data.id, claims).await?;
 
     db::trees::update_tree_data(&db, tree_update_data.id, tree_update_data.new_data).await?;
     Ok(())
@@ -275,14 +294,17 @@ async fn get_all_owned_trees(
     Ok(Json(trees_metadata))
 }
 
-/// Checks whether the tree exists and if it is owner by the user.
+/// Checks whether the tree exists and if it is owned by the user,
+/// or if the user is an admin.
+/// This function could be expanded in the future if multiple users can be
+/// added to a tree as collaborators, but that is currently not the case.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
 /// `tree_id` - The tree of which the ownerships gets verified.
 ///
-/// `user_id` - The id of the user who sent this request.
+/// `claims` - The claims of the user who sent this request.
 ///
 /// # Returns
 /// Nothing.
@@ -294,21 +316,21 @@ async fn get_all_owned_trees(
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn verify_tree_ownership(
+pub async fn verify_tree_permissions(
     db: impl PgExecutor<'_>,
     tree_id: i32,
-    user_id: i32,
+    claims: Claims,
 ) -> Result<(), ApiError> {
     // Check whether the tree exists.
     let owner_id = get_tree_owner(db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if user_id != owner_id {
-        return Err(ApiError::NoPermission);
+    if claims.account_type == AccountType::Admin || claims.sub == owner_id {
+        Ok(())
+    } else {
+        Err(ApiError::NoPermission)
     }
-
-    Ok(())
 }
 
 /// Get the list of all trees satisfying some filters at a given page.

@@ -15,8 +15,8 @@ pub struct RegisterData {
     pub email: String,
     pub password: String,
     pub name: String,
-    pub nickname: Option<String>,
-    pub about_me: Option<String>,
+    pub nickname: String,
+    pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
 }
@@ -27,22 +27,20 @@ pub struct RegisterData {
 pub struct UserGetData {
     pub email: String,
     pub name: String,
-    pub nickname: Option<String>,
-    pub about_me: Option<String>,
+    pub nickname: String,
+    pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
 }
 
 /// Data needed to update a user in the database.
 /// `account_type` and `enabled` are only updated if a `Some` value is passed.
-/// `nickname` and `about_me` are always updated, where `None` is translated into `NULL` in the
-/// database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUpdateData {
     pub name: String,
-    pub nickname: Option<String>,
-    pub about_me: Option<String>,
+    pub nickname: String,
+    pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
     pub account_type: Option<AccountType>,

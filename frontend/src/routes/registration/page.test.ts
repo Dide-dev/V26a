@@ -153,7 +153,7 @@ test('Submission with correct data', async () => {
             password: 'ThisIsAVerySecureP@ssword123',
             name: 'Tree Maker',
             nickname: '',
-            aboutMe: null,
+            aboutMe: '',
             emailVisible: false,
             language: getLocale()
         })
