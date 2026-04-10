@@ -34,7 +34,10 @@ export async function apiCallDelete(path: string) {
         throw new Error(await response.text());
     }
 
-    return await response.json();
+    // Only return if some content is sent back
+    if (response.headers.get('Content-Type') === 'application/json') {
+        return await response.json();
+    }
 }
 
 /** This function is for the rest of the backend to call upon, do not call from UI! */
