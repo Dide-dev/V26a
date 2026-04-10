@@ -32,8 +32,6 @@ pub enum ApiError {
     MissingUser(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
-    /// An error to return when a wrong e-mail or password is provided while trying to log in.
-    WrongCredentials,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -103,9 +101,6 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
-            ApiError::WrongCredentials => {
-                write!(f, "The e-mail or password provided was incorrect.")
-            }
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -150,8 +145,7 @@ impl ApiError {
             | ApiError::MissingCard(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
-            | ApiError::NonEmptyStructure
-            | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession

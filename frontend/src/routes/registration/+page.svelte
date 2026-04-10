@@ -58,18 +58,21 @@
 
         if (!checkLowercase() || !checkUppercase() || !checkNumber() || !checkSpecialCharacter()) {
             passwordMissingChar = true;
-        } else if (!checkSamePassword()) {
+            return;
+        }
+        if (!checkSamePassword()) {
             passwordNotSame = true;
+            return;
+        }
+
+        let addResponse = await addUser(formData);
+        if (addResponse.type === 'Success') {
+            emailAlreadyExists = false;
+            await goto(appLink('/login'));
+        } else if (addResponse.type === 'EmailAlreadyUsed') {
+            emailAlreadyExists = true;
         } else {
-            let addResponse = await addUser(formData);
-            if (addResponse.type === 'Success') {
-                emailAlreadyExists = false;
-                await goto(appLink('/login'));
-            } else if (addResponse.type === 'EmailAlreadyUsed') {
-                emailAlreadyExists = true;
-            } else {
-                throw new Error('ERROR: Unexpected output from API.');
-            }
+            throw new Error('ERROR: Unexpected output from API.');
         }
     }
 </script>

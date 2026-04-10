@@ -20,22 +20,26 @@
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         let response = await login(loginData);
-        if (response.succeeded) {
-            loginFailed = false;
-            // Redirect to given url if valid
-            let redirectUrl = page.url.searchParams.get('redirect');
-            if (!redirectUrl) {
-                goto(appLink('/'));
-            } else {
-                // redirect_url should be just a relative path, not a complete url
-                if (!URL.canParse(redirectUrl)) {
-                    goto(appLink(redirectUrl));
-                } else {
-                    goto(appLink('/'));
-                }
-            }
-        } else {
+
+        if (!response.succeeded) {
             loginFailed = true;
+            return;
+        }
+
+        loginFailed = false;
+
+        // Redirect to given url if valid
+        let redirectUrl = page.url.searchParams.get('redirect');
+        if (!redirectUrl) {
+            goto(appLink('/'));
+            return;
+        }
+
+        // redirect_url should be just a relative path, not a complete url
+        if (!URL.canParse(redirectUrl)) {
+            goto(appLink(redirectUrl));
+        } else {
+            goto(appLink('/'));
         }
     }
 </script>

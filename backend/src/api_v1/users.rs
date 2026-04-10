@@ -47,19 +47,20 @@ async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<AddUserResponse>, ApiError> {
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
-    // constraint is placed on the `email` field.
-    let exists = user_email_exists(&mut *tx, &user_data.email).await?;
+    let exists = user_email_exists(&mut *transaction, &user_data.email).await?;
 
     if exists {
         return Ok(Json(AddUserResponse::EmailAlreadyUsed));
     }
 
-    let user_id = add_user(&mut tx, &user_data).await?;
+    let user_id = add_user(&mut transaction, &user_data).await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(Json(AddUserResponse::Success { user_id }))
 }

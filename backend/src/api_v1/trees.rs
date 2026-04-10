@@ -94,11 +94,19 @@ async fn update_tree_structure(
     // Verify the tree's existence and the user's permissions.
     verify_tree_ownership(&db, tree_update_data.id, claims.sub).await?;
 
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    update_structure_if_valid(&mut tx, tree_update_data.id, tree_update_data.new_structure).await?;
+    update_structure_if_valid(
+        &mut transaction,
+        tree_update_data.id,
+        tree_update_data.new_structure,
+    )
+    .await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
@@ -135,21 +143,24 @@ async fn remove_card_from_tree(
     // Verify the tree's existence and the user's permissions.
     verify_tree_ownership(&db, tree_card_removal_data.id, claims.sub).await?;
 
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
     // First, we remove the card from the database, within the transaction.
-    remove_card(&mut *tx, tree_card_removal_data.card_id).await?;
+    remove_card(&mut *transaction, tree_card_removal_data.card_id).await?;
 
     // Then, we check if the structure is still valid with the card being removed.
     // This ensures the card is actually removed from the structure.
     update_structure_if_valid(
-        &mut tx,
+        &mut transaction,
         tree_card_removal_data.id,
         tree_card_removal_data.new_structure,
     )
     .await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
@@ -340,9 +351,9 @@ pub async fn get_list(
 
     let optional_user_id = claims.map(|c| c.sub);
 
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let trees_count = get_queried_count(&mut *tx, &filters, optional_user_id).await?;
+    let trees_count = get_queried_count(&mut *transaction, &filters, optional_user_id).await?;
     if trees_count == 0 {
         return Ok(Json(TreeListResponse {
             total_trees: 0,
@@ -350,9 +361,12 @@ pub async fn get_list(
         }));
     }
 
-    let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
+    let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     let list = TreeListResponse {
         total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
