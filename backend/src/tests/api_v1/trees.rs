@@ -6,7 +6,7 @@
 
 #![cfg(test)]
 
-use crate::db_structs::cards::{CardAddData, CardGetData};
+use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use crate::db_structs::trees::{
     Node, RootNode, TreeAddData, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData,
     TreeRemoveData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
@@ -149,11 +149,9 @@ async fn test_deleting_trees_works(db: PgPool) {
         front: "abc".to_owned(),
         back: "def".to_owned(),
     };
-    server
-        .post("/cards/add")
-        .json(&card_add_data)
-        .await
-        .assert_status_ok();
+    let response = server.post("/cards/add").json(&card_add_data).await;
+    response.assert_status_ok();
+    let card_id: i32 = response.json();
 
     let tree_remove_data = TreeRemoveData { tree_id };
     server
@@ -167,6 +165,19 @@ async fn test_deleting_trees_works(db: PgPool) {
         .await;
     response.assert_status_bad_request();
     response.assert_text(ApiError::MissingTree(tree_id).to_string());
+
+    // Just in case check that the card also doesn't exist anymore.
+    // This should never happen as the database has a foreign key for this.
+    let response = server
+        .post("/cards/update")
+        .json(&CardUpdateData {
+            card_id,
+            new_front: String::new(),
+            new_back: String::new(),
+        })
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingCard(card_id).to_string());
 }
 
 #[sqlx::test]

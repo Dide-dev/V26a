@@ -61,6 +61,13 @@ async fn add_new_tree(
     Ok(json_id)
 }
 
+/// Remove a tree together with its cards from the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Error
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -288,8 +295,8 @@ async fn get_all_owned_trees(
     Ok(Json(trees_metadata))
 }
 
-/// Checks whether the tree exists and if it is owner by the user.
-/// If the user is an admin, this function will also allow it.
+/// Checks whether the tree exists and if it is owned by the user,
+/// or if the user is an admin.
 /// This function could be expanded in the future if multiple users can be
 /// added to a tree as collaborators, but that is currently not the case.
 ///

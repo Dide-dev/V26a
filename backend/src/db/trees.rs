@@ -73,9 +73,8 @@ pub async fn add_tree(
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-///
 pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), ApiError> {
-    // When this tree is delted from database, the cards are automatically deleted with it.
+    // When this tree is deleted from database, the cards are automatically deleted with it.
     // This is because of the `ON DELETE CASCADE` in the foreign key of the 'cards' table.
     query!("DELETE FROM trees WHERE id=$1", tree_id)
         .execute(db)
