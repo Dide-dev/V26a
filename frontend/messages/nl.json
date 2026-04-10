@@ -45,5 +45,7 @@
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
     "profile": "Profiel",
-    "confirmChanges": "Bevestig wijzigingen"
+    "confirmChanges": "Bevestig wijzigingen",
+    "edit": "Bewerk",
+    "add": "Voeg toe"
 }
