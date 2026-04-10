@@ -5,7 +5,7 @@
 */
 
 import type { CardGetData, CardId } from './cards';
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 import type { UserId } from './users';
 
@@ -17,6 +17,10 @@ function apiCallPostTree(path: string, body: unknown) {
 
 function apiCallGetTree(path: string) {
     return apiCallGet(prefix + path);
+}
+
+function apiCallDeleteTree(path: string) {
+    return apiCallDelete(prefix + path);
 }
 
 export type TreeId = number;
@@ -77,10 +81,6 @@ export type TreeMetadata = {
 export type TreeAddData = {
     treeData: TreeData;
     treeStructure: TreeStructure;
-};
-
-export type TreeRemoveData = {
-    treeId: TreeId;
 };
 
 // Default tree structure used in addTree.
@@ -147,8 +147,8 @@ export function addTree(treeData: TreeData): Promise<TreeId> {
 }
 
 /** Remove a tree and all of its cards from the database. */
-export function removeTree(treeRemoveData: TreeRemoveData): Promise<void> {
-    return apiCallPostTree('remove', treeRemoveData);
+export function removeTree(treeId: TreeId): Promise<void> {
+    return apiCallDeleteTree(`remove/${treeId}`);
 }
 
 /** Update the structure of an existing tree. */

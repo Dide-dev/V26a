@@ -9,7 +9,7 @@
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use crate::db_structs::trees::{
     Node, RootNode, TreeAddData, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData,
-    TreeRemoveData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use crate::tests::api_v1::{login, register, setup, setup_login};
@@ -153,10 +153,8 @@ async fn test_deleting_trees_works(db: PgPool) {
     response.assert_status_ok();
     let card_id: i32 = response.json();
 
-    let tree_remove_data = TreeRemoveData { tree_id };
     server
-        .post("/trees/remove")
-        .json(&tree_remove_data)
+        .delete(&format!("/trees/remove/{tree_id}"))
         .await
         .assert_status_ok();
 
@@ -194,10 +192,8 @@ async fn test_deleting_trees_denied(db: PgPool) {
     let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
 
     server.clear_cookies();
-    let tree_remove_data = TreeRemoveData { tree_id };
     server
-        .post("/trees/remove")
-        .json(&tree_remove_data)
+        .delete(&format!("/trees/remove/{tree_id}"))
         .await
         .assert_status_unauthorized();
 
