@@ -16,7 +16,7 @@
         password: '',
         name: '',
         nickname: '',
-        aboutMe: null,
+        aboutMe: '',
         emailVisible: false,
         language: getLocale()
     });

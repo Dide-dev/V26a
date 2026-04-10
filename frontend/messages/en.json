@@ -19,6 +19,7 @@
     "email": "E-mail",
     "name": "Name",
     "nickname": "Nickname",
+    "aboutMe": "About me",
     "password": "Password",
     "language": "Language",
     "emailVisible": "My viewable trees may show my email address. (This is useful for students to contact you, e.g., for feedback or signaling of errors.)",
@@ -43,10 +44,12 @@
     "repeatPassword": "Repeat password",
     "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
     "emailAlreadyExists": "An account with this email already exists",
-    "passwordsNotTheSame": "Passwords are not the same",
     "unexpectedErrorOccurred": "An unexpected error occurred :(",
     "close": "Close",
     "invalidCredentials": "Email or password is invalid. Please try again.",
     "noTreeId": "Error: No tree id provided.",
-    "invalidTreeId": "The tree id cannot be parsed into a number."
+    "invalidTreeId": "The tree id cannot be parsed into a number.",
+    "passwordsNotTheSame": "Passwords are not the same",
+    "profile": "Profile",
+    "confirmChanges": "Confirm changes"
 }

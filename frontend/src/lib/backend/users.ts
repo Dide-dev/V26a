@@ -25,8 +25,8 @@ export type RegisterData = {
     email: string;
     password: string;
     name: string;
-    nickname: Option<string>;
-    aboutMe: Option<string>;
+    nickname: string;
+    aboutMe: string;
     emailVisible: boolean;
     language: string;
 };
@@ -44,8 +44,8 @@ export type AddUserEmailInvalid = {
 export type UserGetData = {
     email: string;
     name: string;
-    nickname: Option<string>;
-    aboutMe: Option<string>;
+    nickname: string;
+    aboutMe: string;
     emailVisible: boolean;
     language: string;
 };
@@ -58,8 +58,8 @@ export type UserGetData = {
  */
 export type UserUpdateData = {
     name: string;
-    nickname: Option<string>;
-    aboutMe: Option<string>;
+    nickname: string;
+    aboutMe: string;
     emailVisible: boolean;
     language: string;
     accountType: Option<AccountType>;

@@ -19,6 +19,7 @@
     "email": "E-mail",
     "name": "Naam",
     "nickname": "Pseudoniem",
+    "aboutMe": "Over mij",
     "password": "Wachtwoord",
     "language": "Taal",
     "emailVisible": "Mijn zichtbare bomen kunnen mijn email adres laten zien. (Dit is handig voor studenten om jou te contacteren, voor bijvoorbeeld feedback of het signaleren van errors)",
@@ -43,10 +44,12 @@
     "repeatPassword": "Herhaal wachtwoord",
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
     "emailAlreadyExists": "Dit emailadres is al in gebruik",
-    "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
     "unexpectedErrorOccurred": "Er deed zich een onverwachte fout voor :(",
     "close": "Sluiten",
     "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
     "noTreeId": "Fout: Er mist een boom id.",
-    "invalidTreeId": "De boom id kan niet worden omgezet in een getal."
+    "invalidTreeId": "De boom id kan niet worden omgezet in een getal.",
+    "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
+    "profile": "Profiel",
+    "confirmChanges": "Bevestig wijzigingen"
 }
