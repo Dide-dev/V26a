@@ -17,9 +17,9 @@ import { getUserInfo } from '$lib/backend/users';
 import TreePage from './+page.svelte';
 
 // mock the logging check
-// vi.mock('$lib/backend/users', () => ({
-//     getUserInfo: vi.fn(),
-// }));
+vi.mock('$lib/backend/users', () => ({
+    getUserInfo: vi.fn()
+}));
 
 function createTree(): TreeWithCards {
     // eslint-disable as CardId's are seen as object literal property, and should therefore follow camelCase.
@@ -133,24 +133,38 @@ test('No tree returned is handled correctly', async () => {
     expect(error.textContent).toBe('Error: The tree with id 5 could not be found.');
 });
 
-// test('shows Edit button when user is logged in', async () => {
-//     vi.mocked(getUserInfo).mockReturnValue({
-//         accountType: 'author',
-//         sub: 0,
-//         exp: 0
-//     });
-//     render(TreePage);
+test('shows Edit button when user is logged in', async () => {
+    const tree: TreeWithCards = createTree();
 
-//     await new Promise((r) => setTimeout(r));
+    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
+    mockGetTree.mockResolvedValue(tree);
+    page.url.searchParams.set('id', '4');
 
-//     expect(document.getElementsByClassName('edit_button').length).toBeGreaterThan(0);
-// });
+    vi.mocked(getUserInfo).mockReturnValue({
+        accountType: 'author',
+        sub: 0,
+        exp: 2000000000
+    });
 
-// test('does not show Edit button when user is not logged in', async () => {
-//     vi.mocked(getUserInfo).mockReturnValue(null);
-//     render(TreePage);
+    render(PageComponent);
 
-//     await new Promise((r) => setTimeout(r));
+    await new Promise((r) => setTimeout(r));
 
-//     expect(document.getElementsByClassName('edit_button')).toHaveLength(0);
-// });
+    expect(document.getElementsByClassName('edit_button').length).toBeGreaterThan(0);
+});
+
+test('does not show Edit button when user is not logged in', async () => {
+    const tree: TreeWithCards = createTree();
+
+    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
+    mockGetTree.mockResolvedValue(tree);
+    page.url.searchParams.set('id', '4');
+
+    vi.mocked(getUserInfo).mockReturnValue(null);
+
+    render(PageComponent);
+
+    await new Promise((r) => setTimeout(r));
+
+    expect(document.getElementsByClassName('edit_button')).toHaveLength(0);
+});

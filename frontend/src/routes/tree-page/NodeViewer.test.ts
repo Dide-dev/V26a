@@ -5,7 +5,7 @@
 */
 
 import { render } from '@testing-library/svelte';
-import { expect, test, vi } from 'vitest';
+import { expect, test } from 'vitest';
 import NodeViewer from './NodeViewer.svelte';
 import type { RootNode, Node, TreeWithCards } from '$lib/backend/trees';
 import type { CardGetData, CardId } from '$lib/backend/cards';
