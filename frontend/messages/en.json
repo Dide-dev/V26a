@@ -44,5 +44,6 @@
     "repeatPassword": "Repeat password",
     "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
     "passwordsNotTheSame": "Passwords are not the same",
-    "profile": "Profile"
+    "profile": "Profile",
+    "confirmChanges": "Confirm changes"
 }

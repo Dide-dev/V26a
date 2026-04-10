@@ -29,7 +29,9 @@
                     enabled: null
                 });
 
-                // Effectively reloads the page
+                // Effectively reloads the page. This is not really necessary, but prevents
+                // the displayed data from being inconsistent with the database in case something
+                // goes wrong.
                 userDataPromise = getOwnUserData();
             } catch (e) {
                 error = e as Error;
@@ -105,7 +107,7 @@
                     />
                     {m.emailVisible()}
                 </label>
-                <button class="rounded-sm bg-emerald-500 p-1">Update</button>
+                <button class="rounded-sm bg-emerald-500 p-1">{m.confirmChanges()}</button>
                 <p class="text-red-600">{error?.message}</p>
             </form>
         </div>
