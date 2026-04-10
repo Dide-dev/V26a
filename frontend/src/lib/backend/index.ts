@@ -23,6 +23,21 @@ export async function apiCallGet(path: string) {
 }
 
 /** This function is for the rest of the backend to call upon, do not call from UI! */
+export async function apiCallDelete(path: string) {
+    const response = await fetch(prefix + path, {
+        method: 'DELETE',
+        // eslint-disable-next-line
+        headers: { Accept: 'application/json' }
+    });
+
+    if (!response.ok) {
+        throw new Error(await response.text());
+    }
+
+    return await response.json();
+}
+
+/** This function is for the rest of the backend to call upon, do not call from UI! */
 export async function apiCallPost(path: string, body: unknown) {
     const response = await fetch(prefix + path, {
         method: 'POST',
