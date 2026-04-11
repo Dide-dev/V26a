@@ -23,6 +23,22 @@ pub fn users() -> Router<Config> {
         .route("/update/{user_id}", post(update_user_data))
 }
 
+#[utoipa::path(
+    post,
+    path = "/add-new-user",
+    context_path = "/api/v1/users",
+    request_body = RegisterData,
+    responses(
+        (status = 200, description = "successfully registered user with the returned id", body = i32),
+        (status = 400, description = ApiError::EmailAlreadyUsed.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Add a user to the database.
 ///
 /// # Returns
@@ -39,6 +55,19 @@ async fn add_new_user(
     add_user(get_connection!(db), &user_data).await.map(Json)
 }
 
+#[utoipa::path(
+    get,
+    path = "/me",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "successfully retrieved own data", body = UserGetData),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Get a user's own data from the database.
 ///
 /// # Returns
@@ -55,6 +84,23 @@ async fn get_own_user_data(
     get_user(&db, claims.sub).await.map(Json)
 }
 
+#[utoipa::path(
+    post,
+    path = "/update/{user_id}",
+    context_path = "/api/v1/users",
+    request_body = UserUpdateData,
+    responses(
+        (status = 200, description = "user data successfully updated", body = ()),
+        (status = 400, description = "user with given id cannot be found"),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
+    )
+)]
 /// Update a user's data in the database.
 ///
 /// # Error

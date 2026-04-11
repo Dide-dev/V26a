@@ -22,8 +22,19 @@ pub fn auth() -> Router<Config> {
     Router::new().route("/login", post(login))
 }
 
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
-/// with an encoded JWT.
+#[utoipa::path(
+    post,
+    path = "/login",
+    context_path = "/api/v1/auth",
+    request_body = LoginRequestBody,
+    responses(
+        (status = 200, description = "session and user_info cookies added", body = ()),
+        (status = 400, description = ApiError::WrongCredentials.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+)]
+/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a `session` and
+/// cookie with an encoded JWT and a non-HTTP `user_info` cookie.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,

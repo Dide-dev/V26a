@@ -5,6 +5,7 @@
 */
 use crate::errors::ApiError;
 use crate::errors::ApiError::{InvalidPage, MaxPageNumberExceeded};
+use utoipa::ToSchema;
 
 /// A struct representing the entries a user wants to receive on an endpoint with pagination.
 /// The input should be validated to make sure neither field is 0 or negative
@@ -17,7 +18,7 @@ pub struct PaginationOptions {
 
 /// A struct representing the entries a user wants to receive on an endpoint with pagination.
 /// The input should be validated to make sure neither field is 0 or negative
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, ToSchema, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct OptionalPaginationOptions {
     pub page: Option<i32>,

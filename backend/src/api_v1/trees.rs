@@ -38,6 +38,21 @@ pub fn trees() -> Router<Config> {
         .route("/get-mine-all", get(get_all_owned_trees))
 }
 
+#[utoipa::path(
+    post,
+    path = "/add",
+    context_path = "/api/v1/trees",
+    request_body = TreeAddData,
+    responses(
+        (status = 200, description = "tree successfully added with returned id", body = i32),
+        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error")
+    ),
+    params(
+        ("session" = Claims, Cookie)
+    )
+)]
 /// Add a tree to the database.
 ///
 /// # Returns
@@ -61,6 +76,21 @@ async fn add_new_tree(
     Ok(json_id)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/remove/{tree_id}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "tree successfully removed", body = ()),
+        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+    )
+)]
 /// Remove a tree together with its cards from the database.
 ///
 /// # Returns
@@ -86,6 +116,22 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
     tree_structure.flatten().is_empty()
 }
 
+#[utoipa::path(
+    post,
+    path = "/update_structure",
+    context_path = "/api/v1/trees",
+    request_body = TreeUpdateStructureData,
+    responses(
+        (status = 200, description = "tree structure successfully updated", body = ()),
+        (status = 400, description = "tree with given id cannot be found or the new structure is not valid"),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Update the structure of an existing tree in the database.
 ///
 /// # Returns
@@ -122,6 +168,22 @@ async fn update_tree_structure(
     Ok(())
 }
 
+#[utoipa::path(
+    post,
+    path = "/remove-card",
+    context_path = "/api/v1/trees",
+    request_body = TreeRemoveCardData,
+    responses(
+        (status = 200, description = "card successfully removed from tree", body = ()),
+        (status = 400, description = "tree or card with given id cannot be found or the new structure is not valid"),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Remove a card from a tree. Removes the card from the database table `cards`,
 /// and updates the tree structure, if the provided new structure in `tree_card_removal_data`
 /// is still valid when the card is removed.
@@ -211,6 +273,22 @@ async fn update_structure_if_valid(
     Ok(())
 }
 
+#[utoipa::path(
+    post,
+    path = "/update-data",
+    context_path = "/api/v1/trees",
+    request_body = TreeUpdateData,
+    responses(
+        (status = 200, description = "tree data updated successfully", body = ()),
+        (status = 400, description = "tree with given id cannot be found"),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Update the data of an existing tree in the database.
 ///
 /// # Returns
@@ -235,6 +313,22 @@ async fn update_tree_data(
     Ok(())
 }
 
+#[utoipa::path(
+    get,
+    path = "/get-with-cards/{tree_id}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "successfully retrieved requested tree", body = TreeWithCards),
+        (status = 400, description = "tree with given id cannot be found"),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+    )
+)]
 /// Request all data of a specific tree together with all its cards from the database.
 ///
 /// # Returns
@@ -278,6 +372,19 @@ async fn get_tree_with_cards(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/get-mine-all",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "successfully retrieved all owned trees", body = Vec<TreeMetadata>),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Requests all trees' metadata from a specific author.
 ///
 /// # Returns
@@ -333,6 +440,21 @@ pub async fn verify_tree_permissions(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/get-list",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "successfully retrieved the list of trees with given filters", body = TreeListResponse),
+        (status = 400, description = "requested page or page size has exceeded a limit"),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Option<Claims>, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
+        ("filters" = TreeFilters, Query),
+    )
+)]
 /// Get the list of all trees satisfying some filters at a given page.
 ///
 /// # Arguments
