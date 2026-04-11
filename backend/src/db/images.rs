@@ -19,7 +19,7 @@ use sqlx::{PgExecutor, query};
 /// `owner_id` - The id of the user that added the image originally.
 ///
 /// # Returns
-/// The URL on which the image can be found if succesful.
+/// Nothing
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -50,7 +50,7 @@ pub async fn add_image(
 /// `hash` - The hash of the image.
 ///
 /// # Returns
-/// The `file_name` of the image if the image exists in the database.
+/// The `file_name` of the image if the image exists in the database, or None if it does not.
 ///
 /// # Error
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

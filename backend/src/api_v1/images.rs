@@ -32,9 +32,7 @@ pub fn images() -> Router<Config> {
 /// A permanent URL on which the image can be found.
 ///
 /// # Error
-/// May return a  [`FileTooBigException`](ApiError::FileTooBigException) if the uploaded file was too big.
-///
-/// May return a  [`CreateDirException`](ApiError::CreateDirException) if the upload directory cannot be found and created.
+/// May return a [`CreateDirException`](ApiError::CreateDirException) if the upload directory cannot be found and created.
 ///
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
 ///
@@ -52,16 +50,17 @@ async fn add_new_image(
     let upload_directory = &config.upload_dir;
 
     // First check whether the directory exists, creates it if not.
-    check_directory_existence(upload_directory).await?;
+    ensure_directory_existence(upload_directory).await?;
 
     // Checks whether the image is of MIME-type image/ and saves the image extension.
-    let image_type = validate_image(&body);
-    let extension = image_type?.extension().to_string();
+    let image_type = validate_image(&body)?;
+    let extension = image_type.extension().to_string();
 
     // Creates a hash of the image.
-    let hash = create_hash(&body);
+    let hash = hash_image(&body);
 
-    // Checks whether the image already exists in de database based on its hash. If so, returns the URL where the already excisting image can be found.
+    // Checks whether the image already exists in de database based on its hash.
+    // If so, returns the URL where the already excisting image can be found.
     if let Some(existing_filename) = check_image_existence(&db, &hash).await? {
         return Ok(format!("/uploads/{existing_filename}"));
     }
@@ -95,7 +94,7 @@ async fn add_new_image(
 ///
 /// # Error
 /// May return an [`CreateDirException`](ApiError::CreateDirException) if the upload directory can not be found and created.
-async fn check_directory_existence(upload_directory: &String) -> Result<(), ApiError> {
+async fn ensure_directory_existence(upload_directory: &String) -> Result<(), ApiError> {
     tokio::fs::create_dir_all(upload_directory)
         .await
         .map_err(|_| ApiError::CreateDirException)?;
@@ -124,7 +123,7 @@ fn validate_image(image: &Bytes) -> Result<infer::Type, ApiError> {
 ///
 /// # Returns
 /// A string containing the hash of the image.
-fn create_hash(body: &Bytes) -> String {
+fn hash_image(body: &Bytes) -> String {
     let mut hasher = Sha256::new();
     hasher.update(body);
     let hash = hasher.finalize();

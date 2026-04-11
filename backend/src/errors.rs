@@ -60,12 +60,6 @@ pub enum ApiError {
     /// authorized.
     NoPermission,
 
-    //-----------------------//
-    // 413: PAYLOAD TO LARGE //
-    //-----------------------//
-    /// An error to be returned when a file is too big to be uploaded.
-    FileTooBigException,
-
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
@@ -77,8 +71,6 @@ pub enum ApiError {
     /// An error to return when a request is denied because a limit on the database memory
     /// disallows it.
     DatabaseMemoryCap,
-    /// An error to be returned by `tokio::fs::rename` when a file cannot be renamed.
-    FileRenameException,
     /// An error to be return by `File::create` or `File::write_all` when it is unable to create or write to a file.
     FileWriteException,
     /// An error to return when hashing fails (on creating or verifying a hash).
@@ -146,13 +138,6 @@ impl Display for ApiError {
             //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
-            //-----------------------//
-            // 413: PAYLOAD TO LARGE //
-            //-----------------------//
-            ApiError::FileTooBigException => {
-                write!(f, "The file being uploaded is too big.")
-            }
-
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
             //----------------------------//
@@ -168,12 +153,6 @@ impl Display for ApiError {
                 write!(
                     f,
                     "An unexpected error occurred while writing a file. Check if you have write permisions, the path is valid and whether the disk has space."
-                )
-            }
-            ApiError::FileRenameException => {
-                write!(
-                    f,
-                    "An unexpected error occurred while renaming a file. Check whether the file exists and whether you have permisions."
                 )
             }
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
@@ -211,13 +190,10 @@ impl ApiError {
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
 
-            ApiError::FileTooBigException => StatusCode::PAYLOAD_TOO_LARGE,
-
             ApiError::CreateDirException
             | ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap
             | ApiError::FileWriteException
-            | ApiError::FileRenameException
             | ApiError::HashException
             | ApiError::InvalidDataFound
             | ApiError::SerdeException
