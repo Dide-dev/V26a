@@ -1,4 +1,11 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use crate::Config;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -27,43 +34,97 @@ impl Keys {
 /// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
 /// expiration time.
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Claims {
     /// The subject (whom the token refers to).
     pub sub: i32,
     /// The expiration time (as UTC timestamp).
     pub exp: i64,
+    /// the account type
+    pub account_type: AccountType,
+}
+
+async fn get_claims(parts: &mut Parts, state: &Config) -> Result<Claims, ApiError> {
+    // Extract the token from the cookie jar.
+    let jar = CookieJar::from_request_parts(parts, state)
+        .await
+        .map_err(|_| ApiError::MissingAuthentication)?;
+    let auth_cookie = jar
+        .get("session")
+        .ok_or(ApiError::MissingAuthentication)?
+        .value();
+
+    // Decode the user data, this automatically validates the expiration time.
+    let token_data = decode::<Claims>(
+        auth_cookie,
+        &state.jwt_keys.decoding,
+        &Validation::default(),
+    )
+    .map_err(|e| match e.kind() {
+        // exp gets validated by the library, but we want to map it to our own error type.
+        jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredSession,
+        // Other validation error, usually means that the decoding failed (completely invalid session).
+        _ => ApiError::InvalidSession,
+    })?;
+
+    Ok(token_data.claims)
 }
 
 impl FromRequestParts<Config> for Claims {
     type Rejection = ApiError;
 
-    /// TODO: Add documentation, specifically on the possible errors that may occur.
+    /// Get JWT [`Claims`] from a user's cookies
+    ///
+    /// # Example
+    /// Passing `claims: `[`Claims`] into an axum function will automatically call this function.
+    /// ```rs
+    /// async fn protected(claims: Claims) -> Result<(), ApiError> {
+    /// ...
+    /// }
+    /// ```
+    ///
+    /// # Errors
+    /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user does not
+    /// have a session cookie, or if cookies can not be extracted from the request.
+    ///
+    /// Returns [`ExpiredSession`](ApiError::ExpiredSession) if the user's session has expired.
+    ///
+    /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be
+    /// decrypted, or if another error is given by [`jsonwebtoken`].
     async fn from_request_parts(
         parts: &mut Parts,
         state: &Config,
     ) -> Result<Self, Self::Rejection> {
-        // Extract the token from the cookie jar.
-        let jar = CookieJar::from_request_parts(parts, state)
-            .await
-            .map_err(|_| ApiError::MissingAuthentication)?;
-        let auth_cookie = jar
-            .get("session")
-            .ok_or(ApiError::MissingAuthentication)?
-            .value();
+        get_claims(parts, state).await
+    }
+}
 
-        // Decode the user data, this automatically validates the expiration time.
-        let token_data = decode::<Claims>(
-            auth_cookie,
-            &state.jwt_keys.decoding,
-            &Validation::default(),
-        )
-        .map_err(|e| match e.kind() {
-            // exp gets validated by the library, but we want to map it to our own error type.
-            jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredSession,
-            // other validation error, usually means that the decoding failed (completely invalid session).
-            _ => ApiError::InvalidSession,
-        })?;
+impl FromRequestParts<Config> for Option<Claims> {
+    type Rejection = ApiError;
 
-        Ok(token_data.claims)
+    /// Get optional JWT [`Claims`] from a user's cookies
+    ///
+    /// # Example
+    /// Passing `optional_claims: `[`Option<Claims>`](Claims) into an axum function will automatically call this function.
+    /// ```rs
+    /// async fn semi_protected(optional_claims: Option<Claims>) -> Result<(), ApiError> {
+    /// ...
+    /// }
+    /// ```
+    ///
+    /// # Returns
+    /// Some([`Claims`]) if the user is authenticated.
+    ///
+    /// None if one of the following is true:
+    /// - The user does not have a session cookie,
+    /// - The cookies can not be extracted from the request,
+    /// - The user's session has expired,
+    /// - The user's session can not be decrypted,
+    /// - another error is given by [`jsonwebtoken`]
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &Config,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(get_claims(parts, state).await.ok())
     }
 }

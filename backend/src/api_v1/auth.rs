@@ -1,6 +1,12 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_id_and_password;
+use crate::db::auth::get_user_credentials;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -20,17 +26,12 @@ pub fn auth() -> Router<Config> {
 /// with an encoded JWT.
 async fn login(
     jar: CookieJar,
-    db: Extension<PgPool>,
+    Extension(db): Extension<PgPool>,
     State(config): State<Config>,
     Json(body): Json<LoginRequestBody>,
 ) -> Result<CookieJar, ApiError> {
-    // Check if the user sent the credentials
-    if body.email.is_empty() || body.password.is_empty() {
-        return Err(ApiError::MissingCredentials);
-    }
-
-    let (user_id, password_hash) = get_user_id_and_password(&db, body.email).await?;
-    let password_valid = bcrypt::verify(body.password, password_hash.as_str())
+    let credentials = get_user_credentials(&db, body.email).await?;
+    let password_valid = bcrypt::verify(body.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
@@ -38,20 +39,40 @@ async fn login(
     }
 
     let claims = Claims {
-        sub: user_id,
+        sub: credentials.user_id,
         exp: Utc::now().timestamp() + config.session_duration,
+        account_type: credentials.account_type,
     };
 
     // Create the authorization token.
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
-    // Set the authorization token as a cookie.
+    let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
+
+    // Age of a cookie (same for the two cookies)
+    let time = time::Duration::new(config.session_duration, 0);
+
+    // The properties of the cookies are important to get right.
+    // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
+    //           There is no reason to not set this property, now that every website is using HTTPS.
+    // `HttpOnly`: This prevents javascript from accessing the cookie.
+    // `Path`: The cookie is only sent along requests when the request path starts with this string.
+    //         The cookie is also only available to the JavaScript when the webpage url starts with this string.
+    // `MaxAge`: After this much time has passed, the browser will automatically delete the cookie.
+    // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
+
     let cookie = Cookie::build(("session", token))
-        .path("/")
+        .path("/api/")
         .secure(true)
-        .max_age(time::Duration::new(config.session_duration, 0))
+        .max_age(time)
         .http_only(true);
 
-    Ok(jar.add(cookie))
+    let user_cookie = Cookie::build(("user_info", user_info))
+        .path("/")
+        .secure(true)
+        .max_age(time)
+        .http_only(false);
+
+    Ok(jar.add(cookie).add(user_cookie))
 }

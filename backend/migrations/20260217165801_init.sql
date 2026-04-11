@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 CREATE EXTENSION citext;
 
 -- TODO: indexes
@@ -7,11 +13,13 @@ CREATE TABLE users
     id            SERIAL PRIMARY KEY,
     email         CITEXT UNIQUE NOT NULL,               -- emails are case-insensitive
     password_hash VARCHAR(255)  NOT NULL,               -- https://www.php.net/manual/en/function.password-hash.php
+    enabled       BOOLEAN       NOT NULL DEFAULT TRUE,  -- if set to false, this user cannot log in
     name          VARCHAR(128)  NOT NULL,               -- current longest name in the database is 25 characters, might consider shortening this
-    nickname      VARCHAR(128)           DEFAULT NULL,  -- current longest is 31 characters
-    about_me      VARCHAR(160)           DEFAULT NULL,  -- current longest is 127 characters
+    nickname      VARCHAR(128)  NOT NULL DEFAULT '',  -- current longest is 31 characters
+    about_me      VARCHAR(160)  NOT NULL DEFAULT '',  -- current longest is 127 characters
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     email_visible BOOLEAN       NOT NULL DEFAULT FALSE, -- default false because AVG (`emailvermelding` in prototype)
+    account_type  VARCHAR(32)   NOT NULL DEFAULT 'author', -- default is author
     language      CHAR(2)       NOT NULL DEFAULT 'nl'   -- ISO 639-1
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
@@ -37,6 +45,10 @@ CREATE TABLE trees
     structure       JSONB        NOT NULL,
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
+
+CREATE INDEX trees_filter_owner ON trees (owner_id);
+CREATE INDEX trees_filter_order_created_at ON trees (created_at);
+CREATE INDEX trees_filter_book_name ON trees (book_name);
 
 CREATE TABLE cards
 (

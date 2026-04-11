@@ -1,3 +1,9 @@
+<!--
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+-->
+
 <script lang="ts">
     import { login, type LoginData } from '$lib/backend/auth';
     import { goto } from '$app/navigation';
@@ -31,6 +37,7 @@
                 bind:value={loginData.email}
                 name="email"
                 type="email"
+                data-testid="email"
                 required
             />
         </label>
@@ -41,6 +48,7 @@
                 bind:value={loginData.password}
                 name="password"
                 type="password"
+                data-testid="password"
                 required
             />
         </label>
