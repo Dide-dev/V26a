@@ -482,9 +482,10 @@ pub async fn get_queried_list(
     page: &PaginationOptions,
     filters: &TreeFilters,
     user_id: Option<i32>,
-) -> Result<Vec<TreeData>, ApiError> {
+) -> Result<Vec<TreeMetadata>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("
-        SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
+        SELECT id, owner_id, created_at, last_modified, times_visited, last_visited,
+        title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
         FROM trees"
     );
 
@@ -500,11 +501,17 @@ pub async fn get_queried_list(
         // Page is 1-based
         .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
 
-    let trees = query
-        .build_query_as::<TreeData>()
+    let rows = query
+        .build()
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
+
+    let trees = rows
+        .iter()
+        .map(TreeMetadata::from_pg_row)
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>();
 
     // User requested a page that yields no results. This should only occur if the user requests a
     // page that is too high, as get_queried_count should be used to confirm results exist.
@@ -927,7 +934,10 @@ mod tests {
         let private_tree_list =
             get_queried_list(&db, &first_page, &show_private_filters, Some(user_id))
                 .await
-                .unwrap();
+                .unwrap()
+                .into_iter()
+                .map(|d| d.data)
+                .collect::<Vec<_>>();
         assert_eq!(
             private_tree_list,
             vec![public_tree.clone(), private_tree.clone()]
@@ -935,17 +945,26 @@ mod tests {
 
         let public_tree_list = get_queried_list(&db, &first_page, &empty_filters, None)
             .await
-            .unwrap();
+            .unwrap()
+            .into_iter()
+            .map(|d| d.data)
+            .collect::<Vec<_>>();
         assert_eq!(public_tree_list, vec![public_tree.clone()]);
 
         let private_tree_list_one_item1 =
             get_queried_list(&db, &one_item_page1, &show_private_filters, Some(user_id))
                 .await
-                .unwrap();
+                .unwrap()
+                .into_iter()
+                .map(|d| d.data)
+                .collect::<Vec<_>>();
         let private_tree_list_one_item2 =
             get_queried_list(&db, &one_item_page2, &show_private_filters, Some(user_id))
                 .await
-                .unwrap();
+                .unwrap()
+                .into_iter()
+                .map(|d| d.data)
+                .collect::<Vec<_>>();
         assert_eq!(private_tree_list_one_item1, vec![public_tree.clone()]);
         assert_eq!(private_tree_list_one_item2, vec![private_tree.clone()]);
 
@@ -965,7 +984,10 @@ mod tests {
         };
         let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(user_id))
             .await
-            .unwrap();
+            .unwrap()
+            .into_iter()
+            .map(|d| d.data)
+            .collect::<Vec<_>>();
         assert_eq!(
             recent_tree_list,
             vec![public_tree.clone(), private_tree.clone()]
@@ -987,7 +1009,10 @@ mod tests {
         let existing_tree_list =
             get_queried_list(&db, &first_page, &existing_filter, Some(user_id))
                 .await
-                .unwrap();
+                .unwrap()
+                .into_iter()
+                .map(|d| d.data)
+                .collect::<Vec<_>>();
         assert_eq!(
             existing_tree_list,
             vec![public_tree.clone(), private_tree.clone()]
@@ -1002,10 +1027,21 @@ mod tests {
             published: true,
             ..Default::default()
         };
-        initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
+        let book_tree_id =
+            initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
         let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(user_id))
             .await
             .unwrap();
-        assert_eq!(book_tree_list, vec![book_tree]);
+        let book_tree_data_list = book_tree_list
+            .clone()
+            .into_iter()
+            .map(|d| d.data)
+            .collect::<Vec<_>>();
+        assert_eq!(book_tree_data_list, vec![book_tree]);
+        let book_tree_id_list = book_tree_list
+            .into_iter()
+            .map(|d| d.gen_data.id)
+            .collect::<Vec<_>>();
+        assert_eq!(book_tree_id_list, vec![book_tree_id]);
     }
 }
