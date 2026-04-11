@@ -21,6 +21,21 @@ pub fn cards() -> Router<Config> {
         .route("/update", post(update_existing_card))
 }
 
+#[utoipa::path(
+    post,
+    path = "/add",
+    context_path = "/api/v1/cards",
+    request_body = CardAddData,
+    responses(
+        (status = 200, description = "card successfully added with returned id", body = i32),
+        (status = 400, description = "tree with given id does not exist"),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Add a card to the database.
 ///
 /// # Returns
@@ -46,6 +61,21 @@ async fn add_new_card(
     Ok(Json(id))
 }
 
+#[utoipa::path(
+    post,
+    path = "/update",
+    context_path = "/api/v1/cards",
+    request_body = CardUpdateData,
+    responses(
+        (status = 200, description = "card successfully updated", body = ()),
+        (status = 400, description = "tree with given id does not exist"),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error"),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Update the contents of an existing card in the database.
 ///
 /// # Returns
