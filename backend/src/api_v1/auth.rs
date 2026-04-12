@@ -28,21 +28,38 @@ pub fn auth() -> Router<Config> {
     context_path = "/api/v1/auth",
     request_body = LoginRequestBody,
     responses(
-        (status = 200, description = "session and user_info cookies added", body = ()),
+        (status = 200, description = "Session and user_info cookies added."),
         (status = 400, description = ApiError::WrongCredentials.to_string()),
-        (status = 500, description = "Internal server error"),
+        (status = 500, description = "Internal server error."),
     ),
+    params(
+        ("claims" = Claims, Cookie),
+    )
 )]
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a `session` and
-/// cookie with an encoded JWT and a non-HTTP `user_info` cookie.
+/// Login to an account if the given credentials are valid.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
+///
+/// # Returns
+/// Sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
+///
+/// # Errors
+/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the
+/// given e-mail, or the given password does not match the correct password.
+///
+/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(config): State<Config>,
-    Json(body): Json<LoginRequestBody>,
+    Json(login_request): Json<LoginRequestBody>,
 ) -> Result<CookieJar, ApiError> {
-    let credentials = get_user_credentials(&db, body.email).await?;
-    let password_valid = bcrypt::verify(body.password, credentials.password_hash.as_str())
+    let credentials = get_user_credentials(&db, login_request.email).await?;
+    let password_valid = bcrypt::verify(login_request.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {

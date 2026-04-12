@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 /// # Returns
 /// The id assigned to the new card if successful.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_card(db: impl PgExecutor<'_>, card_data: &CardAddData) -> Result<i32, ApiError> {
     let card_id = query!(
@@ -48,7 +48,7 @@ pub async fn add_card(db: impl PgExecutor<'_>, card_data: &CardAddData) -> Resul
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -73,7 +73,7 @@ pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), Ap
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -116,7 +116,7 @@ pub async fn update_card(
 /// # Returns
 /// The cards of the tree as a [`BTreeMap`].
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_cards(
     db: impl PgExecutor<'_>,
@@ -156,7 +156,7 @@ pub async fn get_tree_cards(
 /// # Returns
 /// The id of the tree the card belongs to, according to the `cards` table in the database.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
