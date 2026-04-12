@@ -21,6 +21,7 @@
         type CardId
     } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
+    import {htmlFromMarkdown} from "$lib/markdown";
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -32,6 +33,7 @@
     let frontText = $state('');
     let backText = $state('');
     let errorMessage = $state('');
+    let previewView = $state(false);
 
     const frontMaxLength = 1024;
     const backMaxLength = 5000;
@@ -259,22 +261,36 @@
 {#if action}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
         <div class="flex flex-col gap-2 rounded bg-white p-4">
+            <div class="flex justify-end gap-2">
+                <button class="cursor-pointer" onclick={() => {previewView=!previewView}}>{previewView ? "Markdown" : "Preview"}</button>
+            </div>
+            {#if !previewView}
             <textarea
-                class="rounded border p-1"
+                class="rounded w-xl border p-1"
                 placeholder={m.enterFrontText()}
                 bind:value={frontText}
             ></textarea>
             <textarea
-                class="rounded border p-1"
+                class="rounded w-xl border p-1"
                 placeholder={m.enterBackText()}
                 bind:value={backText}
             ></textarea>
+            {:else}
+                <div class="rounded w-xl border p-1">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                    {@html htmlFromMarkdown(frontText)}
+                </div>
+                <div class="rounded w-xl border p-1">
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                    {@html htmlFromMarkdown(backText)}
+                </div>
+            {/if}
             {#if errorMessage}
                 <p class="text-red-600">{errorMessage}</p>
             {/if}
             <div class="flex justify-end gap-2">
-                <button onclick={reset}>{m.cancel()}</button>
-                <button
+                <button class="cursor-pointer" onclick={reset}>{m.cancel()}</button>
+                <button class="cursor-pointer"
                     onclick={() => {
                         if (backText.trim()) acceptCard(frontText.trim(), backText.trim());
                         else errorMessage = m.backTextRequired();
