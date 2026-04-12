@@ -12,7 +12,7 @@ use sqlx::{PgExecutor, query};
 /// Add a new image to the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `image_data` - The data assigned to the new image as [`ImageAddData`].
 ///
@@ -30,14 +30,16 @@ pub async fn add_image(
 ) -> Result<(), ApiError> {
     query!(
         "INSERT INTO images (hash, owner_id, filename)
-        VALUES ($1, $2, $3)",
+        VALUES ($1, $2, $3)
+        RETURNING filename",
         image_data.hash,
         owner_id,
         image_data.file_name,
     )
-    .execute(db)
+    .fetch_optional(db)
     .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .map_err(|_| ApiError::DatabaseException)?
+    .ok_or(ApiError::ImageAddFail)?;
 
     Ok(())
 }

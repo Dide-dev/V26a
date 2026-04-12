@@ -70,18 +70,26 @@ async fn add_new_image(
     let filename = format!("{uuid}.{extension}");
     let filepath = format!("{upload_directory}/{filename}");
 
-    // Write the image to the directory.
-    tokio::fs::write(&filepath, &body)
-        .await
-        .map_err(|_| ApiError::FileWriteException)?;
-
-    // Add the image metadata to the database
+    // Add the image metadata to the database in transaction.
     let image_add_data = ImageAddData {
         file_name: filename.clone(),
         hash,
     };
 
-    add_image(&db, &image_add_data, claims.sub).await?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    add_image(&mut *transaction, &image_add_data, claims.sub).await?;
+
+    // Write the image to the directory.
+    tokio::fs::write(&filepath, &body)
+        .await
+        .map_err(|_| ApiError::FileWriteException)?;
+
+    // Finalize transaction.
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     // Return where the image can be found
     Ok(format!("/uploads/{filename}"))

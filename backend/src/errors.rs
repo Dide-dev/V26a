@@ -81,6 +81,8 @@ pub enum ApiError {
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
     TokenCreationException,
+    /// An error to be returned by `add_image` if adding the image to the database fails.
+    ImageAddFail,
 }
 
 // Define how errors should be converted to messages.
@@ -163,6 +165,12 @@ impl Display for ApiError {
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
             }
+            ApiError::ImageAddFail => {
+                write!(
+                    f,
+                    "Something went wrong while adding the image to the database"
+                )
+            }
         }
     }
 }
@@ -197,7 +205,8 @@ impl ApiError {
             | ApiError::HashException
             | ApiError::InvalidDataFound
             | ApiError::SerdeException
-            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
+            | ApiError::TokenCreationException
+            | ApiError::ImageAddFail => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
