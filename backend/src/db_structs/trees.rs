@@ -13,7 +13,7 @@ use utoipa::openapi::{ObjectBuilder, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
 
 /// All data of the tree, together with its cards.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeWithCards {
     pub data: TreeData,
@@ -22,6 +22,60 @@ pub struct TreeWithCards {
     /// The `card_id` with the corresponding card.
     pub cards: BTreeMap<i32, CardGetData>,
 }
+
+// We implement this manually, so the example contains a valid example, with `cards` matching the `structure`.
+impl PartialSchema for TreeWithCards {
+    fn schema() -> RefOr<Schema> {
+        ObjectBuilder::new()
+            .property("data", TreeData::schema())
+            .property("genData", TreeGeneratedData::schema())
+            .property("structure", TreeStructure::schema())
+            .property("cards", BTreeMap::<i32, CardGetData>::schema())
+            .examples(Some(serde_json::json!({
+                "data": {
+                  "title": "string",
+                  "description": "string",
+                  "bookName": "string",
+                  "bookEdition": "string",
+                  "bookIsbn": "string",
+                  "bookChapter": "string",
+                  "bookExercise": "string",
+                  "assignmentText": "string",
+                  "published": true
+                },
+                "genData": {
+                  "id": 7,
+                  "ownerId": 2,
+                  "createdAt": "2026-04-12T16:31:32.855032Z",
+                  "lastModified": "2026-04-12T16:31:32.855032Z",
+                  "timesVisited": 0,
+                  "lastVisited": null
+                },
+                "structure": {
+                  "rootNodes": [
+                    {
+                      "label": "string",
+                      "children": [
+                        {
+                          "cardId": "16",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "cards": {
+                  "16": {
+                    "front": "string",
+                    "back": "string"
+                  }
+                }
+            })))
+            .into()
+    }
+}
+
+impl ToSchema for TreeWithCards {}
 
 /// The tree structure with the card id's.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
@@ -183,18 +237,55 @@ pub struct TreeUpdateData {
 #[derive(serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeRemoveCardData {
-    pub id: i32,
+    pub tree_id: i32,
     pub card_id: i32,
     pub new_structure: TreeStructure,
 }
 
 /// The data needed to initialize a tree in the database.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeAddData {
     pub tree_data: TreeData,
     pub tree_structure: TreeStructure,
 }
+
+// We implement this manually, so the example contains a legal, empty structure.
+impl PartialSchema for TreeAddData {
+    fn schema() -> RefOr<Schema> {
+        ObjectBuilder::new()
+            .property("treeData", TreeData::schema())
+            .property("treeStructure", TreeStructure::schema())
+            .examples(Some(serde_json::json!({
+                "treeData": {
+                  "assignmentText": "string",
+                  "bookChapter": "string",
+                  "bookEdition": "string",
+                  "bookExercise": "string",
+                  "bookIsbn": "string",
+                  "bookName": "string",
+                  "description": "string",
+                  "published": true,
+                  "title": "string"
+                },
+                "treeStructure": {
+                  "rootNodes": [
+                    {
+                      "label": "string",
+                      "children": []
+                    },
+                    {
+                      "label": "string",
+                      "children": []
+                    }
+                  ]
+                }
+            })))
+            .into()
+    }
+}
+
+impl ToSchema for TreeAddData {}
 
 /// The data returned when requesting a list of trees.
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

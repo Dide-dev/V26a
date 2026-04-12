@@ -27,10 +27,10 @@ pub fn cards() -> Router<Config> {
     context_path = "/api/v1/cards",
     request_body = CardAddData,
     responses(
-        (status = 200, description = "card successfully added with returned id", body = i32),
-        (status = 400, description = "tree with given id does not exist"),
+        (status = 200, description = "Card successfully added with returned id.", body = i32, content_type = "application/json"),
+        (status = 400, description = "Tree with given id does not exist."),
         (status = 403, description = ApiError::NoPermission.to_string()),
-        (status = 500, description = "Internal server error"),
+        (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
@@ -38,16 +38,21 @@ pub fn cards() -> Router<Config> {
 )]
 /// Add a card to the database.
 ///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `card_data` - The data used to initialize the card, as [`CardAddData`].
+///
 /// # Returns
 /// The id assigned to the new card.
 ///
-/// # Error
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
-/// for the given `tree_id` referenced in `card_data`.
-///
+/// # Errors
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `tree_id` referenced in `card_data` exists.
 ///
-/// May return an [`ApiError`] instead.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the tree for the given `tree_id` referenced in `card_data`.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_card(
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -67,10 +72,10 @@ async fn add_new_card(
     context_path = "/api/v1/cards",
     request_body = CardUpdateData,
     responses(
-        (status = 200, description = "card successfully updated", body = ()),
-        (status = 400, description = "tree with given id does not exist"),
+        (status = 200, description = "Card successfully updated."),
+        (status = 400, description = "Tree with given id does not exist."),
         (status = 403, description = ApiError::NoPermission.to_string()),
-        (status = 500, description = "Internal server error"),
+        (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
@@ -78,18 +83,24 @@ async fn add_new_card(
 )]
 /// Update the contents of an existing card in the database.
 ///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `card_data` - The data used to update the card, as [`CardUpdateData`].
+/// Existing card data will be overwritten with the new data.
+///
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` referenced in `card_data` does not exist.
+///
+/// Returns [`MissingTree`](ApiError::MissingTree) if the tree the card belongs to no longer exists.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree the card belongs to.
 ///
-/// Returns an [`MissingTree`](ApiError::MissingTree) if the tree the card belongs to no longer exists.
-///
-/// May return an [`ApiError`] instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_existing_card(
     claims: Claims,
     Extension(db): Extension<PgPool>,

@@ -159,7 +159,7 @@
         parent.children.splice(index, 1, ...node.children);
 
         const remove: TreeRemoveCardData = {
-            id: tree.genData.id,
+            treeId: tree.genData.id,
             cardId: node.cardId,
             newStructure: tree.structure
         };
