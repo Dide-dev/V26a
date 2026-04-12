@@ -15,7 +15,7 @@ import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
 import { getUserInfo } from '$lib/backend/users';
 
-// Mock the logging check
+// Mock the logging check.
 vi.mock('$lib/backend/users', () => ({
     getUserInfo: vi.fn()
 }));
@@ -141,11 +141,13 @@ test('shows Edit button when user is logged in', async () => {
 
     vi.mocked(getUserInfo).mockReturnValue({
         accountType: 'author',
-        sub: 0,
+        sub: 2098,
         exp: 2000000000
     });
 
-    screen.findByTestId('edit-button');
+    render(PageComponent);
+
+    await screen.findByTestId('edit-button');
 });
 
 test('does not show Edit button when user is not logged in', async () => {
@@ -157,5 +159,5 @@ test('does not show Edit button when user is not logged in', async () => {
 
     vi.mocked(getUserInfo).mockReturnValue(null);
 
-    expect(() => screen.getByTestId('edit-button')).toThrow();
+    await expect(() => screen.findByTestId('edit-button')).rejects.toThrow();
 });

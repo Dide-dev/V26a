@@ -14,11 +14,11 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 
-    // Checks if user is logged in or not
+    // Checks if user is logged in or not.
     let userInfo = $state(getUserInfo());
 
     let loading = $state(true);
-    let allowed = $state(false);
+    let userAllowedToEdit = $state(false);
     let error: Error | null = $state(null);
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
@@ -48,14 +48,11 @@
 
         loading = false;
 
-        //checks if logged in user is owner of tree
         const isOwner = tree && userInfo && tree.genData.ownerId === userInfo.sub;
-
-        //checks if user is admin
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {
-            allowed = true;
+            userAllowedToEdit = true;
         }
     });
 </script>
@@ -77,7 +74,7 @@
     </div>
 {/if}
 
-{#if error == null && allowed}
+{#if error == null && userAllowedToEdit}
     <button
         data-testid="edit-button"
         class="fixed top-16 right-4 z-50 rounded bg-blue-600 px-4 py-2 text-white shadow"
