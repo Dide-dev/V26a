@@ -48,5 +48,8 @@
     "profile": "Profile",
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
-    "add": "Add"
+    "add": "Add",
+    "myTrees": "My forest",
+    "trees": "Forest",
+    "credits": "Credits"
 }
