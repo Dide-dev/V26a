@@ -28,8 +28,8 @@ pub fn auth() -> Router<Config> {
 /// - If the flag is `false`, the wrong credentials were passed.
 /// - If the flag is `true`, the login was successful, and both a `session` and `user_info` cookie have been created.
 #[derive(Serialize, ToSchema)]
-struct LoginResponse {
-    succeeded: bool,
+pub struct LoginResponse {
+    pub succeeded: bool,
 }
 
 /// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
