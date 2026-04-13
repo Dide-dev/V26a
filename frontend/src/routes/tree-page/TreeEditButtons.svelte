@@ -5,14 +5,16 @@
 -->
 
 <script lang="ts">
-    import icon from '$lib/assets/editIcon.svg?raw';
+    import editIcon from '$lib/assets/editIcon.svg?raw';
+    import trashIcon from '$lib/assets/trashIcon.svg?raw';
     import type {
         Node,
         RootNode,
+        TreeRemoveCardData,
         TreeUpdateStructureData,
         TreeWithCards
     } from '$lib/backend/trees';
-    import { updateTreeStructure } from '$lib/backend/trees';
+    import { removeCardFromTree, updateTreeStructure } from '$lib/backend/trees';
     import {
         addCard,
         updateCard,
@@ -138,9 +140,32 @@
             })
 
             .then(() => {
-                parent = { ...parent };
-                parent.children[-1] = { ...parent.children[-1] };
-                tree.structure = { ...tree.structure };
+                reset();
+            })
+
+            .catch((reason: Error) => {
+                errorMessage = reason.toString();
+                console.error('Error: ', reason);
+            });
+    }
+
+    /** Removes a node, adding all of its children to its parent
+     *
+     * @param parent The parent of the node that will be removed
+     * @param node The node that will be removed
+     */
+    async function removeNode(parent: RootNode | Node, node: Node) {
+        const index = parent.children.indexOf(node);
+        parent.children.splice(index, 1, ...node.children);
+
+        const remove: TreeRemoveCardData = {
+            treeId: tree.genData.id,
+            cardId: node.cardId,
+            newStructure: tree.structure
+        };
+
+        removeCardFromTree(remove)
+            .then(() => {
                 reset();
             })
 
@@ -212,9 +237,6 @@
             })
 
             .then(() => {
-                parent = { ...parent };
-                parent.children[-1] = { ...parent.children[-1] };
-                tree.structure = { ...tree.structure };
                 reset();
             })
 
@@ -239,13 +261,22 @@
 >
 
 {#if !('label' in node)}
+    <!-- Button to remove card -->
+    <button
+        class="absolute top-1.5 right-[32] h-5 w-5 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
+        onclick={() => removeNode(parent, node)}
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html trashIcon}
+    </button>
+
     <!-- Button to edit card -->
     <button
-        class="absolute top-2 right-[524] h-5 w-5 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
+        class="absolute top-1.5 right-[524] h-5 w-5 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
         onclick={() => handlerEdit(node)}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html icon}
+        {@html editIcon}
     </button>
 
     <!-- Button to insert a new card between this card and a child to this card -->

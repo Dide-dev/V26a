@@ -112,7 +112,7 @@ export type TreeUpdateStructureData = {
 };
 
 export type TreeRemoveCardData = {
-    id: TreeId;
+    treeId: TreeId;
     cardId: CardId;
     newStructure: TreeStructure;
 };

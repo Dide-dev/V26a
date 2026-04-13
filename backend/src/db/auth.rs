@@ -19,7 +19,7 @@ use std::str::FromStr;
 /// # Returns
 /// A struct containing the user id, password hash and account type.
 ///
-/// # Error
+/// # Errors
 /// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
 pub async fn get_user_credentials(
     db: impl PgExecutor<'_>,

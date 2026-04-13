@@ -305,7 +305,7 @@ async fn test_remove_card(db: PgPool) {
     // Attempt to remove the card from the database without removing it from the tree
     // and assert an appropriate error is returned.
     let invalid_card_removal_data = TreeRemoveCardData {
-        id: tree_id,
+        tree_id,
         card_id,
         new_structure: tree_structure_with_card,
     };
@@ -325,7 +325,7 @@ async fn test_remove_card(db: PgPool) {
     };
 
     let valid_card_removal_data = TreeRemoveCardData {
-        id: tree_id,
+        tree_id,
         card_id,
         new_structure: tree_structure_without_card,
     };

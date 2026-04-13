@@ -18,6 +18,21 @@ use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+use utoipauto::utoipauto;
+
+#[allow(clippy::needless_for_each)]
+mod api_doc {
+    use super::{OpenApi, utoipauto};
+
+    // Automatically reads all API docs written with `utoipa` for all API endpoints
+    // and converts into OpenAPI documentation.
+    #[utoipauto]
+    #[derive(OpenApi)]
+    #[openapi()]
+    pub struct ApiDoc;
+}
 
 #[tokio::main]
 async fn main() {
@@ -40,7 +55,11 @@ async fn main() {
     // Build our application with a route.
     let app = Router::new()
         .merge(static_frontend())
-        .nest("/api", backend(config.clone()).await);
+        .nest("/api", backend(config.clone()).await)
+        // Add documentation routes.
+        .merge(
+            SwaggerUi::new("/api-docs").url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()),
+        );
 
     // Serve the application.
     let addr = (config.listening_ip.as_str(), config.listening_port);
