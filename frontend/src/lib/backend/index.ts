@@ -19,7 +19,9 @@ export async function apiCallGet(path: string) {
         headers: { Accept: 'application/json' }
     });
 
-    await checkError(response);
+    if (await handleIfError(response)) {
+        return;
+    }
 
     return await response.json();
 }
@@ -32,8 +34,8 @@ export async function apiCallDelete(path: string) {
         headers: { Accept: 'application/json' }
     });
 
-    if (!response.ok) {
-        throw new Error(await response.text());
+    if (await handleIfError(response)) {
+        return;
     }
 
     // Only return if some content is sent back
@@ -51,7 +53,9 @@ export async function apiCallPost(path: string, body: unknown) {
         body: JSON.stringify(body)
     });
 
-    await checkError(response);
+    if (await handleIfError(response)) {
+        return;
+    }
 
     // Only return if some content is sent back
     if (response.headers.get('Content-Type') === 'application/json') {
@@ -61,17 +65,19 @@ export async function apiCallPost(path: string, body: unknown) {
     }
 }
 
-/** Handle errors */
-async function checkError(response: Response) {
+/** Check if the response is an error and handle it in a proper way.
+ * Returns true if the response is really an error, otherwise false. */
+async function handleIfError(response: Response): Promise<boolean> {
     // Redirect to login page when user is not logged in while that is needed to perform action
-    if (response.status === 404) {
+    if (response.status === 401) {
         await redirectLogin(page.url);
-        return;
+        return true;
     }
 
     if (!response.ok) {
         throw new Error(await response.text());
     }
+    return false;
 }
 
 /** Go to the login page with a redirect to the given url when successfully logged in. */

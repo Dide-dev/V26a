@@ -137,7 +137,7 @@
             newStructure: tree.structure
         };
         await updateTreeStructure(update);
-        
+
         reset();
     }
 
@@ -157,7 +157,7 @@
         };
 
         await removeCardFromTree(remove);
-        
+
         reset();
     }
 
@@ -223,6 +223,7 @@
         action = null;
         frontText = '';
         backText = '';
+        errorMessage = '';
     }
 </script>
 

@@ -48,8 +48,6 @@
     "unexpectedErrorOccurred": "An unexpected error occurred :(",
     "close": "Close",
     "invalidCredentials": "Email or password is invalid. Please try again.",
-    "noTreeId": "Error: No tree id provided.",
-    "invalidTreeId": "The tree id cannot be parsed into a number.",
     "passwordsNotTheSame": "Passwords are not the same",
     "profile": "Profile",
     "confirmChanges": "Confirm changes",

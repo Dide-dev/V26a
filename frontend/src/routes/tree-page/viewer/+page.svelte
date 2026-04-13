@@ -10,12 +10,10 @@
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
+    import { goto } from '$app/navigation';
+    import { appLink } from '$lib';
 
     let loading = $state(true);
-
-    // errors
-    let noTreeId: boolean = $state(false);
-    let invalidTreeId: boolean = $state(false);
 
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
@@ -24,14 +22,16 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            noTreeId = true;
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            invalidTreeId = true;
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
@@ -41,11 +41,7 @@
     });
 </script>
 
-{#if noTreeId}
-    <p class="text-red-700" data-testid="error">{m.noTreeId()}</p>
-{:else if invalidTreeId}
-    <p class="text-red-700" data-testid="error">{m.invalidTreeId()}</p>
-{:else if loading}
+{#if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
 {:else if tree}
     <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>

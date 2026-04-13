@@ -48,8 +48,6 @@
     "unexpectedErrorOccurred": "Er deed zich een onverwachte fout voor :(",
     "close": "Sluiten",
     "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
-    "noTreeId": "Fout: Er mist een boom id.",
-    "invalidTreeId": "De boom id kan niet worden omgezet in een getal.",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
     "profile": "Profiel",
     "confirmChanges": "Bevestig wijzigingen",

@@ -89,29 +89,3 @@ test('Page successfully loads tree', async () => {
     screen.getByText(tree.cards[1].front);
     screen.getByText(tree.cards[2].front);
 });
-
-test('No tree id provided is handled correctly', async () => {
-    const tree: TreeWithCards = createTree();
-
-    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
-    mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.delete('id');
-    render(PageComponent);
-
-    const error = await screen.findByTestId('error');
-
-    expect(error.textContent).toBe(m.noTreeId());
-});
-
-test('Invalid tree id is handled correctly', async () => {
-    const tree: TreeWithCards = createTree();
-
-    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
-    mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.set('id', 'abc');
-    render(PageComponent);
-
-    const error = await screen.findByTestId('error');
-
-    expect(error.textContent).toBe(m.invalidTreeId());
-});
