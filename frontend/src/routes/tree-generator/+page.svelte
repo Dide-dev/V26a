@@ -38,7 +38,7 @@
         event.preventDefault();
 
         const treeId = await addTree(treeData);
-        goto(appLink(`/tree-page/editor?id=${treeId}`));
+        await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
 </script>
 
