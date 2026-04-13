@@ -5,7 +5,7 @@
 */
 
 import type { CardGetData, CardId } from './cards';
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 import type { UserId } from './users';
 
@@ -17,6 +17,10 @@ function apiCallPostTree(path: string, body: unknown) {
 
 function apiCallGetTree(path: string) {
     return apiCallGet(prefix + path);
+}
+
+function apiCallDeleteTree(path: string) {
+    return apiCallDelete(prefix + path);
 }
 
 export type TreeId = number;
@@ -108,14 +112,14 @@ export type TreeUpdateStructureData = {
 };
 
 export type TreeRemoveCardData = {
-    id: TreeId;
+    treeId: TreeId;
     cardId: CardId;
     newStructure: TreeStructure;
 };
 
-export type TreeList = {
+export type TreeListResponse = {
     totalTrees: number;
-    list: TreeData[];
+    list: TreeMetadata[];
 };
 
 export type PaginationOptions = {
@@ -140,6 +144,11 @@ export function addTree(treeData: TreeData): Promise<TreeId> {
     };
 
     return apiCallPostTree('add', treeAddData);
+}
+
+/** Remove a tree and all of its cards from the database. */
+export function removeTree(treeId: TreeId): Promise<void> {
+    return apiCallDeleteTree(`remove/${treeId}`);
 }
 
 /** Update the structure of an existing tree. */
@@ -204,7 +213,7 @@ export function getPaginationAndFilterParams(
 export function getFilteredList(
     pageOptions: PaginationOptions,
     filterOptions: FilterOptions
-): Promise<TreeList> {
+): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
 }

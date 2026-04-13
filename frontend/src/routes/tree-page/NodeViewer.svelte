@@ -7,7 +7,7 @@
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
     import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
-    import AddCard from './AddCard.svelte';
+    import TreeEditButtons from './TreeEditButtons.svelte';
     import { onMount } from 'svelte';
     import CardViewer from './CardViewer.svelte';
 
@@ -115,7 +115,7 @@
     <!-- Adds buttons to manage the cards of the tree if in editing mode -->
     {#if editingPage}
         <div class="relative">
-            <AddCard bind:tree bind:parent bind:node />
+            <TreeEditButtons bind:tree bind:parent bind:node />
         </div>
     {/if}
 

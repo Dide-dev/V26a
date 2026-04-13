@@ -21,7 +21,7 @@ use std::str::FromStr;
 /// # Returns
 /// The id assigned to the new user.
 ///
-/// # Error
+/// # Errors
 /// May return a [`HashException`](ApiError::HashException) instead.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -62,7 +62,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result
 /// # Returns
 /// `true` if the user exists or `false` if they do not.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn user_email_exists(db: impl PgExecutor<'_>, email: &str) -> Result<bool, ApiError> {
     query!(
@@ -86,7 +86,7 @@ pub async fn user_email_exists(db: impl PgExecutor<'_>, email: &str) -> Result<b
 /// # Returns
 /// `true` if the user exists or `false` if they do not.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn user_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
     query!("SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)", id,)
@@ -107,7 +107,7 @@ pub async fn user_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 /// # Returns
 /// A [`UserGetData`] object containing the user's data, minus their password.
 ///
-/// # Error
+/// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -140,7 +140,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_user(
     db: impl PgExecutor<'_>,

@@ -17,6 +17,7 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::Serialize;
 use sqlx::PgPool;
+use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
@@ -26,7 +27,7 @@ pub fn auth() -> Router<Config> {
 /// Return body, where the `succeeded`-field signals whether the request was successful.
 /// - If the flag is `false`, the wrong credentials were passed.
 /// - If the flag is `true`, the login was successful, and both a `session` and `user_info` cookie have been created.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 struct LoginResponse {
     succeeded: bool,
 }
@@ -41,17 +42,44 @@ struct LoginResponse {
 /// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+#[utoipa::path(
+    post,
+    path = "/login",
+    context_path = "/api/v1/auth",
+    request_body = LoginRequestBody,
+    responses(
+        (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("claims" = Claims, Cookie),
+    )
+)]
+/// Login to an account if the given credentials are valid.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
+///
+/// # Returns
+/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
+/// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
+///
+/// # Errors
+/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(config): State<Config>,
-    Json(body): Json<LoginRequestBody>,
+    Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
-    let Some(credentials) = get_user_credentials(&db, body.email).await? else {
+    let Some(credentials) = get_user_credentials(&db, login_request.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
 
-    let password_valid = bcrypt::verify(body.password, credentials.password_hash.as_str())
+    let password_valid = bcrypt::verify(login_request.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {

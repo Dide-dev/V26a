@@ -36,6 +36,7 @@
     "backTextRequired": "Back text is required!",
     "frontTextCharacterLimit": "Front text cannot contain more than {limit} characters",
     "backTextCharacterLimit": "Back text cannot contain more than {limit} characters",
+    "deleteTreeConfirmation": "Are you sure you want to delete the tree {title}?",
     "login": "Login",
     "globalCounter": "Global Counter",
     "apiTesting": "Api Testing",
@@ -51,5 +52,7 @@
     "invalidTreeId": "The tree id cannot be parsed into a number.",
     "passwordsNotTheSame": "Passwords are not the same",
     "profile": "Profile",
-    "confirmChanges": "Confirm changes"
+    "confirmChanges": "Confirm changes",
+    "edit": "Edit",
+    "add": "Add"
 }

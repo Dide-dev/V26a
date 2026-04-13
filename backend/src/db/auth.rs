@@ -21,7 +21,7 @@ use std::str::FromStr;
 ///
 /// Returns a struct containing the user id, password hash and account type otherwise
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_credentials(
     db: impl PgExecutor<'_>,
