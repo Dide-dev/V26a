@@ -8,7 +8,6 @@ use crate::Config;
 
 use crate::api_v1::session::Claims;
 use crate::db::images::{add_image, check_image_existence};
-use crate::db_structs::images::ImageAddData;
 
 use crate::errors::ApiError;
 use axum::body::Bytes;
@@ -31,7 +30,7 @@ pub fn images() -> Router<Config> {
 /// # Returns
 /// A permanent URL on which the image can be found.
 ///
-/// # Error
+/// # Errors
 /// May return a [`CreateDirException`](ApiError::CreateDirException) if the upload directory cannot be found and created.
 ///
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
@@ -60,7 +59,7 @@ async fn add_new_image(
     let hash = hash_image(&body);
 
     // Checks whether the image already exists in de database based on its hash.
-    // If so, returns the URL where the already excisting image can be found.
+    // If so, returns the URL where the already existing image can be found.
     if let Some(existing_filename) = check_image_existence(&db, &hash).await? {
         return Ok(format!("/uploads/{existing_filename}"));
     }
@@ -71,14 +70,9 @@ async fn add_new_image(
     let filepath = format!("{upload_directory}/{filename}");
 
     // Add the image metadata to the database in transaction.
-    let image_add_data = ImageAddData {
-        file_name: filename.clone(),
-        hash,
-    };
-
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    add_image(&mut *transaction, &image_add_data, claims.sub).await?;
+    add_image(&mut *transaction, &filename, &hash, claims.sub).await?;
 
     // Write the image to the directory.
     tokio::fs::write(&filepath, &body)
@@ -100,9 +94,9 @@ async fn add_new_image(
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// May return an [`CreateDirException`](ApiError::CreateDirException) if the upload directory can not be found and created.
-async fn ensure_directory_existence(upload_directory: &String) -> Result<(), ApiError> {
+async fn ensure_directory_existence(upload_directory: &str) -> Result<(), ApiError> {
     tokio::fs::create_dir_all(upload_directory)
         .await
         .map_err(|_| ApiError::CreateDirException)?;
@@ -115,7 +109,7 @@ async fn ensure_directory_existence(upload_directory: &String) -> Result<(), Api
 /// # Returns
 /// The type of the image.
 ///
-/// # Error
+/// # Errors
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
 ///
 /// May return a [`InvalidImageType`](ApiError::InvalidImageType) if the uploaded image is not of a image/ MIME-type.

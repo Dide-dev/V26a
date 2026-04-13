@@ -4,8 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::images::ImageAddData;
-
 use crate::errors::ApiError;
 use sqlx::{PgExecutor, query};
 
@@ -21,20 +19,21 @@ use sqlx::{PgExecutor, query};
 /// # Returns
 /// Nothing
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_image(
     db: impl PgExecutor<'_>,
-    image_data: &ImageAddData,
+    file_name: &str,
+    hash: &str,
     owner_id: i32,
 ) -> Result<(), ApiError> {
     query!(
         "INSERT INTO images (hash, owner_id, filename)
         VALUES ($1, $2, $3)
         RETURNING filename",
-        image_data.hash,
+        hash,
         owner_id,
-        image_data.file_name,
+        file_name,
     )
     .fetch_optional(db)
     .await
@@ -54,7 +53,7 @@ pub async fn add_image(
 /// # Returns
 /// The `file_name` of the image if the image exists in the database, or None if it does not.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn check_image_existence(
     db: impl PgExecutor<'_>,
