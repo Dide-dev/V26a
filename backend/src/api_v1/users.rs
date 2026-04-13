@@ -23,15 +23,35 @@ pub fn users() -> Router<Config> {
         .route("/update/{user_id}", post(update_user_data))
 }
 
+#[utoipa::path(
+    post,
+    path = "/add-new-user",
+    context_path = "/api/v1/users",
+    request_body = RegisterData,
+    responses(
+        (status = 200, description = "Successfully registered user with the returned id.", body = i32, content_type = "application/json"),
+        (status = 400, description = ApiError::EmailAlreadyUsed.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Add a user to the database.
 ///
-/// # Returns
-/// The id assigned to the new user as [`Json`].
+/// # Arguments
+/// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
-/// # Error
+/// # Returns
+/// The id assigned to the new user.
+///
+/// # Errors
 /// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
 ///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`HashException`](ApiError::HashException) or
+/// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
@@ -39,34 +59,82 @@ async fn add_new_user(
     add_user(get_connection!(db), &user_data).await.map(Json)
 }
 
+#[utoipa::path(
+    get,
+    path = "/me",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Successfully retrieved own data.", body = UserGetData),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Get a user's own data from the database.
 ///
-/// # Returns
-/// The user's data as [`Json`].
+/// # Arguments
+/// `claims` - The session cookie of the user.
 ///
-/// # Error
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+/// # Returns
+/// The user's data as [`UserGetData`].
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_own_user_data(
-    Extension(db): Extension<PgPool>,
     claims: Claims,
+    Extension(db): Extension<PgPool>,
 ) -> Result<Json<UserGetData>, ApiError> {
     get_user(&db, claims.sub).await.map(Json)
 }
 
+#[utoipa::path(
+    post,
+    path = "/update/{user_id}",
+    context_path = "/api/v1/users",
+    request_body = UserUpdateData,
+    responses(
+        (status = 200, description = "User data successfully updated."),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
+    )
+)]
 /// Update a user's data in the database.
 ///
-/// # Error
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
-/// the given user's data.
+/// A normal user can only update their own data, only an admin can change other user's data.
+/// Certain fields can only be updated by admins in general, namely `account_type` and `enabled`.
 ///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `user_id` - The user for whom to update their data.
+///
+/// `new_data` - The new data of the user, as [`UserUpdateData`]. The `account_type` and `enabled`
+/// fields are only updated if passed, and if the user has permission to do so.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the given user's data, or to update one of the specified fields.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
-    Extension(db): Extension<PgPool>,
     claims: Claims,
+    Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
 ) -> Result<(), ApiError> {

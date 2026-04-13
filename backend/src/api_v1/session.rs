@@ -12,6 +12,7 @@ use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// A struct containing the [`EncodingKey`] and [`DecodingKey`] used for encoding and decoding the
 /// `JsonWebToken`.
@@ -33,7 +34,7 @@ impl Keys {
 
 /// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
 /// expiration time.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Claims {
     /// The subject (whom the token refers to).

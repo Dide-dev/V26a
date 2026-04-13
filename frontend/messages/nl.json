@@ -36,6 +36,7 @@
     "backTextRequired": "Achterkant kaart is verplicht!",
     "frontTextCharacterLimit": "Tekst op voorkant mag niet meer dan {limit} karakters bevatten",
     "backTextCharacterLimit": "Tekst op achterkant mag niet meer dan {limit} karakters bevatten",
+    "deleteTreeConfirmation": "Weet je zeker dat je de boom {title} wilt verwijderen?",
     "login": "Login",
     "globalCounter": "Globale Teller",
     "apiTesting": "Api Testen",
@@ -45,5 +46,7 @@
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde",
     "profile": "Profiel",
-    "confirmChanges": "Bevestig wijzigingen"
+    "confirmChanges": "Bevestig wijzigingen",
+    "edit": "Bewerk",
+    "add": "Voeg toe"
 }

@@ -305,7 +305,7 @@ async fn test_remove_card(db: PgPool) {
     // Attempt to remove the card from the database without removing it from the tree
     // and assert an appropriate error is returned.
     let invalid_card_removal_data = TreeRemoveCardData {
-        id: tree_id,
+        tree_id,
         card_id,
         new_structure: tree_structure_with_card,
     };
@@ -325,7 +325,7 @@ async fn test_remove_card(db: PgPool) {
     };
 
     let valid_card_removal_data = TreeRemoveCardData {
-        id: tree_id,
+        tree_id,
         card_id,
         new_structure: tree_structure_without_card,
     };
@@ -400,25 +400,45 @@ async fn test_filter_tree_list(db: PgPool) {
     let requested_trees: TreeListResponse = response.json();
     // Reverse because the received trees are in reverse order (newest first).
     let rev_tree_data: Vec<TreeData> = trees_data.iter().rev().cloned().collect();
-    assert_eq!(requested_trees.trees, rev_tree_data);
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, rev_tree_data);
 
     // Newest public tree
     let response = server.get("/trees/get-list?page=1&size=1").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, vec![trees_data[1].clone()]);
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[1].clone()]);
 
     // Second newest public tree
     let response = server.get("/trees/get-list?page=2&size=1").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, vec![trees_data[0].clone()]);
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
     // Filter on book with space
     let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, vec![trees_data[1].clone()]);
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[1].clone()]);
 
     login(&server, emails[1].clone()).await;
     let other_user_trees_data = vec![
@@ -439,8 +459,13 @@ async fn test_filter_tree_list(db: PgPool) {
     let response = server.get("/trees/get-list?page=1&size=100").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
     assert_eq!(
-        requested_trees.trees,
+        requested_trees_data,
         vec![
             other_user_trees_data[0].clone(),
             trees_data[1].clone(),
@@ -454,8 +479,13 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
     assert_eq!(
-        requested_trees.trees,
+        requested_trees_data,
         vec![other_user_trees_data[0].clone(), trees_data[1].clone(),]
     );
 
@@ -479,8 +509,13 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
     assert_eq!(
-        requested_trees.trees,
+        requested_trees_data,
         vec![trees_data[1].clone(), trees_data[0].clone()]
     );
 
@@ -498,7 +533,12 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, rev_tree_data);
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, rev_tree_data);
 
     // All public trees from user 1
     let response = server
@@ -512,10 +552,12 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
-    assert_eq!(
-        requested_trees.trees,
-        vec![other_user_trees_data[0].clone()]
-    );
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![other_user_trees_data[0].clone()]);
 }
 
 #[sqlx::test]

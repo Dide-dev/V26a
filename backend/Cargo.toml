@@ -35,6 +35,9 @@ tower-http = { version = "0.6.8", features = ["fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.23.0", features = ["v4"] }
+utoipa = { version = "5.4.0", features = ["chrono"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipauto = "0.2.0"
 
 [dev-dependencies]
 axum-test = "19.1.1"

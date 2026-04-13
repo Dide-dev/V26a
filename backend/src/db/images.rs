@@ -12,7 +12,9 @@ use sqlx::{PgExecutor, query};
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `image_data` - The data assigned to the new image as [`ImageAddData`].
+/// `file_name` - The filename generated for the image.
+///
+/// `hash` - The hash of the image.
 ///
 /// `owner_id` - The id of the user that added the image originally.
 ///

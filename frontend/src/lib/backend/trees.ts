@@ -112,14 +112,14 @@ export type TreeUpdateStructureData = {
 };
 
 export type TreeRemoveCardData = {
-    id: TreeId;
+    treeId: TreeId;
     cardId: CardId;
     newStructure: TreeStructure;
 };
 
-export type TreeList = {
+export type TreeListResponse = {
     totalTrees: number;
-    list: TreeData[];
+    list: TreeMetadata[];
 };
 
 export type PaginationOptions = {
@@ -213,7 +213,7 @@ export function getPaginationAndFilterParams(
 export function getFilteredList(
     pageOptions: PaginationOptions,
     filterOptions: FilterOptions
-): Promise<TreeList> {
+): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
 }

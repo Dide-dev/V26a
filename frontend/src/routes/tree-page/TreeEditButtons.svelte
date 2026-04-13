@@ -5,14 +5,23 @@
 -->
 
 <script lang="ts">
+    import editIcon from '$lib/assets/editIcon.svg?raw';
+    import trashIcon from '$lib/assets/trashIcon.svg?raw';
     import type {
         Node,
         RootNode,
+        TreeRemoveCardData,
         TreeUpdateStructureData,
         TreeWithCards
     } from '$lib/backend/trees';
-    import { updateTreeStructure } from '$lib/backend/trees';
-    import { addCard, type CardAddData, type CardId } from '$lib/backend/cards';
+    import { removeCardFromTree, updateTreeStructure } from '$lib/backend/trees';
+    import {
+        addCard,
+        updateCard,
+        type CardAddData,
+        type CardUpdateData,
+        type CardId
+    } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
@@ -33,6 +42,7 @@
     let action = $state<
         | null
         | { type: 'add'; parent: Node | RootNode }
+        | { type: 'edit'; node: Node }
         | { type: 'insert'; parent: Node | RootNode; child: Node }
     >(null);
 
@@ -43,6 +53,17 @@
      */
     function handlerAdd(parent: Node | RootNode) {
         action = { type: 'add', parent };
+    }
+
+    /** Gets called when the button to edit a card is clicked;
+     * Sets the action to 'edit' type.
+     *
+     * @param node The node that will be edited.
+     */
+    function handlerEdit(node: Node) {
+        action = { type: 'edit', node };
+        frontText = tree.cards[node.cardId].front;
+        backText = tree.cards[node.cardId].back;
     }
 
     /** Gets called when the button to insert a card is clicked;
@@ -65,7 +86,17 @@
         if (!action) return;
         errorMessage = '';
 
-        let card: CardAddData = {
+        if (action.type === 'edit') {
+            const update: CardUpdateData = {
+                cardId: action.node.cardId,
+                newFront: front,
+                newBack: back
+            };
+            editNode(action.node, update);
+            return;
+        }
+
+        const card: CardAddData = {
             treeId: tree.genData.id,
             front: front,
             back: back
@@ -85,11 +116,11 @@
      */
     async function addChild(parent: Node | RootNode, card: CardAddData) {
         if (card.front.length > frontMaxLength) {
-            errorMessage = `Front text cannot contain more than ${frontMaxLength} characters`;
+            errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
             return;
         }
         if (card.back.length > backMaxLength) {
-            errorMessage = `Back text cannot contain more than ${backMaxLength} characters`;
+            errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
             return;
         }
 
@@ -109,9 +140,62 @@
             })
 
             .then(() => {
-                parent = { ...parent };
-                parent.children[-1] = { ...parent.children[-1] };
-                tree.structure = { ...tree.structure };
+                reset();
+            })
+
+            .catch((reason: Error) => {
+                errorMessage = reason.toString();
+                console.error('Error: ', reason);
+            });
+    }
+
+    /** Removes a node, adding all of its children to its parent
+     *
+     * @param parent The parent of the node that will be removed
+     * @param node The node that will be removed
+     */
+    async function removeNode(parent: RootNode | Node, node: Node) {
+        const index = parent.children.indexOf(node);
+        parent.children.splice(index, 1, ...node.children);
+
+        const remove: TreeRemoveCardData = {
+            treeId: tree.genData.id,
+            cardId: node.cardId,
+            newStructure: tree.structure
+        };
+
+        removeCardFromTree(remove)
+            .then(() => {
+                reset();
+            })
+
+            .catch((reason: Error) => {
+                errorMessage = reason.toString();
+                console.error('Error: ', reason);
+            });
+    }
+
+    /** Edits a node
+     *
+     * @param node The node that will be edited
+     * @param update The data used to update the node.
+     */
+    async function editNode(node: Node, update: CardUpdateData) {
+        if (update.newFront.length > frontMaxLength) {
+            errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
+            return;
+        }
+        if (update.newBack.length > backMaxLength) {
+            errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
+            return;
+        }
+
+        updateCard(update)
+            .then(() => {
+                tree.cards[update.cardId] = {
+                    front: update.newFront,
+                    back: update.newBack
+                };
                 reset();
             })
 
@@ -153,9 +237,6 @@
             })
 
             .then(() => {
-                parent = { ...parent };
-                parent.children[-1] = { ...parent.children[-1] };
-                tree.structure = { ...tree.structure };
                 reset();
             })
 
@@ -175,13 +256,32 @@
 
 <!-- Button to add new card as a child to this card -->
 <button
-    class="card__add_button absolute top-2 right-2 h-5 w-5 cursor-pointer rounded-full bg-cyan-400 text-xs text-white opacity-60 transition-opacity hover:opacity-100"
+    class="absolute top-2 right-2 h-5 w-5 cursor-pointer rounded-full bg-cyan-400 text-xs text-white opacity-60 transition-opacity hover:opacity-100"
     onclick={() => handlerAdd(node)}>+</button
 >
-<!-- Buttons to insert a new card between this card and a child to this card -->
+
 {#if !('label' in node)}
+    <!-- Button to remove card -->
     <button
-        class="card__insert_button absolute top-2 right-[548] h-5 w-5 cursor-pointer rounded-full bg-yellow-300 text-xs text-white opacity-60 transition-opacity hover:opacity-100"
+        class="absolute top-1.5 right-[32] h-5 w-5 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
+        onclick={() => removeNode(parent, node)}
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html trashIcon}
+    </button>
+
+    <!-- Button to edit card -->
+    <button
+        class="absolute top-1.5 right-[524] h-5 w-5 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
+        onclick={() => handlerEdit(node)}
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html editIcon}
+    </button>
+
+    <!-- Button to insert a new card between this card and a child to this card -->
+    <button
+        class="absolute top-2 right-[548] h-5 w-5 cursor-pointer rounded-full bg-green-300 text-xs text-white opacity-60 transition-opacity hover:opacity-100"
         onclick={() => handlerInsert(parent, node)}>+</button
     >
 {/if}
@@ -189,14 +289,14 @@
 <!-- Add/Insert card popup -->
 {#if action}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div class="card__popup flex flex-col gap-2 rounded bg-white p-4">
+        <div class="flex flex-col gap-2 rounded bg-white p-4">
             <textarea
-                class="card__front_text_box rounded border p-1"
+                class="rounded border p-1"
                 placeholder={m.enterFrontText()}
                 bind:value={frontText}
             ></textarea>
             <textarea
-                class="card__back_text_box rounded border p-1"
+                class="rounded border p-1"
                 placeholder={m.enterBackText()}
                 bind:value={backText}
             ></textarea>
@@ -204,13 +304,12 @@
                 <p class="text-red-600">{errorMessage}</p>
             {/if}
             <div class="flex justify-end gap-2">
-                <button onclick={() => reset()}>Cancel</button>
+                <button onclick={reset}>{m.cancel()}</button>
                 <button
-                    class="card__confirm_button"
                     onclick={() => {
                         if (backText.trim()) acceptCard(frontText.trim(), backText.trim());
                         else errorMessage = m.backTextRequired();
-                    }}>Add</button
+                    }}>{action.type === 'edit' ? m.edit() : m.add()}</button
                 >
             </div>
         </div>
