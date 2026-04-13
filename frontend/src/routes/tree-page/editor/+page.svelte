@@ -15,7 +15,6 @@
         type TreeData
     } from '$lib/backend/trees';
     import NodeViewer from '../NodeViewer.svelte';
-    import { redirectLogin } from '$lib/backend';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 

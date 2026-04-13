@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/svelte';
-import { expect, test, vi, afterEach } from 'vitest';
+import { test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import PageComponent from './+page.svelte';
 import { page } from '$app/state';
@@ -13,7 +13,6 @@ import type {
 } from '$lib/backend/trees';
 import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
-import { m } from '$lib/paraglide/messages';
 
 function createTree(): TreeWithCards {
     // eslint-disable as CardId's are seen as object literal property, and should therefore follow camelCase.
