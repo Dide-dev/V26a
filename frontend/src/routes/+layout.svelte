@@ -36,14 +36,6 @@
         }
         pathname = page.url.pathname;
     });
-
-    // Checks what the path is of the current page,
-    // (trailing) slashes are removed to make comparison easier.
-    // (at the moment not used, but maybe in the future to hide links)
-    function isActive(path: string) {
-        const normalize = (p: string) => p.replace(/\/$/, '') || '/';
-        return normalize(pathname) === normalize(localizeHref(path));
-    }
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
