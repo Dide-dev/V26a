@@ -6,145 +6,125 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import {
-        type PaginationOptions,
         type FilterOptions,
+        type PaginationOptions,
+        type TreeListResponse,
+        type TreeMetadata,
         getFilteredList
     } from '$lib/backend/trees';
-    import icon from '$lib/assets/editIcon.svg?raw';
     import { appLink } from '$lib/index';
+    import { onMount } from 'svelte';
 
-    //I need to give page number and page size
-    //I will get next page, page size(same as I give), total trees, trees (TreeMetaData(TreeData en TreeGeneratedData))
-
-    function booleanToString(value: boolean) {
-        if (value) return m.yes();
-        return m.no();
-    }
-    let pageSize = $state(20);
+    let pageSize = $state(5);
     let thisPage = $state(1);
-    let paginationOptions: PaginationOptions = $derived({
-        page: thisPage,
-        size: pageSize
-    });
     let filterOptions: FilterOptions = $state({
         ownerId: null,
         book: [],
         createdAfter: null,
         createdBefore: null,
-        showOwnPrivate: null
+        showOwnPrivate: true
     });
-    let treesPromise = $derived(getFilteredList(paginationOptions, filterOptions));
+    let paginationOptions: PaginationOptions = $derived({
+        page: thisPage,
+        size: pageSize
+    });
 
-    // export type TreeList = {
-    //     totalTrees: number;
-    //     list: TreeMetadata[];
-    // };
+    let treeListResponse: null | TreeListResponse = $state(null);
+    let trees: null | TreeMetadata[] = $state(null);
 
-    // export type TreeMetadata = {
-    //     data: TreeData;
-    //     genData: TreeGeneratedData;
-    // };
+    onMount(async () => {
+        await loadTrees();
+    });
 
-    // export type TreeGeneratedData = {
-    //     id: TreeId;
-    //     ownerId: UserId;
-    //     createdAt: Date;
-    //     lastModified: Date;
-    //     timesVisited: number;
-    //     lastVisited: Option<Date>;
-    // };
+    async function loadTrees() {
+        treeListResponse = await getFilteredList(paginationOptions, filterOptions);
+        trees = treeListResponse.trees;
+    }
 
-    // export type TreeData = {
-    //     title: string;
-    //     description: Option<string>;
-    //     bookName: Option<string>;
-    //     bookEdition: Option<string>;
-    //     bookIsbn: Option<string>;
-    //     bookChapter: Option<string>;
-    //     bookExercise: Option<string>;
-    //     assignmentText: Option<string>;
-    //     published: boolean;
-    // };
-
-    // let totalPages = $derived(calcTotalPages(totalTrees, pageSize));
     function prevPage() {
         if (thisPage > 1) {
             thisPage -= 1;
+            loadTrees();
         }
     }
-    function calcTotalPages(totalTrees: number, pageSize: number): number {
-        return Math.ceil(totalTrees / pageSize);
-    }
+
     function nextPage(totalPages: number) {
         if (thisPage < totalPages) {
             thisPage += 1;
+            loadTrees();
+        }
+    }
+
+    function calcTotalPages(totalTrees: number, pageSize: number): number {
+        return Math.ceil(totalTrees / pageSize);
+    }
+
+    function checkIfNull(treeListResponse: TreeListResponse | null): number {
+        if (treeListResponse == null) {
+            return 0;
+        } else {
+            return treeListResponse.totalTrees;
+        }
+    }
+
+    function checkIfHasBook(bookName: string | null): string {
+        if (bookName == '') {
+            return '-';
+        } else if (bookName == null) {
+            return '-';
+        } else {
+            return bookName;
         }
     }
 </script>
 
-{#await treesPromise}
+{#if trees === null}
     <p>{m.loading()}</p>
-{:then trees}
-    {#if trees.list.length > 0}
-        <!-- For dynamically formatting the entire css has to be redone. -->
-        <div class="relative left-1/4 mx-4 h-24 max-w-200">
-            <table class="border-separate border-spacing-2">
-                <thead>
+{:else if trees.length === 0}
+    <div class="text-center">
+        <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
+    </div>
+{:else}
+    <div class="100vw flex justify-center">
+        <table class="border-separate border-spacing-2">
+            <thead>
+                <tr>
+                    <th class="text-left">{m.title()}</th>
+                    <th class="text-left">{m.book()}</th>
+                    <th class="text-left">{m.timesVisited()}</th>
+                    <th class="text-left">{m.createdAt()}</th>
+                    <!-- Edit button -->
+                    <th class="text-left"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {#each trees as tree (tree.genData.id)}
                     <tr>
-                        <th class="text-left">{m.title()}</th>
-                        <th class="text-left">{m.lastEdited()}</th>
-                        <th class="text-left">{m.published()}</th>
-                        <!-- Edit button -->
-                        <th class="text-left"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each trees.list as tree (tree.genData.id)}
-                        <tr>
-                            <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
-                                <a
-                                    href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
-                                    target="_blank">{tree.data.title}</a
-                                >
-                            </td>
-                            <td class="pr-4"
-                                >{new Date(
-                                    tree.genData.lastModified.toString()
-                                ).toLocaleString()}</td
+                        <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
+                            <a
+                                href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
+                                target="_blank">{tree.data.title}</a
                             >
-                            <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
-                            <td class="pr-4">{booleanToString(tree.data.published)}</td>
-                            <td class="min-w-2 hover:fill-blue-800">
-                                <a
-                                    href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
-                                    target="_blank"
-                                    aria-label="edit"
-                                >
-                                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                    {@html icon}
-                                </a>
-                            </td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
-        </div>
+                        </td>
+                        <td class="pr-4">{checkIfHasBook(tree.data.bookName)}</td>
+                        <td class="pr-4">{tree.genData.timesVisited}</td>
+                        <td class="pr-4">
+                            <!-- This formats the date in the local timezone in the form: dd-mm-yyyy -->
+                            {new Date(tree.genData.createdAt).getDate()}-{new Date(
+                                tree.genData.createdAt
+                            ).getMonth() + 1}-{new Date(tree.genData.createdAt).getFullYear()}
+                        </td>
+                    </tr>
+                {/each}
+            </tbody>
+        </table>
         <div class="fixed bottom-2 left-1/2 -translate-x-1/2">
             <button onclick={prevPage} class="mx-5">Prev</button>
-            {thisPage}/{calcTotalPages(trees.totalTrees, pageSize)}
+            {thisPage}/{calcTotalPages(checkIfNull(treeListResponse), pageSize)}
             <button
-                onclick={() => nextPage(calcTotalPages(trees.totalTrees, pageSize))}
+                onclick={() => nextPage(calcTotalPages(checkIfNull(treeListResponse), pageSize))}
                 class="mx-5">Next</button
             >
         </div>
-    {:else}
-        <div class="text-center">
-            <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
-            <button class="m-2 rounded-sm bg-emerald-500 p-1"
-                ><a href={appLink('/tree-generator')}>{m.createTree()}</a></button
-            >
-        </div>
-    {/if}
-{:catch error}
-    <p style="color:red">{error.message}</p>
-{/await}
+    </div>
+{/if}
