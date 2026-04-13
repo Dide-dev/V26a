@@ -15,15 +15,31 @@
     import { afterNavigate } from '$app/navigation';
 
     let { children } = $props();
-    let menuOpen = $state(false);
+    let menu = $state(false);
     let userInfo = $state(getUserInfo());
     let pathname = $state(page.url.pathname);
 
+    function openMenu() {
+        menu = !menu;
+    }
+
+    function closeMenu() {
+        menu = false;
+    }
+
+    // Retrieve userinfo & path after navigating to another page (refreshes navbar).
     afterNavigate(() => {
-        userInfo = getUserInfo();
+        const newUserInfo = getUserInfo();
+        if (JSON.stringify(newUserInfo) !== JSON.stringify(userInfo)) {
+            userInfo = newUserInfo;
+            window.location.reload();
+        }
         pathname = page.url.pathname;
     });
 
+    // Checks what the path is of the current page,
+    // (trailing) slashes are removed to make comparison easier.
+    // (at the moment not used, but maybe in the future to hide links)
     function isActive(path: string) {
         const normalize = (p: string) => p.replace(/\/$/, '') || '/';
         return normalize(pathname) === normalize(localizeHref(path));
@@ -36,53 +52,33 @@
     <div class="flex justify-end">
         <button
             class="rounded-sm bg-sky-600 p-1 md:hidden"
-            onclick={() => (menuOpen = !menuOpen)}
+            onclick={openMenu}
             aria-label="Toggle menu"
         >
-            {#if menuOpen}✕{:else}☰{/if}
+            {#if menu}✕{:else}☰{/if}
         </button>
     </div>
 
     <div
         class="
         flex-col gap-2 *:rounded-sm *:bg-sky-600 *:p-1
-        {menuOpen ? 'flex' : 'hidden'}
+        {menu ? 'flex' : 'hidden'}
         md:flex md:flex-row md:justify-end
     "
     >
-        {#if !isActive('/')}
-            <a href={appLink('/')} onclick={() => (menuOpen = false)}>{m.home()}</a>
-        {/if}
+        <a href={appLink('/')} onclick={closeMenu}>{m.home()}</a>
 
-        {#if isActive('/')}
-            <a href={appLink('/')} onclick={() => (menuOpen = false)}>{m.trees()}</a>
-            <a href={appLink('/')} onclick={() => (menuOpen = false)}>{m.credits()}</a>
-        {/if}
-
-        {#if userInfo?.accountType === 'author'}
-            {#if isActive('/my-trees')}
-                <a href={appLink('/tree-generator')} onclick={() => (menuOpen = false)}
-                    >{m.createTree()}</a
-                >
-            {/if}
-            {#if !isActive('/my-trees')}
-                <a href={appLink('/my-trees')} onclick={() => (menuOpen = false)}>{m.myTrees()}</a>
-            {/if}
-            {#if !isActive('/profile')}
-                <a href={appLink('/profile')} onclick={() => (menuOpen = false)}>{m.profile()}</a>
-            {/if}
+        {#if userInfo?.accountType === 'author' || userInfo?.accountType === 'admin'}
+            <a href={appLink('/my-trees')} onclick={closeMenu}>{m.myTrees()}</a>
+            <a href={appLink('/profile')} onclick={closeMenu}>{m.profile()}</a>
+            <a href={appLink('/tree-generator')} onclick={closeMenu}>{m.createTree()}</a>
         {:else}
-            {#if !isActive('/registration')}
-                <a href={appLink('/registration')} onclick={() => (menuOpen = false)}
-                    >{m.register()}</a
-                >
-            {/if}
-            {#if !isActive('/login')}
-                <a href={appLink('/login')} onclick={() => (menuOpen = false)}>{m.login()}</a>
-            {/if}
+            <a href={appLink('/registration')} onclick={closeMenu}>{m.register()}</a>
+            <a href={appLink('/login')} onclick={closeMenu}>{m.login()}</a>
         {/if}
 
-        {#each locales as locale (locale)}
+        <!-- Locale is filtered to show 1 language at the same time-->
+        {#each locales.filter((l) => l !== (pathname.startsWith('/en') ? 'en' : 'nl')) as locale (locale)}
             <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
             <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
                 {locale}
