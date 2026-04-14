@@ -41,7 +41,7 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <nav class="m-1 bg-sky-400 p-1">
-    <div class="flex justify-end mb-0.5">
+    <div class="mb-0.5 flex justify-end">
         <button
             class="rounded-sm bg-sky-600 p-1 md:hidden"
             onclick={openMenu}
