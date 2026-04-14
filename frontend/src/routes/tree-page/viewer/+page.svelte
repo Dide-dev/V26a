@@ -77,7 +77,7 @@
 {#if error == null && userAllowedToEdit}
     <button
         data-testid="edit-button"
-        class="fixed top-16 right-4 z-50 rounded bg-blue-600 px-4 py-2 text-white shadow"
+        class="cursor-pointer fixed top-16 right-4 z-50 m-2 rounded-sm bg-emerald-500 px-4 py-2 shadow"
         onclick={() => goto(appLink(`/tree-page/editor?id=${id}`))}
     >
         {m.edit()}
