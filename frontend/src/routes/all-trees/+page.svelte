@@ -20,6 +20,17 @@
 
     let pageSize = $state(5);
     let thisPage = $state(1);
+
+    let filterOptionsForm = $state({
+        ownerId: '',
+        createdAfterYear: '',
+        createdAfterMonth: '',
+        createdAfterDay: '',
+        createdBeforeYear: '',
+        createdBeforeMonth: '',
+        createdBeforeDay: ''
+    });
+
     let filterOptions: FilterOptions = $state({
         ownerId: null,
         book: [],
@@ -80,7 +91,87 @@
             return bookName;
         }
     }
+
+    async function readFilters() {
+        filterOptions.ownerId = !isNaN(parseInt(filterOptionsForm.ownerId))
+            ? Number(filterOptionsForm.ownerId)
+            : null;
+
+        const tryCreatedAfter = new Date(
+            parseInt(filterOptionsForm.createdAfterYear),
+            parseInt(filterOptionsForm.createdAfterMonth) - 1,
+            parseInt(filterOptionsForm.createdAfterDay)
+        );
+
+        filterOptions.createdAfter = !isNaN(tryCreatedAfter.valueOf()) ? tryCreatedAfter : null;
+
+        const tryCreatedBefore = new Date(
+            parseInt(filterOptionsForm.createdBeforeYear),
+            parseInt(filterOptionsForm.createdBeforeMonth) - 1,
+            parseInt(filterOptionsForm.createdBeforeDay)
+        );
+
+        filterOptions.createdBefore = !isNaN(tryCreatedBefore.valueOf()) ? tryCreatedBefore : null;
+
+        await loadTrees();
+    }
 </script>
+
+<div class="flex w-full justify-center">
+    <div class="flex-col">
+        <!-- Filter options -->
+        <form class="flex w-md flex-col gap-2" onsubmit={readFilters}>
+            <label>
+                {m.createdBetween()}
+                <input
+                    class="w-12 rounded-md border-2"
+                    bind:value={filterOptionsForm.createdAfterYear}
+                />
+                <input
+                    class="w-6 rounded-md border-2"
+                    bind:value={filterOptionsForm.createdAfterMonth}
+                />
+                <input
+                    class="w-6 rounded-md border-2"
+                    bind:value={filterOptionsForm.createdAfterDay}
+                />
+                {m.and()}
+                <input
+                    class="w-12 rounded-md border-2"
+                    bind:value={filterOptionsForm.createdBeforeYear}
+                />
+                <input
+                    class="w-6 rounded-md border-2"
+                    bind:value={filterOptionsForm.createdBeforeMonth}
+                />
+                <input
+                    class="w-6 rounded-md border-2"
+                    bind:value={filterOptionsForm.createdBeforeDay}
+                />
+            </label>
+            <label>
+                {m.ownerId()}
+                <input class="rounded-md border-2" bind:value={filterOptionsForm.ownerId} />
+            </label>
+            <button class="rounded-sm bg-emerald-500 p-1">{m.applyFilters()}</button>
+        </form>
+
+        <!-- Change the number of trees per page -->
+        <label>
+            {m.numberOfTrees()}
+            <select
+                class="rounded-sm bg-neutral-400 p-1"
+                bind:value={pageSize}
+                onchange={loadTrees}
+            >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
+</div>
 
 {#if trees === null}
     <p>{m.loading()}</p>
@@ -89,7 +180,7 @@
         <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
     </div>
 {:else}
-    <div class="100vw flex justify-center">
+    <div class="100vw flex justify-center overflow-auto">
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>

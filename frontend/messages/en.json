@@ -55,5 +55,10 @@
     "add": "Add",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
-    "book": "Book"
+    "book": "Book",
+    "applyFilters": "Apply filters",
+    "createdBetween": "Created between",
+    "and": "and",
+    "ownerId": "ID of the owner",
+    "numberOfTrees": "Number of trees per page:"
 }

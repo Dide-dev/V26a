@@ -55,5 +55,10 @@
     "add": "Voeg toe",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
-    "book": "Boek"
+    "book": "Boek",
+    "applyFilters": "Pas filters toe",
+    "createdBetween": "Aangemaakt tussen",
+    "and": "en",
+    "ownerId": "ID van de eigenaar",
+    "numberOfTrees": "Aantal bomen per pagina:"
 }
