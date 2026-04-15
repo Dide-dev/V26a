@@ -5,10 +5,10 @@
 */
 
 use crate::errors::ApiError;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
-use serde::{Deserialize, Serialize};
 
 /// Data needed to add a user to the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]

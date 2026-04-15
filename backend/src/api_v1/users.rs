@@ -7,7 +7,9 @@
 use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials;
-use crate::db::users::{add_user, get_user, update_password, update_user, user_id_exists, user_email_exists};
+use crate::db::users::{
+    add_user, get_user, update_password, update_user, user_email_exists, user_id_exists,
+};
 use crate::db_structs::users::{
     AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserUpdateData,
 };
@@ -235,11 +237,7 @@ async fn change_password(
         return Ok(Json(ChangePasswordResponse { succeeded: false }));
     }
 
-    update_password(
-        &db,
-        claims.sub,
-        password_change_request.new_password,
-    ).await?;
+    update_password(&db, claims.sub, password_change_request.new_password).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }

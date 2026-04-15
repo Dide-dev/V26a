@@ -9,7 +9,7 @@
 use crate::api_v1::users::{AddUserResponse, ChangePasswordResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    AccountType, RegisterData, UserGetData, UserLanguage, UserUpdateData, PasswordChangeRequestBody,
+    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
 };
 use crate::tests::api_v1::{login, register, setup};
 use sqlx::PgPool;
@@ -178,7 +178,7 @@ async fn test_change_enabled_flag(db: PgPool) {
 #[sqlx::test]
 async fn test_successful_password_change(db: PgPool) {
     let server = setup(db);
-    
+
     let email = "test@test.nl";
 
     register(&server, email.to_owned()).await;
@@ -209,12 +209,11 @@ async fn test_successful_password_change(db: PgPool) {
     response.assert_status_ok();
 }
 
-
 #[sqlx::test]
 async fn test_change_password_incorrect_old_password(db: PgPool) {
     let server = setup(db);
-    
- let email = "test@test.nl";
+
+    let email = "test@test.nl";
 
     register(&server, "test@test.com".to_owned()).await;
     login(&server, "test@test.com".to_owned()).await;
@@ -233,7 +232,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     let body: ChangePasswordResponse = response.json();
     assert!(!body.succeeded);
 
-let response = server
+    let response = server
         .post("/auth/login")
         .json(&LoginRequestBody {
             email: email.to_owned(),

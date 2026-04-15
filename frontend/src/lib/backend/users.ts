@@ -17,6 +17,10 @@ function apiCallGetUser(path: string) {
     return apiCallGet(prefix + path);
 }
 
+function apiCallChangePassword(path: string, body: ChangePasswordData) {
+    return apiCallPost(prefix + path, body);
+}
+
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
 
@@ -75,6 +79,13 @@ export type UserInfo = {
     accountType: AccountType;
 };
 
+/** The data needed to change a user's password */
+export type ChangePasswordData = {
+    email: string;
+    oldPassword: string;
+    newPassword: string;
+};
+
 /** Add a user to the database */
 export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid> {
     return apiCallPostUser('add', user);
@@ -103,4 +114,9 @@ export function getUserInfo(): UserInfo | null {
     } catch {
         return null;
     }
+}
+
+/** Change a user's password */
+export function changePassword(changePasswordData: ChangePasswordData) {
+    return apiCallChangePassword('change-password', changePasswordData);
 }
