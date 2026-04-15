@@ -13,6 +13,19 @@
     import { m } from '$lib/paraglide/messages.js';
 
     let { children } = $props();
+
+    let errors: Error[] = $state([]);
+
+    function handleWindowError(event: Event) {
+        if (event instanceof ErrorEvent) {
+            errors.push(event.error);
+        } else {
+            errors.push(new Error('Unknown window error.'));
+        }
+    }
+    function handleError(err: PromiseRejectionEvent) {
+        errors.push(err.reason);
+    }
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -33,5 +46,22 @@
 </nav>
 
 {@render children()}
+
+<svelte:window onerror={handleWindowError} onunhandledrejection={handleError} />
+
+{#if errors.length > 0}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        {#each errors as err (err)}
+            <div class="flex flex-col gap-2 rounded bg-neutral-500 p-4 text-red-800">
+                <b>{m.unexpectedErrorOccurred()}</b>
+                <b>{err.message}</b>
+                <button
+                    class="rounded bg-blue-800 px-3 py-1 text-white"
+                    onclick={() => errors.shift()}>{m.close()}</button
+                >
+            </div>
+        {/each}
+    </div>
+{/if}
 
 <footer><p class="fixed right-1 bottom-1.5">© Utrecht University (ICS).</p></footer>

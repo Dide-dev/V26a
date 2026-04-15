@@ -15,6 +15,8 @@
         type TreeData
     } from '$lib/backend/trees';
     import NodeViewer from '../NodeViewer.svelte';
+    import { goto } from '$app/navigation';
+    import { appLink } from '$lib';
 
     let treeData: TreeData = $state({
         title: '',
@@ -29,7 +31,7 @@
     });
 
     let loading = $state(true);
-    let error: Error | null = $state(null);
+
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
     let dropDown = $state(false);
@@ -38,38 +40,32 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            error = new Error('No tree id provided');
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            error = new Error('Invalid tree id');
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
-        tree = await getTreeWithCards(id).then(
-            (treeWithCards) => treeWithCards,
-            (e) => {
-                error = e;
-                return null;
-            }
-        );
+        tree = await getTreeWithCards(id);
 
-        if (tree) {
-            treeData = {
-                title: tree.data.title ?? '',
-                description: tree.data.description ?? '',
-                bookName: tree.data.bookName ?? '',
-                bookEdition: tree.data.bookEdition ?? '',
-                bookIsbn: tree.data.bookIsbn ?? '',
-                bookChapter: tree.data.bookChapter ?? '',
-                bookExercise: tree.data.bookExercise ?? '',
-                assignmentText: tree.data.assignmentText ?? '',
-                published: tree.data.published ?? false
-            };
-        }
+        treeData = {
+            title: tree.data.title ?? '',
+            description: tree.data.description ?? '',
+            bookName: tree.data.bookName ?? '',
+            bookEdition: tree.data.bookEdition ?? '',
+            bookIsbn: tree.data.bookIsbn ?? '',
+            bookChapter: tree.data.bookChapter ?? '',
+            bookExercise: tree.data.bookExercise ?? '',
+            assignmentText: tree.data.assignmentText ?? '',
+            published: tree.data.published ?? false
+        };
 
         loading = false;
     });
@@ -91,10 +87,8 @@
     }
 </script>
 
-{#if error == null && loading}
+{#if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
-{:else if error != null}
-    <p class="text-red-700" data-testid="error">{error}</p>
 {:else if tree}
     <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">

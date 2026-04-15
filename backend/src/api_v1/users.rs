@@ -4,16 +4,18 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::users::{add_user, get_user, update_user, user_id_exists};
+use crate::db::users::{add_user, get_user, update_user, user_email_exists, user_id_exists};
 use crate::db_structs::users::{AccountType, RegisterData, UserGetData, UserUpdateData};
 use crate::errors::ApiError;
-use crate::{Config, get_connection};
 
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<Config> {
@@ -23,14 +25,22 @@ pub fn users() -> Router<Config> {
         .route("/update/{user_id}", post(update_user_data))
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
+pub enum AddUserResponse {
+    /// Return body signaling the user has been successfully added with the contained `user_id`.
+    Success { user_id: i32 },
+    /// Return body signaling the user could not be added, as the e-mail was already in use.
+    EmailAlreadyUsed,
+}
+
 #[utoipa::path(
     post,
     path = "/add-new-user",
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
-        (status = 200, description = "Successfully registered user with the returned id.", body = i32, content_type = "application/json"),
-        (status = 400, description = ApiError::EmailAlreadyUsed.to_string()),
+        (status = 200, description = "Successfully registered user with the returned id.", body = AddUserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -45,18 +55,32 @@ pub fn users() -> Router<Config> {
 /// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
 /// # Returns
-/// The id assigned to the new user.
+/// [`Success`](AddUserResponse::Success) with the id assigned to the new user
+/// if the email has not yet been used, or [`EmailAlreadyUsed`](AddUserResponse::EmailAlreadyUsed) otherwise.
 ///
 /// # Errors
-/// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
-///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
-) -> Result<Json<i32>, ApiError> {
-    add_user(get_connection!(db), &user_data).await.map(Json)
+) -> Result<Json<AddUserResponse>, ApiError> {
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let exists = user_email_exists(&mut *transaction, &user_data.email).await?;
+
+    if exists {
+        return Ok(Json(AddUserResponse::EmailAlreadyUsed));
+    }
+
+    let user_id = add_user(&mut transaction, &user_data).await?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(Json(AddUserResponse::Success { user_id }))
 }
 
 #[utoipa::path(
