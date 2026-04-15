@@ -21,7 +21,7 @@
         type CardId
     } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
-    import {htmlFromMarkdown} from "$lib/markdown";
+    import { htmlFromMarkdown } from "$lib/markdown";
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {

@@ -1,25 +1,17 @@
-import rehypeParse from 'rehype-parse';
-import rehypeRemark from 'rehype-remark';
-import remarkGfm from 'remark-gfm';
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
 import remarkHtml from 'remark-html';
 import remarkParse from 'remark-parse';
-import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
-export function markdownFromHTML(html: string): string {
-    return unified()
-        .use(rehypeParse)
-        .use(rehypeRemark)
-        .use(remarkGfm)
-        .use(remarkStringify)
-        .processSync(html)
-        .toString();
-}
 export function htmlFromMarkdown(markdown: string): string {
     return unified()
-        .use(remarkParse)
-        .use(remarkGfm)
-        .use(remarkHtml)
-        .processSync(markdown)
-        .toString();
+            .use(remarkParse)
+            .use(remarkHtml)
+            .processSync(markdown)
+            .toString()
+    ;
 }
