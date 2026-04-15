@@ -31,6 +31,15 @@ export type RegisterData = {
     language: string;
 };
 
+export type AddUserSuccess = {
+    type: 'Success';
+    userId: UserId;
+};
+
+export type AddUserEmailInvalid = {
+    type: 'EmailAlreadyUsed';
+};
+
 /** The data of the user that is returned when requesting it */
 export type UserGetData = {
     email: string;
@@ -67,7 +76,7 @@ export type UserInfo = {
 };
 
 /** Add a user to the database */
-export function addUser(user: RegisterData): Promise<UserId> {
+export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid> {
     return apiCallPostUser('add', user);
 }
 
@@ -77,7 +86,7 @@ export function getOwnUserData(): Promise<UserGetData> {
 }
 
 /** Update a user's data */
-export function updateUser(userId: UserId, newData: UserUpdateData): Promise<UserGetData> {
+export function updateUser(userId: UserId, newData: UserUpdateData): Promise<void> {
     return apiCallPostUser(`update/${userId}`, newData);
 }
 

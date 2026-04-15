@@ -15,8 +15,6 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when an e-mail has already been used and cannot be used again.
-    EmailAlreadyUsed,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page number that exceeds the defined maximum.
@@ -34,8 +32,6 @@ pub enum ApiError {
     MissingUser(i32),
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
-    /// An error to return when a wrong e-mail or password is provided while trying to log in.
-    WrongCredentials,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -82,9 +78,6 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
-            ApiError::EmailAlreadyUsed => {
-                write!(f, "A user with this e-mail address already exists.")
-            }
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
             }
@@ -108,9 +101,6 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
-            ApiError::WrongCredentials => {
-                write!(f, "The e-mail or password provided was incorrect.")
-            }
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -148,16 +138,14 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed
-            | ApiError::InvalidPage
+            ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
             | ApiError::MissingCard(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
-            | ApiError::NonEmptyStructure
-            | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession

@@ -9,21 +9,37 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
+    import { page } from '$app/state';
 
     let loginData: LoginData = $state({
         email: '',
         password: ''
     });
-    let error: null | Error = $state(null);
+    let loginFailed: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        try {
-            await login(loginData);
-            // TODO: this should redirect to the previous page after login.
-            goto(appLink('/'));
-        } catch (e) {
-            error = e as Error;
+        let response = await login(loginData);
+
+        if (!response.succeeded) {
+            loginFailed = true;
+            return;
+        }
+
+        loginFailed = false;
+
+        // Redirect to given url if valid
+        let redirectUrl = page.url.searchParams.get('redirect');
+        if (!redirectUrl) {
+            await goto(appLink('/'));
+            return;
+        }
+
+        // redirect_url should be just a relative path, not a complete url
+        if (!URL.canParse(redirectUrl)) {
+            await goto(appLink(redirectUrl));
+        } else {
+            await goto(appLink('/'));
         }
     }
 </script>
@@ -53,6 +69,8 @@
             />
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.login()}</button>
-        <p class="text-red-600">{error?.message}</p>
+        {#if loginFailed}
+            <p class="text-red-600">{m.invalidCredentials()}</p>
+        {/if}
     </form>
 </div>

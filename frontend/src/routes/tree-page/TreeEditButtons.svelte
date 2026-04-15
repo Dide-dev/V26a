@@ -124,29 +124,21 @@
             return;
         }
 
-        addCard(card)
-            .then((cardId: CardId) => {
-                const newNode: Node = { cardId, children: [] };
-                tree.cards[cardId] = {
-                    front: card.front,
-                    back: card.back
-                };
-                parent.children.push(newNode);
-                let update: TreeUpdateStructureData = {
-                    id: tree.genData.id,
-                    newStructure: tree.structure
-                };
-                return updateTreeStructure(update);
-            })
+        const cardId: CardId = await addCard(card);
 
-            .then(() => {
-                reset();
-            })
+        const newNode: Node = { cardId, children: [] };
+        tree.cards[cardId] = {
+            front: card.front,
+            back: card.back
+        };
+        parent.children.push(newNode);
+        let update: TreeUpdateStructureData = {
+            id: tree.genData.id,
+            newStructure: tree.structure
+        };
+        await updateTreeStructure(update);
 
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
+        reset();
     }
 
     /** Removes a node, adding all of its children to its parent
@@ -164,15 +156,9 @@
             newStructure: tree.structure
         };
 
-        removeCardFromTree(remove)
-            .then(() => {
-                reset();
-            })
+        await removeCardFromTree(remove);
 
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
+        reset();
     }
 
     /** Edits a node
@@ -190,19 +176,13 @@
             return;
         }
 
-        updateCard(update)
-            .then(() => {
-                tree.cards[update.cardId] = {
-                    front: update.newFront,
-                    back: update.newBack
-                };
-                reset();
-            })
+        await updateCard(update);
 
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
+        tree.cards[update.cardId] = {
+            front: update.newFront,
+            back: update.newBack
+        };
+        reset();
     }
 
     /** Inserts a new child between two nodes
@@ -221,29 +201,21 @@
             return;
         }
 
-        addCard(card)
-            .then((cardId: CardId) => {
-                const newNode: Node = { cardId, children: [child] };
-                tree.cards[cardId] = {
-                    front: card.front,
-                    back: card.back
-                };
-                parent.children = parent.children.map((c) => (c === child ? newNode : c)) as Node[];
-                let update: TreeUpdateStructureData = {
-                    id: tree.genData.id,
-                    newStructure: tree.structure
-                };
-                return updateTreeStructure(update);
-            })
+        const cardId: CardId = await addCard(card);
 
-            .then(() => {
-                reset();
-            })
+        const newNode: Node = { cardId, children: [child] };
+        tree.cards[cardId] = {
+            front: card.front,
+            back: card.back
+        };
+        parent.children = parent.children.map((c) => (c === child ? newNode : c)) as Node[];
+        let update: TreeUpdateStructureData = {
+            id: tree.genData.id,
+            newStructure: tree.structure
+        };
+        await updateTreeStructure(update);
 
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
+        reset();
     }
 
     /** Reset function to clear the popup */
@@ -251,6 +223,7 @@
         action = null;
         frontText = '';
         backText = '';
+        errorMessage = '';
     }
 </script>
 

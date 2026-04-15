@@ -119,7 +119,7 @@ export type TreeRemoveCardData = {
 
 export type TreeListResponse = {
     totalTrees: number;
-    list: TreeMetadata[];
+    trees: TreeMetadata[];
 };
 
 export type PaginationOptions = {

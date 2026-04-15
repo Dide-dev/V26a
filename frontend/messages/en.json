@@ -44,6 +44,10 @@
     "loadingTree": "The tree is growing...",
     "repeatPassword": "Repeat password",
     "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
+    "emailAlreadyExists": "An account with this email already exists",
+    "unexpectedErrorOccurred": "An unexpected error occurred :(",
+    "close": "Close",
+    "invalidCredentials": "Email or password is invalid. Please try again.",
     "passwordsNotTheSame": "Passwords are not the same",
     "profile": "Profile",
     "confirmChanges": "Confirm changes",
@@ -51,5 +55,8 @@
     "add": "Add",
     "myTrees": "My forest",
     "trees": "Forest",
-    "credits": "Credits"
+    "credits": "Credits",
+    "timesVisited": "Times visited",
+    "createdAt": "Created at",
+    "book": "Book"
 }
