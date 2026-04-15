@@ -20,12 +20,13 @@ work, and example inputs.
 - [ ] Unit/component tests have been written where relevant
 - [ ] Integration tests have been written where relevant
 - [ ] Code has been commented and relevant public functions/types are documented
+- [ ] `utoipa` API-documentation has been added or updated for API-endpoints
 - [ ] Files have a UU copyright comment at the top, and a copyright notice on the GUI if applicable
 - [ ] Frontend is correctly formatted and does not produce TS errors or eslint warnings (run `npx prettier -w .`,
-  `npm run check` and `npm run lint`)
+      `npm run check` and `npm run lint`)
 - [ ] Frontend has no failing tests (run `npm run test` and `npx playwright test`)
-- [ ] Backend is correctly formatted and does not produce clippy warnings (run `cargo fmt` and
-  `cargo clippy --all-targets`)
+- [ ] Backend is correctly formatted and does not produce clippy warnings (run `cargo fmt`,
+      `cargo clippy --all-targets`, and `cargo doc --no-deps`)
 - [ ] Backend has no failing tests (run `cargo test`)
 - [ ] Backend sqlx queries are up-to-date (`cargo sqlx prepare` has been run if necessary)
 - [ ] Branch is up-to-date with main
