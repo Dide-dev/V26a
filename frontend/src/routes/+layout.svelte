@@ -7,10 +7,12 @@
 <script lang="ts">
     import { page } from '$app/state';
     import { appLink } from '$lib';
-    import { locales, localizeHref } from '$lib/paraglide/runtime';
+    import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime';
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import { m } from '$lib/paraglide/messages.js';
+    import LanguageDropdown from './LanguageDropdown.svelte';
+    import { url } from 'inspector';
 
     let { children } = $props();
 
@@ -30,19 +32,20 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav
-    class="m-1 flex justify-end gap-2 bg-sky-400 p-1 *:rounded-sm *:border-zinc-900 *:bg-sky-600 *:p-1"
->
-    <a href={appLink('/')}>{m.home()}</a>
-    <a href={appLink('/tree-generator')}>{m.createTree()}</a>
-    <a href={appLink('/registration')}>{m.register()}</a>
-    <a href={appLink('/login')}>{m.login()}</a>
-    {#each locales as locale (locale)}
-        <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
-        <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
-            {locale}
-        </a>
-    {/each}
+<nav class="flex mb-1 *:text-center *:via-tree-600 *:min-w-50 *:p-2 *:pr-4 *:pl-4 *:bg-linear-to-r *:from-tree-600 *:to-tree-625 text-neutral-100 *:hover:text-white [&>a]:hover:from-tree-450 [&>a]:hover:via-tree-450 [&>a]:hover:to-tree-450 w-100vw justify-between ">
+    <a class="peer/1" href={appLink('/')}>{m.home()}</a>
+    <a class="peer/2 peer-hover/1:from-tree-625" href={appLink('/tree-generator')}>{m.createTree()}</a>
+    <div class="flex-auto peer-hover/2:from-tree-625"></div>
+    <a class="peer/3" href={appLink('/registration')}>{m.register()}</a>
+    <a class="peer/4 peer-hover/3:from-tree-625"href={appLink('/login')}>{m.login()}</a>
+    <div class="peer/parent peer-hover/4:from-tree-625">
+        <a href = {localizeHref(page.url.href)}>{getLocale()}</a>
+        {#each locales.filter((l) => l !== getLocale()) as locale (locale)}
+            <a class="hidden peer-hover/parent:visible" href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
+                {locale}
+            </a>
+        {/each}
+    </div>
 </nav>
 
 {@render children()}
