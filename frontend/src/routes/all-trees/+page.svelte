@@ -15,6 +15,9 @@
     import { appLink } from '$lib/index';
     import { onMount } from 'svelte';
 
+    // nl-NL and en-GB behave in the same way; we will not support American time notation.
+    const timeFormat = new Intl.DateTimeFormat('nl-NL');
+
     let pageSize = $state(5);
     let thisPage = $state(1);
     let filterOptions: FilterOptions = $state({
@@ -32,6 +35,11 @@
     let treeListResponse: null | TreeListResponse = $state(null);
     let trees: null | TreeMetadata[] = $state(null);
 
+    let prevPageExists = $derived(thisPage > 1);
+    let nextPageExists = $derived(
+        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSize)
+    );
+
     onMount(async () => {
         await loadTrees();
     });
@@ -42,24 +50,20 @@
     }
 
     function prevPage() {
-        if (thisPage > 1) {
-            thisPage -= 1;
-            loadTrees();
-        }
+        thisPage -= 1;
+        loadTrees();
     }
 
-    function nextPage(totalPages: number) {
-        if (thisPage < totalPages) {
-            thisPage += 1;
-            loadTrees();
-        }
+    function nextPage() {
+        thisPage += 1;
+        loadTrees();
     }
 
     function calcTotalPages(totalTrees: number, pageSize: number): number {
         return Math.ceil(totalTrees / pageSize);
     }
 
-    function checkIfNull(treeListResponse: TreeListResponse | null): number {
+    function showTreeCount(treeListResponse: TreeListResponse | null): number {
         if (treeListResponse == null) {
             return 0;
         } else {
@@ -67,7 +71,7 @@
         }
     }
 
-    function checkIfHasBook(bookName: string | null): string {
+    function showBookName(bookName: string | null): string {
         if (bookName == '') {
             return '-';
         } else if (bookName == null) {
@@ -93,37 +97,40 @@
                     <th class="text-left">{m.book()}</th>
                     <th class="text-left">{m.timesVisited()}</th>
                     <th class="text-left">{m.createdAt()}</th>
-                    <!-- Edit button -->
-                    <th class="text-left"></th>
                 </tr>
             </thead>
             <tbody>
                 {#each trees as tree (tree.genData.id)}
                     <tr>
-                        <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
+                        <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
                                 href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
                                 target="_blank">{tree.data.title}</a
                             >
                         </td>
-                        <td class="pr-4">{checkIfHasBook(tree.data.bookName)}</td>
+                        <td class="pr-4 wrap-anywhere">{showBookName(tree.data.bookName)}</td>
                         <td class="pr-4">{tree.genData.timesVisited}</td>
                         <td class="pr-4">
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy -->
-                            {new Date(tree.genData.createdAt).getDate()}-{new Date(
-                                tree.genData.createdAt
-                            ).getMonth() + 1}-{new Date(tree.genData.createdAt).getFullYear()}
+                            {timeFormat.format(new Date(tree.genData.createdAt))}
                         </td>
                     </tr>
                 {/each}
             </tbody>
         </table>
         <div class="fixed bottom-2 left-1/2 -translate-x-1/2">
-            <button onclick={prevPage} class="mx-5">Prev</button>
-            {thisPage}/{calcTotalPages(checkIfNull(treeListResponse), pageSize)}
             <button
-                onclick={() => nextPage(calcTotalPages(checkIfNull(treeListResponse), pageSize))}
-                class="mx-5">Next</button
+                onclick={prevPage}
+                disabled={!prevPageExists}
+                class="mx-5"
+                class:cursor-pointer={prevPageExists}>Prev</button
+            >
+            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSize)}
+            <button
+                onclick={nextPage}
+                disabled={!nextPageExists}
+                class="mx-5"
+                class:cursor-pointer={nextPageExists}>Next</button
             >
         </div>
     </div>

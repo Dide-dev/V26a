@@ -50,7 +50,7 @@
             <tbody>
                 {#each trees as tree (tree.genData.id)}
                     <tr>
-                        <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
+                        <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
                                 href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
                                 target="_blank">{tree.data.title}</a
