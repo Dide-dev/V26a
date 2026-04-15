@@ -31,15 +31,15 @@
         // Redirect to given url if valid
         let redirectUrl = page.url.searchParams.get('redirect');
         if (!redirectUrl) {
-            goto(appLink('/'));
+            await goto(appLink('/'));
             return;
         }
 
         // redirect_url should be just a relative path, not a complete url
         if (!URL.canParse(redirectUrl)) {
-            goto(appLink(redirectUrl));
+            await goto(appLink(redirectUrl));
         } else {
-            goto(appLink('/'));
+            await goto(appLink('/'));
         }
     }
 </script>
