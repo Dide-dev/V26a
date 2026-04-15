@@ -52,5 +52,8 @@
     "profile": "Profile",
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
-    "add": "Add"
+    "add": "Add",
+    "timesVisited": "Times visited",
+    "createdAt": "Created at",
+    "book": "Book"
 }
