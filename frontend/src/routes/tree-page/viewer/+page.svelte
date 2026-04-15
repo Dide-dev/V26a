@@ -49,9 +49,9 @@
         {tree.data.description}
     </p>
 
-    <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
+    <div class="mt-1 mr-1 ml-1 flex grow flex-col overflow-auto">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree parent={root} node={root} editingPage={false} />
+            <NodeViewer bind:tree parent={root} node={root} editingPage={false} dragState={null} />
         {/each}
     </div>
 {/if}

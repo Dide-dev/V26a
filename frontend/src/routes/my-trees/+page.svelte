@@ -7,7 +7,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import { getUsersOwnTrees, type TreeMetadata } from '$lib/backend/trees';
-    import editIcon from '$lib/assets/editIcon.svg?raw';
+    import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
@@ -68,7 +68,7 @@
                                 aria-label="edit"
                             >
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html editIcon}
+                                {@html iconEdit}
                             </a>
                         </td>
                         <td class="min-w-2 hover:fill-blue-800">
