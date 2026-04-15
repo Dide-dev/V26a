@@ -6,8 +6,11 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::users::{add_user, get_user, update_user, user_email_exists, user_id_exists};
-use crate::db_structs::users::{AccountType, RegisterData, UserGetData, UserUpdateData};
+use crate::db::auth::get_user_credentials;
+use crate::db::users::{add_user, get_user, update_password, update_user, user_id_exists};
+use crate::db_structs::users::{
+    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserUpdateData,
+};
 use crate::errors::ApiError;
 
 use axum::extract::Path;
@@ -23,15 +26,7 @@ pub fn users() -> Router<Config> {
         .route("/add", post(add_new_user))
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(tag = "type")]
-pub enum AddUserResponse {
-    /// Return body signaling the user has been successfully added with the contained `user_id`.
-    Success { user_id: i32 },
-    /// Return body signaling the user could not be added, as the e-mail was already in use.
-    EmailAlreadyUsed,
+        .route("/change-password", post(change_password))
 }
 
 #[utoipa::path(
@@ -44,9 +39,6 @@ pub enum AddUserResponse {
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
-    ),
-    params(
-        ("session" = Claims, Cookie),
     )
 )]
 /// Add a user to the database.
@@ -118,11 +110,11 @@ async fn get_own_user_data(
 
 #[utoipa::path(
     post,
-    path = "/update/{user_id}",
+    path = "/change-password",
     context_path = "/api/v1/users",
     request_body = UserUpdateData,
     responses(
-        (status = 200, description = "User data successfully updated."),
+        (status = 200, description = "Password successfully changes."),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -179,4 +171,61 @@ async fn update_user_data(
     }
 
     update_user(&db, user_id, &new_data).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/update/{user_id}",
+    context_path = "/api/v1/users",
+    request_body = PasswordChangeRequestBody,
+    responses(
+        (status = 200, description = "User data successfully updated."),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 400, description = ApiError::WrongCredentials.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status= 500, description = ApiError::HashException.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Changes a password in the database.
+///
+/// # Arguments
+/// `old_password` - The user's old password.
+///
+/// `new_password` - The new password.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if the given password does not match the correct password.
+///
+/// May return a [`HashException`](ApiError::HashException) or
+/// [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn change_password(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(password_change_request): Json<PasswordChangeRequestBody>,
+) -> Result<(), ApiError> {
+    let credentials = get_user_credentials(&db, password_change_request.email).await?;
+    let password_valid = bcrypt::verify(
+        password_change_request.old_password,
+        credentials.password_hash.as_str(),
+    )
+    .map_err(|_| ApiError::HashException)?;
+
+    if !password_valid {
+        return Err(ApiError::WrongCredentials);
+    }
+
+    update_password(
+        get_connection!(db),
+        claims.sub,
+        password_change_request.new_password,
+    ).await?;
+
+    Ok(())
 }

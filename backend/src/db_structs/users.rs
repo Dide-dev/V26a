@@ -8,6 +8,7 @@ use crate::errors::ApiError;
 use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
+use serde::{Deserialize, Serialize};
 
 /// Data needed to add a user to the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
@@ -48,6 +49,15 @@ pub struct UserUpdateData {
     pub account_type: Option<AccountType>,
     /// This field may only be updated by admins.
     pub enabled: Option<bool>,
+}
+
+/// The body for a passwordchange request that contains the email address, the old password, and the new password.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PasswordChangeRequestBody {
+    pub email: String,
+    pub old_password: String,
+    pub new_password: String,
 }
 
 /// The possible values of the `language` field of a user.
