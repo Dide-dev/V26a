@@ -185,7 +185,7 @@ async fn update_user_data(
 /// Return body, where the `succeeded`-field signals whether the request was successful.
 /// - If the flag is `false`, the wrong credentials were passed.
 /// - If the flag is `true`, the right credentials were passed and the password change was successful.
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ChangePasswordResponse {
     pub succeeded: bool,
 }
