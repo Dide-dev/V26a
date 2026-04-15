@@ -15,8 +15,6 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when an e-mail has already been used and cannot be used again.
-    EmailAlreadyUsed,
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
     /// An error to return when the user requests a page that doesn't exist.
@@ -38,8 +36,6 @@ pub enum ApiError {
     NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
-    /// An error to return when a wrong e-mail or password is provided while trying to log in.
-    WrongCredentials,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -92,9 +88,6 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
-            ApiError::EmailAlreadyUsed => {
-                write!(f, "A user with this e-mail address already exists.")
-            }
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
             }
@@ -124,9 +117,6 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
-            ApiError::WrongCredentials => {
-                write!(f, "The e-mail or password provided was incorrect.")
-            }
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -179,8 +169,7 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed
-            | ApiError::InvalidImageType
+            ApiError::InvalidImageType
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
@@ -189,8 +178,7 @@ impl ApiError {
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
             | ApiError::NoImageBodyProvidedException
-            | ApiError::NonEmptyStructure
-            | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession

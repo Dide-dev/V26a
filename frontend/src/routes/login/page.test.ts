@@ -5,7 +5,7 @@
 */
 
 import { render, screen } from '@testing-library/svelte';
-import { test, vi, afterEach, expect } from 'vitest';
+import { test, vi, afterEach, expect, type MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
@@ -89,6 +89,8 @@ test('No submission when e-mail contains a invalid special character other than 
 });
 
 test('Submission with valid e-mail', async () => {
+    (login as MockedFunction<typeof login>).mockResolvedValue({ succeeded: true });
+
     const user = userEvent.setup();
     render(page);
 

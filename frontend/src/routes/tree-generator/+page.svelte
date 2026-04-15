@@ -9,6 +9,18 @@
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
     import { addTree, type TreeData } from '$lib/backend/trees';
+    import { onMount } from 'svelte';
+    import { getUserInfo } from '$lib/backend/users';
+    import { redirectLogin } from '$lib/backend';
+    import { page } from '$app/state';
+
+    onMount(async () => {
+        const userInfo = getUserInfo();
+        if (userInfo === null) {
+            await redirectLogin(page.url);
+            return;
+        }
+    });
 
     let treeData: TreeData = $state({
         title: '',
@@ -22,18 +34,11 @@
         published: false
     });
 
-    let error: null | Error = $state(null);
-
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        try {
-            const treeId = await addTree(treeData);
-            console.log('Tree created with ID:', treeId);
-            goto(appLink(`/tree-page/editor?id=${treeId}`));
-        } catch (e) {
-            error = e as Error;
-            console.error('Failed to create tree:', e);
-        }
+
+        const treeId = await addTree(treeData);
+        await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
 </script>
 
@@ -135,6 +140,5 @@
             />
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.createTree()}</button>
-        <p class="text-red-600">{error?.message}</p>
     </form>
 </div>

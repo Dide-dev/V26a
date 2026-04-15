@@ -22,22 +22,10 @@ use std::str::FromStr;
 /// The id assigned to the new user.
 ///
 /// # Errors
-/// Returns [`EmailAlreadyUsed`](ApiError::EmailAlreadyUsed) if the email was already used in the database.
-///
 /// May return a [`HashException`](ApiError::HashException) instead.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result<i32, ApiError> {
-    // Check if email already exists. This check is not strictly necessary, as a `UNIQUE`
-    // constraint is placed on the `email` field.
-    // In case of two concurrent requests with same e-mail, a `ApiError::DatabaseException`
-    // will be returned instead of an `ApiError::EmailAlreadyUsed`.
-    let exists = user_email_exists(&mut *db, &user_data.email).await?;
-
-    if exists {
-        return Err(ApiError::EmailAlreadyUsed);
-    }
-
     // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
     // Put a limit on password length.
     let hashed_password =
@@ -381,13 +369,17 @@ mod tests {
         initialize_user(get_connection_unwrap!(db), &register_data).await;
 
         // Assert user has the default account type.
-        let account_type = get_user_credentials(&db, email).await.unwrap().account_type;
+        let account_type = get_user_credentials(&db, email)
+            .await
+            .unwrap()
+            .unwrap()
+            .account_type;
         assert_eq!(account_type, AccountType::Author);
     }
 
     #[sqlx::test]
     async fn test_get_user_account_type_not_found(db: PgPool) {
         let result = get_user_credentials(&db, "abc@localhost".to_owned()).await;
-        assert_eq!(result.unwrap_err(), ApiError::WrongCredentials);
+        assert!(result.unwrap().is_none());
     }
 }
