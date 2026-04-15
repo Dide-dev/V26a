@@ -19,7 +19,7 @@ export async function apiCallGet(path: string) {
         headers: { Accept: 'application/json' }
     });
 
-    if (await handleIfError(response)) {
+    if (!(await checkResponse(response))) {
         return;
     }
 
@@ -34,7 +34,7 @@ export async function apiCallDelete(path: string) {
         headers: { Accept: 'application/json' }
     });
 
-    if (await handleIfError(response)) {
+    if (!(await checkResponse(response))) {
         return;
     }
 
@@ -53,7 +53,7 @@ export async function apiCallPost(path: string, body: unknown) {
         body: JSON.stringify(body)
     });
 
-    if (await handleIfError(response)) {
+    if (!(await checkResponse(response))) {
         return;
     }
 
@@ -65,19 +65,20 @@ export async function apiCallPost(path: string, body: unknown) {
     }
 }
 
-/** Check if the response is an error and handle it in a proper way.
- * Returns true if the response is really an error, otherwise false. */
-async function handleIfError(response: Response): Promise<boolean> {
+/** Check if the response is successful and handle any errors in a proper way.
+ *
+ * @return `false` if the response is an error, otherwise `true`. */
+async function checkResponse(response: Response): Promise<boolean> {
     // Redirect to login page when user is not logged in while that is needed to perform action
     if (response.status === 401) {
         await redirectLogin(page.url);
-        return true;
+        return false;
     }
 
     if (!response.ok) {
         throw new Error(await response.text());
     }
-    return false;
+    return true;
 }
 
 /** Go to the login page with a redirect to the given url when successfully logged in. */
