@@ -52,7 +52,7 @@
 {#if errors.length > 0}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
         {#each errors as err (err)}
-            <div class="text- flex flex-col gap-2 rounded bg-neutral-500 p-4 text-red-800">
+            <div class="flex flex-col gap-2 rounded bg-neutral-500 p-4 text-red-800">
                 <b>{m.unexpectedErrorOccurred()}</b>
                 <b>{err.message}</b>
                 <button
