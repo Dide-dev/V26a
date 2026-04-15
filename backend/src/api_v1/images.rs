@@ -25,6 +25,33 @@ pub fn images() -> Router<Config> {
     Router::new().route("/add", post(add_new_image))
 }
 
+#[utoipa::path(
+    post,
+    path = "add",
+    context_path = "/api/v1/images",
+    request_body(
+        content(
+            ("image/png"),
+            ("image/jpeg"),
+            ("image/apng"),
+            ("image/avif"),
+            ("image/gif"),
+            ("image/svg+xml"),
+            ("image/webp"),
+        ),
+    ),
+    responses(
+        (status = 200, description = "Image successfully added"),
+        (status = 400, description = ApiError::NoImageBodyProvidedException.to_string()),
+        (status = 400, description = ApiError::InvalidImageType.to_string()),
+        (status = 500, description = ApiError::CreateDirException.to_string()),
+        (status = 500, description = ApiError::FileWriteException.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Add an image to the database.
 ///
 /// # Returns
