@@ -8,6 +8,7 @@
 
 mod cards;
 mod images;
+mod feedback;
 mod trees;
 mod users;
 
