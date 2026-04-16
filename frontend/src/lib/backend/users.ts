@@ -17,10 +17,6 @@ function apiCallGetUser(path: string) {
     return apiCallGet(prefix + path);
 }
 
-function apiCallChangePassword(path: string, body: ChangePasswordData) {
-    return apiCallPost(prefix + path, body);
-}
-
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
 
@@ -118,5 +114,5 @@ export function getUserInfo(): UserInfo | null {
 
 /** Change a user's password */
 export function changePassword(changePasswordData: ChangePasswordData) {
-    return apiCallChangePassword('change-password', changePasswordData);
+    return apiCallPostUser('change-password', changePasswordData);
 }

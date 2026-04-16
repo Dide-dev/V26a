@@ -6,7 +6,7 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_credentials;
+use crate::db::auth::get_user_credentials_with_id;
 use crate::db::users::{
     add_user, get_user, update_password, update_user, user_email_exists, user_id_exists,
 };
@@ -198,8 +198,7 @@ pub struct ChangePasswordResponse {
     context_path = "/api/v1/users",
     request_body = PasswordChangeRequestBody,
     responses(
-        (status = 200, description = "Password changed successfully."),
-        (status= 500, description = ApiError::HashException.to_string()),
+        (status = 200, description = "Password changing attempt has been finalized.", body = ChangePasswordResponse),
         (status = 500, description = "Internal server error.")
     ),
     params(
@@ -209,7 +208,7 @@ pub struct ChangePasswordResponse {
 /// Changes a password in the database.
 ///
 /// # Arguments
-/// `password_change_request` - A struct containing the user's email, old password and the new password.
+/// `password_change_request` - A struct containing the user's old password and the new password.
 ///
 /// # Returns
 /// Nothing.
@@ -223,9 +222,9 @@ async fn change_password(
     Extension(db): Extension<PgPool>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
-    let Some(credentials) = get_user_credentials(&db, password_change_request.email).await? else {
-        return Ok(Json(ChangePasswordResponse { succeeded: false }));
-    };
+    let credentials = get_user_credentials_with_id(&db, claims.sub)
+        .await?
+        .ok_or(ApiError::DatabaseException)?;
 
     let password_valid = bcrypt::verify(
         password_change_request.old_password,
@@ -237,7 +236,7 @@ async fn change_password(
         return Ok(Json(ChangePasswordResponse { succeeded: false }));
     }
 
-    update_password(&db, claims.sub, password_change_request.new_password).await?;
+    update_password(&db, claims.sub, &password_change_request.new_password).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }

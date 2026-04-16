@@ -169,9 +169,9 @@ pub async fn update_user(
 /// Updates a user's password in the database.
 ///
 /// # Arguments
-/// `db` - A connection to a Postgres database.
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `id` - User id.
+/// `user_id` - The user whose password should be updated.
 ///
 /// `new_password`- The new password.
 ///
@@ -179,22 +179,20 @@ pub async fn update_user(
 /// Nothing.
 ///
 /// # Errors
-/// /// May return a [`HashException`](ApiError::HashException) instead.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`HashException`](ApiError::HashException) or a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_password(
     db: impl PgExecutor<'_>,
-    id: i32,
-    new_password: String,
+    user_id: i32,
+    new_password: &str,
 ) -> Result<(), ApiError> {
     // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
     // Put a limit on password length.
-    let hashed_password = hash(&new_password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
+    let hashed_password = hash(new_password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
 
     query!(
         "UPDATE users SET password_hash = $1 WHERE id = $2",
         hashed_password,
-        id,
+        user_id,
     )
     .execute(db)
     .await

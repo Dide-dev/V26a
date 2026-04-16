@@ -55,7 +55,6 @@ pub struct UserUpdateData {
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PasswordChangeRequestBody {
-    pub email: String,
     pub old_password: String,
     pub new_password: String,
 }

@@ -187,7 +187,6 @@ async fn test_successful_password_change(db: PgPool) {
     let response = server
         .post("/users/change-password")
         .json(&PasswordChangeRequestBody {
-            email: email.to_owned(),
             old_password: "a$$word".to_string(),
             new_password: "Pa$$word".to_string(),
         })
@@ -215,13 +214,12 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
     let email = "test@test.nl";
 
-    register(&server, "test@test.com".to_owned()).await;
-    login(&server, "test@test.com".to_owned()).await;
+    register(&server, email.to_owned()).await;
+    login(&server, email.to_owned()).await;
 
     let response = server
         .post("/users/change-password")
         .json(&PasswordChangeRequestBody {
-            email: email.to_owned(),
             old_password: "Pa$$word".to_string(),
             new_password: "a$$word".to_string(),
         })
