@@ -58,7 +58,7 @@ pub fn images() -> Router<Config> {
 /// `claims` - The session cookie of the user.
 ///
 /// `body` - The uploaded image as [`Bytes`].
-/// 
+///
 /// # Returns
 /// A permanent URL on which the image can be found.
 ///
