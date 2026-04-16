@@ -60,3 +60,14 @@ CREATE TABLE cards
     back            VARCHAR(5000) NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree deletes its cards
 );
+
+CREATE TABLE feedback
+(
+    id              SERIAL PRIMARY KEY,
+    email           CITEXT,
+    positive_feedback   TEXT,
+    negative_feedback   TEXT,
+    additional               TEXT,
+    grade             INTEGER,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
