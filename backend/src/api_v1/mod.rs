@@ -7,12 +7,13 @@
 pub mod auth;
 pub mod cards;
 pub mod images;
+pub mod feedback;
 pub mod session;
 pub mod trees;
 pub mod users;
 
 use crate::Config;
-use crate::api_v1::{cards::cards, images::images, trees::trees, users::users};
+use crate::api_v1::{cards::cards, feedback::feedback, images::images, trees::trees, users::users};
 use auth::auth;
 use axum::Router;
 
@@ -24,4 +25,5 @@ pub fn v1_api() -> Router<Config> {
         .nest("/cards", cards())
         .nest("/users", users())
         .nest("/images", images())
+        .nest("/feedback", feedback())
 }

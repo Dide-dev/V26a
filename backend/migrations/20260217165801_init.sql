@@ -68,3 +68,13 @@ CREATE TABLE images
     filename TEXT        NOT NULL UNIQUE,
     added_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE feedback
+(
+    id                  SERIAL PRIMARY KEY,
+    email               CITEXT,
+    positive_feedback   TEXT,
+    negative_feedback   TEXT,
+    additional          TEXT,
+    grade               INTEGER,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
