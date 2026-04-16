@@ -198,7 +198,9 @@
             <TreeEditButtons bind:tree bind:parent bind:node bind:dragState />
         {/if}
         <div class="flex flex-col">
-            <CardViewer {tree} {node} {parentIsVisible} bind:visible {editingPage} />
+            <div class="shrink-0">
+                <CardViewer {tree} {node} {parentIsVisible} bind:visible {editingPage} />
+            </div>
             {#if !editingPage}
                 <!--
                     The gap-5 on the children was removed, so that we can fill it with the add button.
