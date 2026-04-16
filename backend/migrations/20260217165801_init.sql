@@ -11,16 +11,16 @@ CREATE EXTENSION citext;
 CREATE TABLE users
 (
     id            SERIAL PRIMARY KEY,
-    email         CITEXT UNIQUE NOT NULL,               -- emails are case-insensitive
-    password_hash VARCHAR(255)  NOT NULL,               -- https://www.php.net/manual/en/function.password-hash.php
-    enabled       BOOLEAN       NOT NULL DEFAULT TRUE,  -- if set to false, this user cannot log in
-    name          VARCHAR(128)  NOT NULL,               -- current longest name in the database is 25 characters, might consider shortening this
-    nickname      VARCHAR(128)  NOT NULL DEFAULT '',  -- current longest is 31 characters
-    about_me      VARCHAR(160)  NOT NULL DEFAULT '',  -- current longest is 127 characters
+    email         CITEXT UNIQUE NOT NULL,                  -- emails are case-insensitive
+    password_hash VARCHAR(255)  NOT NULL,                  -- https://www.php.net/manual/en/function.password-hash.php
+    enabled       BOOLEAN       NOT NULL DEFAULT TRUE,     -- if set to false, this user cannot log in
+    name          VARCHAR(128)  NOT NULL,                  -- current longest name in the database is 25 characters, might consider shortening this
+    nickname      VARCHAR(128)  NOT NULL DEFAULT '',       -- current longest is 31 characters
+    about_me      VARCHAR(160)  NOT NULL DEFAULT '',       -- current longest is 127 characters
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    email_visible BOOLEAN       NOT NULL DEFAULT FALSE, -- default false because AVG (`emailvermelding` in prototype)
+    email_visible BOOLEAN       NOT NULL DEFAULT FALSE,    -- default false because AVG (`emailvermelding` in prototype)
     account_type  VARCHAR(32)   NOT NULL DEFAULT 'author', -- default is author
-    language      CHAR(2)       NOT NULL DEFAULT 'nl'   -- ISO 639-1
+    language      CHAR(2)       NOT NULL DEFAULT 'nl'      -- ISO 639-1
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
 
@@ -52,12 +52,12 @@ CREATE INDEX trees_filter_book_name ON trees (book_name);
 
 CREATE TABLE cards
 (
-    id              SERIAL PRIMARY KEY,
-    tree_id         INTEGER       NOT NULL,                               -- library cards will be their own table later(?), with foreign key to hints(id)
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_modified   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    front           VARCHAR(1024) NOT NULL DEFAULT '',                    -- a lot of cards currently are empty at the front, TODO: check if this is done because of bad design or if it is actually desired.
-    back            VARCHAR(5000) NOT NULL,
+    id            SERIAL PRIMARY KEY,
+    tree_id       INTEGER       NOT NULL,                         -- library cards will be their own table later(?), with foreign key to hints(id)
+    created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    front         VARCHAR(1024) NOT NULL DEFAULT '',              -- a lot of cards currently are empty at the front, TODO: check if this is done because of bad design or if it is actually desired.
+    back          VARCHAR(5000) NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE -- deleting a tree deletes its cards
 );
 
@@ -70,11 +70,11 @@ CREATE TABLE images
 );
 CREATE TABLE feedback
 (
-    id                  SERIAL PRIMARY KEY,
-    email               CITEXT,
-    positive_feedback   TEXT,
-    negative_feedback   TEXT,
-    additional          TEXT,
-    grade               INTEGER,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id                SERIAL PRIMARY KEY,
+    email             CITEXT,
+    positive_feedback TEXT,
+    negative_feedback TEXT,
+    additional        TEXT,
+    grade             INTEGER,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
