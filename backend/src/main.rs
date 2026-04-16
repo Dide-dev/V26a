@@ -104,6 +104,6 @@ async fn backend(config: Config) -> Router {
     Router::new()
         .nest("/v1", v1_api())
         .layer(Extension(db))
-        .layer(DefaultBodyLimit::max(10 * 1024 * 1024)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
+        .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)
 }
