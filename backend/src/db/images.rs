@@ -22,7 +22,7 @@ use sqlx::{PgExecutor, query};
 /// Nothing
 ///
 /// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return [`ImageAddFail`](ApiError::ImageAddFail) instead.
 pub async fn add_image(
     db: impl PgExecutor<'_>,
     file_name: &str,
@@ -31,16 +31,14 @@ pub async fn add_image(
 ) -> Result<(), ApiError> {
     query!(
         "INSERT INTO images (hash, owner_id, filename)
-        VALUES ($1, $2, $3)
-        RETURNING filename",
+        VALUES ($1, $2, $3)",
         hash,
         owner_id,
         file_name,
     )
-    .fetch_optional(db)
+    .execute(db)
     .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .ok_or(ApiError::ImageAddFail)?;
+    .map_err(|_| ApiError::ImageAddFail)?;
 
     Ok(())
 }
