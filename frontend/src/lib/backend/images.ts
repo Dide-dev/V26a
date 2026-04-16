@@ -4,23 +4,22 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+import { apiCallPostFile } from './index';
+
 const prefix = 'images/';
 
-async function apiCallAddImage(imageFile: File) {
-    const response = await fetch(`/api/v1/${prefix}add`, {
-        method: 'POST',
-        body: imageFile
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
-    }
-
-    return response.text();
+function apiCallPostImage(path: string, body: File) {
+    return apiCallPostFile(prefix + path, body);
 }
 
 /** Add an image to the database. Returns the path on which the image can be found. */
-export function uploadImage(imageFile: File): Promise<string> {
-    return apiCallAddImage(imageFile);
+export async function uploadImage(imageFile: File): Promise<string> {
+    const path = await apiCallPostImage('add', imageFile);
+
+    // This path should never be explored, but needs to be specified to remove undefined from the union type.
+    if (path === undefined) {
+        throw new Error('Image upload failed.');
+    }
+
+    return path;
 }
