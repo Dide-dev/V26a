@@ -16,6 +16,10 @@ pub struct Config {
     /// This duration is in _seconds_.
     pub session_duration: i64,
     pub jwt_keys: Keys,
+
+    /// Upload images directory
+    pub upload_dir: String,
+    pub max_upload_size: usize,
 }
 
 impl Config {
@@ -46,6 +50,12 @@ impl Config {
                 .expect("Environment variable JWT_SECRET must be set")
                 .as_bytes(),
         );
+        let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
+        let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
+            .unwrap_or("10".to_string())
+            .parse::<usize>()
+            .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
+            * 1_048_576; // Mebibytes to bytes
 
         Self {
             listening_ip,
@@ -54,6 +64,8 @@ impl Config {
             log_level,
             session_duration,
             jwt_keys,
+            upload_dir,
+            max_upload_size,
         }
     }
 }
