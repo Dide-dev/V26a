@@ -73,12 +73,12 @@ pub enum ApiError {
     HashException,
     /// An error to return when invalid data is found in the database.
     InvalidDataFound,
+    /// An error to be returned by `add_image` if adding the image to the database fails.
+    ImageAddFail,
     /// An exception to return when serde fails on something unexpected.
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
     TokenCreationException,
-    /// An error to be returned by `add_image` if adding the image to the database fails.
-    ImageAddFail,
 }
 
 // Define how errors should be converted to messages.
@@ -148,18 +148,18 @@ impl Display for ApiError {
                 )
             }
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
+            ApiError::ImageAddFail => {
+                write!(
+                    f,
+                    "Something went wrong while adding the image to the database"
+                )
+            }
             ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
             }
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
-            }
-            ApiError::ImageAddFail => {
-                write!(
-                    f,
-                    "Something went wrong while adding the image to the database"
-                )
             }
         }
     }
@@ -191,10 +191,10 @@ impl ApiError {
             | ApiError::DatabaseMemoryCap
             | ApiError::FileWriteException
             | ApiError::HashException
+            | ApiError::ImageAddFail
             | ApiError::InvalidDataFound
             | ApiError::SerdeException
-            | ApiError::TokenCreationException
-            | ApiError::ImageAddFail => StatusCode::INTERNAL_SERVER_ERROR,
+            | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

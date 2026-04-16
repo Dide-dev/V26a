@@ -27,7 +27,7 @@ pub fn images() -> Router<Config> {
 
 #[utoipa::path(
     post,
-    path = "add",
+    path = "/add",
     context_path = "/api/v1/images",
     request_body(
         content(
@@ -54,6 +54,11 @@ pub fn images() -> Router<Config> {
 )]
 /// Add an image to the database.
 ///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `body` - The uploaded image as [`Bytes`].
+/// 
 /// # Returns
 /// A permanent URL on which the image can be found.
 ///
