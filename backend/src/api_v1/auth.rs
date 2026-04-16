@@ -15,7 +15,7 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use jsonwebtoken::{Header, encode};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
@@ -27,7 +27,7 @@ pub fn auth() -> Router<Config> {
 /// Return body, where the `succeeded`-field signals whether the request was successful.
 /// - If the flag is `false`, the wrong credentials were passed.
 /// - If the flag is `true`, the login was successful, and both a `session` and `user_info` cookie have been created.
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginResponse {
     pub succeeded: bool,
 }

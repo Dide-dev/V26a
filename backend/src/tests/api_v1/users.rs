@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+use crate::api_v1::auth::LoginResponse;
 use crate::api_v1::users::{AddUserResponse, ChangePasswordResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
@@ -201,11 +202,14 @@ async fn test_successful_password_change(db: PgPool) {
         .post("/auth/login")
         .json(&LoginRequestBody {
             email: email.to_owned(),
-            password: "new_password".to_string(),
+            password: "Pa$$word".to_string(),
         })
         .await;
 
     response.assert_status_ok();
+
+    let login_body: LoginResponse = response.json();
+    assert!(login_body.succeeded);
 }
 
 #[sqlx::test]
@@ -217,6 +221,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     register(&server, email.to_owned()).await;
     login(&server, email.to_owned()).await;
 
+    // The default password set is `a$$word`, hence this request should fail.
     let response = server
         .post("/users/change-password")
         .json(&PasswordChangeRequestBody {
@@ -239,4 +244,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
         .await;
 
     response.assert_status_ok();
+
+    let login_body: LoginResponse = response.json();
+    assert!(login_body.succeeded);
 }

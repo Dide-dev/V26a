@@ -204,7 +204,7 @@ pub async fn update_password(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::auth::get_user_credentials;
+    use crate::db::auth::{get_user_credentials, get_user_credentials_with_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
     use crate::db_structs::users::{AccountType, RegisterData, UserLanguage};
     use crate::get_connection_unwrap;
@@ -416,5 +416,35 @@ mod tests {
     async fn test_get_user_account_type_not_found(db: PgPool) {
         let result = get_user_credentials(&db, "abc@localhost".to_owned()).await;
         assert!(result.unwrap().is_none());
+    }
+
+    #[sqlx::test]
+    async fn test_update_password(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+        let new_password = "P@ssword";
+
+        update_password(&db, user_id, new_password).await.unwrap();
+
+        let password_in_db = get_user_credentials_with_id(&db, user_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .password_hash;
+
+        let password_valid = bcrypt::verify(new_password, password_in_db.as_str())
+            .map_err(|_| ApiError::HashException)
+            .unwrap();
+
+        assert!(password_valid);
     }
 }
