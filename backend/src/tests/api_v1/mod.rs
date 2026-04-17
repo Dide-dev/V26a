@@ -7,8 +7,8 @@
 #![cfg(test)]
 
 mod cards;
-mod images;
 mod feedback;
+mod images;
 mod trees;
 mod users;
 
