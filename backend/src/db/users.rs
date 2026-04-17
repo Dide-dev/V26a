@@ -195,6 +195,55 @@ pub async fn update_password(
         user_id,
     )
     .execute(db)
+        .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
+
+/// Delete a user from the database.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `user_id` - The id of the user.
+///
+/// `delete_owned_trees` - Check of if user wants to delete his/her trees.
+/// 
+/// # Returns
+/// Nothing.
+/// 
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn delete_user(
+    db: &mut PgConnection,
+    user_id: i32,
+    delete_owned_trees: bool,
+) -> Result<(), ApiError> {
+    if delete_owned_trees {
+        query!("DELETE FROM trees WHERE owner_id = $1", user_id,)
+            .execute(&mut *db)
+            .await
+            .map_err(|_| ApiError::DatabaseException)?;
+    }
+
+    // Make all fields of the user empty (soft delete).
+    // And disable the account making logging in not possible.
+    query!(
+        r#"
+        UPDATE users
+        SET enabled = false,
+            email = CONCAT('deleted_', id, '@example.com'),
+            name = '',
+            nickname = '',
+            about_me = '',
+            email_visible = false
+        WHERE id = $1
+        "#,
+        user_id,
+    )
+    .execute(&mut *db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
 

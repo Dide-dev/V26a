@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE users\n        SET enabled = false,\n            email = CONCAT('deleted_', id, '@example.com'),\n            name = '',\n            nickname = '',\n            about_me = '',\n            email_visible = false\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a7d99c91f4f14d4abc65b77c6c8c1b9474c0413d2a797cf53b51bc3281a16566"
+}
