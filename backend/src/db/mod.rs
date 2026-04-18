@@ -6,6 +6,7 @@
 
 pub mod auth;
 pub mod cards;
+pub mod cards_library;
 pub mod images;
 pub mod trees;
 pub mod users;

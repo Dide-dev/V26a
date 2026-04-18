@@ -146,6 +146,39 @@ pub async fn get_tree_cards(
         .collect())
 }
 
+
+/// Retrieves a single card from the cards database, if the card exists.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `card_id` - The id associated with the card, as [`i32`].
+///
+/// # Returns
+/// The front and back of the card as [`CardGetData`].
+///
+/// # Errors
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_card_text(
+    db: impl PgExecutor<'_>,
+    card_id: i32
+) -> Result<CardGetData, ApiError> {
+    let card = query!(
+        "SELECT front, back
+         FROM cards
+         WHERE id = $1",
+         card_id
+    )
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .ok_or(ApiError::MissingCard(card_id))?;
+
+    Ok(CardGetData { front: card.front, back: card.back })
+}
+
 /// Get the id of the tree the card belongs to.
 ///
 /// # Arguments

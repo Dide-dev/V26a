@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT front, back\n         FROM cards\n         WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "front",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "back",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d4565276150372cf1dca66f8a4e9183a284a086f95486e08aaed883aab3943a8"
+}

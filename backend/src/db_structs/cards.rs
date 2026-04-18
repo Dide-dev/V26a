@@ -30,3 +30,13 @@ pub struct CardGetData {
     pub front: String,
     pub back: String,
 }
+
+/// Data for the API-call to add a card to the library.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCardAddData {
+    pub tree_id: i32,
+    pub card_id: i32,
+    pub title: String,
+    pub tags: Vec<String>,
+}
