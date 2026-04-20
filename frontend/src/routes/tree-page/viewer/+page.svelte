@@ -19,7 +19,6 @@
 
     let loading = $state(true);
     let userAllowedToEdit = $state(false);
-    let error: Error | null = $state(null);
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
 
@@ -68,7 +67,7 @@
     </div>
 {/if}
 
-{#if error == null && userAllowedToEdit}
+{#if userAllowedToEdit}
     <button
         data-testid="edit-button"
         class="fixed top-16 right-4 z-50 m-2 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2 shadow"

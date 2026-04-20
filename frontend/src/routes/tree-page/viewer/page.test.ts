@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/svelte';
-import { test, vi, afterEach } from 'vitest';
+import { expect, test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import PageComponent from './+page.svelte';
 import { page } from '$app/state';
@@ -93,43 +93,6 @@ test('Page successfully loads tree', async () => {
 
     screen.getByText(tree.cards[1].front);
     screen.getByText(tree.cards[2].front);
-});
-
-test('No tree id provided is handled correctly', async () => {
-    const tree: TreeWithCards = createTree();
-
-    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
-    mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.delete('id');
-    render(PageComponent);
-
-    const error = await screen.findByTestId('error');
-
-    expect(error.textContent).toBe('Error: No tree id provided');
-});
-
-test('Invalid tree id is handled correctly', async () => {
-    const tree: TreeWithCards = createTree();
-
-    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
-    mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.set('id', 'abc');
-    render(PageComponent);
-
-    const error = await screen.findByTestId('error');
-
-    expect(error.textContent).toBe('Error: Invalid tree id');
-});
-
-test('No tree returned is handled correctly', async () => {
-    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
-    mockGetTree.mockRejectedValue(new Error('The tree with id 5 could not be found.'));
-    page.url.searchParams.set('id', '5');
-    render(PageComponent);
-
-    const error = await screen.findByTestId('error');
-
-    expect(error.textContent).toBe('Error: The tree with id 5 could not be found.');
 });
 
 test('shows Edit button when user is logged in', async () => {

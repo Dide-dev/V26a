@@ -33,18 +33,12 @@
         assignmentText: '',
         published: false
     });
-    
-    let error: null | Error = $state(null);
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        try {
-            const treeId = await addTree(treeData);
-            await goto(appLink(`/tree-page/editor?id=${treeId}`));
-        } catch (e) {
-            error = e as Error;
-            console.error('Failed to create tree:', e);
-        }
+
+        const treeId = await addTree(treeData);
+        await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
 </script>
 
