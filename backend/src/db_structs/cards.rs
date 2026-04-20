@@ -3,6 +3,7 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+
 use utoipa::ToSchema;
 
 /// The basic data of the card, including the tree it belongs to.
