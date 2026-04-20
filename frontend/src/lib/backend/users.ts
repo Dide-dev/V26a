@@ -77,7 +77,6 @@ export type UserInfo = {
 
 /** The data needed to change a user's password */
 export type ChangePasswordData = {
-    email: string;
     oldPassword: string;
     newPassword: string;
 };
