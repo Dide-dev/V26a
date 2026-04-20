@@ -7,13 +7,13 @@
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{add_card, get_card_text, get_tree_of_card, update_card};
+use crate::db::cards_library::cards_library_add;
 use crate::db_structs::cards::{CardAddData, CardUpdateData, LibraryCardAddData};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
-use crate::db::cards_library::cards_library_add;
 
 /// Creates an `Axum` [`Router`] for the cards category.
 pub fn cards() -> Router<Config> {
@@ -161,7 +161,7 @@ async fn add_card_to_library(
     Extension(db): Extension<PgPool>,
     Json(card_data): Json<LibraryCardAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    let owner_id = claims.sub.clone();
+    let owner_id = claims.sub;
 
     // Verify tree exists and user is owner of tree
     verify_tree_permissions(&db, card_data.tree_id, claims).await?;
@@ -169,7 +169,14 @@ async fn add_card_to_library(
     // Verify card exists and retrieves the front and back
     let card_text = get_card_text(&db, card_data.card_id).await?;
 
-    let new_card_id = cards_library_add(&db, &owner_id, &card_data.title, &card_data.tags, &card_text).await?;
+    let new_card_id = cards_library_add(
+        &db,
+        &owner_id,
+        &card_data.title,
+        &card_data.tags,
+        &card_text,
+    )
+    .await?;
 
     Ok(Json(new_card_id))
 }

@@ -146,7 +146,6 @@ pub async fn get_tree_cards(
         .collect())
 }
 
-
 /// Retrieves a single card from the cards database, if the card exists.
 ///
 /// # Arguments
@@ -161,22 +160,22 @@ pub async fn get_tree_cards(
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_card_text(
-    db: impl PgExecutor<'_>,
-    card_id: i32
-) -> Result<CardGetData, ApiError> {
+pub async fn get_card_text(db: impl PgExecutor<'_>, card_id: i32) -> Result<CardGetData, ApiError> {
     let card = query!(
         "SELECT front, back
          FROM cards
          WHERE id = $1",
-         card_id
+        card_id
     )
-        .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .ok_or(ApiError::MissingCard(card_id))?;
+    .fetch_optional(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .ok_or(ApiError::MissingCard(card_id))?;
 
-    Ok(CardGetData { front: card.front, back: card.back })
+    Ok(CardGetData {
+        front: card.front,
+        back: card.back,
+    })
 }
 
 /// Get the id of the tree the card belongs to.
@@ -341,7 +340,7 @@ mod tests {
         let card_text = get_card_text(&db, card_id).await;
         let expected_card_text = CardGetData {
             front: "front".to_owned(),
-            back: "back".to_owned()
+            back: "back".to_owned(),
         };
         assert_eq!(card_text, Ok(expected_card_text));
     }
