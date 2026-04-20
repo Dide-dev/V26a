@@ -1,5 +1,7 @@
 volumes:
   postgres_dir:
+  caddy_data:
+  caddy_config:
 
 services:
   db:
@@ -9,3 +11,12 @@ services:
     env_file: ".env"
     volumes:
       - postgres_dir:/var/lib/postgresql
+
+  caddy:
+    image: docker.io/caddy:2.11
+    restart: unless-stopped
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    network_mode: host

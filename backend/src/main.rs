@@ -54,7 +54,6 @@ async fn main() {
 
     // Build our application with a route.
     let app = Router::new()
-        .merge(static_frontend())
         .nest("/api", backend(config.clone()).await)
         // Add documentation routes.
         .merge(
@@ -74,14 +73,6 @@ async fn main() {
 
     info!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-/// Creates an `Axum` [`Router`] that serves the static frontend from the `frontend` folder.
-fn static_frontend() -> Router {
-    use tower_http::services::ServeDir;
-    let static_frontend_dir = ServeDir::new("../frontend/build");
-
-    Router::new().fallback_service(static_frontend_dir)
 }
 
 /// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
