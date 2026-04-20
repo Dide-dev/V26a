@@ -66,8 +66,8 @@ mod tests {
         let card_id = initialize_card(&db, tree_id).await;
 
         let owner_id = get_tree_owner(&db, tree_id).await.unwrap().unwrap();
-        let title = String::from("title");
-        let tags = [String::from("tag1"), String::from("tag2")];
+        let title = "title".to_owned();
+        let tags = ["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(&db, &owner_id, &title, &tags, &card_text)
