@@ -62,5 +62,9 @@
     "additionalFeedback": "Extra feedback",
     "grade": "Welk cijfer zou je aan deze website geven?",
     "submitFeedback": "Geef feedback",
-    "noFeedback": "Vul op zijn minst een van de volgende in: positieve punten, negatieve punten, of extra feedback."
+    "noFeedback": "Vul op zijn minst een van de volgende in: positieve punten, negatieve punten, of extra feedback.",
+    "changePassword": "Wachtwoord wijzigen",
+    "oldPassword": "Oud wachtwoord",
+    "newPassword": "Nieuw wachtwoord",
+    "changePasswordAttempt": "Als u uw wachtwoord wilt wijzigen, vul dan uw oude wachtwoord, uw nieuwe wachtwoord, én een herhaling van het nieuwe wachtwoord hierboven in."
 }

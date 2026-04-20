@@ -62,5 +62,9 @@
     "additionalFeedback": "Additional feedback",
     "grade": "Which grade would you give this application?",
     "submitFeedback": "Submit feedback",
-    "noFeedback": "Please fill in at minimum positive points, negative points, or additional feedback."
+    "noFeedback": "Please fill in at minimum positive points, negative points, or additional feedback.",
+    "changePassword": "Change password",
+    "oldPassword": "Old password",
+    "newPassword": "New password",
+    "changePasswordAttempt": "If you want to change you password, please fill in your old password, your new password, and repeat your new password in the dedicated fields above."
 }
