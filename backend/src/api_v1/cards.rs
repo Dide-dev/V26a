@@ -125,8 +125,7 @@ async fn update_existing_card(
     request_body = LibraryCardAddData,
     responses(
         (status = 200, description = "Card successfully added to library."),
-        (status = 400, description = "Tree with given id does not exist."),
-        (status = 400, description = "Card with given id does not exist."),
+        (status = 400, description = "Tree and/or card with given id does not exist."),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),
@@ -144,7 +143,7 @@ async fn update_existing_card(
 /// Existing card data will be overwritten with the new data.
 ///
 /// # Returns
-/// Nothing.
+/// The id of the new card in the library database as [`Json<i32>`].
 ///
 /// # Errors
 ///
