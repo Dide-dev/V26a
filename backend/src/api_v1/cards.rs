@@ -169,7 +169,7 @@ async fn add_card_to_library(
     // Verify card exists and retrieves the front and back
     let card_text = get_card_text(&db, card_data.card_id).await?;
 
-    let new_card_id = cards_library_add(&db, owner_id, card_data.title, &card_data.tags, card_text).await?;
+    let new_card_id = cards_library_add(&db, &owner_id, &card_data.title, &card_data.tags, &card_text).await?;
 
     Ok(Json(new_card_id))
 }

@@ -334,6 +334,19 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_get_card_text(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let card_text = get_card_text(&db, card_id).await;
+        let expected_card_text = CardGetData {
+            front: "front".to_owned(),
+            back: "back".to_owned()
+        };
+        assert_eq!(card_text, Ok(expected_card_text));
+    }
+
+    #[sqlx::test]
     async fn test_get_tree_of_card(db: PgPool) {
         let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;

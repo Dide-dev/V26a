@@ -28,10 +28,10 @@ use crate::errors::ApiError;
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn cards_library_add(
     db: impl PgExecutor<'_>,
-    owner_id: i32,
-    title: String,
+    owner_id: &i32,
+    title: &String,
     tags: &[String],
-    card_text: CardGetData
+    card_text: &CardGetData
 ) -> Result<i32, ApiError> {
     let new_card_id = query!(
         "INSERT INTO library_cards (owner_id, title, tags, front, back)
@@ -49,4 +49,38 @@ pub async fn cards_library_add(
     .id;
 
     Ok(new_card_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::test::{initialize_card, initialize_db};
+    use crate::get_connection_unwrap;
+    use sqlx::PgPool;
+    use crate::db::cards::get_card_text;
+    use crate::db::trees::get_tree_owner;
+
+    #[sqlx::test]
+    async fn test_cards_library_add(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let owner_id = get_tree_owner(&db, tree_id).await.unwrap().unwrap();
+        let title = String::from("title");
+        let tags = [String::from("tag1"), String::from("tag2")];
+        let card_text = get_card_text(&db, card_id).await.unwrap();
+
+        let card_lib_id = cards_library_add(&db, &owner_id, &title, &tags, &card_text).await.unwrap();
+
+        let found_card_data = query!("SELECT owner_id, title, tags, front, back FROM library_cards WHERE id=$1", card_lib_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        assert_eq!(found_card_data.owner_id, owner_id);
+        assert_eq!(found_card_data.title, title);
+        assert_eq!(found_card_data.tags.unwrap(), tags);
+        assert_eq!(found_card_data.front, card_text.front);
+        assert_eq!(found_card_data.back, card_text.back);
+    }
 }
