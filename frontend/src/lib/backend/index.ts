@@ -65,6 +65,20 @@ export async function apiCallPost(path: string, body: unknown) {
     }
 }
 
+export async function apiCallPostFile(path: string, file: File) {
+    // Content-Type is inferred by the browser.
+    const response = await fetch(prefix + path, {
+        method: 'POST',
+        body: file
+    });
+
+    if (!(await checkResponse(response))) {
+        return;
+    }
+
+    return await response.text();
+}
+
 /** Check if the response is successful and handle any errors in a proper way.
  *
  * @return `false` if the response is an error, otherwise `true`. */

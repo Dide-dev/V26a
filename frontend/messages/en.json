@@ -53,6 +53,9 @@
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
     "add": "Add",
+    "myTrees": "My forest",
+    "trees": "Forest",
+    "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
     "book": "Book"
