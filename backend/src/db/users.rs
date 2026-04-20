@@ -4,7 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::{RegisterData, UserGetData, UserLanguage, UserUpdateData, UserGetAllData, AccountType};
+use crate::db_structs::users::{
+    AccountType, RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
+};
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
@@ -155,18 +157,18 @@ pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData
             let Ok(language) = UserLanguage::from_str(u.language.as_str()) else {
                 return None;
             };
-            let Ok(account_type) = AccountType::from_str(&u.account_type) else{
+            let Ok(account_type) = AccountType::from_str(&u.account_type) else {
                 return None;
             };
-            Some(UserGetAllData{
-            email: u.email,
-            name: u.name,
-            nickname: u.nickname,
-            about_me: u.about_me,
-            email_visible: u.email_visible,
-            language,
-            account_type,
-            enabled: u.enabled,
+            Some(UserGetAllData {
+                email: u.email,
+                name: u.name,
+                nickname: u.nickname,
+                about_me: u.about_me,
+                email_visible: u.email_visible,
+                language,
+                account_type,
+                enabled: u.enabled,
             })
         })
         .collect();
@@ -358,25 +360,28 @@ mod tests {
         let _user_id2 = initialize_user(&db, &register_data2).await;
         let all_user_data = get_all_users(&db).await.unwrap();
 
-        let expected_user_data = vec![UserGetAllData {
-            email: register_data.email,
-            name: register_data.name,
-            nickname: register_data.nickname,
-            about_me: register_data.about_me,
-            email_visible: register_data.email_visible,
-            language: register_data.language,
-            account_type: AccountType::Author,
-            enabled: true,
-        }, UserGetAllData {
-            email: register_data2.email,
-            name: register_data2.name,
-            nickname: register_data2.nickname,
-            about_me: register_data2.about_me,
-            email_visible: register_data2.email_visible,
-            language: register_data2.language,
-            account_type: AccountType::Author,
-            enabled: true,
-        }];
+        let expected_user_data = vec![
+            UserGetAllData {
+                email: register_data.email,
+                name: register_data.name,
+                nickname: register_data.nickname,
+                about_me: register_data.about_me,
+                email_visible: register_data.email_visible,
+                language: register_data.language,
+                account_type: AccountType::Author,
+                enabled: true,
+            },
+            UserGetAllData {
+                email: register_data2.email,
+                name: register_data2.name,
+                nickname: register_data2.nickname,
+                about_me: register_data2.about_me,
+                email_visible: register_data2.email_visible,
+                language: register_data2.language,
+                account_type: AccountType::Author,
+                enabled: true,
+            },
+        ];
 
         assert_eq!(all_user_data, expected_user_data);
     }

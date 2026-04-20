@@ -7,14 +7,18 @@
 use axum::{Extension, Json, Router, routing::get};
 use sqlx::PgPool;
 
-use crate::{api_v1::session::Claims, config::Config, db::users::get_all_users, db_structs::users::{AccountType, UserGetAllData}, errors::ApiError};
+use crate::{
+    api_v1::session::Claims,
+    config::Config,
+    db::users::get_all_users,
+    db_structs::users::{AccountType, UserGetAllData},
+    errors::ApiError,
+};
 
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn admin() -> Router<Config> {
-    Router::new()
-        .route("/all-user-data", get(get_all_user_data))
+    Router::new().route("/all-user-data", get(get_all_user_data))
 }
-
 
 #[utoipa::path(
     get,

@@ -12,7 +12,7 @@ pub mod trees;
 pub mod users;
 
 use crate::Config;
-use crate::api_v1::{cards::cards, trees::trees, users::users, admin::admin};
+use crate::api_v1::{admin::admin, cards::cards, trees::trees, users::users};
 use auth::auth;
 use axum::Router;
 

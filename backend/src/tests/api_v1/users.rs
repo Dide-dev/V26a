@@ -111,7 +111,6 @@ async fn test_get_all_users(db: PgPool) {
     response.assert_status_forbidden();
 }
 
-
 #[sqlx::test]
 async fn test_update_other_user(db: PgPool) {
     let server = setup(db);
