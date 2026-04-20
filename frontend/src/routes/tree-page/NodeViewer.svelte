@@ -84,6 +84,7 @@
 
     let domChildren: Element;
     let outermostDiv: Element;
+    let cardViewerContainer: Element | null = $state(null);
     let svgLines: SvgLine[] = $state([]);
     type SvgLine = {
         x1: number;
@@ -143,6 +144,9 @@
 
         let observer = new MutationObserver(redrawLines);
         observer.observe(domChildren, { subtree: true, childList: true });
+        if (cardViewerContainer !== null) {
+            observer.observe(cardViewerContainer, { childList: true });
+        }
         return () => observer.disconnect();
     });
 </script>
@@ -198,7 +202,7 @@
             <TreeEditButtons bind:tree bind:parent bind:node bind:dragState />
         {/if}
         <div class="flex flex-col">
-            <div class="shrink-0">
+            <div class="shrink-0" bind:this={cardViewerContainer}>
                 <CardViewer {tree} {node} {parentIsVisible} bind:visible {editingPage} />
             </div>
             {#if !editingPage}
