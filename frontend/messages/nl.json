@@ -55,5 +55,12 @@
     "add": "Voeg toe",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
-    "book": "Boek"
+    "book": "Boek",
+    "feedbackExplanation": "Vul dit formulier in als je feedback wilt geven op deze website. Als je wilt dat wij je kunnen contacteren om de feedback te bediscussiëren, kun je je e-mail adres achterlaten. Echter, dit is niet verplicht.",
+    "positiveFeedback": "Positieve punten",
+    "negativeFeedback": "Negatieve punten",
+    "additionalFeedback": "Extra feedback",
+    "grade": "Welk cijfer zou je aan deze website geven?",
+    "submitFeedback": "Geef feedback",
+    "noFeedback": "Vul op zijn minst een van de volgende in: positieve punten, negatieve punten, of extra feedback."
 }
