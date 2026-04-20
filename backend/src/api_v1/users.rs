@@ -180,3 +180,5 @@ async fn update_user_data(
 
     update_user(&db, user_id, &new_data).await
 }
+
+

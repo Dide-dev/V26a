@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::{RegisterData, UserGetData, UserLanguage, UserUpdateData};
+use crate::db_structs::users::{RegisterData, UserGetData, UserLanguage, UserUpdateData, UserGetAllData, AccountType};
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
@@ -128,6 +128,50 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
         email_visible: record.email_visible,
         language: UserLanguage::from_str(record.language.as_str())?,
     })
+}
+
+/// Query the user data of all users for the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// # Returns
+/// A [`Vec<UserGetAllData>`] object containing the data of all the users, minus their password.
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
+    let record = query!("SELECT email, name, nickname, about_me, email_visible, language, account_type, enabled FROM users",)
+        .fetch_all(db)
+        .await.
+        map_err(|_| ApiError::DatabaseException)?;
+
+    let all_users = record
+        .into_iter()
+        .filter_map(|u| {
+            //If user language isn't an existing language option the user will not be shown to the admin.
+            let Ok(language) = UserLanguage::from_str(u.language.as_str()) else {
+                return None;
+            };
+            let Ok(account_type) = AccountType::from_str(&u.account_type) else{
+                return None;
+            };
+            Some(UserGetAllData{
+            email: u.email,
+            name: u.name,
+            nickname: u.nickname,
+            about_me: u.about_me,
+            email_visible: u.email_visible,
+            language,
+            account_type,
+            enabled: u.enabled,
+            })
+        })
+        .collect();
+
+    Ok(all_users)
 }
 
 /// Updates a user in the database.
@@ -287,6 +331,54 @@ mod tests {
         };
 
         assert_eq!(user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_all_users(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        let register_data2 = RegisterData {
+            email: "email2".to_owned(),
+            password: "password2".to_owned(),
+            name: "name2".to_owned(),
+            nickname: "nickname2".to_owned(),
+            about_me: "about_me2".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let _user_id = initialize_user(&db, &register_data).await;
+        let _user_id2 = initialize_user(&db, &register_data2).await;
+        let all_user_data = get_all_users(&db).await.unwrap();
+
+        let expected_user_data = vec![UserGetAllData {
+            email: register_data.email,
+            name: register_data.name,
+            nickname: register_data.nickname,
+            about_me: register_data.about_me,
+            email_visible: register_data.email_visible,
+            language: register_data.language,
+            account_type: AccountType::Author,
+            enabled: true,
+        }, UserGetAllData {
+            email: register_data2.email,
+            name: register_data2.name,
+            nickname: register_data2.nickname,
+            about_me: register_data2.about_me,
+            email_visible: register_data2.email_visible,
+            language: register_data2.language,
+            account_type: AccountType::Author,
+            enabled: true,
+        }];
+
+        assert_eq!(all_user_data, expected_user_data);
     }
 
     #[sqlx::test]
