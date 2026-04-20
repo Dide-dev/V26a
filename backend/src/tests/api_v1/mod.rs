@@ -7,14 +7,17 @@
 #![cfg(test)]
 
 mod cards;
+mod images;
 mod trees;
 mod users;
 
+use crate::api_v1::users::AddUserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
 use axum_test::TestServer;
 use sqlx::PgPool;
+use tempfile::tempdir;
 
 /// Sets up an API test server with the given mock database.
 ///
@@ -24,9 +27,14 @@ use sqlx::PgPool;
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints and saves cookies.
 fn setup(db: PgPool) -> TestServer {
+    let temp_dir = tempdir().unwrap();
+
+    let mut config = crate::Config::load();
+    config.upload_dir = temp_dir.path().to_string_lossy().to_string();
+
     let router = crate::api_v1::v1_api()
         .layer(Extension(db))
-        .with_state(crate::Config::load());
+        .with_state(config);
     TestServer::builder().save_cookies().build(router)
 }
 
@@ -54,7 +62,12 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         .await;
     response.assert_status_ok();
 
-    response.json::<i32>()
+    let response = response.json::<AddUserResponse>();
+    let AddUserResponse::Success { user_id } = response else {
+        // Adding a user should never fail in a test
+        panic!("Something unexpected failed while adding a user")
+    };
+    user_id
 }
 
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.

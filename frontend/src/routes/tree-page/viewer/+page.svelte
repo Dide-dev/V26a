@@ -27,24 +27,20 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            error = new Error('No tree id provided');
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            error = new Error('Invalid tree id');
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
-        tree = await getTreeWithCards(id).then(
-            (treeWithCards) => treeWithCards,
-            (e) => {
-                error = e;
-                return null;
-            }
-        );
+        tree = await getTreeWithCards(id);
 
         loading = false;
 
@@ -57,10 +53,8 @@
     });
 </script>
 
-{#if error == null && loading}
+{#if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
-{:else if error != null}
-    <p class="text-red-700" data-testid="error">{error}</p>
 {:else if tree}
     <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">

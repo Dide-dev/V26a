@@ -15,8 +15,8 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when an e-mail has already been used and cannot be used again.
-    EmailAlreadyUsed,
+    /// An error to return when an invalid image type is attempted to be put in the database.
+    InvalidImageType,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page number that exceeds the defined maximum.
@@ -32,10 +32,10 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
     MissingUser(i32),
+    /// An error to return when `add_new_image` has been called with an empty body.
+    NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
-    /// An error to return when a wrong e-mail or password is provided while trying to log in.
-    WrongCredentials,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -59,16 +59,22 @@ pub enum ApiError {
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
+    /// An error to be returned by `create_dir_all` when it is unable to find or create a directory.
+    CreateDirException,
     /// A generic exception to return when the database fails on something unexpected.
     /// Do not use this in place of proper error handling.
     DatabaseException,
     /// An error to return when a request is denied because a limit on the database memory
     /// disallows it.
     DatabaseMemoryCap,
+    /// An error to be return by `File::create` or `File::write_all` when it is unable to create or write to a file.
+    FileWriteException,
     /// An error to return when hashing fails (on creating or verifying a hash).
     HashException,
     /// An error to return when invalid data is found in the database.
     InvalidDataFound,
+    /// An error to be returned by `add_image` if adding the image to the database fails.
+    ImageAddFail,
     /// An exception to return when serde fails on something unexpected.
     SerdeException,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
@@ -82,8 +88,8 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
-            ApiError::EmailAlreadyUsed => {
-                write!(f, "A user with this e-mail address already exists.")
+            ApiError::InvalidImageType => {
+                write!(f, "An invalid image type was uploaded.")
             }
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
@@ -104,13 +110,13 @@ impl Display for ApiError {
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
+            ApiError::NoImageBodyProvidedException => {
+                write!(f, "No image body has been provided.")
+            }
             ApiError::NonEmptyStructure => write!(
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
-            ApiError::WrongCredentials => {
-                write!(f, "The e-mail or password provided was incorrect.")
-            }
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -127,12 +133,27 @@ impl Display for ApiError {
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
             //----------------------------//
+            ApiError::CreateDirException => {
+                write!(f, "An unexpected directory creation error occurred.")
+            }
             ApiError::DatabaseException => write!(f, "An unexpected database error occurred."),
             ApiError::DatabaseMemoryCap => write!(
                 f,
                 "Request was denied, because a database memory cap was exceeded."
             ),
+            ApiError::FileWriteException => {
+                write!(
+                    f,
+                    "An unexpected error occurred while writing a file. Check if you have write permisions, the path is valid and whether the disk has space."
+                )
+            }
             ApiError::HashException => write!(f, "An unexpected hash error occurred."),
+            ApiError::ImageAddFail => {
+                write!(
+                    f,
+                    "Something went wrong while adding the image to the database"
+                )
+            }
             ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
@@ -148,7 +169,7 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::EmailAlreadyUsed
+            ApiError::InvalidImageType
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
@@ -156,8 +177,8 @@ impl ApiError {
             | ApiError::MissingCard(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
-            | ApiError::NonEmptyStructure
-            | ApiError::WrongCredentials => StatusCode::BAD_REQUEST,
+            | ApiError::NoImageBodyProvidedException
+            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession
@@ -165,9 +186,12 @@ impl ApiError {
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
 
-            ApiError::DatabaseException
+            ApiError::CreateDirException
+            | ApiError::DatabaseException
             | ApiError::DatabaseMemoryCap
+            | ApiError::FileWriteException
             | ApiError::HashException
+            | ApiError::ImageAddFail
             | ApiError::InvalidDataFound
             | ApiError::SerdeException
             | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,

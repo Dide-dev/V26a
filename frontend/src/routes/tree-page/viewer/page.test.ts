@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/svelte';
-import { expect, test, vi, afterEach } from 'vitest';
+import { test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import PageComponent from './+page.svelte';
 import { page } from '$app/state';
