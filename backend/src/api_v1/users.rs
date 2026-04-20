@@ -214,7 +214,6 @@ pub struct ChangePasswordResponse {
 /// Nothing.
 ///
 /// # Errors
-///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
