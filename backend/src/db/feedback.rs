@@ -11,12 +11,12 @@ use sqlx::{PgExecutor, query};
 /// Add feedback to the database.
 ///
 /// # Arguments
-/// `db` - a [`&PgPool`](sqlx::PgPool).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// `feedback_data` - The feedback given as [`FeedbackData`].
 ///
 /// # Returns
-/// Nothing
+/// Nothing.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -25,13 +25,10 @@ pub async fn add_feedback(
     feedback_data: &FeedbackData,
 ) -> Result<(), ApiError> {
     query!(
-        "INSERT INTO feedback (email, positive_feedback, negative_feedback, additional, grade)
-        VALUES ($1, $2, $3, $4, $5)",
+        "INSERT INTO feedback (email, feedback)
+        VALUES ($1, $2)",
         feedback_data.email,
-        feedback_data.positive,
-        feedback_data.negative,
-        feedback_data.additional,
-        feedback_data.grade,
+        feedback_data.feedback,
     )
     .execute(db)
     .await
@@ -52,26 +49,20 @@ mod tests {
         initialize_db(get_connection_unwrap!(db)).await;
 
         let feedback_data = FeedbackData {
-            email: Some("test@test.nl".to_owned()),
-            positive: Some("Tops".to_owned()),
-            negative: Some("Tips".to_owned()),
-            additional: Some("Very cool".to_owned()),
-            grade: Some(7),
+            email: "test@test.nl".to_owned(),
+            feedback: "feedback".to_owned(),
         };
 
         add_feedback(&db, &feedback_data).await.unwrap();
 
-        let found_feedback_data = query!("SELECT id, email, positive_feedback, negative_feedback, additional, grade FROM feedback WHERE id=$1", 1)
+        let found_feedback_data = query!("SELECT id, email, feedback FROM feedback WHERE id=$1", 1)
             .fetch_one(&db)
             .await
             .unwrap();
 
         let found_feedback_data = FeedbackData {
             email: found_feedback_data.email,
-            positive: found_feedback_data.positive_feedback,
-            negative: found_feedback_data.negative_feedback,
-            additional: found_feedback_data.additional,
-            grade: found_feedback_data.grade,
+            feedback: found_feedback_data.feedback,
         };
 
         assert_eq!(found_feedback_data, feedback_data);

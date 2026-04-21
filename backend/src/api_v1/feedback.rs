@@ -23,17 +23,17 @@ pub fn feedback() -> Router<Config> {
     context_path = "/api/v1/feedback",
     request_body = FeedbackData,
     responses(
-        (status = 200, description = "Feedback succesfully added."),
+        (status = 200, description = "Feedback succesfully received."),
         (status = 500, description = "Internal server error."),
     ),
 )]
-/// Add feedback to the database.
+/// Provide feedback on the website.
 ///
 /// # Arguments
 /// `feedback_data` - The data given as feedback, as [`FeedbackData`].
 ///
 /// # Returns
-/// Nothing
+/// Nothing.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

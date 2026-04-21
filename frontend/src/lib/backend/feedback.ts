@@ -5,7 +5,6 @@
 */
 
 import { apiCallPost } from './index';
-import type { Option } from './types';
 
 const prefix = 'feedback/';
 
@@ -15,11 +14,8 @@ function apiCallPostFeedback(path: string, body: unknown) {
 
 /** The data corresponding to given feedback */
 export type FeedbackData = {
-    email: Option<string>;
-    positive: Option<string>;
-    negative: Option<string>;
-    additional: Option<string>;
-    grade: Option<number>;
+    email: string;
+    feedback: string;
 };
 
 /** Add feedback to the database */

@@ -15,11 +15,8 @@ async fn test_add_feedback(db: PgPool) {
     let server = setup_login(db).await;
 
     let feedback_data = FeedbackData {
-        email: Some("test@test.nl".to_owned()),
-        positive: Some("Tops".to_owned()),
-        negative: Some("Tips".to_owned()),
-        additional: Some("Very cool".to_owned()),
-        grade: Some(7),
+        email: "test@test.nl".to_owned(),
+        feedback: "feedback".to_owned(),
     };
 
     let response = server.post("/feedback/provide").json(&feedback_data).await;

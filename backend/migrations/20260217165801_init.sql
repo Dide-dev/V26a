@@ -71,10 +71,7 @@ CREATE TABLE images
 CREATE TABLE feedback
 (
     id                SERIAL PRIMARY KEY,
-    email             CITEXT,
-    positive_feedback TEXT,
-    negative_feedback TEXT,
-    additional        TEXT,
-    grade             INTEGER,
+    email             CITEXT NOT NULL DEFAULT '',
+    feedback VARCHAR(5000) NOT NULL,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -8,9 +8,6 @@ use utoipa::ToSchema;
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedbackData {
-    pub email: Option<String>,
-    pub positive: Option<String>,
-    pub negative: Option<String>,
-    pub additional: Option<String>,
-    pub grade: Option<i32>,
+    pub email: String,
+    pub feedback: String,
 }
