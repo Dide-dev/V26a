@@ -14,32 +14,17 @@
     import type { Option } from '$lib/backend/types';
 
     type FeedbackData = {
-        email: Option<string>;
-        positive: Option<string>;
-        negative: Option<string>;
-        additional: Option<string>;
-        grade: Option<number>;
+        email: string;
+        feedback: string;
     };
 
     let feedbackData: FeedbackData = $state({
         email: '',
-        positive: '',
-        negative: '',
-        additional: '',
-        grade: null as number | null
+        feedback: ''
     });
-
-    const hasFeedback = $derived(
-        feedbackData.positive || feedbackData.negative || feedbackData.additional
-    );
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-
-        if (!feedbackData.positive && !feedbackData.negative && !feedbackData.additional) {
-            // error handling
-            return;
-        }
 
         //await provideFeedback(feedbackData);
 
@@ -50,9 +35,10 @@
 <br />
 <div class="flex w-full justify-center">
     <form class="flex w-md flex-col gap-6 rounded-xl bg-white p-6 shadow" onsubmit={handleSubmit}>
+        <h1 class="mb-0 text-3xl font-bold">Feedback</h1>
         <p class="flex w-full justify-center">{m.feedbackExplanation()}</p>
         <label class="flex flex-col gap-1 text-sm">
-            {m.email()}
+            <p class="font-bold">{m.email()}</p>
             <input
                 class="rounded-md border-2"
                 bind:value={feedbackData.email}
@@ -62,155 +48,17 @@
             />
         </label>
         <label class="flex flex-col gap-1 text-sm">
-            {m.positiveFeedback()}
+            <p class="font-bold">Feedback</p>
             <textarea
                 rows="3"
                 class="rounded-md border-2 p-2"
-                bind:value={feedbackData.positive}
-                name="positive"
-                data-testid="positive"
+                bind:value={feedbackData.feedback}
+                name="feedback"
+                data-testid="feedback"
+                required
             ></textarea>
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-            {m.negativeFeedback()}
-            <textarea
-                rows="3"
-                class="rounded-md border-2 p-2"
-                bind:value={feedbackData.negative}
-                name="negative"
-                data-testid="negative"
-            ></textarea>
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-            {m.additionalFeedback()}
-            <textarea
-                rows="3"
-                class="rounded-md border-2 p-2"
-                bind:value={feedbackData.additional}
-                name="additional"
-                data-testid="additional"
-            ></textarea>
-        </label>
-
-        <label>
-            {m.grade()}
-            <div class="grid grid-cols-10 gap-5">
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={1}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    1
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={2}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    2
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={3}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    3
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={4}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    4
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={5}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    5
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={6}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    6
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={7}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    7
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={8}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    8
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={9}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    9
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        value={10}
-                        bind:group={feedbackData.grade}
-                        name="grade"
-                        type="radio"
-                        data-testid="grade"
-                    />
-                    10
-                </label>
-            </div>
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.submitFeedback()}</button>
-        {#if !hasFeedback}
-            <p class="text-red-600">{m.noFeedback()}</p>
-        {/if}
     </form>
 </div>
 <br />
