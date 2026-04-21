@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 <script lang="ts">
+    import { Datepicker } from 'flowbite-svelte';
     import { m } from '$lib/paraglide/messages.js';
     import {
         type FilterOptions,
@@ -12,24 +13,14 @@
         type TreeMetadata,
         getFilteredList
     } from '$lib/backend/trees';
-    import { appLink } from '$lib/index';
+    import { appLink, timeFormatString } from '$lib/index';
     import { onMount } from 'svelte';
 
-    // nl-NL and en-GB behave in the same way; we will not support American time notation.
-    const timeFormat = new Intl.DateTimeFormat('nl-NL');
+    let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
-    let pageSize = $state(5);
+    let pageSizeString = $state('10');
+    let pageSizeNumber = $derived(Number(pageSizeString));
     let thisPage = $state(1);
-
-    let filterOptionsForm = $state({
-        ownerId: '',
-        createdAfterYear: '',
-        createdAfterMonth: '',
-        createdAfterDay: '',
-        createdBeforeYear: '',
-        createdBeforeMonth: '',
-        createdBeforeDay: ''
-    });
 
     let filterOptions: FilterOptions = $state({
         ownerId: null,
@@ -40,7 +31,7 @@
     });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,
-        size: pageSize
+        size: pageSizeNumber
     });
 
     let treeListResponse: null | TreeListResponse = $state(null);
@@ -48,7 +39,7 @@
 
     let prevPageExists = $derived(thisPage > 1);
     let nextPageExists = $derived(
-        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSize)
+        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
     );
 
     onMount(async () => {
@@ -91,67 +82,46 @@
             return bookName;
         }
     }
-
-    async function readFilters() {
-        filterOptions.ownerId = !isNaN(parseInt(filterOptionsForm.ownerId))
-            ? Number(filterOptionsForm.ownerId)
-            : null;
-
-        const tryCreatedAfter = new Date(
-            parseInt(filterOptionsForm.createdAfterYear),
-            parseInt(filterOptionsForm.createdAfterMonth) - 1,
-            parseInt(filterOptionsForm.createdAfterDay)
-        );
-
-        filterOptions.createdAfter = !isNaN(tryCreatedAfter.valueOf()) ? tryCreatedAfter : null;
-
-        const tryCreatedBefore = new Date(
-            parseInt(filterOptionsForm.createdBeforeYear),
-            parseInt(filterOptionsForm.createdBeforeMonth) - 1,
-            parseInt(filterOptionsForm.createdBeforeDay)
-        );
-
-        filterOptions.createdBefore = !isNaN(tryCreatedBefore.valueOf()) ? tryCreatedBefore : null;
-
-        await loadTrees();
-    }
 </script>
 
 <div class="flex w-full justify-center">
     <div class="flex-col">
         <!-- Filter options -->
-        <form class="flex w-md flex-col gap-2" onsubmit={readFilters}>
+        <form class="flex w-md flex-col gap-2" onsubmit={loadTrees}>
             <label>
-                {m.createdBetween()}
-                <input
-                    class="w-12 rounded-md border-2"
-                    bind:value={filterOptionsForm.createdAfterYear}
+                {m.createdAfter()}
+                <Datepicker
+                    bind:value={
+                        () => filterOptions.createdAfter ?? undefined,
+                        (v) => (filterOptions.createdAfter = v ?? null)
+                    }
+                    locale={timeFormatString}
+                    translationLocale={timeFormatString}
+                    placeholder={m.selectDate()}
                 />
-                <input
-                    class="w-6 rounded-md border-2"
-                    bind:value={filterOptionsForm.createdAfterMonth}
-                />
-                <input
-                    class="w-6 rounded-md border-2"
-                    bind:value={filterOptionsForm.createdAfterDay}
-                />
-                {m.and()}
-                <input
-                    class="w-12 rounded-md border-2"
-                    bind:value={filterOptionsForm.createdBeforeYear}
-                />
-                <input
-                    class="w-6 rounded-md border-2"
-                    bind:value={filterOptionsForm.createdBeforeMonth}
-                />
-                <input
-                    class="w-6 rounded-md border-2"
-                    bind:value={filterOptionsForm.createdBeforeDay}
+            </label>
+            <label>
+                {m.createdBefore()}
+                <Datepicker
+                    bind:value={
+                        () => filterOptions.createdBefore ?? undefined,
+                        (v) =>
+                            (filterOptions.createdBefore = v
+                                ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
+                                : null)
+                    }
+                    locale={timeFormatString}
+                    translationLocale={timeFormatString}
+                    placeholder={m.selectDate()}
                 />
             </label>
             <label>
                 {m.ownerId()}
-                <input class="rounded-md border-2" bind:value={filterOptionsForm.ownerId} />
+                <input
+                    class="rounded-md border-2"
+                    type="number"
+                    bind:value={filterOptions.ownerId}
+                />
             </label>
             <button class="rounded-sm bg-emerald-500 p-1">{m.applyFilters()}</button>
         </form>
@@ -160,8 +130,8 @@
         <label>
             {m.numberOfTrees()}
             <select
-                class="rounded-sm bg-neutral-400 p-1"
-                bind:value={pageSize}
+                class="w-15 rounded-sm bg-neutral-200 p-1"
+                bind:value={pageSizeString}
                 onchange={loadTrees}
             >
                 <option value="5">5</option>
@@ -177,7 +147,7 @@
     <p>{m.loading()}</p>
 {:else if trees.length === 0}
     <div class="text-center">
-        <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
+        <p class="flex justify-center text-2xl">{m.noAllTreesFound()}</p>
     </div>
 {:else}
     <div class="100vw flex justify-center overflow-auto">
@@ -216,7 +186,7 @@
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSize)}
+            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}

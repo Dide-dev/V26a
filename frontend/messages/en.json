@@ -29,7 +29,8 @@
     "lastEdited": "Last edited",
     "yes": "Yes",
     "no": "No",
-    "noTreesFound": "We couldn't find any trees, it's time to make one!",
+    "noMyTreesFound": "We couldn't find any trees, it's time to make one!",
+    "noAllTreesFound": "We couldn't find any trees matching these search criteria.",
     "loading": "Loading",
     "enterFrontText": "Enter card front text...",
     "enterBackText": "Enter card back text...",
@@ -57,8 +58,9 @@
     "createdAt": "Created at",
     "book": "Book",
     "applyFilters": "Apply filters",
-    "createdBetween": "Created between",
-    "and": "and",
+    "createdAfter": "Created after",
+    "createdBefore": "Created before",
     "ownerId": "ID of the owner",
-    "numberOfTrees": "Number of trees per page:"
+    "numberOfTrees": "Number of trees per page:",
+    "selectDate": "Select date"
 }

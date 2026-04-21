@@ -5,3 +5,10 @@
 */
 
 @import 'tailwindcss';
+
+@plugin 'flowbite/plugin';
+
+/* Disable dark mode */
+@custom-variant dark (&:where(.light, .light *));
+
+@source '../../node_modules/flowbite-svelte/dist';

@@ -29,7 +29,8 @@
     "lastEdited": "Laatst aangepast",
     "yes": "Ja",
     "no": "Nee",
-    "noTreesFound": "We kunnen geen bomen vinden, het is tijd om er een te maken!",
+    "noMyTreesFound": "We kunnen geen bomen vinden, het is tijd om er een te maken!",
+    "noAllTreesFound": "We kunnen geen bomen vinden die voldoen aan deze zoekcriteria.",
     "loading": "Laden",
     "enterFrontText": "Vul voorkant kaart in...",
     "enterBackText": "Vul achterkant kaart in...",
@@ -57,8 +58,9 @@
     "createdAt": "Aangemaakt op",
     "book": "Boek",
     "applyFilters": "Pas filters toe",
-    "createdBetween": "Aangemaakt tussen",
-    "and": "en",
+    "createdAfter": "Aangemaakt na",
+    "createdBefore": "Aangemaakt voor",
     "ownerId": "ID van de eigenaar",
-    "numberOfTrees": "Aantal bomen per pagina:"
+    "numberOfTrees": "Aantal bomen per pagina:",
+    "selectDate": "Selecteer een datum"
 }
