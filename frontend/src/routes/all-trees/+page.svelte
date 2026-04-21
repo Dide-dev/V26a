@@ -123,7 +123,7 @@
                     bind:value={filterOptions.ownerId}
                 />
             </label>
-            <button class="rounded-sm bg-emerald-500 p-1">{m.applyFilters()}</button>
+            <button class="cursor-pointer rounded-sm bg-emerald-500 p-1">{m.applyFilters()}</button>
         </form>
 
         <!-- Change the number of trees per page -->
