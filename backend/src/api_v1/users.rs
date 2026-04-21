@@ -6,7 +6,7 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_credentials_with_id;
+use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
     add_user, get_user, update_password, update_user, user_email_exists, user_id_exists,
 };
@@ -221,7 +221,7 @@ async fn change_password(
     Extension(db): Extension<PgPool>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
-    let credentials = get_user_credentials_with_id(&db, claims.sub)
+    let credentials = get_user_credentials_by_id(&db, claims.sub)
         .await?
         .ok_or(ApiError::DatabaseException)?;
 

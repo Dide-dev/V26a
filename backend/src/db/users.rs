@@ -204,7 +204,7 @@ pub async fn update_password(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::auth::{get_user_credentials, get_user_credentials_with_id};
+    use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
     use crate::db_structs::users::{AccountType, RegisterData, UserLanguage};
     use crate::get_connection_unwrap;
@@ -404,7 +404,7 @@ mod tests {
         initialize_user(get_connection_unwrap!(db), &register_data).await;
 
         // Assert user has the default account type.
-        let account_type = get_user_credentials(&db, email)
+        let account_type = get_user_credentials_by_email(&db, email)
             .await
             .unwrap()
             .unwrap()
@@ -414,7 +414,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_user_account_type_not_found(db: PgPool) {
-        let result = get_user_credentials(&db, "abc@localhost".to_owned()).await;
+        let result = get_user_credentials_by_email(&db, "abc@localhost".to_owned()).await;
         assert!(result.unwrap().is_none());
     }
 
@@ -435,7 +435,7 @@ mod tests {
 
         update_password(&db, user_id, new_password).await.unwrap();
 
-        let password_in_db = get_user_credentials_with_id(&db, user_id)
+        let password_in_db = get_user_credentials_by_id(&db, user_id)
             .await
             .unwrap()
             .unwrap()

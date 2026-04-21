@@ -6,7 +6,7 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_credentials;
+use crate::db::auth::get_user_credentials_by_email;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -75,7 +75,7 @@ async fn login(
     State(config): State<Config>,
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
-    let Some(credentials) = get_user_credentials(&db, login_request.email).await? else {
+    let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
 

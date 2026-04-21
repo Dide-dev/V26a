@@ -23,7 +23,7 @@ use std::str::FromStr;
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_user_credentials(
+pub async fn get_user_credentials_by_email(
     db: impl PgExecutor<'_>,
     email: String,
 ) -> Result<Option<UserCredentials>, ApiError> {
@@ -60,7 +60,7 @@ pub async fn get_user_credentials(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_user_credentials_with_id(
+pub async fn get_user_credentials_by_id(
     db: impl PgExecutor<'_>,
     id: i32,
 ) -> Result<Option<UserCredentials>, ApiError> {
