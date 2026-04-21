@@ -51,7 +51,7 @@ pub struct UserUpdateData {
     pub enabled: Option<bool>,
 }
 
-/// The body for a passwordchange request that contains the email address, the old password, and the new password.
+/// The body for a password change request that contains the old password, and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PasswordChangeRequestBody {

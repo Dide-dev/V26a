@@ -56,7 +56,7 @@ pub async fn get_user_credentials(
 /// # Returns
 /// Returns Ok(None) if the id could not be found.
 ///
-/// Returns a struct containing the user id, password hash and account type otherwise
+/// Returns a struct containing the user id, password hash and account type otherwise.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

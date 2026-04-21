@@ -185,12 +185,14 @@ async fn test_successful_password_change(db: PgPool) {
     register(&server, email.to_owned()).await;
     login(&server, email.to_owned()).await;
 
+    let change_password_data = PasswordChangeRequestBody {
+        old_password: "a$$word".to_owned(),
+        new_password: "Pa$$word".to_owned(),
+    };
+
     let response = server
         .post("/users/change-password")
-        .json(&PasswordChangeRequestBody {
-            old_password: "a$$word".to_string(),
-            new_password: "Pa$$word".to_string(),
-        })
+        .json(&change_password_data)
         .await;
 
     response.assert_status_ok();
@@ -198,13 +200,12 @@ async fn test_successful_password_change(db: PgPool) {
     let body: ChangePasswordResponse = response.json();
     assert!(body.succeeded);
 
-    let response = server
-        .post("/auth/login")
-        .json(&LoginRequestBody {
-            email: email.to_owned(),
-            password: "Pa$$word".to_string(),
-        })
-        .await;
+    let login_data = LoginRequestBody {
+        email: email.to_owned(),
+        password: change_password_data.new_password,
+    };
+
+    let response = server.post("/auth/login").json(&login_data).await;
 
     response.assert_status_ok();
 
@@ -222,12 +223,13 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     login(&server, email.to_owned()).await;
 
     // The default password set is `a$$word`, hence this request should fail.
+    let change_password_data = PasswordChangeRequestBody {
+        old_password: "Pa$$word".to_owned(),
+        new_password: "NewPa$$word".to_owned(),
+    };
     let response = server
         .post("/users/change-password")
-        .json(&PasswordChangeRequestBody {
-            old_password: "Pa$$word".to_string(),
-            new_password: "a$$word".to_string(),
-        })
+        .json(&change_password_data)
         .await;
 
     response.assert_status_ok();
@@ -235,13 +237,13 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     let body: ChangePasswordResponse = response.json();
     assert!(!body.succeeded);
 
-    let response = server
-        .post("/auth/login")
-        .json(&LoginRequestBody {
-            email: email.to_owned(),
-            password: "a$$word".to_string(),
-        })
-        .await;
+    // Password change request should not have succeeded, therefore the old password should enable a user to log in.
+    let login_data = LoginRequestBody {
+        email: email.to_owned(),
+        password: "a$$word".to_owned(),
+    };
+
+    let response = server.post("/auth/login").json(&login_data).await;
 
     response.assert_status_ok();
 

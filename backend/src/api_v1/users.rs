@@ -227,7 +227,7 @@ async fn change_password(
 
     let password_valid = bcrypt::verify(
         password_change_request.old_password,
-        credentials.password_hash.as_str(),
+        &credentials.password_hash,
     )
     .map_err(|_| ApiError::HashException)?;
 
