@@ -36,7 +36,6 @@ pub struct CardGetData {
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LibraryCardAddData {
-    pub tree_id: i32,
     pub card_id: i32,
     pub title: String,
     pub tags: Vec<String>,

@@ -115,7 +115,6 @@ async fn test_library_card_add(db: PgPool) {
     let server = setup_login(db).await;
 
     let library_card_add_data = LibraryCardAddData {
-        tree_id: 1,
         card_id: 1,
         title: "title".to_owned(),
         tags: vec!["tag1".to_owned(), "tag2".to_owned()],
@@ -144,6 +143,13 @@ async fn test_library_card_add(db: PgPool) {
 
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
+    let card_id: i32 = response.json();
+
+    let library_card_add_data = LibraryCardAddData {
+        card_id,
+        title: "title".to_owned(),
+        tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+    };
 
     let response = server
         .post("/cards/add-to-library")
@@ -151,5 +157,6 @@ async fn test_library_card_add(db: PgPool) {
         .await;
     response.assert_status_ok();
 
-    // TODO: Cannot test retrieving a card from cards library yet as that's out of scope for 189.
+    // TODO: Cannot test retrieving a card from cards library yet as that's not implemented yet.
+    // It's out of scope for 189.
 }

@@ -53,7 +53,7 @@ CREATE INDEX trees_filter_book_name ON trees (book_name);
 CREATE TABLE cards
 (
     id              SERIAL PRIMARY KEY,
-    tree_id         INTEGER         NOT NULL,               -- library cards will be their own table later(?), with foreign key to hints(id)
+    tree_id         INTEGER         NOT NULL,
     created_at      TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     last_modified   TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     front           VARCHAR(1024)   NOT NULL    DEFAULT '', -- a lot of cards currently are empty at the front, TODO: check if this is done because of bad design or if it is actually desired.

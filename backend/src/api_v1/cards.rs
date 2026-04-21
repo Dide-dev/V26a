@@ -146,7 +146,6 @@ async fn update_existing_card(
 /// The id of the new card in the library database as [`Json<i32>`].
 ///
 /// # Errors
-///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the `tree_id` referenced in `card_data` does not exist.
 ///
 /// Returns [`MissingCard`](ApiError::MissingCard) if the `card_id` referenced in `card_data` does not exist.
@@ -162,10 +161,13 @@ async fn add_card_to_library(
 ) -> Result<Json<i32>, ApiError> {
     let owner_id = claims.sub;
 
-    // Verify tree exists and user is owner of tree
-    verify_tree_permissions(&db, card_data.tree_id, claims).await?;
+    // Verify card exists and get id of tree
+    let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
 
-    // Verify card exists and retrieves the front and back
+    // Verify tree exists and user is owner of tree
+    verify_tree_permissions(&db, tree_id, claims).await?;
+
+    // Retrieves the front and back of the card
     let card_text = get_card_text(&db, card_data.card_id).await?;
 
     let new_card_id = cards_library_add(
