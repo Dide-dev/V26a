@@ -24,14 +24,17 @@
     $effect(() => {
         if (dragState?.type !== 'dragging') return;
 
+        const scrollAreaSize = 70;
+        const scrollFps = 30;
+        const scrollSpeed = 900;
+
         let intervalId = setInterval(() => {
             if (dragState?.type !== 'dragging') return;
 
-            const scrollAreaSize = 80;
-            const scrollFps = 30;
-            const scrollSpeed = 200 / scrollFps;
             let scrollX = 0;
             let scrollY = 0;
+
+            let scrollAmount = scrollSpeed / scrollFps;
 
             // In of the 4 directions calculate how far into the scrollArea we are
             let x1 = scrollAreaSize - dragState.mouseX;
@@ -39,14 +42,14 @@
             let y1 = scrollAreaSize - dragState.mouseY;
             let y2 = scrollAreaSize + dragState.mouseY - window.innerHeight;
             if (x1 > 0) {
-                scrollX = -scrollSpeed;
+                scrollX = -scrollAmount;
             } else if (x2 > 0) {
-                scrollX = scrollSpeed;
+                scrollX = scrollAmount;
             }
             if (y1 > 0) {
-                scrollY = -scrollSpeed;
+                scrollY = -scrollAmount;
             } else if (y2 > 0) {
-                scrollY = scrollSpeed;
+                scrollY = scrollAmount;
             }
 
             if (scrollX !== 0) {
@@ -55,7 +58,7 @@
             if (scrollY !== 0) {
                 window.scrollBy(0, scrollY);
             }
-        });
+        }, 1000 / scrollFps);
 
         return () => clearInterval(intervalId);
     });
