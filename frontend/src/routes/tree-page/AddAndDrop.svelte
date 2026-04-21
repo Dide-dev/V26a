@@ -41,20 +41,20 @@
     export type LayoutRight = {
         type: 'right';
     };
-    /** Used when this component is to the under of a node. */
+    /** Used when this component is below a node. */
     export type LayoutUnder = {
         type: 'under';
         lineHeight: number;
 
-        // These correspond to private variable's or constants in the NodeViewer.svelte.
+        // These correspond to private variables or constants in the NodeViewer.svelte.
         svgWidth: number;
         lineOffset: number;
     };
-    /** Used when this component is to the above of a node. */
+    /** Used when this component is above a node. */
     export type LayoutOver = {
         type: 'over';
 
-        // These correspond to private variable's or constants in the NodeViewer.svelte.
+        // These correspond to private variables or constants in the NodeViewer.svelte.
         svgWidth: number;
         lineOffset: number;
     };

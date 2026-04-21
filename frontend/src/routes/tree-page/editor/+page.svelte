@@ -20,7 +20,7 @@
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
-    // We scroll the page for the user if they are dragging andthe mouse is near the edge
+    // We scroll the page for the user if they are dragging and the mouse is near the edge
     $effect(() => {
         if (dragState?.type !== 'dragging') return;
 
