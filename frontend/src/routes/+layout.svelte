@@ -37,34 +37,8 @@
         errors.push(err.reason);
     }
 
-    let leftLinks: Link[] = $state([
-        {
-            href: '/',
-            text: m.home(),
-            formatting: ''
-        },
-        {
-            href: '/all-trees',
-            text: m.allTrees(),
-            formatting: ''
-        }
-    ]);
-    let rightLinks: Link[] = $state([]);
-    const footerLinks: Link[] = $state([
-        {
-            href: '/colophon',
-            text: m.colophon(),
-            formatting: ''
-        },
-        {
-            href: '/',
-            text: m.home(),
-            formatting: ''
-        }
-    ]);
-
-    $effect(() => {
-        let left = [
+    let leftLinks: Link[] = $derived.by(() => {
+        let result = [
             {
                 href: '/',
                 text: m.home(),
@@ -78,14 +52,20 @@
         ];
 
         if (userInfo !== null) {
-            leftLinks = left.concat([
-                {
-                    href: '/tree-generator/',
-                    text: m.createTree(),
-                    formatting: ''
-                }
-            ]);
-            rightLinks = [
+            result.push({
+                href: '/tree-generator',
+                text: m.createTree(),
+                formatting: ''
+            });
+        }
+
+        return result;
+    });
+    let rightLinks: Link[] = $derived.by(() => {
+        let result = [];
+
+        if (userInfo !== null) {
+            result = [
                 {
                     href: '/profile',
                     text: m.profile(),
@@ -98,8 +78,7 @@
                 }
             ];
         } else {
-            leftLinks = left;
-            rightLinks = [
+            result = [
                 {
                     href: '/registration',
                     text: m.register(),
@@ -112,7 +91,21 @@
                 }
             ];
         }
+
+        return result;
     });
+    const footerLinks: Link[] = [
+        {
+            href: '/colophon',
+            text: m.colophon(),
+            formatting: ''
+        },
+        {
+            href: '/',
+            text: m.home(),
+            formatting: ''
+        }
+    ];
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
