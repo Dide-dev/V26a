@@ -8,8 +8,8 @@
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import { m } from '$lib/paraglide/messages.js';
-    import Navigation, { type Link } from './Navigation.svelte';
-    import Footer from './Footer.svelte';
+    import Navigation, { type NavLink } from './Navigation.svelte';
+    import Footer, { type FooterLink } from './Footer.svelte';
     import { getUserInfo } from '$lib/backend/users';
     import { afterNavigate } from '$app/navigation';
     import { locales, localizeHref } from '$lib/paraglide/runtime.js';
@@ -39,17 +39,17 @@
         errors.push(err.reason);
     }
 
-    let leftLinks: Link[] = $derived.by(() => {
+    let leftLinks: NavLink[] = $derived.by(() => {
         let result = [
             {
                 href: '/',
                 text: m.home(),
-                formatting: ''
+                isThin: false
             },
             {
                 href: '/all-trees',
                 text: m.allTrees(),
-                formatting: ''
+                isThin: false
             }
         ];
 
@@ -57,13 +57,13 @@
             result.push({
                 href: '/tree-generator',
                 text: m.createTree(),
-                formatting: ''
+                isThin: false
             });
         }
 
         return result;
     });
-    let rightLinks: Link[] = $derived.by(() => {
+    let rightLinks: NavLink[] = $derived.by(() => {
         let result = [];
 
         if (userInfo !== null) {
@@ -71,12 +71,12 @@
                 {
                     href: '/profile',
                     text: m.profile(),
-                    formatting: 'thin'
+                    isThin: true
                 },
                 {
                     href: '/my-trees',
                     text: m.myTrees(),
-                    formatting: 'thin'
+                    isThin: true
                 }
             ];
         } else {
@@ -84,28 +84,28 @@
                 {
                     href: '/registration',
                     text: m.register(),
-                    formatting: 'thin'
+                    isThin: true
                 },
                 {
                     href: '/login',
                     text: m.login(),
-                    formatting: 'thin'
+                    isThin: true
                 }
             ];
         }
 
         return result;
     });
-    const footerLinks: Link[] = [
+    const footerLinks: FooterLink[] = [
         {
             href: '/colophon',
             text: m.colophon(),
-            formatting: ''
+            target: '_self'
         },
         {
-            href: '/',
-            text: m.home(),
-            formatting: ''
+            href: 'https://softwareprojecten.sites.uu.nl/',
+            text: m.otherProjects(),
+            target: '_blank'
         }
     ];
 </script>
@@ -137,7 +137,7 @@
 
 <Footer links={footerLinks}></Footer>
 
-<!-- Necessary to have svelte-kit load in the locales -->
+<!-- Necessary to have svelte-kit load in the pages of the other locales. -->
 <div class="hidden">
     {#each locales as locale (locale)}
         <a href={localizeHref(page.url.href, { locale })}>{locale}</a>

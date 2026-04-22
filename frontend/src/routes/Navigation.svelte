@@ -14,19 +14,19 @@
         leftLinks,
         rightLinks
     }: {
-        leftLinks: Link[];
-        rightLinks: Link[];
+        leftLinks: NavLink[];
+        rightLinks: NavLink[];
     } = $props();
 
-    export type Link = {
+    export type NavLink = {
         href: string;
         text: string;
-        formatting: string;
+        isThin: boolean;
     };
 
     let menu = $state(false);
 
-    const large = new MediaQuery('min-width: 48rem');
+    const windowIsLarge = new MediaQuery('min-width: 48rem');
 
     function toggleMenu() {
         menu = !menu;
@@ -37,38 +37,45 @@
     }
 </script>
 
-{#snippet navItem(link: Link)}
-    <a class="nav-item {link.formatting}" href={appLink(link.href)} onclick={closeMenu}>
+{#snippet navItem(link: NavLink)}
+    <a
+        class={[link.isThin && 'min-w-24', 'nav-item not-md:hover:bg-tree-450']}
+        href={appLink(link.href)}
+        onclick={closeMenu}
+    >
         {link.text}
     </a>
 {/snippet}
 
 <nav class="w-100vw mb-6 flex font-bold text-neutral-100 not-md:flex-col not-md:justify-end">
-    {#if !large.current}
+    {#if !windowIsLarge.current}
         <button
-            class="flex justify-end not-md:mb-0.5 md:w-screen"
+            class={[
+                menu && 'mb-0.5',
+                'flex cursor-pointer justify-end hover:bg-tree-500 hover:text-white md:w-screen'
+            ]}
             onclick={toggleMenu}
             aria-label="Toggle menu"
         >
             {#if menu}✕{:else}☰{/if}
         </button>
     {/if}
-    {#if menu || large.current}
+    {#if menu || windowIsLarge.current}
         {#each leftLinks as link (link)}
             {@render navItem(link)}
         {/each}
-        {#if large.current}
+        {#if windowIsLarge.current}
             <div class="min-w-0 flex-auto p-0"></div>
         {/if}
         {#each rightLinks as link (link)}
             {@render navItem(link)}
         {/each}
-        <div class="nav-item thin dropdown">
-            <div class="dropbutton">{getLocale()}</div>
+        <div class="nav-item dropdown min-w-14">
+            <div class="dropbutton not-md:hover:bg-tree-500">{getLocale()}</div>
             <div class="dropcontent">
                 {#each locales.filter((l) => l !== getLocale()) as locale (locale)}
                     <a
-                        class="not-md:w-screen"
+                        class="not-md:w-screen md:min-w-14"
                         href={localizeHref(page.url.href, { locale })}
                         data-sveltekit-reload
                     >
@@ -83,7 +90,7 @@
 <style>
     @layer components {
         nav > * {
-            min-width: 15vw;
+            min-width: 10rem;
 
             background-color: var(--color-tree-625);
 
@@ -107,10 +114,6 @@
             text-align: center;
         }
 
-        nav > .thin {
-            min-width: 6vw;
-        }
-
         nav > .nav-item:hover {
             --tw-gradient-from: var(--color-tree-500);
             --tw-gradient-via: var(--color-tree-500);
@@ -129,7 +132,6 @@
 
         .dropdown .dropbutton {
             padding: 0.5rem 1rem;
-            margin: 0;
         }
 
         .dropcontent {
@@ -151,10 +153,6 @@
         .dropdown:hover .dropcontent {
             position: absolute;
             display: block;
-        }
-
-        .dropdown:hover .dropcontent > * {
-            min-width: 6vw;
         }
     }
 </style>

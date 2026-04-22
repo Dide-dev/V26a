@@ -12,8 +12,8 @@ Information and Computing Sciences) -->
 
 <div class="flex w-full justify-center *:w-md">
     {#if locale === 'nl'}
-        <Nl></Nl>
+        <Nl />
     {:else if locale === 'en'}
-        <En></En>
+        <En />
     {/if}
 </div>

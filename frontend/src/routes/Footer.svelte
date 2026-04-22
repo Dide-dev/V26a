@@ -6,24 +6,31 @@
 
 <script lang="ts">
     import { appLink } from '$lib';
-    import { type Link } from './Navigation.svelte';
     import logo from '$lib/assets/logo.png';
+
+    export type FooterLink = {
+        href: string;
+        text: string;
+        target: string;
+    };
 
     let {
         links
     }: {
-        links: Link[];
+        links: FooterLink[];
     } = $props();
 </script>
 
-{#snippet footerItem(link: Link)}
-    <a class="footer-item m-0.5 {link.formatting}" href={appLink(link.href)}>
+{#snippet footerItem(link: FooterLink)}
+    <a class="footer-item m-0.5" href={appLink(link.href)} target={link.target}>
         {link.text}
     </a>
 {/snippet}
 
 <footer class="w-100vw">
-    <img class="size-40" src={logo} alt="logo" />
+    <a href={appLink('/')} class="flex items-center">
+        <img class="aspect-square w-30 not-md:w-20" src={logo} alt="logo" />
+    </a>
     <div class="flex flex-auto flex-col items-center justify-center">
         <div class="flex flex-col">
             {#each links as link (link)}
