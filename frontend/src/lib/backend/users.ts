@@ -50,18 +50,6 @@ export type UserGetData = {
     language: string;
 };
 
-/** The data of the user that is returned when requesting the data of all users */
-export type UserGetAllData = {
-    email: string;
-    name: string;
-    nickname: string;
-    aboutMe: string;
-    emailVisible: boolean;
-    language: string;
-    accountType: AccountType;
-    enabled: boolean;
-};
-
 /**
  * The data needed to update a user
  * `accountType` and `enabled` are only updated if a non-null value is passed.
@@ -95,11 +83,6 @@ export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEma
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
-}
-
-/** Get the user's own data */
-export function getAllUserData(): Promise<UserGetAllData[]> {
-    return apiCallGetUser('admin/all-user-data');
 }
 
 /** Update a user's data */
