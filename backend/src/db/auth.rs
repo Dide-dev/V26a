@@ -17,25 +17,68 @@ use std::str::FromStr;
 /// `email` - The user's email address.
 ///
 /// # Returns
-/// A struct containing the user id, password hash and account type.
+/// Returns Ok(None) if the email could not be found.
 ///
-/// # Error
-/// Returns [`WrongCredentials`](ApiError::WrongCredentials) if no user could be found matching the given e-mail.
-pub async fn get_user_credentials(
+/// Returns a struct containing the user id, password hash and account type otherwise
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_credentials_by_email(
     db: impl PgExecutor<'_>,
     email: String,
-) -> Result<UserCredentials, ApiError> {
+) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
         "SELECT id, password_hash, account_type FROM users WHERE email = $1",
         email
     )
-    .fetch_one(db)
+    .fetch_optional(db)
     .await
-    .map_err(|_| ApiError::WrongCredentials)?;
+    .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(UserCredentials {
+    let Some(credentials) = credentials else {
+        return Ok(None);
+    };
+
+    Ok(Some(UserCredentials {
         user_id: credentials.id,
         password_hash: credentials.password_hash,
         account_type: AccountType::from_str(&credentials.account_type)?,
-    })
+    }))
+}
+
+/// Fetch a user's password from the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `id` - The user's id.
+///
+/// # Returns
+/// Returns Ok(None) if the id could not be found.
+///
+/// Returns a struct containing the user id, password hash and account type otherwise.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_credentials_by_id(
+    db: impl PgExecutor<'_>,
+    id: i32,
+) -> Result<Option<UserCredentials>, ApiError> {
+    let credentials = query!(
+        "SELECT id, password_hash, account_type FROM users WHERE id = $1",
+        id
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    let Some(credentials) = credentials else {
+        return Ok(None);
+    };
+
+    Ok(Some(UserCredentials {
+        user_id: credentials.id,
+        password_hash: credentials.password_hash,
+        account_type: AccountType::from_str(&credentials.account_type)?,
+    }))
 }

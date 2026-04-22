@@ -7,7 +7,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import { getUsersOwnTrees, type TreeMetadata } from '$lib/backend/trees';
-    import editIcon from '$lib/assets/editIcon.svg?raw';
+    import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
@@ -50,7 +50,7 @@
             <tbody>
                 {#each trees as tree (tree.genData.id)}
                     <tr>
-                        <td class="max-w-96 pr-4 hover:text-blue-800 hover:underline">
+                        <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
                                 href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
                                 target="_blank">{tree.data.title}</a
@@ -68,7 +68,7 @@
                                 aria-label="edit"
                             >
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html editIcon}
+                                {@html iconEdit}
                             </a>
                         </td>
                         <td class="min-w-2 hover:fill-blue-800">

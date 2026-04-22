@@ -28,7 +28,7 @@ use std::collections::HashSet;
 /// # Returns
 /// The id assigned to the new tree.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: impl PgExecutor<'_>,
@@ -71,7 +71,7 @@ pub async fn add_tree(
 ///
 /// `tree_id` - the id of the tree to remove
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), ApiError> {
     // When this tree is deleted from database, the cards are automatically deleted with it.
@@ -97,7 +97,7 @@ pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), Ap
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// May return a [`SerdeException`](ApiError::SerdeException) or a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_tree_structure(
     db: impl PgExecutor<'_>,
@@ -132,7 +132,7 @@ pub async fn update_tree_structure(
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_tree_data(
     db: impl PgExecutor<'_>,
@@ -172,7 +172,7 @@ pub async fn update_tree_data(
 /// # Returns
 /// All data of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn db_get_tree_all_data(
     db: impl PgExecutor<'_>,
@@ -228,7 +228,7 @@ pub async fn db_get_tree_all_data(
 /// # Returns
 /// The id of the owner of the tree as a [`Some`] if the tree exists, or a [`None`] if it doesn't.
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_tree_owner(
     db: impl PgExecutor<'_>,
@@ -255,7 +255,7 @@ pub async fn get_tree_owner(
 /// # Returns
 /// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_trees_by_owner(
     db: impl PgExecutor<'_>,
@@ -312,7 +312,7 @@ pub async fn get_all_trees_by_owner(
 ///
 /// `false` if either of these don't hold.
 ///
-/// # Error
+/// # Errors
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found which link to `tree_id`.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -438,7 +438,7 @@ fn apply_tree_filters<'a>(
 /// # Returns
 /// The amount of trees satisfying the filters at the requested page,
 ///
-/// # Error
+/// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_count(
     db: impl PgExecutor<'_>,
@@ -473,7 +473,7 @@ pub async fn get_queried_count(
 /// A list with the trees satisfying the filters at the requested page,
 /// together with a boolean if there exists a next page.
 ///
-/// # Error
+/// # Errors
 /// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

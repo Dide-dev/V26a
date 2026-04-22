@@ -6,9 +6,11 @@
 
 #![cfg(test)]
 
+use crate::api_v1::auth::LoginResponse;
+use crate::api_v1::users::{AddUserResponse, ChangePasswordResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    AccountType, RegisterData, UserGetData, UserLanguage, UserUpdateData,
+    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
 };
 use crate::tests::api_v1::{login, register, setup};
 use sqlx::PgPool;
@@ -30,7 +32,11 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
     let response = server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
-    let user_id: i32 = response.json();
+    let response = response.json::<AddUserResponse>();
+    let AddUserResponse::Success { user_id } = response else {
+        // Adding a user should never fail in a test
+        panic!("Something unexpected failed while adding a user")
+    };
 
     let expected_user_data = UserGetData {
         email: register_data.email.clone(),
@@ -168,4 +174,79 @@ async fn test_change_enabled_flag(db: PgPool) {
         .await;
     // Disabling our own account should fail.
     response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_successful_password_change(db: PgPool) {
+    let server = setup(db);
+
+    let email = "test@test.nl";
+
+    register(&server, email.to_owned()).await;
+    login(&server, email.to_owned()).await;
+
+    let change_password_data = PasswordChangeRequestBody {
+        old_password: "a$$word".to_owned(),
+        new_password: "Pa$$word".to_owned(),
+    };
+
+    let response = server
+        .post("/users/change-password")
+        .json(&change_password_data)
+        .await;
+
+    response.assert_status_ok();
+
+    let body: ChangePasswordResponse = response.json();
+    assert!(body.succeeded);
+
+    let login_data = LoginRequestBody {
+        email: email.to_owned(),
+        password: change_password_data.new_password,
+    };
+
+    let response = server.post("/auth/login").json(&login_data).await;
+
+    response.assert_status_ok();
+
+    let login_body: LoginResponse = response.json();
+    assert!(login_body.succeeded);
+}
+
+#[sqlx::test]
+async fn test_change_password_incorrect_old_password(db: PgPool) {
+    let server = setup(db);
+
+    let email = "test@test.nl";
+
+    register(&server, email.to_owned()).await;
+    login(&server, email.to_owned()).await;
+
+    // The default password set is `a$$word`, hence this request should fail.
+    let change_password_data = PasswordChangeRequestBody {
+        old_password: "Pa$$word".to_owned(),
+        new_password: "NewPa$$word".to_owned(),
+    };
+    let response = server
+        .post("/users/change-password")
+        .json(&change_password_data)
+        .await;
+
+    response.assert_status_ok();
+
+    let body: ChangePasswordResponse = response.json();
+    assert!(!body.succeeded);
+
+    // Password change request should not have succeeded, therefore the old password should enable a user to log in.
+    let login_data = LoginRequestBody {
+        email: email.to_owned(),
+        password: "a$$word".to_owned(),
+    };
+
+    let response = server.post("/auth/login").json(&login_data).await;
+
+    response.assert_status_ok();
+
+    let login_body: LoginResponse = response.json();
+    assert!(login_body.succeeded);
 }

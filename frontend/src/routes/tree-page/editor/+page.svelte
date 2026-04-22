@@ -14,7 +14,54 @@
         type TreeWithCards,
         type TreeData
     } from '$lib/backend/trees';
-    import NodeViewer from '../NodeViewer.svelte';
+    import { goto } from '$app/navigation';
+    import { appLink } from '$lib';
+    import NodeViewer, { type DragState } from '../NodeViewer.svelte';
+
+    let dragState: DragState = $state(null);
+    let scrollArea: Element | null = $state(null);
+    // We scroll the page for the user if they are dragging and the mouse is near the edge
+    $effect(() => {
+        if (dragState?.type !== 'dragging') return;
+
+        const scrollAreaSize = 70;
+        const scrollFps = 30;
+        const scrollSpeed = 900;
+
+        let intervalId = setInterval(() => {
+            if (dragState?.type !== 'dragging') return;
+
+            let scrollX = 0;
+            let scrollY = 0;
+
+            let scrollAmount = scrollSpeed / scrollFps;
+
+            // In of the 4 directions calculate how far into the scrollArea we are
+            let x1 = scrollAreaSize - dragState.mouseX;
+            let x2 = scrollAreaSize + dragState.mouseX - window.innerWidth;
+            let y1 = scrollAreaSize - dragState.mouseY;
+            let y2 = scrollAreaSize + dragState.mouseY - window.innerHeight;
+            if (x1 > 0) {
+                scrollX = -scrollAmount;
+            } else if (x2 > 0) {
+                scrollX = scrollAmount;
+            }
+            if (y1 > 0) {
+                scrollY = -scrollAmount;
+            } else if (y2 > 0) {
+                scrollY = scrollAmount;
+            }
+
+            if (scrollX !== 0) {
+                scrollArea?.scrollBy(scrollX, 0);
+            }
+            if (scrollY !== 0) {
+                window.scrollBy(0, scrollY);
+            }
+        }, 1000 / scrollFps);
+
+        return () => clearInterval(intervalId);
+    });
 
     let treeData: TreeData = $state({
         title: '',
@@ -29,7 +76,7 @@
     });
 
     let loading = $state(true);
-    let error: Error | null = $state(null);
+
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
     let dropDown = $state(false);
@@ -38,38 +85,32 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            error = new Error('No tree id provided');
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            error = new Error('Invalid tree id');
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
             return;
         }
 
-        tree = await getTreeWithCards(id).then(
-            (treeWithCards) => treeWithCards,
-            (e) => {
-                error = e;
-                return null;
-            }
-        );
+        tree = await getTreeWithCards(id);
 
-        if (tree) {
-            treeData = {
-                title: tree.data.title ?? '',
-                description: tree.data.description ?? '',
-                bookName: tree.data.bookName ?? '',
-                bookEdition: tree.data.bookEdition ?? '',
-                bookIsbn: tree.data.bookIsbn ?? '',
-                bookChapter: tree.data.bookChapter ?? '',
-                bookExercise: tree.data.bookExercise ?? '',
-                assignmentText: tree.data.assignmentText ?? '',
-                published: tree.data.published ?? false
-            };
-        }
+        treeData = {
+            title: tree.data.title ?? '',
+            description: tree.data.description ?? '',
+            bookName: tree.data.bookName ?? '',
+            bookEdition: tree.data.bookEdition ?? '',
+            bookIsbn: tree.data.bookIsbn ?? '',
+            bookChapter: tree.data.bookChapter ?? '',
+            bookExercise: tree.data.bookExercise ?? '',
+            assignmentText: tree.data.assignmentText ?? '',
+            published: tree.data.published ?? false
+        };
 
         loading = false;
     });
@@ -91,10 +132,8 @@
     }
 </script>
 
-{#if error == null && loading}
+{#if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
-{:else if error != null}
-    <p class="text-red-700" data-testid="error">{error}</p>
 {:else if tree}
     <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
@@ -172,11 +211,38 @@
         {/if}
     </div>
 
-    <div class="mt-1 mr-1 ml-1 flex grow flex-col gap-7 overflow-auto">
+    <!-- The 'pt-6' is because the nodeviewer is in editing mode. It has some bits sticking out on top. -->
+    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pt-6">
         {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree parent={root} node={root} editingPage={true} />
+            <NodeViewer bind:tree bind:dragState parent={root} node={root} editingPage={true} />
         {/each}
     </div>
+{/if}
+
+<!--
+    We need to listen on the entire body to detect if drag & drop did not find target.
+    Also here we update the position of the 'ghost' while dragging.
+-->
+<svelte:body
+    onmouseup={() => (dragState = null)}
+    onmouseenter={(event: MouseEvent) => {
+        if (event.buttons === 0) {
+            dragState = null;
+        }
+    }}
+    onmousemove={(event: MouseEvent) => {
+        if (dragState?.type !== 'dragging') return;
+
+        dragState.mouseX = event.clientX;
+        dragState.mouseY = event.clientY;
+    }}
+/>
+{#if dragState?.type === 'dragging'}
+    <style>
+        * {
+            cursor: move;
+        }
+    </style>
 {/if}
 
 <!--

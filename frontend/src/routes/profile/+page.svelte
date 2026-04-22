@@ -8,35 +8,33 @@
     import { locales } from '$lib/paraglide/runtime.js';
     import { getOwnUserData, getUserInfo, updateUser, type UserGetData } from '$lib/backend/users';
     import { m } from '$lib/paraglide/messages.js';
+    import { redirectLogin } from '$lib/backend';
+    import { page } from '$app/state';
 
-    let error: null | Error = $state(null);
     let userDataPromise: Promise<UserGetData> = $state(getOwnUserData());
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
+
         const userInfo = getUserInfo();
         if (userInfo === null) {
-            error = new Error('You are not logged in!');
-        } else {
-            try {
-                await updateUser(userInfo.sub, {
-                    name: userData.name,
-                    nickname: userData.nickname,
-                    aboutMe: userData.aboutMe,
-                    emailVisible: userData.emailVisible,
-                    language: userData.language,
-                    accountType: null,
-                    enabled: null
-                });
-
-                // Effectively reloads the page. This is not really necessary, but prevents
-                // the displayed data from being inconsistent with the database in case something
-                // goes wrong.
-                userDataPromise = getOwnUserData();
-            } catch (e) {
-                error = e as Error;
-            }
+            await redirectLogin(page.url);
+            return;
         }
+        await updateUser(userInfo.sub, {
+            name: userData.name,
+            nickname: userData.nickname,
+            aboutMe: userData.aboutMe,
+            emailVisible: userData.emailVisible,
+            language: userData.language,
+            accountType: null,
+            enabled: null
+        });
+
+        // Effectively reloads the page. This is not really necessary, but prevents
+        // the displayed data from being inconsistent with the database in case something
+        // goes wrong.
+        userDataPromise = getOwnUserData();
     }
 </script>
 
@@ -108,10 +106,7 @@
                     {m.emailVisible()}
                 </label>
                 <button class="rounded-sm bg-emerald-500 p-1">{m.confirmChanges()}</button>
-                <p class="text-red-600">{error?.message}</p>
             </form>
         </div>
     </div>
-{:catch error}
-    <p style="color:red">{error.message}</p>
 {/await}

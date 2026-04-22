@@ -21,7 +21,10 @@
         language: getLocale()
     });
     let repeatPassword = $state('');
-    let error: null | Error = $state(null);
+
+    let passwordMissingChar: boolean = $state(false);
+    let passwordNotSame: boolean = $state(false);
+    let emailAlreadyExists: boolean = $state(false);
 
     function checkSamePassword(): boolean {
         return repeatPassword == formData.password;
@@ -49,17 +52,27 @@
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
+        passwordMissingChar = false;
+        passwordNotSame = false;
+        emailAlreadyExists = false;
+
         if (!checkLowercase() || !checkUppercase() || !checkNumber() || !checkSpecialCharacter()) {
-            error = new Error(m.missingCharacter());
-        } else if (!checkSamePassword()) {
-            error = new Error(m.passwordsNotTheSame());
+            passwordMissingChar = true;
+            return;
+        }
+        if (!checkSamePassword()) {
+            passwordNotSame = true;
+            return;
+        }
+
+        let addResponse = await addUser(formData);
+        if (addResponse.type === 'Success') {
+            emailAlreadyExists = false;
+            await goto(appLink('/login'));
+        } else if (addResponse.type === 'EmailAlreadyUsed') {
+            emailAlreadyExists = true;
         } else {
-            try {
-                await addUser(formData);
-                await goto(appLink('/login'));
-            } catch (e) {
-                error = e as Error;
-            }
+            throw new Error('ERROR: Unexpected output from API.');
         }
     }
 </script>
@@ -79,6 +92,9 @@
                 required
             />
         </label>
+        {#if emailAlreadyExists}
+            <p class="text-red-600" data-testid="error">{m.emailAlreadyExists()}</p>
+        {/if}
         <label>
             {m.name()}
             <input
@@ -115,6 +131,9 @@
                 required
             />
         </label>
+        {#if passwordMissingChar}
+            <p class="text-red-600" data-testid="error">{m.missingCharacter()}</p>
+        {/if}
         <label>
             {m.repeatPassword()}
             <input
@@ -128,6 +147,9 @@
                 required
             />
         </label>
+        {#if passwordNotSame}
+            <p class="text-red-600" data-testid="error">{m.passwordsNotTheSame()}</p>
+        {/if}
         <label>
             {m.language()}
             <select class="rounded-md border-2" bind:value={formData.language}>
@@ -147,6 +169,5 @@
             {m.emailVisible()}
         </label>
         <button class="rounded-sm bg-emerald-500 p-1">{m.register()}</button>
-        <p class="text-red-600" data-testid="error">{error?.message}</p>
     </form>
 </div>

@@ -38,13 +38,34 @@ pub fn trees() -> Router<Config> {
         .route("/get-mine-all", get(get_all_owned_trees))
 }
 
+#[utoipa::path(
+    post,
+    path = "/add",
+    context_path = "/api/v1/trees",
+    request_body = TreeAddData,
+    responses(
+        (status = 200, description = "Tree successfully added with returned id.", body = i32, content_type = "application/json"),
+        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie)
+    )
+)]
 /// Add a tree to the database.
 ///
-/// # Returns
-/// The id assigned to the new tree as [`Json`].
+/// # Arguments
+/// `claims` - The session cookie of the user.
 ///
-/// # Error
-/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in [`TreeAddData`] contains cards.
+/// `tree_add_data` - The data used to initialize the tree, as [`TreeAddData`].
+///
+/// # Returns
+/// The id assigned to the new tree.
+///
+/// # Errors
+/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
+/// [`TreeAddData`] contains cards.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
@@ -61,12 +82,37 @@ async fn add_new_tree(
     Ok(json_id)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/remove/{tree_id}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Tree successfully removed."),
+        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+    )
+)]
 /// Remove a tree together with its cards from the database.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_id` - Tree to remove.
 ///
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the given `tree_id` exists.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to remove
+/// the given tree.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_tree(
     claims: Claims,
@@ -86,23 +132,45 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
     tree_structure.flatten().is_empty()
 }
 
+#[utoipa::path(
+    post,
+    path = "/update_structure",
+    context_path = "/api/v1/trees",
+    request_body = TreeUpdateStructureData,
+    responses(
+        (status = 200, description = "Tree structure successfully updated."),
+        (status = 400, description = "Tree with given id cannot be found or the new structure is not valid."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Update the structure of an existing tree in the database.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_update_data` - The data used to update the data of the tree, as [`TreeUpdateStructureData`].
+/// Overwrites the current structure.
 ///
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
-///
-/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 10,000 cards in the
-/// `Cards` table link to `tree_id`.
-///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
-/// the tree for the given `tree_id`.
 ///
 /// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
 /// * Not all cards in the structure reference the `tree_id` in the `Cards` database table.
 /// * A card is referenced more than once in the structure.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the tree for the given `tree_id`.
+///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards in the
+/// `Cards` table link to `tree_id`.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or a [`SerdeException`](ApiError::SerdeException) instead.
 async fn update_tree_structure(
@@ -113,26 +181,54 @@ async fn update_tree_structure(
     // Verify the tree's existence and the user's permissions.
     verify_tree_permissions(&db, tree_update_data.id, claims).await?;
 
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    update_structure_if_valid(&mut tx, tree_update_data.id, tree_update_data.new_structure).await?;
+    update_structure_if_valid(
+        &mut transaction,
+        tree_update_data.id,
+        tree_update_data.new_structure,
+    )
+    .await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
 
-/// Remove a card from a tree. Removes the card from the database table `cards`,
-/// and updates the tree structure, if the provided new structure in `tree_card_removal_data`
-/// is still valid when the card is removed.
+#[utoipa::path(
+    post,
+    path = "/remove-card",
+    context_path = "/api/v1/trees",
+    request_body = TreeRemoveCardData,
+    responses(
+        (status = 200, description = "Card successfully removed from tree."),
+        (status = 400, description = "Tree or card with given id cannot be found or the new structure is not valid."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Remove a card from a tree.
+///
+/// Removes the card from the database table `cards`, and overwrites the current tree structure,
+/// if the provided new structure in `tree_card_removal_data` is still valid when the card is removed.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_card_removal_data` - The data used to remove the card and update the tree structure,
+/// as [`TreeRemoveCardData`].
 ///
 /// # Returns
 /// Nothing.
 ///
-/// # Error
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
-/// for the given `tree_id`.
-///
+/// # Errors
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///
 /// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
@@ -141,34 +237,40 @@ async fn update_tree_structure(
 /// * Not all cards in the structure reference the `tree_id` in the `cards` database table.
 /// * A card is referenced more than once in the structure.
 ///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
+/// for the given `tree_id`.
+///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found
 /// which link to `tree_id`.
 ///
 /// May return a [`SerdeException`](ApiError::SerdeException)
-/// or a [`DatabaseException`](ApiError::DatabaseException) instead.
+/// or [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_card_from_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Json(tree_card_removal_data): Json<TreeRemoveCardData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(&db, tree_card_removal_data.id, claims).await?;
+    verify_tree_permissions(&db, tree_card_removal_data.tree_id, claims).await?;
 
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
     // First, we remove the card from the database, within the transaction.
-    remove_card(&mut *tx, tree_card_removal_data.card_id).await?;
+    remove_card(&mut *transaction, tree_card_removal_data.card_id).await?;
 
     // Then, we check if the structure is still valid with the card being removed.
     // This ensures the card is actually removed from the structure.
     update_structure_if_valid(
-        &mut tx,
-        tree_card_removal_data.id,
+        &mut transaction,
+        tree_card_removal_data.tree_id,
         tree_card_removal_data.new_structure,
     )
     .await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
@@ -186,7 +288,7 @@ async fn remove_card_from_tree(
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
 /// * Not all cards in the structure reference the `tree_id` in the `cards` database table.
 /// * A card is referenced more than once in the structure.
@@ -211,12 +313,33 @@ async fn update_structure_if_valid(
     Ok(())
 }
 
+#[utoipa::path(
+    post,
+    path = "/update-data",
+    context_path = "/api/v1/trees",
+    request_body = TreeUpdateData,
+    responses(
+        (status = 200, description = "Tree data updated successfully."),
+        (status = 400, description = "Tree with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
 /// Update the data of an existing tree in the database.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_update_data` - The data used to update the tree, as [`TreeUpdateData`].
 ///
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
@@ -235,23 +358,47 @@ async fn update_tree_data(
     Ok(())
 }
 
-/// Request all data of a specific tree together with all its cards from the database.
+#[utoipa::path(
+    get,
+    path = "/get-with-cards/{tree_id}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully retrieved requested tree.", body = TreeWithCards),
+        (status = 400, description = "Tree with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+    )
+)]
+/// Request all data of a specific tree together with all of its cards.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user, as an [`Option`]. Necessary if retrieving the user
+/// is retrieving their own, unpublished tree.
+///
+/// `tree_id` - The tree to retrieve data from.
 ///
 /// # Returns
-/// The tree data together with the cards as [`Json<TreeWithCards>`].
+/// The tree data together with its cards as [`TreeWithCards`].
 ///
-/// # Error
+/// # Errors
 /// Returns [`MissingTree`](ApiError::MissingTree) if `tree_id` does not exist.
 ///
-/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the tree is not published and the user is not logged in.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the tree is not published
+/// and the user is not logged in.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published and an user that is not the owner is logged in.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published
+/// and the user is not its owner.
 ///
-/// May return an [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
+    claims: Option<Claims>,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
-    claims: Option<Claims>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
     let (data, gen_data, structure) = db_get_tree_all_data(&db, tree_id)
         .await?
@@ -278,13 +425,29 @@ async fn get_tree_with_cards(
     }))
 }
 
-/// Requests all trees' metadata from a specific author.
+#[utoipa::path(
+    get,
+    path = "/get-mine-all",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully retrieved all owned trees.", body = Vec<TreeMetadata>),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Request metadata of all trees from the user.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
 ///
 /// # Returns
-/// A [`Json<Vec<TreeGeneratedData>>`] object.
+/// A list containing the metadata of all trees owned by the user, as [`Vec<TreeMetadata>`].
 ///
-/// # Error
-/// May return an [`ApiError`].
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_owned_trees(
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -309,7 +472,7 @@ async fn get_all_owned_trees(
 /// # Returns
 /// Nothing.
 ///
-/// # Error
+/// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change the tree
 /// for the given `tree_id`.
 ///
@@ -333,25 +496,43 @@ pub async fn verify_tree_permissions(
     }
 }
 
-/// Get the list of all trees satisfying some filters at a given page.
+#[utoipa::path(
+    get,
+    path = "/get-list",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully retrieved the list of trees with given filters.", body = TreeListResponse),
+        (status = 400, description = "Requested page or page size has exceeded a limit."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Option<Claims>, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
+        ("filters" = TreeFilters, Query),
+    )
+)]
+/// Retrieve the list of all trees satisfying the given filters at a given page of a given size.
 ///
 /// # Arguments
-/// `db` - A reference to the database connection to use for the query.
+/// `claims` - The session cookie of the user, as an [`Option`]. Only necessary if the query filter
+/// `showOwnPrivate` is set to `true`.
 ///
-/// `page` - The requested page, given as [`OptionalPaginationOptions`].
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
-/// `filters` - The requested filters to apply to the trees, given as [`TreeFilters`].
+/// `filters` - The requested filters to apply to the trees, given as [`TreeFilters`] through a query.
 ///
 /// # Returns
-/// A list with the trees satisfying the filters at the requested page,
-/// together with an integer with the next page num, or [`None`] if it doesn't exist.
+/// A list with the trees satisfying the filters at the requested page, together with an integer
+/// with the next page num, or [`None`] if it doesn't exist, as [`TreeListResponse`].
 ///
-/// # Error
-/// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than 100 items per page.
+/// # Errors
+/// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than
+/// 100 items per page.
 ///
 /// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
 ///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`DatabaseException`](ApiError::DatabaseException) or
+/// [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) instead.
 pub async fn get_list(
     claims: Option<Claims>,
     Extension(db): Extension<PgPool>,
@@ -362,9 +543,9 @@ pub async fn get_list(
 
     let optional_user_id = claims.map(|c| c.sub);
 
-    let mut tx = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let trees_count = get_queried_count(&mut *tx, &filters, optional_user_id).await?;
+    let trees_count = get_queried_count(&mut *transaction, &filters, optional_user_id).await?;
     if trees_count == 0 {
         return Ok(Json(TreeListResponse {
             total_trees: 0,
@@ -372,9 +553,12 @@ pub async fn get_list(
         }));
     }
 
-    let trees = get_queried_list(&mut *tx, &page, &filters, optional_user_id).await?;
+    let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
 
-    tx.commit().await.map_err(|_| ApiError::DatabaseException)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     let list = TreeListResponse {
         total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,

@@ -14,10 +14,27 @@ mod errors;
 mod tests;
 
 use crate::{api_v1::v1_api, config::Config};
+use axum::extract::DefaultBodyLimit;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+use utoipauto::utoipauto;
+
+#[allow(clippy::needless_for_each)]
+mod api_doc {
+    use super::{OpenApi, utoipauto};
+
+    // Automatically reads all API docs written with `utoipa` for all API endpoints
+    // and converts into OpenAPI documentation.
+    #[utoipauto]
+    #[derive(OpenApi)]
+    #[openapi()]
+    pub struct ApiDoc;
+}
 
 #[tokio::main]
 async fn main() {
@@ -39,8 +56,13 @@ async fn main() {
 
     // Build our application with a route.
     let app = Router::new()
+        .nest_service("/uploads", ServeDir::new(&config.upload_dir))
         .merge(static_frontend())
-        .nest("/api", backend(config.clone()).await);
+        .nest("/api", backend(config.clone()).await)
+        // Add documentation routes.
+        .merge(
+            SwaggerUi::new("/api-docs").url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()),
+        );
 
     // Serve the application.
     let addr = (config.listening_ip.as_str(), config.listening_port);
@@ -82,5 +104,6 @@ async fn backend(config: Config) -> Router {
     Router::new()
         .nest("/v1", v1_api())
         .layer(Extension(db))
+        .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)
 }

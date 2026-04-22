@@ -6,9 +6,10 @@
 
 use crate::db_structs::users::AccountType;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// The body for a login request that contains the email address and password.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct LoginRequestBody {
     pub email: String,
     pub password: String,

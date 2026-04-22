@@ -112,14 +112,14 @@ export type TreeUpdateStructureData = {
 };
 
 export type TreeRemoveCardData = {
-    id: TreeId;
+    treeId: TreeId;
     cardId: CardId;
     newStructure: TreeStructure;
 };
 
 export type TreeListResponse = {
     totalTrees: number;
-    list: TreeMetadata[];
+    trees: TreeMetadata[];
 };
 
 export type PaginationOptions = {

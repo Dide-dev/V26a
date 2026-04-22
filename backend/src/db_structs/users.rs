@@ -5,11 +5,13 @@
 */
 
 use crate::errors::ApiError;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
+use utoipa::ToSchema;
 
 /// Data needed to add a user to the database.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterData {
     pub email: String,
@@ -22,7 +24,7 @@ pub struct RegisterData {
 }
 
 /// Data received when getting user data from the database.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserGetData {
     pub email: String,
@@ -35,7 +37,7 @@ pub struct UserGetData {
 
 /// Data needed to update a user in the database.
 /// `account_type` and `enabled` are only updated if a `Some` value is passed.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUpdateData {
     pub name: String,
@@ -43,12 +45,22 @@ pub struct UserUpdateData {
     pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
+    /// This field may only be updated by admins.
     pub account_type: Option<AccountType>,
+    /// This field may only be updated by admins.
     pub enabled: Option<bool>,
 }
 
+/// The body for a password change request that contains the old password, and the new password.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PasswordChangeRequestBody {
+    pub old_password: String,
+    pub new_password: String,
+}
+
 /// The possible values of the `language` field of a user.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum UserLanguage {
     Nl,
@@ -77,7 +89,7 @@ impl FromStr for UserLanguage {
 }
 
 /// The possible values of the account type field of a user.
-#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum AccountType {
     Admin,

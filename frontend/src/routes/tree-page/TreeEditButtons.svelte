@@ -5,298 +5,101 @@
 -->
 
 <script lang="ts">
-    import icon from '$lib/assets/editIcon.svg?raw';
-    import type {
-        Node,
-        RootNode,
-        TreeUpdateStructureData,
-        TreeWithCards
-    } from '$lib/backend/trees';
-    import { updateTreeStructure } from '$lib/backend/trees';
-    import {
-        addCard,
-        updateCard,
-        type CardAddData,
-        type CardUpdateData,
-        type CardId
-    } from '$lib/backend/cards';
+    import iconEdit from '$lib/assets/iconEdit.svg?raw';
+    import iconTrash from '$lib/assets/iconTrash.svg?raw';
+    import iconMove from '$lib/assets/iconMove.svg?raw';
+    import type { Node, RootNode, TreeRemoveCardData, TreeWithCards } from '$lib/backend/trees';
+    import { removeCardFromTree } from '$lib/backend/trees';
+    import { updateCard, type CardUpdateData, type CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
     import { htmlFromMarkdown } from "$lib/markdown";
+    import type { DragState } from './NodeViewer.svelte';
+    import CardEditor from './CardEditor.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         tree = $bindable(),
         parent = $bindable(),
-        node = $bindable()
-    }: { tree: TreeWithCards; parent: Node | RootNode; node: Node | RootNode } = $props();
+        node = $bindable(),
+        dragState = $bindable()
+    }: {
+        tree: TreeWithCards;
+        parent: Node | RootNode;
+        node: Node;
+        dragState: null | DragState;
+    } = $props();
 
-    let frontText = $state('');
-    let backText = $state('');
-    let errorMessage = $state('');
-    let previewView = $state(false);
+    /** In this component the card editor popup is only used with the 'edit' button */
+    let showEditPopup = $state(false);
 
-    const frontMaxLength = 1024;
-    const backMaxLength = 5000;
+    async function removeButtonClick() {
+        const index = parent.children.indexOf(node);
+        parent.children.splice(index, 1, ...node.children);
 
-    /** Variable to have the add/insert action on hold. */
-    let action = $state<
-        | null
-        | { type: 'add'; parent: Node | RootNode }
-        | { type: 'edit'; node: Node }
-        | { type: 'insert'; parent: Node | RootNode; child: Node }
-    >(null);
-
-    /** Gets called when the button to add a card is clicked;
-     * Sets the action to the 'add' type.
-     *
-     * @param parent The node that will have the new node as a child.
-     */
-    function handlerAdd(parent: Node | RootNode) {
-        action = { type: 'add', parent };
-    }
-
-    /** Gets called when the button to edit a card is clicked;
-     * Sets the action to 'edit' type.
-     *
-     * @param node The node that will be edited.
-     */
-    function handlerEdit(node: Node) {
-        action = { type: 'edit', node };
-        frontText = tree.cards[node.cardId].front;
-        backText = tree.cards[node.cardId].back;
-    }
-
-    /** Gets called when the button to insert a card is clicked;
-     * Sets the action to 'insert' type.
-     *
-     * @param parent The node that will have the new node as a child.
-     * @param child The node that will now be a child of the new node instead of parent.
-     */
-    function handlerInsert(parent: Node | RootNode, child: Node) {
-        action = { type: 'insert', parent, child };
-    }
-
-    /** Gets called when the Add button in the popup is clicked;
-     * Checks the action and executes the correct function.
-     *
-     * @param front The front text of the card.
-     * @param back The back text of the card.
-     */
-    function acceptCard(front: string, back: string) {
-        if (!action) return;
-        errorMessage = '';
-
-        if (action.type === 'edit') {
-            const update: CardUpdateData = {
-                cardId: action.node.cardId,
-                newFront: front,
-                newBack: back
-            };
-            editNode(action.node, update);
-            return;
-        }
-
-        const card: CardAddData = {
+        const remove: TreeRemoveCardData = {
             treeId: tree.genData.id,
-            front: front,
-            back: back
+            cardId: node.cardId,
+            newStructure: tree.structure
+        };
+        await removeCardFromTree(remove);
+    }
+
+    async function finishEdit(newCard: CardGetData) {
+        let update: CardUpdateData = {
+            cardId: node.cardId,
+            newFront: newCard.front,
+            newBack: newCard.back
+        };
+        await updateCard(update);
+
+        tree.cards[update.cardId] = {
+            front: update.newFront,
+            back: update.newBack
         };
 
-        if (action.type === 'add') {
-            addChild(action.parent, card);
-        } else if (action.type === 'insert') {
-            insertChild(action.parent, action.child, card);
-        }
+        showEditPopup = false;
     }
 
-    /** Adds a new child node
-     *
-     * @param parent The node that will have the new node as a child.
-     * @param card The data used to construct the new node.
-     */
-    async function addChild(parent: Node | RootNode, card: CardAddData) {
-        if (card.front.length > frontMaxLength) {
-            errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
-            return;
-        }
-        if (card.back.length > backMaxLength) {
-            errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
-            return;
-        }
-
-        addCard(card)
-            .then((cardId: CardId) => {
-                const newNode: Node = { cardId, children: [] };
-                tree.cards[cardId] = {
-                    front: card.front,
-                    back: card.back
-                };
-                parent.children.push(newNode);
-                let update: TreeUpdateStructureData = {
-                    id: tree.genData.id,
-                    newStructure: tree.structure
-                };
-                return updateTreeStructure(update);
-            })
-
-            .then(() => {
-                parent = { ...parent };
-                parent.children[-1] = { ...parent.children[-1] };
-                tree.structure = { ...tree.structure };
-                reset();
-            })
-
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
-    }
-
-    /** Edits a node
-     *
-     * @param node The node that will be edited
-     * @param update The data used to update the node.
-     */
-    async function editNode(node: Node, update: CardUpdateData) {
-        if (update.newFront.length > frontMaxLength) {
-            errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
-            return;
-        }
-        if (update.newBack.length > backMaxLength) {
-            errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
-            return;
-        }
-
-        updateCard(update)
-            .then(() => {
-                tree.cards[update.cardId] = {
-                    front: update.newFront,
-                    back: update.newBack
-                };
-                reset();
-            })
-
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
-    }
-
-    /** Inserts a new child between two nodes
-     *
-     * @param parent The node that will have the new node as a child.
-     * @param child The node that will now be a child of the new node instead of parent.
-     * @param card The data used to construct the new node.
-     */
-    async function insertChild(parent: Node | RootNode, child: Node, card: CardAddData) {
-        if (card.front.length > frontMaxLength) {
-            errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
-            return;
-        }
-        if (card.back.length > backMaxLength) {
-            errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
-            return;
-        }
-
-        addCard(card)
-            .then((cardId: CardId) => {
-                const newNode: Node = { cardId, children: [child] };
-                tree.cards[cardId] = {
-                    front: card.front,
-                    back: card.back
-                };
-                parent.children = parent.children.map((c) => (c === child ? newNode : c)) as Node[];
-                let update: TreeUpdateStructureData = {
-                    id: tree.genData.id,
-                    newStructure: tree.structure
-                };
-                return updateTreeStructure(update);
-            })
-
-            .then(() => {
-                parent = { ...parent };
-                parent.children[-1] = { ...parent.children[-1] };
-                tree.structure = { ...tree.structure };
-                reset();
-            })
-
-            .catch((reason: Error) => {
-                errorMessage = reason.toString();
-                console.error('Error: ', reason);
-            });
-    }
-
-    /** Reset function to clear the popup */
-    function reset() {
-        action = null;
-        frontText = '';
-        backText = '';
+    function startDrag(event: MouseEvent) {
+        dragState = {
+            type: 'dragging',
+            parent,
+            index: parent.children.indexOf(node),
+            mouseX: event.clientX,
+            mouseY: event.clientY
+        };
     }
 </script>
 
-<!-- Button to add new card as a child to this card -->
-<button
-    class="absolute top-2 right-2 h-5 w-5 cursor-pointer rounded-full bg-cyan-400 text-xs text-white opacity-60 transition-opacity hover:opacity-100"
-    onclick={() => handlerAdd(node)}>+</button
->
-
-{#if !('label' in node)}
-    <!-- Button to edit card -->
+<div class="absolute -top-6 left-2 h-7 border border-fuchsia-600 bg-fuchsia-300">
     <button
-        class="absolute top-2 right-[524] h-5 w-5 cursor-pointer opacity-60 transition-opacity hover:opacity-100"
-        onclick={() => handlerEdit(node)}
+        class="inline-block cursor-move"
+        title={m.moveCardWithSubtree()}
+        onmousedown={startDrag}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html icon}
+        {@html iconMove}
     </button>
+    <button class="cursor-pointer" title={m.editThisCard()} onclick={() => (showEditPopup = true)}>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconEdit}
+    </button>
+    <button class="cursor-pointer" title={m.deleteThisCard()} onclick={removeButtonClick}>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconTrash}
+    </button>
+</div>
 
-    <!-- Button to insert a new card between this card and a child to this card -->
-    <button
-        class="absolute top-2 right-[548] h-5 w-5 cursor-pointer rounded-full bg-green-300 text-xs text-white opacity-60 transition-opacity hover:opacity-100"
-        onclick={() => handlerInsert(parent, node)}>+</button
-    >
-{/if}
-
-<!-- Add/Insert card popup -->
-{#if action}
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div class="flex flex-col gap-2 rounded bg-white p-4">
-            <div class="flex justify-end gap-2">
-                <button class="cursor-pointer" onclick={() => {previewView=!previewView}}>{previewView ? "Markdown" : "Preview"}</button>
-            </div>
-            {#if !previewView}
-            <textarea
-                class="rounded w-xl border p-1"
-                placeholder={m.enterFrontText()}
-                bind:value={frontText}
-            ></textarea>
-            <textarea
-                class="rounded w-xl border p-1"
-                placeholder={m.enterBackText()}
-                bind:value={backText}
-            ></textarea>
-            {:else}
-                <div class="rounded w-xl border p-1">
-                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                    {@html htmlFromMarkdown(frontText)}
-                </div>
-                <div class="rounded w-xl border p-1">
-                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                    {@html htmlFromMarkdown(backText)}
-                </div>
-            {/if}
-            {#if errorMessage}
-                <p class="text-red-600">{errorMessage}</p>
-            {/if}
-            <div class="flex justify-end gap-2">
-                <button class="cursor-pointer" onclick={reset}>{m.cancel()}</button>
-                <button class="cursor-pointer"
-                    onclick={() => {
-                        if (backText.trim()) acceptCard(frontText.trim(), backText.trim());
-                        else errorMessage = m.backTextRequired();
-                    }}>{action.type === 'edit' ? m.edit() : m.add()}</button
-                >
-            </div>
-        </div>
-    </div>
+<!-- Edit card popup -->
+{#if showEditPopup}
+    <!--
+        Very important to make a copy of the card here.
+        We want the user to use the cancel/confirm buttons, not to directly edit the card itself.
+    -->
+    <CardEditor
+        card={{ ...tree.cards[node.cardId] }}
+        confirmText={m.edit()}
+        confirmCallback={finishEdit}
+        cancelCallback={() => (showEditPopup = false)}
+    />
 {/if}

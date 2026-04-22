@@ -18,7 +18,11 @@ export type LoginData = {
     password: string;
 };
 
+export type LoginResponse = {
+    succeeded: boolean;
+};
+
 /** Log in with the provided credentials */
-export function login(credentials: LoginData): Promise<void> {
+export function login(credentials: LoginData): Promise<LoginResponse> {
     return apiCallPostAuth('login', credentials);
 }
