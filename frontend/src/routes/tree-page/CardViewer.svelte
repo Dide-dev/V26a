@@ -32,14 +32,14 @@
     <!-- Cards layout in the editor -->
     {#if visible}
         <button
-            class="tree__node h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
             onclick={toggleVisible}
         >
             {tree.cards[node.cardId].back}
         </button>
     {:else}
         <button
-            class="tree__node h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={toggleVisible}
         >
             {tree.cards[node.cardId].front}
@@ -48,14 +48,12 @@
 {:else}
     <!-- Cards layout in the viewer -->
     {#if visible}
-        <p
-            class="tree__node h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
-        >
+        <p class="h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere">
             {tree.cards[node.cardId].back}
         </p>
     {:else if parentIsVisible}
         <button
-            class="tree__node h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={setVisible}
         >
             {tree.cards[node.cardId].front}

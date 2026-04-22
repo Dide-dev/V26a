@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import { page } from '$app/state';
-    import trashIcon from '$lib/assets/trashIcon.svg?raw';
+    import iconTrash from '$lib/assets/iconTrash.svg?raw';
     import { removeTree, type TreeMetadata } from '$lib/backend/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
@@ -35,7 +35,7 @@
 
 <a href={page.url.href} onclick={openPopup}>
     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-    {@html trashIcon}
+    {@html iconTrash}
 </a>
 
 {#if popupVisible}
