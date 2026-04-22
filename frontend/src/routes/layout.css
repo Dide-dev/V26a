@@ -23,17 +23,16 @@
         font-size: 1.125rem;
     }
 
-    button p a, p a {
-        color: #36C;
+    p a {
+        color: #36c;
     }
     blockquote p {
-        margin-left: 3%;
+        margin-left: 1.5rem;
+        color: #555555;
     }
-    blockquote p::before {
-        content: "> ";
-    }
-    ul li, ol li {
-        margin-left: 3.5%;
+    ul li,
+    ol li {
+        margin-left: 1.2rem;
     }
     ul {
         list-style-type: disc;

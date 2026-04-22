@@ -12,7 +12,6 @@
     import { removeCardFromTree } from '$lib/backend/trees';
     import { updateCard, type CardUpdateData, type CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
-    import { htmlFromMarkdown } from "$lib/markdown";
     import type { DragState } from './NodeViewer.svelte';
     import CardEditor from './CardEditor.svelte';
 

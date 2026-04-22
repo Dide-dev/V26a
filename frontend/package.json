@@ -48,6 +48,7 @@
         "vitest-browser-svelte": "^2.0.2"
     },
     "dependencies": {
+        "remark-gfm": "^4.0.1",
         "remark-html": "^16.0.1",
         "remark-parse": "^11.0.0"
     }
