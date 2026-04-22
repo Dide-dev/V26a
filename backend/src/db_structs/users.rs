@@ -55,13 +55,9 @@ pub struct UserUpdateData {
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserGetAllData {
+    pub id: i32,
     pub email: String,
     pub name: String,
-    pub nickname: String,
-    pub about_me: String,
-    pub email_visible: bool,
-    pub language: UserLanguage,
-    pub account_type: AccountType,
     pub enabled: bool,
 }
 

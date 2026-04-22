@@ -5,12 +5,12 @@
 */
 
 use crate::db_structs::users::{
-    AccountType, RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
+    RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
 };
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -145,35 +145,10 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
-    let record = query!("SELECT email, name, nickname, about_me, email_visible, language, account_type, enabled FROM users",)
+    query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
         .fetch_all(db)
         .await
-        .map_err(|_| ApiError::DatabaseException)?;
-
-    let all_users = record
-        .into_iter()
-        .filter_map(|u| {
-            // If user language isn't an existing language option the user will not be shown to the admin.
-            let Ok(language) = UserLanguage::from_str(u.language.as_str()) else {
-                return None;
-            };
-            let Ok(account_type) = AccountType::from_str(&u.account_type) else {
-                return None;
-            };
-            Some(UserGetAllData {
-                email: u.email,
-                name: u.name,
-                nickname: u.nickname,
-                about_me: u.about_me,
-                email_visible: u.email_visible,
-                language,
-                account_type,
-                enabled: u.enabled,
-            })
-        })
-        .collect();
-
-    Ok(all_users)
+        .map_err(|_| ApiError::DatabaseException)
 }
 
 /// Updates a user in the database.
@@ -362,23 +337,15 @@ mod tests {
 
         let expected_user_data = vec![
             UserGetAllData {
+                id: 1,
                 email: register_data.email,
                 name: register_data.name,
-                nickname: register_data.nickname,
-                about_me: register_data.about_me,
-                email_visible: register_data.email_visible,
-                language: register_data.language,
-                account_type: AccountType::Author,
                 enabled: true,
             },
             UserGetAllData {
+                id: 2,
                 email: register_data2.email,
                 name: register_data2.name,
-                nickname: register_data2.nickname,
-                about_me: register_data2.about_me,
-                email_visible: register_data2.email_visible,
-                language: register_data2.language,
-                account_type: AccountType::Author,
                 enabled: true,
             },
         ];

@@ -22,15 +22,17 @@ use crate::{
 };
 
 /// Checks if the user is an admin. This is used as a middleware in the `admin` function below.
-async fn check_if_admin(claims: Claims, request: Request, next: Next) -> Result<Response, ApiError> {
+async fn check_if_admin(
+    claims: Claims,
+    request: Request,
+    next: Next,
+) -> Result<Response, ApiError> {
     match claims.account_type {
         AccountType::Admin => {
             let response = next.run(request).await;
             Ok(response)
         }
-        _ => {
-            Err(ApiError::NoPermission)
-        }
+        _ => Err(ApiError::NoPermission),
     }
 }
 
