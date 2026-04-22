@@ -39,7 +39,7 @@
 
 {#snippet navItem(link: NavLink)}
     <a
-        class={[link.isThin && 'min-w-24', 'nav-item not-md:hover:bg-tree-450']}
+        class={[link.isThin && 'min-w-nav-thin', 'nav-item not-md:hover:bg-tree-450']}
         href={appLink(link.href)}
         onclick={closeMenu}
     >
@@ -70,12 +70,12 @@
         {#each rightLinks as link (link)}
             {@render navItem(link)}
         {/each}
-        <div class="nav-item dropdown min-w-14">
+        <div class="nav-item dropdown min-w-nav-extra-thin">
             <div class="dropbutton not-md:hover:bg-tree-500">{getLocale()}</div>
             <div class="dropcontent">
                 {#each locales.filter((l) => l !== getLocale()) as locale (locale)}
                     <a
-                        class="not-md:w-screen md:min-w-14"
+                        class="not-md:w-screen md:min-w-nav-extra-thin"
                         href={localizeHref(page.url.href, { locale })}
                         data-sveltekit-reload
                     >
@@ -90,7 +90,7 @@
 <style>
     @layer components {
         nav > * {
-            min-width: 10rem;
+            min-width: var(--spacing-nav-normal);
 
             background-color: var(--color-tree-625);
 

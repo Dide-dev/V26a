@@ -30,6 +30,10 @@
     --color-tree-dim-250: oklch(0.875 0.029 143.69);
 
     --color-brown: oklch(0.638 0.0968 73.33);
+
+    --spacing-nav-normal: 10rem;
+    --spacing-nav-thin: 6rem;
+    --spacing-nav-extra-thin: 3.5rem;
 }
 
 @layer base {
