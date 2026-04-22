@@ -150,7 +150,7 @@ async fn test_library_card_add(db: PgPool) {
     };
 
     let response = server
-        .post(&format!("/cards/{}/add-to-library", card_id))
+        .post(&format!("/cards/{card_id}/add-to-library"))
         .json(&library_card_add_data)
         .await;
     response.assert_status_ok();

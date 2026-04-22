@@ -11,9 +11,9 @@ use crate::db::cards_library::cards_library_add;
 use crate::db_structs::cards::{CardAddData, CardUpdateData, LibraryCardAddData};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
+use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use axum::extract::Path;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the cards category.
