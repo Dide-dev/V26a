@@ -23,7 +23,7 @@ pub fn feedback() -> Router<Config> {
     context_path = "/api/v1/feedback",
     request_body = FeedbackData,
     responses(
-        (status = 200, description = "Feedback succesfully received."),
+        (status = 200, description = "Feedback successfully received."),
         (status = 500, description = "Internal server error."),
     ),
 )]
