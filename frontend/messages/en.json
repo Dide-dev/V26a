@@ -61,5 +61,11 @@
     "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
-    "book": "Book"
+    "book": "Book",
+    "newPassword": "New password",
+    "oldPassword": "Old password",
+    "changePassword": "Change password",
+    "unsuccesfulPasswordChange": "Something went wrong while changing the password. Please try again.",
+    "succesfulPasswordChange": "Password changed succesfully.",
+    "changePasswordAttempt": "If you want to change you password, please fill in your old password, your new password, and repeat your new password in the dedicated fields above. If not, please remove the input from the fields."
 }
