@@ -115,13 +115,12 @@ async fn test_library_card_add(db: PgPool) {
     let server = setup_login(db).await;
 
     let library_card_add_data = LibraryCardAddData {
-        card_id: 1,
         title: "title".to_owned(),
         tags: vec!["tag1".to_owned(), "tag2".to_owned()],
     };
 
     let response = server
-        .post("/cards/add-to-library")
+        .post(&format!("/cards/{}/add-to-library", 1))
         .json(&library_card_add_data)
         .await;
     response.assert_status_bad_request();
@@ -146,13 +145,12 @@ async fn test_library_card_add(db: PgPool) {
     let card_id: i32 = response.json();
 
     let library_card_add_data = LibraryCardAddData {
-        card_id,
         title: "title".to_owned(),
         tags: vec!["tag1".to_owned(), "tag2".to_owned()],
     };
 
     let response = server
-        .post("/cards/add-to-library")
+        .post(&format!("/cards/{}/add-to-library", card_id))
         .json(&library_card_add_data)
         .await;
     response.assert_status_ok();

@@ -13,6 +13,7 @@ use crate::errors::ApiError;
 use crate::{Config, get_connection};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
+use axum::extract::Path;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the cards category.
@@ -20,7 +21,7 @@ pub fn cards() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_card))
         .route("/update", post(update_existing_card))
-        .route("/add-to-library", post(add_card_to_library))
+        .route("/{card_id}/add-to-library", post(add_card_to_library))
 }
 
 #[utoipa::path(
@@ -120,7 +121,7 @@ async fn update_existing_card(
 
 #[utoipa::path(
     post,
-    path = "/add-to-library",
+    path = "/{card_id}/add-to-library",
     context_path = "/api/v1/cards",
     request_body = LibraryCardAddData,
     responses(
@@ -131,6 +132,7 @@ async fn update_existing_card(
     ),
     params(
         ("session" = Claims, Cookie),
+        ("card_id" = i32, Path),
     )
 )]
 /// Adds a card to the card library. Deep copies the card information to the database.
@@ -157,20 +159,21 @@ async fn update_existing_card(
 async fn add_card_to_library(
     claims: Claims,
     Extension(db): Extension<PgPool>,
+    Path(card_id): Path<i32>,
     Json(card_data): Json<LibraryCardAddData>,
 ) -> Result<Json<i32>, ApiError> {
     let owner_id = claims.sub;
 
     // Verify card exists and get id of tree
-    let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
+    let tree_id = get_tree_of_card(&db, card_id).await?;
 
     // Verify tree exists and user is owner of tree
     verify_tree_permissions(&db, tree_id, claims).await?;
 
     // Retrieves the front and back of the card
-    let card_text = get_card_text(&db, card_data.card_id).await?;
+    let card_text = get_card_text(&db, card_id).await?;
 
-    let new_card_id = cards_library_add(
+    let library_card_id = cards_library_add(
         &db,
         &owner_id,
         &card_data.title,
@@ -179,5 +182,5 @@ async fn add_card_to_library(
     )
     .await?;
 
-    Ok(Json(new_card_id))
+    Ok(Json(library_card_id))
 }

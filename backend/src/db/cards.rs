@@ -6,7 +6,7 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use crate::errors::ApiError;
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::collections::BTreeMap;
 
 /// Add a new card to the database.
@@ -161,7 +161,8 @@ pub async fn get_tree_cards(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_card_text(db: impl PgExecutor<'_>, card_id: i32) -> Result<CardGetData, ApiError> {
-    let card = query!(
+    let card = query_as!(
+        CardGetData,
         "SELECT front, back
          FROM cards
          WHERE id = $1",
@@ -172,10 +173,7 @@ pub async fn get_card_text(db: impl PgExecutor<'_>, card_id: i32) -> Result<Card
     .map_err(|_| ApiError::DatabaseException)?
     .ok_or(ApiError::MissingCard(card_id))?;
 
-    Ok(CardGetData {
-        front: card.front,
-        back: card.back,
-    })
+    Ok(card)
 }
 
 /// Get the id of the tree the card belongs to.

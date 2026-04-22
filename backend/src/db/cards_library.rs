@@ -33,7 +33,7 @@ pub async fn cards_library_add(
     tags: &[String],
     card_text: &CardGetData,
 ) -> Result<i32, ApiError> {
-    let new_card_id = query!(
+    let library_card_id = query!(
         "INSERT INTO library_cards (owner_id, title, tags, front, back)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id",
@@ -48,7 +48,7 @@ pub async fn cards_library_add(
     .map_err(|_| ApiError::DatabaseException)?
     .id;
 
-    Ok(new_card_id)
+    Ok(library_card_id)
 }
 
 #[cfg(test)]
