@@ -15,9 +15,10 @@
     --color-tree-300: oklch(0.822 0.092 142.42);
     --color-tree-400: oklch(0.732 0.112 142.42);
     --color-tree-450: oklch(0.682 0.132 142.42);
-    --color-tree-500: oklch(0.660 0.132 142.42);
-    --color-tree-600: oklch(0.600 0.122 142.42);
-    --color-tree-625: oklch(0.550 0.112 142.42);
+    --color-tree-500: oklch(0.66 0.132 142.42);
+    --color-tree-600: oklch(0.6 0.122 142.42);
+    --color-tree-610: oklch(0.58 0.118 142.42);
+    --color-tree-625: oklch(0.55 0.112 142.42);
     --color-tree-650: oklch(0.525 0.102 142.42);
     --color-tree-750: oklch(0.475 0.087 142.42);
     --color-tree-800: oklch(0.405 0.077 142.42);
@@ -26,4 +27,14 @@
 
     --color-tree-dim-50: oklch(0.9475 0.02 143.69);
     --color-tree-dim-250: oklch(0.875 0.029 143.69);
+
+    --color-brown: oklch(0.638 0.0968 73.33);
+}
+
+@layer components {
+    body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
 }

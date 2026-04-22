@@ -5,10 +5,9 @@
 -->
 
 <script lang="ts">
-    import { page } from '$app/state';
-    import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime';
     import { appLink } from '$lib';
     import { type Link } from './Navigation.svelte';
+    import logo from '$lib/assets/logo.png';
 
     let {
         links
@@ -17,16 +16,36 @@
     } = $props();
 </script>
 
-<footer class="justify-end *:m-2">
-    <p class="inline-block">© Utrecht University (ICS).</p>
+{#snippet footerItem(link: Link)}
+    <a class="footer-item m-0.5 {link.formatting}" href={appLink(link.href)}>
+        {link.text}
+    </a>
+{/snippet}
+
+<footer class="w-100vw">
+    <img class="size-40" src={logo} alt="logo" />
+    <div class="flex flex-auto flex-col items-center justify-center">
+        <div class="flex flex-col">
+            {#each links as link (link)}
+                {@render footerItem(link)}
+            {/each}
+        </div>
+    </div>
+    <div class="flex flex-col items-end justify-end">
+        <p class="m-2 inline-block">© Utrecht University (ICS).</p>
+    </div>
 </footer>
 
 <style>
     @layer components {
         footer {
+            margin-top: 2rem;
+            background-color: var(--color-brown);
             display: flex;
-            position: relative;
-            width: 100%;
+        }
+
+        .footer-item:hover {
+            text-decoration: underline;
         }
     }
 </style>

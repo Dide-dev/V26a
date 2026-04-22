@@ -8,6 +8,7 @@
     import { page } from '$app/state';
     import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime';
     import { appLink } from '$lib';
+    import { MediaQuery } from 'svelte/reactivity';
 
     let {
         leftLinks,
@@ -22,44 +23,84 @@
         text: string;
         formatting: string;
     };
+
+    let menu = $state(false);
+
+    const large = new MediaQuery('min-width: 48rem');
+
+    function toggleMenu() {
+        menu = !menu;
+    }
+
+    function closeMenu() {
+        menu = false;
+    }
 </script>
 
-<nav class="w-100vw mb-6 flex font-bold text-neutral-100">
-    {#each leftLinks as link (link)}
-        <a class="nav-item {link.formatting}" href={appLink(link.href)}>{link.text}</a>
-    {/each}
-    <div class="min-w-0 flex-auto p-0"></div>
-    {#each rightLinks as link (link)}
-        <a class="nav-item {link.formatting}" href={appLink(link.href)}>{link.text}</a>
-    {/each}
-    <div class="nav-item thin dropdown">
-        <div class="dropbutton">{getLocale()}</div>
-        <div class="dropcontent">
-            {#each locales.filter((l) => l !== getLocale()) as locale (locale)}
-                <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
-                    {locale}
-                </a>
-            {/each}
+{#snippet navItem(link: Link)}
+    <a class="nav-item {link.formatting}" href={appLink(link.href)} onclick={closeMenu}>
+        {link.text}
+    </a>
+{/snippet}
+
+<nav class="w-100vw mb-6 flex font-bold text-neutral-100 not-md:flex-col not-md:justify-end">
+    {#if !large.current}
+        <button
+            class="flex justify-end not-md:mb-0.5 md:w-screen"
+            onclick={toggleMenu}
+            aria-label="Toggle menu"
+        >
+            {#if menu}✕{:else}☰{/if}
+        </button>
+    {/if}
+    {#if menu || large.current}
+        {#each leftLinks as link (link)}
+            {@render navItem(link)}
+        {/each}
+        {#if large.current}
+            <div class="min-w-0 flex-auto p-0"></div>
+        {/if}
+        {#each rightLinks as link (link)}
+            {@render navItem(link)}
+        {/each}
+        <div class="nav-item thin dropdown">
+            <div class="dropbutton">{getLocale()}</div>
+            <div class="dropcontent">
+                {#each locales.filter((l) => l !== getLocale()) as locale (locale)}
+                    <a
+                        class="not-md:w-screen"
+                        href={localizeHref(page.url.href, { locale })}
+                        data-sveltekit-reload
+                    >
+                        {locale}
+                    </a>
+                {/each}
+            </div>
         </div>
-    </div>
+    {/if}
 </nav>
 
 <style>
     @layer components {
         nav > * {
             min-width: 15vw;
-            --tw-gradient-position: to right;
-            @supports (background-image: linear-gradient(in lab, red, red)) {
-                --tw-gradient-position: to right in oklab;
+
+            background-color: var(--color-tree-625);
+
+            @media (width >= 48rem) {
+                --tw-gradient-position: to right;
+                @supports (background-image: linear-gradient(in lab, red, red)) {
+                    --tw-gradient-position: to right in oklab;
+                }
+                background-image: linear-gradient(var(--tw-gradient-stops));
+                --tw-gradient-to: var(--color-tree-625);
+                --tw-gradient-stops: var(--tw-gradient-via-stops);
+                --tw-gradient-via: var(--color-tree-600);
+                --tw-gradient-via-stops:
+                    var(--tw-gradient-position), var(--tw-gradient-from), var(--tw-gradient-via),
+                    var(--tw-gradient-to);
+                --tw-gradient-from: var(--color-tree-600);
             }
-            background-image: linear-gradient(var(--tw-gradient-stops));
-            --tw-gradient-to: var(--color-tree-625);
-            --tw-gradient-stops: var(--tw-gradient-via-stops);
-            --tw-gradient-via: var(--color-tree-600);
-            --tw-gradient-via-stops:
-                var(--tw-gradient-position), var(--tw-gradient-from), var(--tw-gradient-via),
-                var(--tw-gradient-to);
-            --tw-gradient-from: var(--color-tree-600);
 
             padding: 0.5rem 1rem;
 

@@ -52,5 +52,13 @@
     "profile": "Profile",
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
-    "add": "Add"
+    "add": "Add",
+    "myTrees": "My forest",
+    "trees": "Forest",
+    "credits": "Credits",
+    "timesVisited": "Times visited",
+    "createdAt": "Created at",
+    "book": "Book",
+    "allTrees": "Tree list",
+    "colophon": "Colophon"
 }

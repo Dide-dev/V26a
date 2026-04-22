@@ -14,8 +14,10 @@ mod errors;
 mod tests;
 
 use crate::{api_v1::v1_api, config::Config};
+use axum::extract::DefaultBodyLimit;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
@@ -54,6 +56,7 @@ async fn main() {
 
     // Build our application with a route.
     let app = Router::new()
+        .nest_service("/uploads", ServeDir::new(&config.upload_dir))
         .merge(static_frontend())
         .nest("/api", backend(config.clone()).await)
         // Add documentation routes.
@@ -101,5 +104,6 @@ async fn backend(config: Config) -> Router {
     Router::new()
         .nest("/v1", v1_api())
         .layer(Extension(db))
+        .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)
 }

@@ -10,10 +10,21 @@
     import { m } from '$lib/paraglide/messages.js';
     import Navigation, { type Link } from './Navigation.svelte';
     import Footer from './Footer.svelte';
+    import { getUserInfo } from '$lib/backend/users';
+    import { afterNavigate } from '$app/navigation';
 
     let { children } = $props();
-
+    let userInfo = $state(getUserInfo());
     let errors: Error[] = $state([]);
+
+    // Retrieve userinfo & path after navigating to another page (refreshes navbar).
+    afterNavigate(() => {
+        const newUserInfo = getUserInfo();
+        if (JSON.stringify(newUserInfo) !== JSON.stringify(userInfo)) {
+            userInfo = newUserInfo;
+            window.location.reload();
+        }
+    });
 
     function handleWindowError(event: Event) {
         if (event instanceof ErrorEvent) {
@@ -26,38 +37,91 @@
         errors.push(err.reason);
     }
 
-    const leftLinks: Link[] = [
+    let leftLinks: Link[] = $state([
         {
             href: '/',
             text: m.home(),
             formatting: ''
         },
         {
-            href: '/tree-generator/',
-            text: m.createTree(),
+            href: '/all-trees',
+            text: m.allTrees(),
             formatting: ''
         }
-    ];
-    const rightLinks: Link[] = [
+    ]);
+    let rightLinks: Link[] = $state([]);
+    const footerLinks: Link[] = $state([
         {
-            href: '/registration/',
-            text: m.register(),
-            formatting: 'thin'
+            href: '/colophon',
+            text: m.colophon(),
+            formatting: ''
         },
         {
-            href: '/login/',
-            text: m.login(),
-            formatting: 'thin'
+            href: '/',
+            text: m.home(),
+            formatting: ''
         }
-    ];
-    const footerLinks: Link[] = [];
+    ]);
+
+    $effect(() => {
+        let left = [
+            {
+                href: '/',
+                text: m.home(),
+                formatting: ''
+            },
+            {
+                href: '/all-trees',
+                text: m.allTrees(),
+                formatting: ''
+            }
+        ];
+
+        if (userInfo !== null) {
+            leftLinks = left.concat([
+                {
+                    href: '/tree-generator/',
+                    text: m.createTree(),
+                    formatting: ''
+                }
+            ]);
+            rightLinks = [
+                {
+                    href: '/profile',
+                    text: m.profile(),
+                    formatting: 'thin'
+                },
+                {
+                    href: '/my-trees',
+                    text: m.myTrees(),
+                    formatting: 'thin'
+                }
+            ];
+        } else {
+            leftLinks = left;
+            rightLinks = [
+                {
+                    href: '/registration',
+                    text: m.register(),
+                    formatting: 'thin'
+                },
+                {
+                    href: '/login',
+                    text: m.login(),
+                    formatting: 'thin'
+                }
+            ];
+        }
+    });
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <Navigation {leftLinks} {rightLinks}></Navigation>
 
-{@render children()}
+<main class="flex-auto">
+    {@render children()}
+</main>
 
 <svelte:window onerror={handleWindowError} onunhandledrejection={handleError} />
 
