@@ -40,6 +40,10 @@ export type AddUserEmailInvalid = {
     type: 'EmailAlreadyUsed';
 };
 
+export type ChangePasswordResponse = {
+    succeeded: boolean;
+};
+
 /** The data of the user that is returned when requesting it */
 export type UserGetData = {
     email: string;
@@ -112,6 +116,8 @@ export function getUserInfo(): UserInfo | null {
 }
 
 /** Change a user's password */
-export function changePassword(changePasswordData: ChangePasswordData) {
+export function changePassword(
+    changePasswordData: ChangePasswordData
+): Promise<ChangePasswordResponse> {
     return apiCallPostUser('change-password', changePasswordData);
 }
