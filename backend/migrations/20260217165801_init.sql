@@ -24,6 +24,24 @@ CREATE TABLE users
     -- old database had some keys on email, name and nickname, they are left out because they seem unnecessary for now
 );
 
+CREATE TABLE languages
+(
+    name VARCHAR(32) PRIMARY KEY
+);
+
+CREATE TABLE subjects
+(
+    name VARCHAR(32) PRIMARY KEY
+);
+
+CREATE TABLE books
+(
+    isbn    VARCHAR(13)  PRIMARY KEY,
+    title   VARCHAR(192) DEFAULT NULL,
+    author  VARCHAR(192) DEFAULT NULL,
+    edition VARCHAR(32)  DEFAULT NULL
+);
+
 -- the current database has a `plaatje` field that seems to only be used to check if an image exists? This won't work with multiple images anyway, so has been excluded.
 CREATE TABLE trees
 (
@@ -35,20 +53,34 @@ CREATE TABLE trees
     times_visited   BIGINT       NOT NULL DEFAULT 0,
     last_visited    TIMESTAMPTZ           DEFAULT NULL,              -- commonly NULL in prototype, can consider setting NOT NULL and filling the null values with last_edited
     title           VARCHAR(128) NOT NULL,
+    language        VARCHAR(32)  NOT NULL,
     description     VARCHAR(256)          DEFAULT NULL,
-    book_name       VARCHAR(192)          DEFAULT NULL,
-    book_edition    VARCHAR(32)           DEFAULT NULL,
+    subject         VARCHAR(32)           DEFAULT NULL,
     book_isbn       VARCHAR(13)           DEFAULT NULL,
     book_chapter    VARCHAR(32)           DEFAULT NULL,
     book_exercise   VARCHAR(32)           DEFAULT NULL,
     assignment_text VARCHAR(5000)         DEFAULT NULL,              -- currently stored as HTML with images in BASE64. We might want to consider Markdown or some other way of storing this.
     structure       JSONB        NOT NULL,
+    FOREIGN KEY (language) REFERENCES languages (name),
+    FOREIGN KEY (subject) REFERENCES subjects (name),
+    FOREIGN KEY (book_isbn) REFERENCES books (isbn),
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
 
 CREATE INDEX trees_filter_owner ON trees (owner_id);
 CREATE INDEX trees_filter_order_created_at ON trees (created_at);
-CREATE INDEX trees_filter_book_name ON trees (book_name);
+CREATE INDEX trees_filter_book_isbn ON trees (book_isbn);
+
+CREATE TABLE tags
+(
+    tree_id SERIAL      NOT NULL,
+    tag     VARCHAR(32) NOT NULL,
+    FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE, -- deleting a tree also deletes its tags
+    UNIQUE (tree_id, tag)
+);
+
+CREATE INDEX tags_tree ON tags (tree_id);
+CREATE INDEX tags_tag ON tags (tag);
 
 CREATE TABLE cards
 (

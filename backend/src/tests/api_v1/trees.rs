@@ -66,13 +66,60 @@ async fn test_new_empty_tree(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_new_invalid_tree(db: PgPool) {
+    let server = setup_login(db).await;
+
+    // Create tree with invalid language
+    let tree_data = TreeData {
+        language: "Notalanguage".to_string(),
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingLanguage("Notalanguage".to_string()).to_string());
+
+    // Create tree with invalid subject
+    let tree_data = TreeData {
+        subject: Some("Notasubject".to_string()),
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingSubject("Notasubject".to_string()).to_string());
+}
+
+#[sqlx::test]
 async fn test_new_empty_tree_with_data(db: PgPool) {
     let server = setup_login(db).await;
 
     let tree_data = TreeData {
         title: "Test tree".to_string(),
         description: Some("This is used for testing".to_string()),
+        language: "English".to_string(),
+        tags: vec!["geometry".to_string(), "difficult".to_string()],
+        subject: Some("Wiskunde B".to_string()),
         book_name: Some("Introduction to mathematics".to_string()),
+        book_author: Some("Leonhard Euler".to_string()),
         book_edition: Some("4b".to_string()),
         book_isbn: Some("9780136019701".to_string()),
         book_chapter: Some("5".to_string()),
@@ -372,7 +419,7 @@ async fn test_filter_tree_list(db: PgPool) {
             ..Default::default()
         },
         TreeData {
-            book_name: Some("vwo 4".to_string()),
+            book_isbn: Some("9781234567890".to_string()),
             published: true,
             ..Default::default()
         },
@@ -430,7 +477,9 @@ async fn test_filter_tree_list(db: PgPool) {
     assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
     // Filter on book with space
-    let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=2&book=9781234567890")
+        .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     let requested_trees_data = requested_trees
@@ -443,7 +492,7 @@ async fn test_filter_tree_list(db: PgPool) {
     login(&server, emails[1].clone()).await;
     let other_user_trees_data = vec![
         TreeData {
-            book_name: Some("vwo 5".to_string()),
+            book_isbn: Some("9780987654321".to_string()),
             published: true,
             ..Default::default()
         },
@@ -475,7 +524,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=vwo+4&book=vwo+5")
+        .get("/trees/get-list?page=1&size=100&book=9781234567890&book=9780987654321")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -491,7 +540,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books, incorrectly formatted
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=vwo+4,vwo+5")
+        .get("/trees/get-list?page=1&size=100&book=9781234567890,9780987654321")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -683,8 +732,12 @@ async fn test_update_metadata(db: PgPool) {
     // Update the metadata
     let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
+        language: "English".to_string(),
+        tags: vec!["tag1".to_string(), "tag2".to_string()],
+        subject: Some("Duits".to_string()),
         description: Some("Updated description".to_string()),
         book_name: Some("Updated book".to_string()),
+        book_author: Some("Updated author".to_string()),
         book_edition: Some("2nd".to_string()),
         book_isbn: Some("9780136019701".to_string()),
         book_chapter: Some("3".to_string()),
@@ -709,4 +762,26 @@ async fn test_update_metadata(db: PgPool) {
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
     assert_eq!(full_tree.data, new_tree_data);
+}
+
+#[sqlx::test]
+async fn test_get_languages(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/trees/get-all-languages").await;
+    response.assert_status_ok();
+
+    let languages: Vec<String> = response.json();
+    assert_ne!(languages.len(), 0);
+}
+
+#[sqlx::test]
+async fn test_get_subjects(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/trees/get-all-subjects").await;
+    response.assert_status_ok();
+
+    let subjects: Vec<String> = response.json();
+    assert_ne!(subjects.len(), 0);
 }

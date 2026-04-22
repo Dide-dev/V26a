@@ -103,7 +103,7 @@ pub mod test {
     ///
     /// # Returns
     /// The `tree_id` associated with the newly added tree.
-    pub async fn initialize_empty_tree(db: impl PgExecutor<'_>, owner_id: i32) -> i32 {
+    pub async fn initialize_empty_tree(db: &mut PgConnection, owner_id: i32) -> i32 {
         let data = TreeData::default();
 
         let structure = TreeStructure {
@@ -119,7 +119,7 @@ pub mod test {
     /// Initialize a tree in the database.
     ///
     /// # Arguments
-    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+    /// `db` - A connection to the database.
     ///
     /// `owner_id` - The `user_id` associated with the intended owner of the tree.
     /// Must exist as an `id` in the `users` table.
@@ -131,21 +131,36 @@ pub mod test {
     /// # Returns
     /// The `tree_id` associated with the newly added tree.
     pub async fn initialize_tree_with_data(
-        db: impl PgExecutor<'_>,
+        db: &mut PgConnection,
         owner_id: i32,
         tree_data: &TreeData,
         tree_structure: &TreeStructure,
     ) -> i32 {
         let structure = serde_json::to_value(tree_structure).unwrap();
 
+        if let Some(isbn) = &tree_data.book_isbn {
+            query!(
+                "INSERT INTO books (isbn, title, author, edition) VALUES ($1, $2, $3, $4)",
+                isbn,
+                tree_data.book_name,
+                tree_data.book_author,
+                tree_data.book_edition,
+            )
+            .execute(&mut *db)
+            .await
+            .unwrap();
+        }
+
         query!(
-            "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id",
+            "INSERT INTO trees (owner_id, published, title, description, language, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING id",
             owner_id,
             tree_data.published,
             tree_data.title,
             tree_data.description,
-            tree_data.book_name,
-            tree_data.book_edition,
+            tree_data.language,
+            tree_data.subject,
             tree_data.book_isbn,
             tree_data.book_chapter,
             tree_data.book_exercise,

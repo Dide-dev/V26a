@@ -25,7 +25,11 @@
     let treeData: TreeData = $state({
         title: '',
         description: '',
+        language: 'Nederlands',
+        tags: [],
+        subject: 'Wiskunde B',
         bookName: '',
+        bookAuthor: '',
         bookEdition: '',
         bookIsbn: '',
         bookChapter: '',

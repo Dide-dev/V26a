@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tags (tree_id, tag) SELECT $1 AS tree_id, tag FROM UNNEST($2::VARCHAR(32)[]) AS DATA(tag)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "VarcharArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "14b40b3258e46d25733dc3fed72195b5f991c89a8f2d4d0d531403accf3e5224"
+}

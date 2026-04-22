@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO books (isbn, title, author, edition)\n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "24c224201587553a73aca77ae033cb12dfffd9157592bb5a34f3a52efa71e0fb"
+}

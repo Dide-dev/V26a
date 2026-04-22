@@ -32,7 +32,11 @@ function createTree(): TreeWithCards {
     const treeData: TreeData = {
         title: 'Test Tree',
         description: 'Test Tree Description',
+        language: 'English',
+        tags: [],
+        subject: 'Wiskunde B',
         bookName: 'Test book name',
+        bookAuthor: 'Test author',
         bookEdition: 'Test edition',
         bookIsbn: '12345679',
         bookChapter: 'Test chapter 4',
