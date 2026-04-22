@@ -195,12 +195,11 @@ pub async fn update_password(
         user_id,
     )
     .execute(db)
-        .await
+    .await
     .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
-
 
 /// Delete a user from the database.
 ///
@@ -210,10 +209,10 @@ pub async fn update_password(
 /// `user_id` - The id of the user.
 ///
 /// `delete_owned_trees` - Check of if user wants to delete his/her trees.
-/// 
+///
 /// # Returns
 /// Nothing.
-/// 
+///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn delete_user(
@@ -256,8 +255,8 @@ mod tests {
     use super::*;
     use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
-    use crate::db_structs::users::{AccountType, RegisterData, UserUpdateData, UserLanguage};
-    use crate::{get_connection_unwrap};
+    use crate::db_structs::users::{AccountType, RegisterData, UserLanguage, UserUpdateData};
+    use crate::get_connection_unwrap;
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -498,6 +497,7 @@ mod tests {
         assert!(password_valid);
     }
 
+    #[sqlx::test]
     async fn test_delete_user(db: PgPool) {
         let register_data = RegisterData {
             email: "email".to_owned(),
@@ -511,7 +511,7 @@ mod tests {
 
         let user_id = initialize_user(&db, &register_data).await;
 
-        delete_user(&mut *db.acquire().await.unwrap(), user_id, true)
+        delete_user(&mut db.acquire().await.unwrap(), user_id, true)
             .await
             .unwrap();
 
@@ -531,7 +531,7 @@ mod tests {
         };
 
         let expected_user_data = RegisterData {
-            email: format!("deleted_{}", user_id),
+            email: format!("deleted_{user_id}"),
             password: String::new(),
             name: String::new(),
             nickname: String::new(),
@@ -540,7 +540,7 @@ mod tests {
             language: register_data.language,
         };
 
-        assert_eq!(all_found_user_data.enabled, false);
+        assert!(!all_found_user_data.enabled);
         assert_eq!(found_update_data, expected_user_data);
     }
 }

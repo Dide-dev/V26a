@@ -8,10 +8,12 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    add_user, delete_user, get_user, update_password, update_user, user_email_exists, user_id_exists,
+    add_user, delete_user, get_user, update_password, update_user, user_email_exists,
+    user_id_exists,
 };
 use crate::db_structs::users::{
-    AccountType, PasswordChangeRequestBody, DeleteOwnedTrees, RegisterData, UserGetData, UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
+    UserUpdateData,
 };
 use crate::errors::ApiError;
 
@@ -211,7 +213,7 @@ pub struct ChangePasswordResponse {
 ///
 /// # Arguments
 /// `password_change_request` - A struct containing the user's old password and the new password.
-/// 
+///
 /// # Returns
 /// Nothing.
 ///
@@ -250,11 +252,11 @@ async fn change_password(
         (status = 200, description = "User data successfully deleted."),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()), 
+        (status = 403, description = ApiError::NoPermission.to_string()),
     ),
         params(
         ("user_id" = i32, Path),
-        ("deleteOwnedTrees" = Option<bool>, Query)
+        ("deleteOwnedTrees" = Option<bool>, Query),
         ("session" = Claims, Cookie),
     )
 )]
@@ -263,7 +265,7 @@ async fn change_password(
 /// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
 ///
 /// # Arguments
-/// `jar` - The jar with the cookies (user_info & session).
+/// `jar` - The jar with the cookies (`user_info` & session).
 ///
 /// `claims` - The session cookie of the user.
 ///

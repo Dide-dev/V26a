@@ -250,6 +250,8 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     let login_body: LoginResponse = response.json();
     assert!(login_body.succeeded);
 }
+
+#[sqlx::test]
 async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
     let user_id = register(&server, "monkaS@gmail.com".to_owned()).await;
@@ -293,4 +295,3 @@ async fn test_delete_nonexistent_user(db: PgPool) {
         .await;
     response.assert_status_forbidden();
 }
-
