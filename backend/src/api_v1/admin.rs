@@ -4,7 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use axum::{Extension, Json, Router, routing::get};
+use axum::{
+    Extension, Json, Router,
+    extract::Request,
+    middleware::{self, Next},
+    response::Response,
+    routing::get,
+};
 use sqlx::PgPool;
 
 use crate::{
@@ -15,9 +21,24 @@ use crate::{
     errors::ApiError,
 };
 
+/// Checks if the user is an admin. This is used as a middleware in the `admin` function below.
+async fn check_if_admin(claims: Claims, request: Request, next: Next) -> Result<Response, ApiError> {
+    match claims.account_type {
+        AccountType::Admin => {
+            let response = next.run(request).await;
+            Ok(response)
+        }
+        _ => {
+            Err(ApiError::NoPermission)
+        }
+    }
+}
+
 /// Creates an `Axum` [`Router`] for the user category.
-pub fn admin() -> Router<Config> {
-    Router::new().route("/all-user-data", get(get_all_user_data))
+pub fn admin(config: Config) -> Router<Config> {
+    Router::new()
+        .route("/all-user-data", get(get_all_user_data))
+        .route_layer(middleware::from_fn_with_state(config, check_if_admin))
 }
 
 #[utoipa::path(
@@ -52,11 +73,7 @@ pub fn admin() -> Router<Config> {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_user_data(
-    claims: Claims,
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<Vec<UserGetAllData>>, ApiError> {
-    if claims.account_type != AccountType::Admin {
-        return Err(ApiError::NoPermission);
-    }
     get_all_users(&db).await.map(Json)
 }

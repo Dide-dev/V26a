@@ -18,9 +18,9 @@ use auth::auth;
 use axum::Router;
 
 /// Creates an `Axum` [`Router`] for the v1 API, combining all of its endpoint categories.
-pub fn v1_api() -> Router<Config> {
+pub fn v1_api(config: Config) -> Router<Config> {
     Router::new()
-        .nest("/admin", admin())
+        .nest("/admin", admin(config))
         .nest("/auth", auth())
         .nest("/trees", trees())
         .nest("/cards", cards())
