@@ -147,13 +147,13 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
     let record = query!("SELECT email, name, nickname, about_me, email_visible, language, account_type, enabled FROM users",)
         .fetch_all(db)
-        .await.
-        map_err(|_| ApiError::DatabaseException)?;
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
 
     let all_users = record
         .into_iter()
         .filter_map(|u| {
-            //If user language isn't an existing language option the user will not be shown to the admin.
+            // If user language isn't an existing language option the user will not be shown to the admin.
             let Ok(language) = UserLanguage::from_str(u.language.as_str()) else {
                 return None;
             };
@@ -356,8 +356,8 @@ mod tests {
             language: UserLanguage::En,
         };
 
-        let _user_id = initialize_user(&db, &register_data).await;
-        let _user_id2 = initialize_user(&db, &register_data2).await;
+        initialize_user(&db, &register_data).await;
+        initialize_user(&db, &register_data2).await;
         let all_user_data = get_all_users(&db).await.unwrap();
 
         let expected_user_data = vec![
