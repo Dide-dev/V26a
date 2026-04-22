@@ -62,5 +62,11 @@
     "credits": "Colofon",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
-    "book": "Boek"
+    "book": "Boek",
+    "newPassword": "Nieuw wachtwoord",
+    "oldPassword": "Oud wachtwoord",
+    "changePassword": "Wachtwoord veranderen",
+    "unsuccesfulPasswordChange": "Er is iets fout gegaan bij het veranderen van het wachtwoord. Probeer opnieuw.",
+    "succesfulPasswordChange": "Wachtwoord succesvol gewijzigd.",
+    "changePasswordAttempt": "Als u uw wachtwoord wilt wijzigen, vul dan uw oude wachtwoord, uw nieuwe wachtwoord, én een herhaling van het nieuwe wachtwoord hierboven in. Mocht dit niet zo zijn, verwijder dan de input uit de velden."
 }
