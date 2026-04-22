@@ -250,3 +250,46 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     let login_body: LoginResponse = response.json();
     assert!(login_body.succeeded);
 }
+async fn test_delete_own_user(db: PgPool) {
+    let server = setup(db);
+    let user_id = register(&server, "monkaS@gmail.com".to_owned()).await;
+    login(&server, "monkaS@gmail.com".to_owned()).await;
+
+    let response = server
+        .post(&format!("/users/delete/{user_id}"))
+        .json(&serde_json::json!({}))
+        .await;
+    response.assert_status_ok();
+
+    // Should be logged out after deletion.
+    let response = server.get("/users/me").await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_delete_other_user(db: PgPool) {
+    let server = setup(db);
+    let user_id_1 = register(&server, "user1@gmail.com".to_owned()).await;
+    register(&server, "user2@gmail.com".to_owned()).await;
+    login(&server, "user2@gmail.com".to_owned()).await;
+
+    let response = server
+        .post(&format!("/users/delete/{user_id_1}"))
+        .json(&serde_json::json!({}))
+        .await;
+    response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_delete_nonexistent_user(db: PgPool) {
+    let server = setup(db);
+    register(&server, "swag@gmail.com".to_owned()).await;
+    login(&server, "swag@gmail.com".to_owned()).await;
+
+    let response = server
+        .post("/users/delete/99999")
+        .json(&serde_json::json!({}))
+        .await;
+    response.assert_status_forbidden();
+}
+

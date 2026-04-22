@@ -234,7 +234,7 @@ pub async fn delete_user(
         r#"
         UPDATE users
         SET enabled = false,
-            email = CONCAT('deleted_', id, '@example.com'),
+            email = CONCAT('deleted_', id),
             name = '',
             nickname = '',
             about_me = '',
@@ -255,8 +255,8 @@ mod tests {
     use super::*;
     use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
-    use crate::db_structs::users::{AccountType, RegisterData, UserLanguage};
-    use crate::get_connection_unwrap;
+    use crate::db_structs::users::{AccountType, RegisterData, UserUpdateData, UserLanguage};
+    use crate::{get_connection_unwrap};
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -495,5 +495,51 @@ mod tests {
             .unwrap();
 
         assert!(password_valid);
+    }
+
+    async fn test_delete_user(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+
+        delete_user(&mut *db.acquire().await.unwrap(), user_id, true)
+            .await
+            .unwrap();
+
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        let found_update_data = UserUpdateData {
+            name: all_found_user_data.name,
+            nickname: all_found_user_data.nickname,
+            about_me: all_found_user_data.about_me,
+            email_visible: all_found_user_data.email_visible,
+            language: all_found_user_data.language.parse().unwrap(),
+            account_type: Some(AccountType::from_str(&all_found_user_data.account_type).unwrap()),
+            enabled: Some(all_found_user_data.enabled),
+        };
+
+        let expected_user_data = UserUpdateData {
+            name: String::new(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: register_data.language,
+            account_type: Some(AccountType::Author),
+            enabled: Some(false)
+        };
+
+        assert_eq!(found_update_data, expected_user_data);
+        assert_eq!(all_found_user_data.email, format!("deleted_{}", user_id));
     }
 }
