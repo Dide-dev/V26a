@@ -12,6 +12,8 @@
     import Footer from './Footer.svelte';
     import { getUserInfo } from '$lib/backend/users';
     import { afterNavigate } from '$app/navigation';
+    import { locales, localizeHref } from '$lib/paraglide/runtime.js';
+    import { page } from '$app/state';
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
@@ -134,3 +136,10 @@
 {/if}
 
 <Footer links={footerLinks}></Footer>
+
+<!-- Necessary to have svelte-kit load in the locales -->
+<div class="hidden">
+    {#each locales as locale (locale)}
+        <a href={localizeHref(page.url.href, { locale })}>{locale}</a>
+    {/each}
+</div>
