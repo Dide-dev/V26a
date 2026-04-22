@@ -6,7 +6,7 @@
 
 use crate::Config;
 use crate::api_v1::session::Claims;
-use crate::db::auth::get_user_credentials;
+use crate::db::auth::get_user_credentials_by_email;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -15,7 +15,7 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use jsonwebtoken::{Header, encode};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
@@ -27,7 +27,7 @@ pub fn auth() -> Router<Config> {
 /// Return body, where the `succeeded`-field signals whether the request was successful.
 /// - If the flag is `false`, the wrong credentials were passed.
 /// - If the flag is `true`, the login was successful, and both a `session` and `user_info` cookie have been created.
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginResponse {
     pub succeeded: bool,
 }
@@ -75,7 +75,7 @@ async fn login(
     State(config): State<Config>,
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
-    let Some(credentials) = get_user_credentials(&db, login_request.email).await? else {
+    let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
 
