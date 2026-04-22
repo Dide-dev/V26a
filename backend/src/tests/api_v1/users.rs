@@ -261,7 +261,7 @@ async fn test_delete_own_user(db: PgPool) {
         .await;
     response.assert_status_ok();
 
-    // Should be logged out after deletion.
+    // Check if user is logged out after deletion.
     let response = server.get("/users/me").await;
     response.assert_status_unauthorized();
 }
@@ -273,6 +273,7 @@ async fn test_delete_other_user(db: PgPool) {
     register(&server, "user2@gmail.com".to_owned()).await;
     login(&server, "user2@gmail.com".to_owned()).await;
 
+    // Check if user is author, if he is he has no permission to delete.
     let response = server
         .post(&format!("/users/delete/{user_id_1}"))
         .json(&serde_json::json!({}))

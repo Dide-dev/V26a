@@ -238,7 +238,8 @@ pub async fn delete_user(
             name = '',
             nickname = '',
             about_me = '',
-            email_visible = false
+            email_visible = false,
+            password_hash = ''
         WHERE id = $1
         "#,
         user_id,
@@ -519,27 +520,27 @@ mod tests {
             .await
             .unwrap();
 
-        let found_update_data = UserUpdateData {
+        let found_update_data = RegisterData {
+            email: all_found_user_data.email,
+            password: all_found_user_data.password_hash,
             name: all_found_user_data.name,
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
             language: all_found_user_data.language.parse().unwrap(),
-            account_type: Some(AccountType::from_str(&all_found_user_data.account_type).unwrap()),
-            enabled: Some(all_found_user_data.enabled),
         };
 
-        let expected_user_data = UserUpdateData {
+        let expected_user_data = RegisterData {
+            email: format!("deleted_{}", user_id),
+            password: String::new(),
             name: String::new(),
             nickname: String::new(),
             about_me: String::new(),
             email_visible: false,
             language: register_data.language,
-            account_type: Some(AccountType::Author),
-            enabled: Some(false)
         };
 
+        assert_eq!(all_found_user_data.enabled, false);
         assert_eq!(found_update_data, expected_user_data);
-        assert_eq!(all_found_user_data.email, format!("deleted_{}", user_id));
     }
 }
