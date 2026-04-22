@@ -10,11 +10,15 @@
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
+    import { getUserInfo } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 
-    let loading = $state(true);
+    // Checks if user is logged in or not.
+    let userInfo = $state(getUserInfo());
 
+    let loading = $state(true);
+    let userAllowedToEdit = $state(false);
     let id: number | null = null;
     let tree: TreeWithCards | null = $state(null);
 
@@ -38,6 +42,13 @@
         tree = await getTreeWithCards(id);
 
         loading = false;
+
+        const isOwner = tree && userInfo && tree.genData.ownerId === userInfo.sub;
+        const isAdmin = userInfo?.accountType === 'admin';
+
+        if (isOwner || isAdmin) {
+            userAllowedToEdit = true;
+        }
     });
 </script>
 
@@ -54,6 +65,16 @@
             <NodeViewer bind:tree parent={root} node={root} editingPage={false} dragState={null} />
         {/each}
     </div>
+{/if}
+
+{#if userAllowedToEdit}
+    <button
+        data-testid="edit-button"
+        class="fixed top-16 right-4 z-50 m-2 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2 shadow"
+        onclick={() => goto(appLink(`/tree-page/editor?id=${id}`))}
+    >
+        {m.edit()}
+    </button>
 {/if}
 
 <!--
