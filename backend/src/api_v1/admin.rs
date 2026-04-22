@@ -32,7 +32,7 @@ async fn check_if_admin(
             let response = next.run(request).await;
             Ok(response)
         }
-        _ => Err(ApiError::NoPermission),
+        AccountType::Author => Err(ApiError::NoPermission),
     }
 }
 
