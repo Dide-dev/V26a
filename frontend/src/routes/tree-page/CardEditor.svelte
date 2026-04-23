@@ -12,6 +12,7 @@
     import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
+    import { htmlFromMarkdown } from '$lib/markdown';
 
     let {
         card,
@@ -30,6 +31,7 @@
     const backMaxLength = 5000;
 
     let errorMessage = $state('');
+    let previewView = $state(false);
 
     function confirmClick() {
         card.front = card.front.trim();
@@ -55,13 +57,35 @@
 
 <Popup>
     <div class="flex flex-col gap-2">
-        <textarea
-            class="rounded border p-1"
-            placeholder={m.enterFrontText()}
-            bind:value={card.front}
-        ></textarea>
-        <textarea class="rounded border p-1" placeholder={m.enterBackText()} bind:value={card.back}
-        ></textarea>
+        <div class="flex justify-end gap-2">
+            <button
+                class="cursor-pointer"
+                onclick={() => {
+                    previewView = !previewView;
+                }}>{previewView ? 'Markdown' : m.preview()}</button
+            >
+        </div>
+        {#if !previewView}
+            <textarea
+                class="w-xl rounded border p-1"
+                placeholder={m.enterFrontText()}
+                bind:value={card.front}
+            ></textarea>
+            <textarea
+                class="w-xl rounded border p-1"
+                placeholder={m.enterBackText()}
+                bind:value={card.back}
+            ></textarea>
+        {:else}
+            <div class="w-xl rounded border p-1">
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html htmlFromMarkdown(card.front)}
+            </div>
+            <div class="w-xl rounded border p-1">
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html htmlFromMarkdown(card.back)}
+            </div>
+        {/if}
         {#if errorMessage}
             <p class="text-red-600">{errorMessage}</p>
         {/if}
