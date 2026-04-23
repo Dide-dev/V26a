@@ -58,5 +58,5 @@ export function updateCard(card: CardUpdateData): Promise<void> {
 
 /** Add an existing card to the cards library */
 export function addCardToLibrary(card: LibraryCardAddData, cardId: CardId): Promise<LibraryCardId> {
-    return apiCallPostCard(cardId + '/add-to-library', card);
+    return apiCallPostCard(`${cardId}/add-to-library`, card);
 }
