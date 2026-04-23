@@ -6,6 +6,8 @@
 
 <script lang="ts">
     import type { TreeWithCards, Node } from '$lib/backend/trees';
+    import { htmlFromMarkdown } from '$lib/markdown';
+
     let {
         tree,
         node,
@@ -32,33 +34,35 @@
     <!-- Cards layout in the editor -->
     {#if visible}
         <button
-            class="tree__node h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
             onclick={toggleVisible}
         >
-            {tree.cards[node.cardId].back}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(tree.cards[node.cardId].back)}
         </button>
     {:else}
         <button
-            class="tree__node h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={toggleVisible}
         >
-            {tree.cards[node.cardId].front}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(tree.cards[node.cardId].front)}
         </button>
     {/if}
 {:else}
     <!-- Cards layout in the viewer -->
     {#if visible}
-        <p
-            class="tree__node h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
-        >
-            {tree.cards[node.cardId].back}
+        <p class="h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere">
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(tree.cards[node.cardId].back)}
         </p>
     {:else if parentIsVisible}
         <button
-            class="tree__node h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={setVisible}
         >
-            {tree.cards[node.cardId].front}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(tree.cards[node.cardId].front)}
         </button>
     {:else}
         <p class="tree-node h-fit min-h-9 w-4 border-2 border-green-800 bg-green-800 p-1"><br /></p>

@@ -75,6 +75,12 @@ export type UserInfo = {
     accountType: AccountType;
 };
 
+/** The data needed to change a user's password */
+export type ChangePasswordData = {
+    oldPassword: string;
+    newPassword: string;
+};
+
 /** Add a user to the database */
 export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid> {
     return apiCallPostUser('add', user);
@@ -103,4 +109,9 @@ export function getUserInfo(): UserInfo | null {
     } catch {
         return null;
     }
+}
+
+/** Change a user's password */
+export function changePassword(changePasswordData: ChangePasswordData) {
+    return apiCallPostUser('change-password', changePasswordData);
 }
