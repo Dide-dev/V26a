@@ -20,6 +20,7 @@ function apiCallGetCard(path: string) {
 }
 
 export type CardId = number;
+export type LibraryCardId = number;
 
 /** The basic data of the card, including the tree it belongs to. */
 export type CardAddData = {
@@ -40,6 +41,11 @@ export type CardGetData = {
     back: string;
 };
 
+export type LibraryCardAddData = {
+    title: string;
+    tags: string[];
+}
+
 /** Add a card to the database */
 export function addCard(card: CardAddData): Promise<CardId> {
     return apiCallPostCard('add', card);
@@ -48,4 +54,9 @@ export function addCard(card: CardAddData): Promise<CardId> {
 /** Update an existing card in the database */
 export function updateCard(card: CardUpdateData): Promise<void> {
     return apiCallPostCard('update', card);
+}
+
+/** Add an existing card to the cards library */
+export function addCardToLibrary(card: LibraryCardAddData, cardId: CardId): Promise<LibraryCardId> {
+    return apiCallPostCard(cardId + '/add-to-library', card);
 }
