@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/svelte';
-import { test, vi, afterEach } from 'vitest';
+import { expect, test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import PageComponent from './+page.svelte';
 import { page } from '$app/state';
@@ -13,6 +13,12 @@ import type {
 } from '$lib/backend/trees';
 import type { CardGetData, CardId } from '$lib/backend/cards';
 import { getTreeWithCards } from '$lib/backend/trees';
+import { getUserInfo } from '$lib/backend/users';
+
+// Mock the logging check.
+vi.mock('$lib/backend/users', () => ({
+    getUserInfo: vi.fn()
+}));
 
 function createTree(): TreeWithCards {
     // eslint-disable as CardId's are seen as object literal property, and should therefore follow camelCase.
@@ -87,4 +93,34 @@ test('Page successfully loads tree', async () => {
 
     screen.getByText(tree.cards[1].front);
     screen.getByText(tree.cards[2].front);
+});
+
+test('shows Edit button when user is logged in', async () => {
+    const tree: TreeWithCards = createTree();
+
+    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
+    mockGetTree.mockResolvedValue(tree);
+    page.url.searchParams.set('id', '4');
+
+    vi.mocked(getUserInfo).mockReturnValue({
+        accountType: 'author',
+        sub: 2098,
+        exp: 2000000000
+    });
+
+    render(PageComponent);
+
+    await screen.findByTestId('edit-button');
+});
+
+test('does not show Edit button when user is not logged in', async () => {
+    const tree: TreeWithCards = createTree();
+
+    const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
+    mockGetTree.mockResolvedValue(tree);
+    page.url.searchParams.set('id', '4');
+
+    vi.mocked(getUserInfo).mockReturnValue(null);
+
+    await expect(() => screen.findByTestId('edit-button')).rejects.toThrow();
 });

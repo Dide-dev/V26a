@@ -4,11 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::{RegisterData, UserGetData, UserLanguage, UserUpdateData};
+use crate::db_structs::users::{
+    RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
+};
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -130,6 +132,25 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
     })
 }
 
+/// Query the user data of all users for the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// # Returns
+/// A [`Vec<UserGetAllData>`] object containing the data of all the users, minus their password.
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
+    query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)
+}
+
 /// Updates a user in the database.
 ///
 /// # Arguments
@@ -166,10 +187,45 @@ pub async fn update_user(
     Ok(())
 }
 
+/// Updates a user's password in the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `user_id` - The user whose password should be updated.
+///
+/// `new_password`- The new password.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`HashException`](ApiError::HashException) or a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_password(
+    db: impl PgExecutor<'_>,
+    user_id: i32,
+    new_password: &str,
+) -> Result<(), ApiError> {
+    // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
+    // Put a limit on password length.
+    let hashed_password = hash(new_password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
+
+    query!(
+        "UPDATE users SET password_hash = $1 WHERE id = $2",
+        hashed_password,
+        user_id,
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::auth::get_user_credentials;
+    use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
     use crate::db_structs::users::{AccountType, RegisterData, UserLanguage};
     use crate::get_connection_unwrap;
@@ -290,6 +346,49 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_get_all_users(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        let register_data2 = RegisterData {
+            email: "email2".to_owned(),
+            password: "password2".to_owned(),
+            name: "name2".to_owned(),
+            nickname: "nickname2".to_owned(),
+            about_me: "about_me2".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        initialize_user(&db, &register_data).await;
+        initialize_user(&db, &register_data2).await;
+        let all_user_data = get_all_users(&db).await.unwrap();
+
+        let expected_user_data = vec![
+            UserGetAllData {
+                id: 1,
+                email: register_data.email,
+                name: register_data.name,
+                enabled: true,
+            },
+            UserGetAllData {
+                id: 2,
+                email: register_data2.email,
+                name: register_data2.name,
+                enabled: true,
+            },
+        ];
+
+        assert_eq!(all_user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
     async fn test_update_user(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
@@ -369,7 +468,7 @@ mod tests {
         initialize_user(get_connection_unwrap!(db), &register_data).await;
 
         // Assert user has the default account type.
-        let account_type = get_user_credentials(&db, email)
+        let account_type = get_user_credentials_by_email(&db, email)
             .await
             .unwrap()
             .unwrap()
@@ -379,7 +478,37 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_user_account_type_not_found(db: PgPool) {
-        let result = get_user_credentials(&db, "abc@localhost".to_owned()).await;
+        let result = get_user_credentials_by_email(&db, "abc@localhost".to_owned()).await;
         assert!(result.unwrap().is_none());
+    }
+
+    #[sqlx::test]
+    async fn test_update_password(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+        let new_password = "P@ssword";
+
+        update_password(&db, user_id, new_password).await.unwrap();
+
+        let password_in_db = get_user_credentials_by_id(&db, user_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .password_hash;
+
+        let password_valid = bcrypt::verify(new_password, password_in_db.as_str())
+            .map_err(|_| ApiError::HashException)
+            .unwrap();
+
+        assert!(password_valid);
     }
 }
