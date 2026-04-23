@@ -143,9 +143,13 @@
         redrawLines();
 
         let observer = new MutationObserver(redrawLines);
-        observer.observe(domChildren, { subtree: true, childList: true });
+        observer.observe(domChildren, { subtree: true, childList: true, characterData: true });
         if (cardViewerContainer !== null) {
-            observer.observe(cardViewerContainer, { childList: true });
+            observer.observe(cardViewerContainer, {
+                subtree: true,
+                childList: true,
+                characterData: true
+            });
         }
         return () => observer.disconnect();
     });
