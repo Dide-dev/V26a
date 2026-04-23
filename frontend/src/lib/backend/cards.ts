@@ -44,7 +44,7 @@ export type CardGetData = {
 export type LibraryCardAddData = {
     title: string;
     tags: string[];
-}
+};
 
 /** Add a card to the database */
 export function addCard(card: CardAddData): Promise<CardId> {
