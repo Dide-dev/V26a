@@ -51,6 +51,17 @@ pub struct UserUpdateData {
     pub enabled: Option<bool>,
 }
 
+/// Data received when getting all user data from the database.
+/// Should only be used by admins
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserGetAllData {
+    pub id: i32,
+    pub email: String,
+    pub name: String,
+    pub enabled: bool,
+}
+
 /// The body for a password change request that contains the old password, and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

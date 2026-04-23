@@ -4,11 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::{RegisterData, UserGetData, UserLanguage, UserUpdateData};
+use crate::db_structs::users::{
+    RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
+};
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -128,6 +130,25 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
         email_visible: record.email_visible,
         language: UserLanguage::from_str(record.language.as_str())?,
     })
+}
+
+/// Query the user data of all users for the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// # Returns
+/// A [`Vec<UserGetAllData>`] object containing the data of all the users, minus their password.
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
+    query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)
 }
 
 /// Updates a user in the database.
@@ -322,6 +343,49 @@ mod tests {
         };
 
         assert_eq!(user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_all_users(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        let register_data2 = RegisterData {
+            email: "email2".to_owned(),
+            password: "password2".to_owned(),
+            name: "name2".to_owned(),
+            nickname: "nickname2".to_owned(),
+            about_me: "about_me2".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        initialize_user(&db, &register_data).await;
+        initialize_user(&db, &register_data2).await;
+        let all_user_data = get_all_users(&db).await.unwrap();
+
+        let expected_user_data = vec![
+            UserGetAllData {
+                id: 1,
+                email: register_data.email,
+                name: register_data.name,
+                enabled: true,
+            },
+            UserGetAllData {
+                id: 2,
+                email: register_data2.email,
+                name: register_data2.name,
+                enabled: true,
+            },
+        ];
+
+        assert_eq!(all_user_data, expected_user_data);
     }
 
     #[sqlx::test]
