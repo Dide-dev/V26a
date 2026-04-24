@@ -133,6 +133,11 @@
                 class="flex w-md flex-col gap-2"
                 onsubmit={(event) => handleSubmit(event, userData)}
             >
+                {#if succesfulPasswordChange}
+                    <p class="text-green-700" data-testid="password-change-success">
+                        {m.succesfulPasswordChange()}
+                    </p>
+                {/if}
                 <div>
                     <p class="font-bold">{m.email()}</p>
                     <p>{userData.email}</p>
@@ -250,10 +255,6 @@
                 >
                 {#if unsuccesfulPasswordChange}
                     <p class="text-red-600">{m.unsuccesfulPasswordChange()}</p>
-                {:else if succesfulPasswordChange}
-                    <p class="text-green-700" data-testid="great-success">
-                        {m.succesfulPasswordChange()}
-                    </p>
                 {/if}
             </form>
         </div>

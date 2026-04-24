@@ -389,7 +389,7 @@ test('Submission when all password expectations have been met', async () => {
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123');
 
     await user.click(screen.getByTestId('confirm-button'));
-    const confirmation = screen.getByTestId('great-success');
+    const confirmation = screen.getByTestId('password-change-success');
 
     expect(changePassword).toHaveBeenCalledWith(
         expect.objectContaining({
