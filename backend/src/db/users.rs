@@ -208,7 +208,7 @@ pub async fn update_password(
 ///
 /// `user_id` - The id of the user.
 ///
-/// `delete_owned_trees` - Check of if user wants to delete his/her trees.
+/// `delete_owned_trees` - Whether the user wants to also delete their trees.
 ///
 /// # Returns
 /// Nothing.
@@ -227,8 +227,7 @@ pub async fn delete_user(
             .map_err(|_| ApiError::DatabaseException)?;
     }
 
-    // Make all fields of the user empty (soft delete).
-    // And disable the account making logging in not possible.
+    // Make all fields of the user empty (soft delete) and disable the account making logging in impossible.
     query!(
         r#"
         UPDATE users
