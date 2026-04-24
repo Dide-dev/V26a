@@ -19,7 +19,7 @@
     let userInfo = $state(getUserInfo());
     let errors: Error[] = $state([]);
 
-    // Retrieve userinfo & path after navigating to another page (refreshes navbar).
+    // Retrieve userinfo after navigating to another page (refreshes nav-bar).
     afterNavigate(() => {
         const newUserInfo = getUserInfo();
         if (JSON.stringify(newUserInfo) !== JSON.stringify(userInfo)) {

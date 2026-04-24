@@ -7,7 +7,7 @@
 @import 'tailwindcss';
 
 @theme {
-    /*  */
+    /* Custom colours */
     --color-tree-50: oklch(0.982 0.02 142.42);
     --color-tree-100: oklch(0.952 0.045 142.42);
     --color-tree-125: oklch(0.925 0.035 142.42);
@@ -31,30 +31,37 @@
 
     --color-brown: oklch(0.638 0.0968 73.33);
 
+    /* Spacing nav bar */
     --spacing-nav-normal: 10rem;
     --spacing-nav-thin: 6rem;
     --spacing-nav-extra-thin: 3.5rem;
 }
 
 @layer base {
+    /* Layout page with footer at the bottom. */
     body {
         display: flex;
         flex-direction: column;
         height: 100vh;
     }
 
+    /* General formatting for markdown. */
     h1 {
         font-size: 2rem;
     }
+
     h2 {
         font-size: 1.75rem;
     }
+
     h3 {
         font-size: 1.5rem;
     }
+
     h4 {
         font-size: 1.25rem;
     }
+
     h5 {
         font-size: 1.125rem;
     }
@@ -62,17 +69,21 @@
     p a {
         color: #36c;
     }
+
     blockquote p {
         margin-left: 1.5rem;
         color: #555555;
     }
+
     ul li,
     ol li {
         margin-left: 1.5rem;
     }
+
     ul {
         list-style-type: disc;
     }
+
     ol {
         list-style-type: decimal;
     }
