@@ -70,5 +70,8 @@
     "through": "through",
     "ownerId": "ID of the owner",
     "numberOfTrees": "Number of trees per page:",
-    "selectDate": "Select date"
+    "selectDate": "Select date",
+    "allTrees": "Tree list",
+    "colophon": "Colophon",
+    "otherProjects": "Other projects"
 }

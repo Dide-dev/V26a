@@ -6,7 +6,7 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use crate::errors::ApiError;
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::collections::BTreeMap;
 
 /// Add a new card to the database.
@@ -144,6 +144,36 @@ pub async fn get_tree_cards(
             )
         })
         .collect())
+}
+
+/// Retrieves a single card from the cards database, if the card exists.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `card_id` - The id associated with the card, as [`i32`].
+///
+/// # Returns
+/// The front and back of the card as [`CardGetData`].
+///
+/// # Errors
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_card_text(db: impl PgExecutor<'_>, card_id: i32) -> Result<CardGetData, ApiError> {
+    let card = query_as!(
+        CardGetData,
+        "SELECT front, back
+         FROM cards
+         WHERE id = $1",
+        card_id
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .ok_or(ApiError::MissingCard(card_id))?;
+
+    Ok(card)
 }
 
 /// Get the id of the tree the card belongs to.
@@ -298,6 +328,19 @@ mod tests {
         expected_card_data.insert(card_id1, card_get_data1);
         expected_card_data.insert(card_id2, card_get_data2);
         assert_eq!(found_card_data, expected_card_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_card_text(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let card_text = get_card_text(&db, card_id).await;
+        let expected_card_text = CardGetData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        };
+        assert_eq!(card_text, Ok(expected_card_text));
     }
 
     #[sqlx::test]

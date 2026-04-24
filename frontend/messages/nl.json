@@ -70,5 +70,8 @@
     "through": "tot en met",
     "ownerId": "ID van de eigenaar",
     "numberOfTrees": "Aantal bomen per pagina:",
-    "selectDate": "Selecteer een datum"
+    "selectDate": "Selecteer een datum",
+    "allTrees": "Bomenlijst",
+    "colophon": "Colofon",
+    "otherProjects": "Andere projecten"
 }

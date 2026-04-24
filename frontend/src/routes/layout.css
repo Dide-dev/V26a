@@ -13,19 +13,62 @@
 
 @source '../../node_modules/flowbite-svelte/dist';
 
+@theme {
+    /* Custom colours */
+    --color-tree-50: oklch(0.982 0.02 142.42);
+    --color-tree-100: oklch(0.952 0.045 142.42);
+    --color-tree-125: oklch(0.925 0.035 142.42);
+    --color-tree-150: oklch(0.912 0.052 142.42);
+    --color-tree-200: oklch(0.882 0.072 142.42);
+    --color-tree-300: oklch(0.822 0.092 142.42);
+    --color-tree-400: oklch(0.732 0.112 142.42);
+    --color-tree-450: oklch(0.682 0.132 142.42);
+    --color-tree-500: oklch(0.66 0.132 142.42);
+    --color-tree-600: oklch(0.6 0.122 142.42);
+    --color-tree-610: oklch(0.58 0.118 142.42);
+    --color-tree-625: oklch(0.55 0.112 142.42);
+    --color-tree-650: oklch(0.525 0.102 142.42);
+    --color-tree-750: oklch(0.475 0.087 142.42);
+    --color-tree-800: oklch(0.405 0.077 142.42);
+    --color-tree-900: oklch(0.365 0.072 142.42);
+    --color-tree-950: oklch(0.325 0.067 142.42);
+
+    --color-tree-dim-50: oklch(0.9475 0.02 143.69);
+    --color-tree-dim-250: oklch(0.875 0.029 143.69);
+
+    --color-brown: oklch(0.638 0.0968 73.33);
+
+    /* Spacing nav bar */
+    --spacing-nav-normal: 10rem;
+    --spacing-nav-thin: 6rem;
+    --spacing-nav-extra-thin: 3.5rem;
+}
+
 @layer base {
+    /* Layout page with footer at the bottom. */
+    body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    /* General formatting for markdown. */
     h1 {
         font-size: 2rem;
     }
+
     h2 {
         font-size: 1.75rem;
     }
+
     h3 {
         font-size: 1.5rem;
     }
+
     h4 {
         font-size: 1.25rem;
     }
+
     h5 {
         font-size: 1.125rem;
     }
@@ -33,17 +76,21 @@
     p a {
         color: #36c;
     }
+
     blockquote p {
         margin-left: 1.5rem;
         color: #555555;
     }
+
     ul li,
     ol li {
         margin-left: 1.5rem;
     }
+
     ul {
         list-style-type: disc;
     }
+
     ol {
         list-style-type: decimal;
     }
