@@ -62,5 +62,8 @@
     "credits": "Colofon",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
-    "book": "Boek"
+    "book": "Boek",
+    "allTrees": "Bomenlijst",
+    "colophon": "Colofon",
+    "otherProjects": "Andere projecten"
 }
