@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 
 const prefix = 'users/';
@@ -13,8 +13,8 @@ function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
-function apiCallDeleteUser(path: string, body: unknown) {
-    return apiCallPost(prefix + path, body);
+function apiCallDeleteUser(path: string) {
+    return apiCallDelete(prefix + path);
 }
 
 function apiCallGetUser(path: string) {
@@ -98,8 +98,8 @@ export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEma
 }
 
 /** Delete a user in the database */
-export function deleteUser(userId: UserId, deleteTrees: DeleteTrees): Promise<void> {
-    return apiCallDeleteUser(`/${userId}/delete`, deleteTrees);
+export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
+    return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */
