@@ -6,6 +6,13 @@
 
 @import 'tailwindcss';
 
+@plugin 'flowbite/plugin';
+
+/* Disable dark mode */
+@custom-variant dark (&:where(.light, .light *));
+
+@source '../../node_modules/flowbite-svelte/dist';
+
 @theme {
     /* Custom colours */
     --color-tree-50: oklch(0.982 0.02 142.42);
