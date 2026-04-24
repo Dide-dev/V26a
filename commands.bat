@@ -4,7 +4,7 @@
 :: © Copyright Utrecht University (Department of Information and Computing Sciences)
 ::
 
-cd ./backend/
+cd ./backend/ || exit
 cargo fmt
 cargo clippy --all-targets
 cargo doc --no-deps
@@ -12,7 +12,7 @@ cargo sqlx prepare
 cargo build
 cargo test
 
-cd ../frontend/
+cd ../frontend/ || exit
 call npm i
 call npx prettier -w ./
 call npm run build
