@@ -344,7 +344,7 @@ class CardIdMapper {
     }
 }
 
-/** These actions only describe what happend to the cards, not to the structure. */
+/** These actions only describe what happens to the cards, not to the structure. */
 type CardAction = CardActionNone | CardActionRemove | CardActionAdd | CardActionUpdate;
 /**
  * Actually with all the other Actions the structure also gets edited,
@@ -400,7 +400,7 @@ function actionInverse(action: CardAction): CardAction {
     }
 }
 
-// Statefull variants of types of the same name in 'trees.ts'.
+// Stateful variants of types of the same name in 'trees.ts'.
 // For now the only state tracked is the 'revealed' property of Nodes, we could add more.
 export type StateTreeStructure = {
     rootNodes: StateRootNode[];
@@ -455,7 +455,7 @@ export function followIndex(
 }
 /**
  * Returns reference to a Node, found by following index array in the given tree.
- * Will assert that the index referes to a Node, not a RootNode.
+ * Will assert that the index refers to a Node, not a RootNode.
  */
 export function followIndexNode(treeStructure: StateTreeStructure, index: number[]): StateNode {
     const node = followIndex(treeStructure, index);

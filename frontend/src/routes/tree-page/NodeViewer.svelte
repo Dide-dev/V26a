@@ -51,7 +51,7 @@
         type: 'dismissed';
     };
 
-    // You cannot drag a parent into it's children.
+    // You cannot drag a parent into its children.
     // So if this component is being dragged, don't tell its children.
     let iAmBeingDragged = $derived(
         dragState?.type === 'dragging' &&
