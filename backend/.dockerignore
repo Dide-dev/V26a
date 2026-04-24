@@ -1,3 +1,6 @@
+Containerfile
+.dockerignore
+.gitignore
 target
 **.profraw
 .idea/

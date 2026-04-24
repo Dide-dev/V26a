@@ -4,15 +4,17 @@ FROM docker.io/library/rust:1.94 AS base
 WORKDIR /app
 
 # Cache dependencies
+RUN cargo init
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
-RUN rm -rf src
 
 # Copy the rest of the code
 COPY src ./src
 COPY migrations ./migrations
 COPY .sqlx ./.sqlx
+
+# Ensure that main.rs is newer so that cargo recompiles it
+RUN touch src/main.rs
 
 # -- Builder --
 FROM base AS builder
