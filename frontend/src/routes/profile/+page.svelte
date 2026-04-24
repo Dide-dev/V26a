@@ -14,6 +14,13 @@
         type UserGetData,
         type ChangePasswordData
     } from '$lib/backend/users';
+    import {
+        checkSamePassword,
+        checkLowercase,
+        checkUppercase,
+        checkNumber,
+        checkSpecialCharacter
+    } from '$lib/passwords';
     import { m } from '$lib/paraglide/messages.js';
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
@@ -36,30 +43,6 @@
     let passwordNotSame: boolean = $state(false);
     let unsuccesfulPasswordChange: boolean = $state(false);
     let succesfulPasswordChange: boolean = $state(false);
-
-    function checkSamePassword(): boolean {
-        return repeatPassword == changePasswordData.newPassword;
-    }
-
-    function checkLowercase(): boolean {
-        let passwordChecker = changePasswordData.newPassword.toUpperCase();
-        return passwordChecker != changePasswordData.newPassword;
-    }
-
-    function checkUppercase(): boolean {
-        let passwordChecker = changePasswordData.newPassword.toLowerCase();
-        return passwordChecker != changePasswordData.newPassword;
-    }
-
-    function checkNumber(): boolean {
-        let regex = /\d/;
-        return regex.test(changePasswordData.newPassword);
-    }
-
-    function checkSpecialCharacter(): boolean {
-        let regex = /[?!@#$%^&*()+=.,<>{}[\]:;"'|~`_/\\-]/;
-        return regex.test(changePasswordData.newPassword);
-    }
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
@@ -102,11 +85,16 @@
         unsuccesfulPasswordChange = false;
         succesfulPasswordChange = false;
 
-        if (!checkLowercase() || !checkUppercase() || !checkNumber() || !checkSpecialCharacter()) {
+        if (
+            !checkLowercase(changePasswordData.newPassword) ||
+            !checkUppercase(changePasswordData.newPassword) ||
+            !checkNumber(changePasswordData.newPassword) ||
+            !checkSpecialCharacter(changePasswordData.newPassword)
+        ) {
             passwordMissingChar = true;
             return;
         }
-        if (!checkSamePassword()) {
+        if (!checkSamePassword(changePasswordData.newPassword, repeatPassword)) {
             passwordNotSame = true;
             return;
         }
