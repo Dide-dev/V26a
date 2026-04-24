@@ -8,15 +8,17 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import {
-        updateTreeMetaData,
-        getTreeWithCards,
-        type TreeWithCards,
-        type TreeData
-    } from '$lib/backend/trees';
+    import { updateTreeMetaData, getTreeWithCards, type TreeData } from '$lib/backend/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import NodeViewer, { type DragState } from '../NodeViewer.svelte';
+    import {
+        type TreeHistory,
+        undo,
+        redo,
+        initializeHistory,
+        fillStateStructure
+    } from '../history.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -78,7 +80,7 @@
     let loading = $state(true);
 
     let id: number | null = null;
-    let tree: TreeWithCards | null = $state(null);
+    let tree: [TreeData, TreeHistory] | null = $state(null);
     let dropDown = $state(false);
 
     onMount(async () => {
@@ -98,18 +100,26 @@
             return;
         }
 
-        tree = await getTreeWithCards(id);
+        const treeFetched = await getTreeWithCards(id);
+        tree = [
+            treeFetched.data,
+            initializeHistory(
+                treeFetched.genData.id,
+                fillStateStructure(treeFetched.structure, true),
+                treeFetched.cards
+            )
+        ];
 
         treeData = {
-            title: tree.data.title ?? '',
-            description: tree.data.description ?? '',
-            bookName: tree.data.bookName ?? '',
-            bookEdition: tree.data.bookEdition ?? '',
-            bookIsbn: tree.data.bookIsbn ?? '',
-            bookChapter: tree.data.bookChapter ?? '',
-            bookExercise: tree.data.bookExercise ?? '',
-            assignmentText: tree.data.assignmentText ?? '',
-            published: tree.data.published ?? false
+            title: treeFetched.data.title ?? '',
+            description: treeFetched.data.description ?? '',
+            bookName: treeFetched.data.bookName ?? '',
+            bookEdition: treeFetched.data.bookEdition ?? '',
+            bookIsbn: treeFetched.data.bookIsbn ?? '',
+            bookChapter: treeFetched.data.bookChapter ?? '',
+            bookExercise: treeFetched.data.bookExercise ?? '',
+            assignmentText: treeFetched.data.assignmentText ?? '',
+            published: treeFetched.data.published ?? false
         };
 
         loading = false;
@@ -122,12 +132,12 @@
             id: id,
             newData: { ...treeData }
         });
-        tree.data = { ...treeData };
+        tree[0] = { ...treeData };
     }
 
     // Restores treeData to its original value.
     function cancelEdit() {
-        treeData = tree!.data;
+        treeData = tree![0];
         dropDown = false;
     }
 </script>
@@ -135,9 +145,9 @@
 {#if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
 {:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree[0].title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree.data.description}
+        {tree[0].description}
     </p>
 
     <div class="relative ml-4">
@@ -211,10 +221,20 @@
         {/if}
     </div>
 
+    <div>
+        <button onclick={() => undo(tree![1])}>Undo</button>
+        <button onclick={() => redo(tree![1])}>Redo</button>
+    </div>
+
     <!-- The 'pt-6' is because the nodeviewer is in editing mode. It has some bits sticking out on top. -->
-    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pt-6">
-        {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree bind:dragState parent={root} node={root} editingPage={true} />
+    <div bind:this={scrollArea} class="m-2 flex grow flex-col overflow-auto pt-6">
+        {#each tree[1].currentStructure.rootNodes as root, index (root)}
+            <NodeViewer
+                bind:history={tree[1]}
+                location={[index]}
+                bind:dragState
+                editingPage={true}
+            />
         {/each}
     </div>
 {/if}
