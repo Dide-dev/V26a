@@ -44,6 +44,7 @@
                 bind:value={feedbackData.email}
                 name="email"
                 type="email"
+                placeholder={m.optional()}
                 data-testid="email"
             />
         </label>
