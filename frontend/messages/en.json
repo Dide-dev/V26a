@@ -62,5 +62,8 @@
     "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
-    "book": "Book"
+    "book": "Book",
+    "allTrees": "Tree list",
+    "colophon": "Colophon",
+    "otherProjects": "Other projects"
 }

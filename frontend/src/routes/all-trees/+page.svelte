@@ -12,7 +12,7 @@
         type TreeMetadata,
         getFilteredList
     } from '$lib/backend/trees';
-    import { appLink } from '$lib/index';
+    import { appLink } from '$lib';
     import { onMount } from 'svelte';
 
     // nl-NL and en-GB behave in the same way; we will not support American time notation.
