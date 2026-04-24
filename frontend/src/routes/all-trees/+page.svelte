@@ -123,14 +123,16 @@
                     bind:value={filterOptions.ownerId}
                 />
             </label>
-            <button class="cursor-pointer rounded-sm bg-emerald-500 p-1">{m.applyFilters()}</button>
+            <button class="m-1 cursor-pointer rounded-sm bg-emerald-500 p-1"
+                >{m.applyFilters()}</button
+            >
         </form>
 
         <!-- Change the number of trees per page -->
         <label>
             {m.numberOfTrees()}
             <select
-                class="w-15 rounded-sm bg-neutral-200 p-1"
+                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
                 onchange={loadTrees}
             >
