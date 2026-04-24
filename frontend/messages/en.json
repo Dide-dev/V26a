@@ -64,12 +64,8 @@
     "createdAt": "Created at",
     "book": "Book",
     "feedbackExplanation": "Please fill out this form if you want to give feedback on this website. If you want us to be able to contact you to discuss the feedback, you may leave behind your email address. Please note that this is not required.",
-    "positiveFeedback": "Positive points",
-    "negativeFeedback": "Negative points",
-    "additionalFeedback": "Additional feedback",
-    "grade": "Which grade would you give this application?",
     "submitFeedback": "Submit feedback",
-    "noFeedback": "Please fill in at minimum positive points, negative points, or additional feedback.",
+    "succesfulFeedbackSubmission": "Feedback submitted successfully",
     "allTrees": "Tree list",
     "colophon": "Colophon",
     "otherProjects": "Other projects"
