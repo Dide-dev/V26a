@@ -155,7 +155,7 @@
         <p class="flex justify-center text-2xl">{m.noAllTreesFound()}</p>
     </div>
 {:else}
-    <div class="100vw flex justify-center overflow-auto">
+    <div class="100vw flex flex-col items-center justify-center overflow-auto">
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>
@@ -184,7 +184,7 @@
                 {/each}
             </tbody>
         </table>
-        <div class="fixed bottom-2 left-1/2 -translate-x-1/2">
+        <div>
             <button
                 onclick={prevPage}
                 disabled={!prevPageExists}
