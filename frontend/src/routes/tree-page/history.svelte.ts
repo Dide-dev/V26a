@@ -76,10 +76,12 @@ function performActionLocal(history: TreeHistory, action: CardAction) {
     }
 }
 
-// TODO: I don't think we need to keep track of this in the history, right?
 export function setRevealed(history: TreeHistory, index: number[], revealed: boolean) {
-    const node = followIndexNode(history.currentStructure, index);
+    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const node = followIndexNode(newStructure, index);
     node.revealed = revealed;
+
+    commitActionLocal(history, newStructure, { type: 'none' });
 }
 
 export async function doMove(history: TreeHistory, nodeToMove: number[], newLocation: number[]) {

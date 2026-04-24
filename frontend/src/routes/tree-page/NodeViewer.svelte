@@ -250,7 +250,7 @@
 
     <!-- Here the html gets recursive as we render the 'node.children' -->
     <div bind:this={domChildren} class="flex flex-col">
-        {#each node.children as child_node, index (child_node.cardId)}
+        {#each node.children as child_node, index (child_node)}
             <NodeViewer
                 bind:history
                 location={[...location, index]}
