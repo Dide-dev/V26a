@@ -7,6 +7,7 @@
 #![cfg(test)]
 
 mod cards;
+mod feedback;
 mod images;
 mod trees;
 mod users;
@@ -32,7 +33,7 @@ fn setup(db: PgPool) -> TestServer {
     let mut config = crate::Config::load();
     config.upload_dir = temp_dir.path().to_string_lossy().to_string();
 
-    let router = crate::api_v1::v1_api()
+    let router = crate::api_v1::v1_api(config.clone())
         .layer(Extension(db))
         .with_state(config);
     TestServer::builder().save_cookies().build(router)

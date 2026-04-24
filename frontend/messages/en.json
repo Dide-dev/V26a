@@ -12,6 +12,9 @@
     "published": "Published",
     "assignmentText": "Exercise description",
     "editMetadata": "Edit metadata",
+    "moveCardWithSubtree": "Move card with subtree",
+    "editThisCard": "Edit this card",
+    "deleteThisCard": "Delete this card",
     "save": "Save",
     "cancel": "Cancel",
     "createTree": "Create tree",
@@ -53,6 +56,10 @@
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
     "add": "Add",
+    "preview": "Preview",
+    "myTrees": "My forest",
+    "trees": "Forest",
+    "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
     "book": "Book",
@@ -62,5 +69,8 @@
     "additionalFeedback": "Additional feedback",
     "grade": "Which grade would you give this application?",
     "submitFeedback": "Submit feedback",
-    "noFeedback": "Please fill in at minimum positive points, negative points, or additional feedback."
+    "noFeedback": "Please fill in at minimum positive points, negative points, or additional feedback.",
+    "allTrees": "Tree list",
+    "colophon": "Colophon",
+    "otherProjects": "Other projects"
 }

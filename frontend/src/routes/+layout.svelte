@@ -5,16 +5,28 @@
 -->
 
 <script lang="ts">
-    import { page } from '$app/state';
-    import { appLink } from '$lib';
-    import { locales, localizeHref } from '$lib/paraglide/runtime';
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import { m } from '$lib/paraglide/messages.js';
+    import Navigation, { type NavLink } from './Navigation.svelte';
+    import Footer, { type FooterLink } from './Footer.svelte';
+    import { getUserInfo } from '$lib/backend/users';
+    import { afterNavigate } from '$app/navigation';
+    import { locales, localizeHref } from '$lib/paraglide/runtime.js';
+    import { page } from '$app/state';
 
     let { children } = $props();
-
+    let userInfo = $state(getUserInfo());
     let errors: Error[] = $state([]);
+
+    // Retrieve userinfo after navigating to another page (refreshes nav-bar).
+    afterNavigate(() => {
+        const newUserInfo = getUserInfo();
+        if (JSON.stringify(newUserInfo) !== JSON.stringify(userInfo)) {
+            userInfo = newUserInfo;
+            window.location.reload();
+        }
+    });
 
     function handleWindowError(event: Event) {
         if (event instanceof ErrorEvent) {
@@ -26,28 +38,85 @@
     function handleError(err: PromiseRejectionEvent) {
         errors.push(err.reason);
     }
+
+    let leftLinks: NavLink[] = $derived.by(() => {
+        let result = [
+            {
+                href: '/',
+                text: m.home(),
+                isThin: false
+            },
+            {
+                href: '/all-trees',
+                text: m.allTrees(),
+                isThin: false
+            }
+        ];
+
+        if (userInfo !== null) {
+            result.push({
+                href: '/tree-generator',
+                text: m.createTree(),
+                isThin: false
+            });
+        }
+
+        return result;
+    });
+    let rightLinks: NavLink[] = $derived.by(() => {
+        let result = [];
+
+        if (userInfo !== null) {
+            result = [
+                {
+                    href: '/profile',
+                    text: m.profile(),
+                    isThin: true
+                },
+                {
+                    href: '/my-trees',
+                    text: m.myTrees(),
+                    isThin: true
+                }
+            ];
+        } else {
+            result = [
+                {
+                    href: '/registration',
+                    text: m.register(),
+                    isThin: true
+                },
+                {
+                    href: '/login',
+                    text: m.login(),
+                    isThin: true
+                }
+            ];
+        }
+
+        return result;
+    });
+    const footerLinks: FooterLink[] = [
+        {
+            href: '/colophon',
+            text: m.colophon(),
+            target: '_self'
+        },
+        {
+            href: 'https://softwareprojecten.sites.uu.nl/',
+            text: m.otherProjects(),
+            target: '_blank'
+        }
+    ];
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav
-    class="m-1 flex justify-end gap-2 bg-sky-400 p-1 *:rounded-sm *:border-zinc-900 *:bg-sky-600 *:p-1"
->
-    <a href={appLink('/')}>{m.home()}</a>
-    <a href={appLink('/tree-generator')}>{m.createTree()}</a>
-    <a href={appLink('/registration')}>{m.register()}</a>
-    <a href={appLink('/login')}>{m.login()}</a>
-    <a href={appLink('/all-trees')}>All trees</a>
-    <a href={appLink('/my-trees')}>My trees</a>
-    {#each locales as locale (locale)}
-        <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
-        <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
-            {locale}
-        </a>
-    {/each}
-</nav>
+<Navigation {leftLinks} {rightLinks}></Navigation>
 
-{@render children()}
+<main class="flex-auto">
+    {@render children()}
+</main>
 
 <svelte:window onerror={handleWindowError} onunhandledrejection={handleError} />
 
@@ -66,4 +135,11 @@
     </div>
 {/if}
 
-<footer><p class="fixed right-1 bottom-1.5">© Utrecht University (ICS).</p></footer>
+<Footer links={footerLinks}></Footer>
+
+<!-- Necessary to have svelte-kit load in the pages of the other locales. -->
+<div class="hidden">
+    {#each locales as locale (locale)}
+        <a href={localizeHref(page.url.href, { locale })}>{locale}</a>
+    {/each}
+</div>
