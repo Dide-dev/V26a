@@ -5,7 +5,7 @@
 #
 set -xe
 
-cd ./backend/ || exit 1
+cd ./backend/
 export RUSTFLAGS="-D warnings"
 export RUSTDOCFLAGS="-D warnings"
 cargo fmt
@@ -15,7 +15,7 @@ cargo sqlx prepare
 cargo build
 cargo test
 
-cd ../frontend/ || exit 1
+cd ../frontend/
 npm i
 npm run format
 npm run build
