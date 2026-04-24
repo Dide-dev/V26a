@@ -7,6 +7,7 @@
 <script lang="ts">
     import iconUndo from '$lib/assets/iconUndo.svg?raw';
     import iconRedo from '$lib/assets/iconRedo.svg?raw';
+    import iconExternalLink from '$lib/assets/iconExternalLink.svg?raw';
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
@@ -113,7 +114,6 @@
     }
     // The undo & redo keyboard shortcuts
     function onkeydown(event: KeyboardEvent) {
-        console.log(event);
         if (event.ctrlKey && event.key == 'z') {
             undoButtonClick();
             event.stopPropagation();
@@ -137,37 +137,47 @@
         {tree[0].description}
     </p>
 
-    <div class="m-1">
+    <div class="m-2 flex gap-2">
         <EditMetadata treeId={tree[1].treeId} bind:prevTreeData={tree[0]} />
         <button
             class={[
-                'rounded-sm bg-emerald-500 p-1 *:inline',
+                'rounded-sm bg-emerald-500 p-1',
                 canUndo(tree[1]) && 'cursor-pointer stroke-black p-1',
                 !canUndo(tree[1]) && 'stroke-gray-500'
             ]}
             onclick={undoButtonClick}
+            title={m.undo()}
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconUndo}</button
-        >
+            {@html iconUndo}
+        </button>
         <button
             class={[
-                'rounded-sm bg-emerald-500 p-1 *:inline',
+                'rounded-sm bg-emerald-500 p-1',
                 canRedo(tree[1]) && 'cursor-pointer stroke-black p-1',
                 !canRedo(tree[1]) && 'stroke-gray-500'
             ]}
             onclick={redoButtonClick}
+            title={m.redo()}
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconRedo}</button
+            {@html iconRedo}
+        </button>
+        <a
+            class="rounded-sm bg-emerald-500 p-1 *:inline"
+            href={appLink(`/tree-page/viewer?id=${tree[1].treeId}`)}
+            target="_blank"
         >
+            {m.viewTree()}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html iconExternalLink}
+        </a>
     </div>
 
     <!--
-        The 'pt-6' is because the nodeviewer is in editing mode. It has some bits sticking out on top.
         The padding on the bottom is to make the scrollbar not intersect with some buttons.
     -->
-    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pt-6 pb-7">
+    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pb-7">
         {#each tree[1].currentStructure.rootNodes as root, index (root)}
             <NodeViewer
                 bind:history={tree[1]}

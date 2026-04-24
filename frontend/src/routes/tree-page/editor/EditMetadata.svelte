@@ -13,7 +13,7 @@
         $props();
 
     let visible = $state(false);
-    let treeData: TreeData = $derived({
+    let treeData: TreeData = $state({
         title: prevTreeData.title ?? '',
         description: prevTreeData.description ?? '',
         bookName: prevTreeData.bookName ?? '',
@@ -57,7 +57,7 @@
 
 {#if visible}
     <Popup>
-        <div class="mb-3 flex gap-3">
+        <div class="mb-3 flex gap-3" data-testid="metadata-popup">
             <div class="w-64">
                 <label
                     >{m.title()}<input
@@ -117,9 +117,9 @@
                 >
             </div>
         </div>
-        <button class="rounded bg-blue-500 px-3 py-1 text-white" onclick={saveData}
+        <button class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white" onclick={saveData}
             >{m.save()}</button
         >
-        <button onclick={cancelEdit}>{m.cancel()}</button>
+        <button class="cursor-pointer" onclick={cancelEdit}>{m.cancel()}</button>
     </Popup>
 {/if}
