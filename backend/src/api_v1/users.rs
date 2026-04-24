@@ -18,8 +18,9 @@ use crate::db_structs::users::{
 use crate::errors::ApiError;
 
 use axum::extract::Path;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
+use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -32,7 +33,7 @@ pub fn users() -> Router<Config> {
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
-        .route("/delete/{user_id}", post(delete_user_data))
+        .route("/{user_id}/delete", delete(delete_user_data))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -245,18 +246,19 @@ async fn change_password(
 }
 
 #[utoipa::path(
-    post,
-    path = "/delete/{user_id}",
+    delete,
+    path = "/{user_id}/delete",
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
     ),
     params(
         ("user_id" = i32, Path),
-        ("deleteOwnedTrees" = bool, Query),
+        ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
         ("session" = Claims, Cookie),
     )
 )]
@@ -284,11 +286,11 @@ async fn change_password(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
-    jar: CookieJar,
+    mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
-    Json(body): Json<DeleteOwnedTrees>,
+    Query(delete): Query<DeleteOwnedTrees>,
 ) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
@@ -301,11 +303,7 @@ async fn delete_user_data(
         return Err(ApiError::NoPermission);
     }
 
-    let delete_owned_trees = body.delete_owned_trees;
-
-    delete_user(&mut transaction, user_id, delete_owned_trees).await?;
-
-    let mut jar = jar;
+    delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
 
     if claims.sub == user_id {
         jar = jar

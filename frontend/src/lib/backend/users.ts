@@ -13,6 +13,10 @@ function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
+function apiCallDeleteUser(path: string, body: unknown) {
+    return apiCallPost(prefix + path, body);
+}
+
 function apiCallGetUser(path: string) {
     return apiCallGet(prefix + path);
 }
@@ -66,6 +70,13 @@ export type UserUpdateData = {
     enabled: Option<boolean>;
 };
 
+/**
+ *  bool that checks if a user wants to delete all his trees or not.
+ */
+export type DeleteTrees = {
+    deleteAllTrees: boolean;
+}
+
 /** The data in the cookie */
 export type UserInfo = {
     /** This corresponds to userid of the current login. */
@@ -84,6 +95,11 @@ export type ChangePasswordData = {
 /** Add a user to the database */
 export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid> {
     return apiCallPostUser('add', user);
+}
+
+/** Delete a user in the database */
+export function deleteUser(userId: UserId, deleteTrees: DeleteTrees): Promise<void> {
+    return apiCallDeleteUser(`/${userId}/delete`, deleteTrees);
 }
 
 /** Get the user's own data */
