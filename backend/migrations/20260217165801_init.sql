@@ -79,3 +79,11 @@ CREATE TABLE library_cards
     front           VARCHAR(1024)   NOT NULL,
     back            VARCHAR(5000)   NOT NULL
 );
+
+CREATE TABLE feedback
+(
+    id          SERIAL PRIMARY KEY,
+    email       CITEXT NOT NULL DEFAULT '',
+    feedback    VARCHAR(5000) NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
