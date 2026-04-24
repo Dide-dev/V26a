@@ -88,34 +88,37 @@
     <div class="flex-col">
         <!-- Filter options -->
         <form class="flex w-md flex-col gap-2" onsubmit={loadTrees}>
-            <label>
-                {m.createdAfter()}
-                <Datepicker
-                    bind:value={
-                        () => filterOptions.createdAfter ?? undefined,
-                        (v) => (filterOptions.createdAfter = v ?? null)
-                    }
-                    locale={timeFormatString}
-                    translationLocale={timeFormatString}
-                    placeholder={m.selectDate()}
-                />
-            </label>
-            <label>
-                {m.createdBefore()}
-                <Datepicker
-                    bind:value={
-                        () => filterOptions.createdBefore ?? undefined,
-                        (v) =>
-                            (filterOptions.createdBefore = v
-                                ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
-                                : null)
-                    }
-                    locale={timeFormatString}
-                    translationLocale={timeFormatString}
-                    placeholder={m.selectDate()}
-                />
-            </label>
-            <label>
+            <b>{m.creationDate()}</b>
+            <div class="flex">
+                <label class="m-1 flex-1/2">
+                    {m.from()}
+                    <Datepicker
+                        bind:value={
+                            () => filterOptions.createdAfter ?? undefined,
+                            (v) => (filterOptions.createdAfter = v ?? null)
+                        }
+                        locale={timeFormatString}
+                        translationLocale={timeFormatString}
+                        placeholder={m.selectDate()}
+                    />
+                </label>
+                <label class="m-1 flex-1/2">
+                    {m.through()}
+                    <Datepicker
+                        bind:value={
+                            () => filterOptions.createdBefore ?? undefined,
+                            (v) =>
+                                (filterOptions.createdBefore = v
+                                    ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
+                                    : null)
+                        }
+                        locale={timeFormatString}
+                        translationLocale={timeFormatString}
+                        placeholder={m.selectDate()}
+                    />
+                </label>
+            </div>
+            <label class="m-1">
                 {m.ownerId()}
                 <input
                     class="rounded-md border-2"

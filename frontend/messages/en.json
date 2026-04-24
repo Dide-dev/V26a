@@ -65,8 +65,9 @@
     "createdAt": "Created at",
     "book": "Book",
     "applyFilters": "Apply filters",
-    "createdAfter": "Created after",
-    "createdBefore": "Created before",
+    "creationDate": "Creation date",
+    "from": "from",
+    "through": "through",
     "ownerId": "ID of the owner",
     "numberOfTrees": "Number of trees per page:",
     "selectDate": "Select date"

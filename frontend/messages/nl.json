@@ -65,8 +65,9 @@
     "createdAt": "Aangemaakt op",
     "book": "Boek",
     "applyFilters": "Pas filters toe",
-    "createdAfter": "Aangemaakt na",
-    "createdBefore": "Aangemaakt voor",
+    "creationDate": "Aanmaakdatum",
+    "from": "vanaf",
+    "through": "tot en met",
     "ownerId": "ID van de eigenaar",
     "numberOfTrees": "Aantal bomen per pagina:",
     "selectDate": "Selecteer een datum"
