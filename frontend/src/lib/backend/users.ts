@@ -75,7 +75,7 @@ export type UserUpdateData = {
  */
 export type DeleteTrees = {
     deleteAllTrees: boolean;
-}
+};
 
 /** The data in the cookie */
 export type UserInfo = {
