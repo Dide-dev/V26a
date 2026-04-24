@@ -10,7 +10,8 @@ use crate::api_v1::auth::LoginResponse;
 use crate::api_v1::users::{AddUserResponse, ChangePasswordResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
+    UserLanguage, UserUpdateData,
 };
 use crate::tests::api_v1::{login, register, setup};
 use sqlx::PgPool;
@@ -257,9 +258,13 @@ async fn test_delete_own_user(db: PgPool) {
     let user_id = register(&server, "monkaS@gmail.com".to_owned()).await;
     login(&server, "monkaS@gmail.com".to_owned()).await;
 
+    let delete_trees = DeleteOwnedTrees {
+        delete_owned_trees: false,
+    };
+
     let response = server
         .post(&format!("/users/delete/{user_id}"))
-        .json(&serde_json::json!({}))
+        .json(&delete_trees)
         .await;
     response.assert_status_ok();
 
@@ -275,10 +280,14 @@ async fn test_delete_other_user(db: PgPool) {
     register(&server, "user2@gmail.com".to_owned()).await;
     login(&server, "user2@gmail.com".to_owned()).await;
 
-    // Check if user is author, if he is he has no permission to delete.
+    let delete_trees = DeleteOwnedTrees {
+        delete_owned_trees: false,
+    };
+
+    // Check if user is author, if he is not an admin: he has no permission to delete.
     let response = server
         .post(&format!("/users/delete/{user_id_1}"))
-        .json(&serde_json::json!({}))
+        .json(&delete_trees)
         .await;
     response.assert_status_forbidden();
 }
@@ -289,9 +298,10 @@ async fn test_delete_nonexistent_user(db: PgPool) {
     register(&server, "swag@gmail.com".to_owned()).await;
     login(&server, "swag@gmail.com".to_owned()).await;
 
-    let response = server
-        .post("/users/delete/99999")
-        .json(&serde_json::json!({}))
-        .await;
-    response.assert_status_forbidden();
+    let delete_trees = DeleteOwnedTrees {
+        delete_owned_trees: false,
+    };
+
+    let response = server.post("/users/delete/99999").json(&delete_trees).await;
+    response.assert_status_bad_request();
 }

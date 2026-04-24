@@ -274,7 +274,7 @@ async fn change_password(
 /// `deleteOwnedTrees` - Delete all the trees of the user (optional).
 ///
 /// # Returns
-/// Nothing.
+/// The (cookie) jar that is empty.
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
@@ -289,30 +289,34 @@ async fn delete_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
     Json(body): Json<DeleteOwnedTrees>,
-) -> Result<(CookieJar, Json<()>), ApiError> {
+) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
 
     // A user can only delete their own account unless they are an admin.
     if claims.sub != user_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
-    if !user_id_exists(&mut *transaction, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
-    }
-
-    let delete_owned_trees = body.delete_owned_trees.unwrap_or(false);
+    let delete_owned_trees = body.delete_owned_trees;
 
     delete_user(&mut transaction, user_id, delete_owned_trees).await?;
 
-    let jar = jar
-        .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info"));
+    let mut jar = jar;
+
+    if claims.sub == user_id {
+        jar = jar
+            .remove(Cookie::from("session"))
+            .remove(Cookie::from("user_info"));
+    }
 
     transaction
         .commit()
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok((jar, Json(())))
+    Ok(jar)
 }

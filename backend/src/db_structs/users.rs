@@ -63,7 +63,7 @@ pub struct PasswordChangeRequestBody {
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteOwnedTrees {
-    pub delete_owned_trees: Option<bool>,
+    pub delete_owned_trees: bool,
 }
 
 /// The possible values of the `language` field of a user.
