@@ -1,0 +1,31 @@
+# -- Setup / caching --
+FROM docker.io/library/rust:1.94 AS base
+
+WORKDIR /app
+
+# Cache dependencies
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release
+RUN rm -rf src
+
+# Copy the rest of the code
+COPY src ./src
+COPY migrations ./migrations
+COPY .sqlx ./.sqlx
+
+# -- Builder --
+FROM base AS builder
+
+# Use queries from .sqlx/
+ENV SQLX_OFFLINE=true
+
+RUN cargo build --release
+
+# -- Runtime --
+FROM gcr.io/distroless/cc
+
+COPY --from=builder /app/target/release/ht-backend /
+COPY --from=builder /app/migrations ./migrations
+
+CMD ["./ht-backend"]

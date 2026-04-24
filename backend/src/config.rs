@@ -25,10 +25,9 @@ impl Config {
     /// This may panic if any of the environment variables have an invalid format or is not set.
     #[must_use]
     pub fn load() -> Self {
-        let listening_ip =
-            env::var("LISTENING_IP").expect("Environment variable LISTENING_IP must be set");
+        let listening_ip = env::var("LISTENING_IP").unwrap_or("0.0.0.0".to_owned());
         let listening_port = env::var("LISTENING_PORT")
-            .expect("Environment variable LISTENING_PORT must be set")
+            .unwrap_or("3000".to_owned())
             .parse()
             .expect("Failed to parse environment variable LISTENING_PORT");
         let database_url =

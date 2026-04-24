@@ -1,15 +1,15 @@
 http://localhost:8000 {
-	route {
-		@api path /api/*
-		reverse_proxy @api 127.0.0.1:3000 {
-		}
+    route {
+        @api path /api/*
+        reverse_proxy @api backend:3000 {
+        }
 
-		@docs path /api-docs/*
-		reverse_proxy @docs 127.0.0.1:3000 {
-		}
+        @docs path /api-docs/*
+        reverse_proxy @docs backend:3000 {
+        }
 
-		# standard vite dev server port
-		reverse_proxy localhost:5173 {
-		}
-	}
+        # standard vite dev server port
+        reverse_proxy localhost:5173 {
+        }
+    }
 }

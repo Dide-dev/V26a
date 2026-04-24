@@ -8,7 +8,10 @@ services:
     image: docker.io/postgres:18
     ports:
       - "5432:5432"
-    env_file: ".env"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - postgres_dir:/var/lib/postgresql
 
@@ -19,4 +22,25 @@ services:
       - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
-    network_mode: host
+    ports:
+      - "8000:8000"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: backend
+      dockerfile: Containerfile
+    # Docker sends a SIGTERM and waits grace_period settings.
+    # A better way to do this would be to listen to SIGTERM in our backend and initiate a graceful shutdown when the signal gets sent.
+    # This feels too out of scope ATM.
+    stop_grace_period: 2s
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
+      - RUST_LOG=${RUST_LOG}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_EXPIRATION_SECONDS=${SESSION_EXPIRATION_SECONDS}
+    expose:
+      - 3000
+    depends_on:
+      - db
