@@ -254,9 +254,9 @@ async fn change_password(
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
     ),
-        params(
+    params(
         ("user_id" = i32, Path),
-        ("deleteOwnedTrees" = Option<bool>, Query),
+        ("deleteOwnedTrees" = bool, Query),
         ("session" = Claims, Cookie),
     )
 )]
@@ -271,7 +271,7 @@ async fn change_password(
 ///
 /// `user_id` - The user to delete.
 ///
-/// `deleteOwnedTrees` - Delete all the trees of the user (optional).
+/// `deleteOwnedTrees` - Delete all the trees of the user.
 ///
 /// # Returns
 /// The (cookie) jar that is empty.
