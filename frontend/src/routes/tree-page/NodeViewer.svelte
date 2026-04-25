@@ -180,7 +180,7 @@
             <NodeViewer
                 history={(() => {
                     // Here we mock a history with the correct 'revealed' properties
-                    // This will be fixed in the seperation of viewer and editor later.
+                    // TODO: Improve this in the separation of viewer and editor later.
                     const structure = fillStateStructure(history.currentStructure, false);
                     const parent = followIndex(structure, location.slice(0, -1));
                     if ('revealed' in parent) {

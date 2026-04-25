@@ -93,13 +93,13 @@
             return;
         }
 
-        const treeFetched = await getTreeWithCards(id);
+        const fetchedTree = await getTreeWithCards(id);
         tree = [
-            treeFetched.data,
+            fetchedTree.data,
             initializeHistory(
-                treeFetched.genData.id,
-                fillStateStructure(treeFetched.structure, true),
-                treeFetched.cards
+                fetchedTree.genData.id,
+                fillStateStructure(fetchedTree.structure, true),
+                fetchedTree.cards
             )
         ];
 

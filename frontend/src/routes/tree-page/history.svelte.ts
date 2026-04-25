@@ -73,6 +73,10 @@ function performActionLocal(history: TreeHistory, action: CardAction) {
             history.currentCards[action.cardId] = action.newCard;
             break;
         }
+        default: {
+            // Currently this is unreachable, but don't fail silently in the future if we add another type.
+            throw new Error('Unknown card action type');
+        }
     }
 }
 
@@ -206,8 +210,9 @@ export async function undo(history: TreeHistory) {
             action = mapActionCardId(history, action);
 
             await updateTreeStructure({ id: history.treeId, newStructure: oldStructure });
+            // If the above api call fails the database and local state will both be consistent,
+            // there will just be an unused card in the database.
 
-            // TODO: if the above api call fails the local state is semi committed with the cardIdMapper. Is this fine?
             break;
         }
         case 'cardUpdate': {
@@ -217,6 +222,10 @@ export async function undo(history: TreeHistory) {
                 newBack: action.oldCard.back
             });
             break;
+        }
+        default: {
+            // Currently this is unreachable, but don't fail silently in the future if we add another type.
+            throw new Error('Unknown card action type');
         }
     }
 
@@ -252,8 +261,9 @@ export async function redo(history: TreeHistory) {
             action = mapActionCardId(history, action);
 
             await updateTreeStructure({ id: history.treeId, newStructure });
+            // If the above api call fails the database and local state will both be consistent,
+            // there will just be an unused card in the database.
 
-            // TODO: if the above api call fails the local state is semi committed with the cardIdMapper. Is this fine?
             break;
         }
         case 'cardRemove': {
@@ -272,6 +282,10 @@ export async function redo(history: TreeHistory) {
             });
             break;
         }
+        default: {
+            // Currently this is unreachable, but don't fail silently in the future if we add another type.
+            throw new Error('Unknown card action type');
+        }
     }
 
     history.listBack.push([history.currentStructure, action]);
@@ -281,7 +295,7 @@ export async function redo(history: TreeHistory) {
     performActionLocal(history, action);
 }
 
-/** Maps every CardId according to this.#cardIdMapper, by creating a deep copy. */
+/** Maps every CardId according to history.#cardIdMapper, by creating a deep copy. */
 function mapStructureCardIds(
     history: TreeHistory,
     structure: StateTreeStructure
@@ -302,7 +316,10 @@ function mapStructureCardIds(
     };
 }
 
-/** Maps the CardId according to this.#cardIdMapper, if this action has a CardId. */
+/**
+ * Maps the CardId according to history.#cardIdMapper, if this action has a CardId.
+ * The action will be modified in place, and a reference to the same object is also returned.
+ */
 function mapActionCardId(history: TreeHistory, action: CardAction): CardAction {
     switch (action.type) {
         case 'none': {
@@ -316,6 +333,10 @@ function mapActionCardId(history: TreeHistory, action: CardAction): CardAction {
         case 'cardUpdate': {
             action.cardId = history.cardIdMapper.find(action.cardId);
             return action;
+        }
+        default: {
+            // Currently this is unreachable, but don't fail silently in the future if we add another type.
+            throw new Error('Unknown card action type');
         }
     }
 }
@@ -347,8 +368,8 @@ class CardIdMapper {
 /** These actions only describe what happens to the cards, not to the structure. */
 type CardAction = CardActionNone | CardActionRemove | CardActionAdd | CardActionUpdate;
 /**
- * Actually with all the other Actions the structure also gets edited,
- * it is just that with this action type nothing else changes.
+ * This action specifies that only the tree structure is edited.
+ * This is in contrast to the other actions which also edit the set of cards in some way.
  */
 type CardActionNone = {
     type: 'none';
@@ -396,6 +417,10 @@ function actionInverse(action: CardAction): CardAction {
                 newCard: action.oldCard,
                 oldCard: action.newCard
             };
+        }
+        default: {
+            // Currently this is unreachable, but don't fail silently in the future if we add another type.
+            throw new Error('Unknown card action type');
         }
     }
 }
