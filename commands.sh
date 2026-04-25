@@ -3,20 +3,20 @@
 # Utrecht University within the Software Project course.
 # © Copyright Utrecht University (Department of Information and Computing Sciences)
 #
+
 set -xe
 
 cd ./backend/
-export RUSTFLAGS="-D warnings"
-export RUSTDOCFLAGS="-D warnings"
 cargo fmt
-cargo clippy --all-targets
+cargo clippy --all-targets -- -D warnings
+export RUSTDOCFLAGS="-D warnings"
 cargo doc --no-deps
 cargo sqlx prepare
 cargo build
 cargo test
 
 cd ../frontend/
-npm i
+npm install
 npm run format
 npm run build
 npm run check
