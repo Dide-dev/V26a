@@ -85,7 +85,7 @@ export function setRevealed(history: TreeHistory, index: number[], revealed: boo
     const node = followIndexNode(newStructure, index);
     node.revealed = revealed;
 
-    commitActionLocal(history, newStructure, { type: 'none' });
+    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: false });
 }
 
 export async function doMove(history: TreeHistory, nodeToMove: number[], newLocation: number[]) {
@@ -101,9 +101,12 @@ export async function doMove(history: TreeHistory, nodeToMove: number[], newLoca
     parent.children.splice(parentIndex, 1);
     placementParent.children.splice(placementIndex, 0, node);
 
-    await updateTreeStructure({ id: history.treeId, newStructure });
+    await updateTreeStructure({
+        id: history.treeId,
+        newStructure: stripStateStructure(newStructure)
+    });
 
-    commitActionLocal(history, newStructure, { type: 'none' });
+    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
 
 export async function doAddCard(history: TreeHistory, location: number[], card: CardGetData) {
@@ -121,7 +124,10 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
         children: []
     });
 
-    await updateTreeStructure({ id: history.treeId, newStructure });
+    await updateTreeStructure({
+        id: history.treeId,
+        newStructure: stripStateStructure(newStructure)
+    });
 
     const action: CardActionAdd = {
         type: 'cardAdd',
@@ -158,7 +164,7 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
     await removeCardFromTree({
         treeId: history.treeId,
         cardId: card.cardId,
-        newStructure
+        newStructure: stripStateStructure(newStructure)
     });
 
     // Only now that the backend has accepted, commit locally
@@ -177,75 +183,27 @@ export function canRedo(history: TreeHistory): boolean {
     return history.listForward.length > 0;
 }
 
-export async function undo(history: TreeHistory) {
-    if (!canUndo(history)) return;
-
-    const entry = history.listBack[history.listBack.length - 1];
-    let action = mapActionCardId(history, entry[1]);
-    let oldStructure = mapStructureCardIds(history, entry[0]);
+/**
+ * Makes api calls to backend to perform the action and update the structure.
+ * Will also make sure to map the CardId in the structure and action, and returns the updated versions.
+ * Only local state that this function changes is the cardIdMapper.
+ */
+async function performActionToBackend(
+    history: TreeHistory,
+    newStructure: StateTreeStructure,
+    action: CardAction
+): Promise<[StateTreeStructure, CardAction]> {
+    action = mapActionCardId(history, action);
+    newStructure = mapStructureCardIds(history, newStructure);
 
     switch (action.type) {
         case 'none': {
-            await updateTreeStructure({ id: history.treeId, newStructure: oldStructure });
-            break;
-        }
-        case 'cardAdd': {
-            await removeCardFromTree({
-                treeId: history.treeId,
-                cardId: action.cardId,
-                newStructure: oldStructure
-            });
-            break;
-        }
-        case 'cardRemove': {
-            const newCardId = await addCard({
-                treeId: history.treeId,
-                front: action.oldCard.front,
-                back: action.oldCard.back
-            });
-
-            history.cardIdMapper.setMapping(action.oldCardId, newCardId);
-
-            oldStructure = mapStructureCardIds(history, oldStructure);
-            action = mapActionCardId(history, action);
-
-            await updateTreeStructure({ id: history.treeId, newStructure: oldStructure });
-            // If the above api call fails the database and local state will both be consistent,
-            // there will just be an unused card in the database.
-
-            break;
-        }
-        case 'cardUpdate': {
-            await updateCard({
-                cardId: action.cardId,
-                newFront: action.oldCard.front,
-                newBack: action.oldCard.back
-            });
-            break;
-        }
-        default: {
-            // Currently this is unreachable, but don't fail silently in the future if we add another type.
-            throw new Error('Unknown card action type');
-        }
-    }
-
-    history.listForward.push([history.currentStructure, action]);
-    history.listBack.pop();
-    history.currentStructure = oldStructure;
-
-    performActionLocal(history, actionInverse(action));
-}
-export async function redo(history: TreeHistory) {
-    if (!canRedo(history)) return;
-
-    const entry = history.listForward[history.listForward.length - 1];
-    let action = mapActionCardId(history, entry[1]);
-    let newStructure = mapStructureCardIds(history, entry[0]);
-
-    // Here is an implemenation to do the inverse of #performActionLocal.
-    switch (action.type) {
-        case 'none': {
-            await updateTreeStructure({ id: history.treeId, newStructure });
+            if (action.sendStructureToBackend) {
+                await updateTreeStructure({
+                    id: history.treeId,
+                    newStructure: stripStateStructure(newStructure)
+                });
+            }
             break;
         }
         case 'cardAdd': {
@@ -260,7 +218,10 @@ export async function redo(history: TreeHistory) {
             newStructure = mapStructureCardIds(history, newStructure);
             action = mapActionCardId(history, action);
 
-            await updateTreeStructure({ id: history.treeId, newStructure });
+            await updateTreeStructure({
+                id: history.treeId,
+                newStructure: stripStateStructure(newStructure)
+            });
             // If the above api call fails the database and local state will both be consistent,
             // there will just be an unused card in the database.
 
@@ -270,7 +231,7 @@ export async function redo(history: TreeHistory) {
             await removeCardFromTree({
                 treeId: history.treeId,
                 cardId: action.oldCardId,
-                newStructure
+                newStructure: stripStateStructure(newStructure)
             });
             break;
         }
@@ -287,6 +248,31 @@ export async function redo(history: TreeHistory) {
             throw new Error('Unknown card action type');
         }
     }
+    return [newStructure, action];
+}
+
+export async function undo(history: TreeHistory) {
+    if (!canUndo(history)) return;
+
+    const entry = history.listBack[history.listBack.length - 1];
+    const [oldStructure, actionInversed] = await performActionToBackend(
+        history,
+        entry[0],
+        actionInverse(entry[1])
+    );
+
+    // The action is inversed twice so it is like the original again.
+    history.listForward.push([history.currentStructure, actionInverse(actionInversed)]);
+    history.listBack.pop();
+    history.currentStructure = oldStructure;
+
+    performActionLocal(history, actionInversed);
+}
+export async function redo(history: TreeHistory) {
+    if (!canRedo(history)) return;
+
+    const entry = history.listForward[history.listForward.length - 1];
+    const [newStructure, action] = await performActionToBackend(history, entry[0], entry[1]);
 
     history.listBack.push([history.currentStructure, action]);
     history.listForward.pop();
@@ -373,6 +359,12 @@ type CardAction = CardActionNone | CardActionRemove | CardActionAdd | CardAction
  */
 type CardActionNone = {
     type: 'none';
+    /**
+     * If the `revealed` property changes, there is no need to send the structure to the backend with undo/redo.
+     * But some cards were moved, we do need to inform the backend.
+     * This field indicates which of these two cases we are in.
+     */
+    sendStructureToBackend: boolean;
 };
 type CardActionRemove = {
     type: 'cardRemove';
@@ -425,24 +417,48 @@ function actionInverse(action: CardAction): CardAction {
     }
 }
 
-// Stateful variants of types of the same name in 'trees.ts'.
-// For now the only state tracked is the 'revealed' property of Nodes, we could add more.
+/**
+ * Stateful variants of types of the same name in 'trees.ts'.
+ * For now the only state tracked is the `revealed` property of Nodes, we could add more.
+ *
+ * Note that typescript will not complain if a `StateTreeStructure` is used where a `TreeStructure` is expected.
+ * Please prevent sending unnecessary fields to the backend, by using the `StripStateStructure` function.
+ */
 export type StateTreeStructure = {
     rootNodes: StateRootNode[];
 };
+/** See `StateTreeStructure`. */
 export type StateRootNode = {
     label: string;
     children: StateNode[];
 };
+/** See `StateTreeStructure`. */
 export type StateNode = {
     revealed: boolean;
 
     cardId: CardId;
     children: StateNode[];
 };
+
+/** Makes a deep copy and removes all the state from the `StateTreeStructure`. */
+export function stripStateStructure(statefulStructure: StateTreeStructure): TreeStructure {
+    function fillStateNode(statelessNode: StateNode): Node {
+        return {
+            cardId: statelessNode.cardId,
+            children: statelessNode.children.map(fillStateNode)
+        };
+    }
+
+    return {
+        rootNodes: statefulStructure.rootNodes.map((rootNode) => ({
+            label: rootNode.label,
+            children: rootNode.children.map(fillStateNode)
+        }))
+    };
+}
 /**
- * Makes a deep copy and fills in all state from StateTreeStructure
- * Currently fills the 'revealed' field with true everywhere.
+ * Makes a deep copy and fills in all state from `StateTreeStructure`.
+ * Fills the `revealed` field with the `allRevealed` argument everywhere.
  */
 export function fillStateStructure(
     statelessStructure: TreeStructure,
