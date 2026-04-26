@@ -88,4 +88,8 @@
         display: flex;
         flex-direction: column;
     }
+
+    :global(main) {
+        align-items: start;
+    }
 </style>

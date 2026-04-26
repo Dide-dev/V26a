@@ -82,11 +82,6 @@
         } else {
             result = [
                 {
-                    href: '/registration',
-                    text: m.register(),
-                    isThin: true
-                },
-                {
                     href: '/login',
                     text: m.login(),
                     isThin: true
@@ -97,6 +92,11 @@
         return result;
     });
     const footerLinks: FooterLink[] = [
+        {
+            href: '/privacy',
+            text: m.privacy(),
+            target: '_self'
+        },
         {
             href: '/colophon',
             text: m.colophon(),

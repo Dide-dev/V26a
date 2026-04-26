@@ -44,8 +44,8 @@ test('Submission with correct data', async () => {
     await user.type(descriptionInput, 'Test tree description');
     const bookNameInput = screen.getByTestId('bookname');
     await user.type(bookNameInput, 'A book name');
-    const bookEditionInput = screen.getByTestId('bookedition');
-    await user.type(bookEditionInput, '4th edition');
+    const bookEditionInput = screen.getByTestId('bookEdition');
+    await user.type(bookEditionInput, '4');
     const bookIsbnInput = screen.getByTestId('bookIsbn');
     await user.type(bookIsbnInput, '9781408883464');
     const chapterInput = screen.getByTestId('chapter');
@@ -61,8 +61,8 @@ test('Submission with correct data', async () => {
             title: 'Test tree title',
             description: 'Test tree description',
             bookName: 'A book name',
-            bookEdition: '4th edition',
-            bookIsbn: '9781408883464',
+            bookEdition: 4,
+            bookIsbn: 9781408883464,
             bookChapter: 'chapter 1',
             bookExercise: 'exercise 1',
             assignmentText: 'assignment text',

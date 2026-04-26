@@ -7,7 +7,7 @@ Information and Computing Sciences) -->
 </script>
 
 <div>
-    <h1 class="font-bold">{m.colophon()}</h1>
+    <h1 class="page__title">{m.colophon()}</h1>
 
     <p>
         Dit product is ontwikkeld door studenten van de bachelor Informatica aan de Universiteit

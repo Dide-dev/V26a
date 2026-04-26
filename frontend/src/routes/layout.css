@@ -38,10 +38,22 @@
 
     --color-brown: oklch(0.638 0.0968 73.33);
 
+    --color-neutral-350: oklch(0.78 0 0);
+
     /* Spacing nav bar */
-    --spacing-nav-normal: 10rem;
-    --spacing-nav-thin: 6rem;
-    --spacing-nav-extra-thin: 3.5rem;
+    --spacing-nav-normal: calc(var(--spacing) * 40);
+    --spacing-nav-thin: calc(var(--spacing) * 24);
+    --spacing-nav-extra-thin: calc(var(--spacing) * 14);
+
+    /* Text spacing */
+    --spacing-text-normal: calc(var(--spacing) * 4);
+    --spacing-text-small: calc(var(--spacing) * 2);
+    --spacing-text-minor: calc(var(--spacing) * 1);
+
+    /* Padding */
+    --spacing-padding-normal: calc(var(--spacing) * 4);
+    --spacing-padding-small: calc(var(--spacing) * 2);
+    --spacing-padding-minor: calc(var(--spacing) * 1);
 }
 
 @layer base {
@@ -50,6 +62,179 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
+    }
+
+    /* General layout classes */
+    main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .page__title {
+        font-size: var(--text-4xl);
+        font-weight: var(--font-weight-bold);
+        margin-bottom: var(--spacing-text-normal);
+    }
+
+    .page__heading {
+        font-size: var(--text-2xl);
+        font-weight: var(--font-weight-semibold);
+        margin-bottom: var(--spacing-text-small);
+    }
+
+    .text__link {
+        color: var(--color-blue-600);
+    }
+
+    .text__link:hover {
+        text-decoration: underline;
+    }
+
+    .text__link:active {
+        color: var(--color-blue-800);
+    }
+
+    .text__error {
+        color: var(--color-red-700);
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    /* Form layout */
+    form {
+        display: flex;
+        flex-direction: column;
+        width: min(var(--container-md), 90vw);
+    }
+
+    form label {
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
+        margin-bottom: 0;
+    }
+
+    form input {
+        border-color: var(--color-gray-500);
+    }
+
+    form .error {
+        background-color: var(--color-red-100);
+        border-color: var(--color-red-800);
+    }
+
+    form input + input {
+        margin-top: var(--spacing-text-small);
+    }
+
+    form {
+        .input__text,
+        .input__long_text,
+        .input__checkbox {
+            border-width: 2px;
+            border-radius: var(--radius-md);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            font-style: italic;
+        }
+    }
+
+    form input[type='checkbox'] {
+        margin-top: calc(1rem / 3);
+        margin-bottom: auto;
+        color: var(--color-gray-600);
+        cursor: pointer;
+    }
+
+    form input[type='checkbox'] + label {
+        font-weight: var(--font-weight-normal);
+        font-style: italic;
+        line-height: var(--text-base--line-height);
+    }
+
+    form > div {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: var(--spacing-text-normal);
+    }
+
+    form .checkbox__container {
+        display: flex;
+        flex-direction: row;
+        gap: var(--spacing);
+    }
+
+    form button {
+        padding: var(--spacing-padding-minor);
+        border-radius: var(--radius-md);
+        border-width: 2px;
+        font-weight: var(--font-weight-bold);
+        font-size: var(--text-lg);
+
+        color: var(--color-neutral-600);
+        background-color: var(--color-neutral-400);
+        border-color: currentColor;
+    }
+
+    form button:hover {
+        color: var(--color-neutral-900);
+        background-color: var(--color-neutral-350);
+    }
+
+    form.completed button {
+        color: var(--color-black);
+        background-color: var(--color-neutral-200);
+        border-color: var(--color-neutral-600);
+    }
+
+    form.completed button:hover {
+        color: var(--color-white);
+        background-color: var(--color-neutral-600);
+        animation: completedFormButtonSelect 0.15s ease-in-out;
+    }
+
+    @keyframes completedFormButtonSelect {
+        0% {
+            background-color: var(--color-neutral-200);
+            color: var(--color-black);
+        }
+        100% {
+            background-color: var(--color-neutral-600);
+            color: var(--color-white);
+        }
+    }
+
+    /* Info section. */
+    .info {
+        cursor: help;
+        position: relative;
+    }
+
+    .info:hover > .info__content {
+        display: block;
+        position: absolute;
+        width: auto;
+        min-width: calc(var(--spacing) * 60);
+        max-width: calc(var(--spacing) * 120);
+        word-break: break-word;
+
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+
+        background-color: var(--color-neutral-50);
+        border-radius: var(--spacing);
+        padding: var(--spacing-padding-small);
+        box-shadow: var(--color-gray-900) 0 0 var(--spacing);
+    }
+
+    .info__content {
+        display: none;
     }
 
     /* General formatting for markdown. */

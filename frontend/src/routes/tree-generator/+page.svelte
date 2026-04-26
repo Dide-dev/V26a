@@ -10,12 +10,14 @@
     import { m } from '$lib/paraglide/messages.js';
     import { addTree, type TreeData } from '$lib/backend/trees';
     import { onMount } from 'svelte';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getUserInfo, type UserInfo } from '$lib/backend/users';
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
 
+    let userInfo: UserInfo | null = $state(null);
+
     onMount(async () => {
-        const userInfo = getUserInfo();
+        userInfo = getUserInfo();
         if (userInfo === null) {
             await redirectLogin(page.url);
             return;
@@ -34,6 +36,8 @@
         published: false
     });
 
+    let formCompleted: boolean = $derived(treeData.title !== '');
+
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
 
@@ -42,103 +46,131 @@
     }
 </script>
 
-<div class="flex w-full justify-center">
-    <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
-        <label>
-            {m.title()}
+<div>
+    <h1 class="page__title">{m.createTree()}</h1>
+    <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
+        <div>
+            <label for="title">
+                {m.title()} *
+            </label>
+            <!-- TODO: replace `userInfo?.sub` with username -->
             <input
-                class="rounded-md border-2"
+                id="title"
+                class="input__text"
                 bind:value={treeData.title}
                 name="title"
-                type="title"
+                type="text"
                 data-testid="title"
-                maxlength="256"
+                placeholder={m.examplePlaceholder() +
+                    m.exampleTitle({ name: userInfo?.sub ?? '' }) +
+                    m.requiredPlaceholder()}
+                maxlength="128"
                 required
             />
-        </label>
-        <label>
-            <p>{m.description()}</p>
+        </div>
+        <div>
+            <label for="description">
+                {m.description()}
+            </label>
             <textarea
-                class="size-64 rounded-md border-2"
+                id="description"
+                class="input__long_text min-h-20"
                 bind:value={treeData.description}
                 name="description"
                 data-testid="description"
-                maxlength="128"
-                placeholder={m.optional()}
+                placeholder={m.examplePlaceholder() + m.exampleDescription()}
+                maxlength="256"
             ></textarea>
-        </label>
-        <label>
-            {m.bookname()}
+        </div>
+        <div>
+            <label for="bookName">
+                {m.bookname()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="bookName"
+                class="input__text"
                 bind:value={treeData.bookName}
                 name="bookname"
-                type="bookname"
+                type="text"
                 data-testid="bookname"
-                placeholder={m.optional()}
-                maxlength="128"
+                placeholder={m.examplePlaceholder() + m.exampleBookName()}
+                maxlength="192"
             />
-        </label>
-        <label>
-            {m.bookedition()}
+        </div>
+        <div>
+            <label for="bookEdition">
+                {m.bookedition()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="bookEdition"
+                class="input__text"
                 bind:value={treeData.bookEdition}
-                name="bookedition"
-                type="bookedition"
-                data-testid="bookedition"
-                placeholder={m.optional()}
-                maxlength="128"
+                name="bookEdition"
+                type="number"
+                data-testid="bookEdition"
+                placeholder={m.examplePlaceholder() + m.exampleBookEdition()}
+                maxlength="32"
             />
-        </label>
-        <label>
-            {m.bookIsbn()}
+        </div>
+        <div>
+            <label for="bookIsbn">
+                {m.bookIsbn()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="bookIsbn"
+                class="input__text"
                 bind:value={treeData.bookIsbn}
                 name="bookIsbn"
-                type="bookIsbn"
+                type="number"
                 data-testid="bookIsbn"
-                placeholder={m.optional()}
-                maxlength="128"
+                placeholder={m.examplePlaceholder() + m.exampleBookISBN()}
+                maxlength="13"
             />
-        </label>
-        <label>
-            {m.bookChapter()}
+        </div>
+        <div>
+            <label for="bookChapter">
+                {m.bookChapter()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="bookChapter"
+                class="input__text"
                 bind:value={treeData.bookChapter}
                 name="chapter"
-                type="chapter"
+                type="text"
                 data-testid="chapter"
-                maxlength="128"
-                placeholder={m.optional()}
+                placeholder={m.examplePlaceholder() + m.exampleBookChapter()}
+                maxlength="32"
             />
-        </label>
-        <label>
-            {m.bookExercise()}
+        </div>
+        <div>
+            <label for="exercise">
+                {m.bookExercise()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="exercise"
+                class="input__text"
                 bind:value={treeData.bookExercise}
                 name="exercise"
-                type="exercise"
+                type="text"
                 data-testid="exercise"
-                maxlength="128"
-                placeholder={m.optional()}
+                placeholder={m.examplePlaceholder() + m.exampleExercise()}
+                maxlength="32"
             />
-        </label>
-        <label>
-            {m.assignmentText()}
-            <input
-                class="rounded-md border-2"
+        </div>
+        <div>
+            <label for="assignmentText">
+                {m.assignmentText()}
+            </label>
+            <textarea
+                id="assignmentText"
+                class="input__long_text min-h-25"
                 bind:value={treeData.assignmentText}
                 name="assignment"
-                type="assignment"
                 data-testid="assignment"
-                maxlength="128"
-                placeholder={m.optional()}
-            />
-        </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.createTree()}</button>
+                placeholder={m.examplePlaceholder() + m.exampleAssignment()}
+                maxlength="5000"
+            ></textarea>
+        </div>
+        <button>{m.createTree()}</button>
     </form>
 </div>
