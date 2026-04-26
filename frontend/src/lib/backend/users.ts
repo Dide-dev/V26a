@@ -70,13 +70,6 @@ export type UserUpdateData = {
     enabled: Option<boolean>;
 };
 
-/**
- *  bool that checks if a user wants to delete all his trees or not.
- */
-export type DeleteTrees = {
-    deleteAllTrees: boolean;
-};
-
 /** The data in the cookie */
 export type UserInfo = {
     /** This corresponds to userid of the current login. */

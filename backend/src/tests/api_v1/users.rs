@@ -273,9 +273,11 @@ async fn test_delete_own_user(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_other_user(db: PgPool) {
     let server = setup(db);
-    let user_id_1 = register(&server, "user1@gmail.com".to_owned()).await;
-    register(&server, "user2@gmail.com".to_owned()).await;
-    login(&server, "user2@gmail.com".to_owned()).await;
+    let email1 = "user1@gmail.com".to_owned();
+    let user_id_1 = register(&server, email1.clone()).await;
+    let email2 = "user2@gmail.com".to_owned();
+    register(&server, email2.clone()).await;
+    login(&server, email2.clone()).await;
 
     let response = server
         .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
@@ -287,8 +289,9 @@ async fn test_delete_other_user(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_nonexistent_user(db: PgPool) {
     let server = setup(db);
-    register(&server, "swag@gmail.com".to_owned()).await;
-    login(&server, "swag@gmail.com".to_owned()).await;
+    let email = "swag@gmail.com".to_owned();
+    register(&server, email.clone()).await;
+    login(&server, email.clone()).await;
 
     let response = server
         .delete("/users/99999/delete?deleteOwnedTrees=false")
