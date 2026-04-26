@@ -62,5 +62,9 @@
     "credits": "Colofon",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
-    "book": "Boek"
+    "book": "Boek",
+    "noUsersFound": "Geen gebruikers gevonden",
+    "id": "id",
+    "enabled": "ingeschakeld",
+    "userlist": "Gebruikerslijst"
 }

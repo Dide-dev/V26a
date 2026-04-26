@@ -62,5 +62,9 @@
     "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
-    "book": "Book"
+    "book": "Book",
+    "noUsersFound": "No users found",
+    "id": "id",
+    "enabled": "enabled",
+    "userlist": "Userlist"
 }

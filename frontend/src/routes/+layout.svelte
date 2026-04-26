@@ -71,7 +71,9 @@
     "
     >
         <a href={appLink('/')} onclick={closeMenu}>{m.home()}</a>
-
+        {#if userInfo?.accountType === 'admin'}
+            <a href={appLink('/userlist')} onclick={closeMenu}>{m.userlist()}</a>
+        {/if}
         {#if userInfo?.accountType === 'author' || userInfo?.accountType === 'admin'}
             <a href={appLink('/my-trees')} onclick={closeMenu}>{m.myTrees()}</a>
             <a href={appLink('/profile')} onclick={closeMenu}>{m.profile()}</a>
