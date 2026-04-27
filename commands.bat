@@ -17,6 +17,7 @@ cd ../frontend/                             || exit 1
 call npm install                            || exit 1
 call npm run format                         || exit 1
 call npm run build                          || exit 1
+call npm run check                          || exit 1
 call npm run lint                           || exit 1
 set CI=true
 call npm run test                           || exit 1
