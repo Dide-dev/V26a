@@ -1,0 +1,14 @@
+Containerfile
+.dockerignore
+.git
+.gitignore
+.npmrc
+.prettierrc
+.prettierignore
+.svelte-kit
+.vscode
+.idea
+node_modules
+build
+playwright-report
+test-results

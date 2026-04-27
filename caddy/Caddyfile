@@ -8,8 +8,8 @@
         reverse_proxy @docs backend:3000 {
         }
 
-        # standard vite dev server port
-        reverse_proxy localhost:5173 {
+        # Send non-backend requests to the frontend.
+        reverse_proxy frontend:3000 {
         }
     }
 }
