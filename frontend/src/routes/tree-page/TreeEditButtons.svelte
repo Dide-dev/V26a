@@ -18,11 +18,13 @@
     let {
         history,
         index,
-        dragState = $bindable()
+        dragState = $bindable(),
+        numPopupsOpen = $bindable()
     }: {
         history: TreeHistory;
         index: number[];
         dragState: null | DragState;
+        numPopupsOpen: number;
     } = $props();
 
     /** In this component the card editor popup is only used with the 'edit' button */
@@ -83,5 +85,6 @@
         confirmText={m.edit()}
         confirmCallback={finishEdit}
         cancelCallback={() => (showEditPopup = false)}
+        bind:numPopupsOpen
     />
 {/if}

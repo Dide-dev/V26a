@@ -13,18 +13,21 @@
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
     import { htmlFromMarkdown } from '$lib/markdown';
+    import { onMount } from 'svelte';
 
     let {
         card,
         /** This string must already be translated, as it is shown directly to the user. */
         confirmText,
         confirmCallback,
-        cancelCallback
+        cancelCallback,
+        numPopupsOpen = $bindable()
     }: {
         card: CardGetData;
         confirmText: string;
         confirmCallback: (cardNew: CardGetData) => void;
         cancelCallback: () => void;
+        numPopupsOpen: number;
     } = $props();
 
     const frontMaxLength = 1024;
@@ -53,6 +56,12 @@
 
         confirmCallback(card);
     }
+
+    onMount(() => {
+        numPopupsOpen += 1;
+
+        return () => (numPopupsOpen -= 1);
+    });
 </script>
 
 <Popup>

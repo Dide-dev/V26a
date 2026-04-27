@@ -22,11 +22,13 @@
         history = $bindable(),
         location,
         dragState = $bindable(),
+        numPopupsOpen = $bindable(),
         editingPage
     }: {
         history: TreeHistory;
         location: number[];
         dragState: DragState;
+        numPopupsOpen: number;
         editingPage: boolean;
     } = $props();
 
@@ -191,6 +193,7 @@
                 {location}
                 dragState={null}
                 editingPage={false}
+                numPopupsOpen={0}
             />
         </div>
     {/if}
@@ -201,6 +204,7 @@
             {location}
             bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
             lineLayout={{ type: 'over', lineOffset, svgWidth }}
+            bind:numPopupsOpen
         />
     {/if}
 
@@ -212,7 +216,7 @@
     {:else}
         <!-- Standard Node -->
         {#if editingPage}
-            <TreeEditButtons {history} index={location} bind:dragState />
+            <TreeEditButtons {history} index={location} bind:dragState bind:numPopupsOpen />
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
@@ -230,6 +234,7 @@
                     location={nextSiblingIndex}
                     bind:dragState={dragStateChildrenGetSelf, dragStateChildrenSet}
                     lineLayout={{ type: 'under', lineHeight: totalHeight, lineOffset, svgWidth }}
+                    bind:numPopupsOpen
                 />
             {/if}
         </div>
@@ -255,6 +260,7 @@
                 bind:history
                 location={[...location, index]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                bind:numPopupsOpen
                 {editingPage}
             />
         {/each}
@@ -267,6 +273,7 @@
                 location={[...location, 0]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                 lineLayout={{ type: 'right' }}
+                bind:numPopupsOpen
             />
         </div>
     {/if}

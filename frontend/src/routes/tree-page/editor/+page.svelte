@@ -74,7 +74,15 @@
     let loading = $state(true);
 
     let id: number | null = null;
-    let tree: [TreeData, TreeHistory] | null = $state(null);
+    let tree: {
+        data: TreeData;
+        history: TreeHistory;
+        /**
+         * Is used to prevent keyboard shortcuts like ctrl+z when a popup is open.
+         * Currently should only be 0 or 1, but in the future that could change.
+         */
+        numPopupsOpen: number;
+    } | null = $state(null);
 
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
@@ -94,26 +102,31 @@
         }
 
         const fetchedTree = await getTreeWithCards(id);
-        tree = [
-            fetchedTree.data,
-            initializeHistory(
+        tree = {
+            data: fetchedTree.data,
+            history: initializeHistory(
                 fetchedTree.genData.id,
                 fillStateStructure(fetchedTree.structure, true),
                 fetchedTree.cards
-            )
-        ];
+            ),
+            numPopupsOpen: 0
+        };
 
         loading = false;
     });
 
     function undoButtonClick() {
-        undo(tree![1]);
+        undo(tree!.history);
     }
     function redoButtonClick() {
-        redo(tree![1]);
+        redo(tree!.history);
     }
     // The undo & redo keyboard shortcuts
     function onkeydown(event: KeyboardEvent) {
+        if (tree?.numPopupsOpen !== 0) {
+            return;
+        }
+
         if (event.ctrlKey && event.key == 'z') {
             undoButtonClick();
             event.stopPropagation();
@@ -132,18 +145,22 @@
 {#if loading}
     <p class="text-green-800">{m.loadingTree()}</p>
 {:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree[0].title}</h1>
+    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
     <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree[0].description}
+        {tree.data.description}
     </p>
 
     <div class="m-2 flex gap-2">
-        <EditMetadata treeId={tree[1].treeId} bind:prevTreeData={tree[0]} />
+        <EditMetadata
+            bind:numPopupsOpen={tree.numPopupsOpen}
+            treeId={tree.history.treeId}
+            bind:prevTreeData={tree.data}
+        />
         <button
             class={[
                 'rounded-sm bg-emerald-500 p-1',
-                canUndo(tree[1]) && 'cursor-pointer stroke-black p-1',
-                !canUndo(tree[1]) && 'stroke-gray-500'
+                canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
+                !canUndo(tree.history) && 'stroke-gray-500'
             ]}
             onclick={undoButtonClick}
             title={m.undo()}
@@ -154,8 +171,8 @@
         <button
             class={[
                 'rounded-sm bg-emerald-500 p-1',
-                canRedo(tree[1]) && 'cursor-pointer stroke-black p-1',
-                !canRedo(tree[1]) && 'stroke-gray-500'
+                canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
+                !canRedo(tree.history) && 'stroke-gray-500'
             ]}
             onclick={redoButtonClick}
             title={m.redo()}
@@ -165,7 +182,7 @@
         </button>
         <a
             class="rounded-sm bg-emerald-500 p-1 *:inline"
-            href={appLink(`/tree-page/viewer?id=${tree[1].treeId}`)}
+            href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
             target="_blank"
         >
             {m.viewTree()}
@@ -178,12 +195,13 @@
         The padding on the bottom is to make the scrollbar not intersect with some buttons.
     -->
     <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pb-7">
-        {#each tree[1].currentStructure.rootNodes as root, index (root)}
+        {#each tree.history.currentStructure.rootNodes as root, index (root)}
             <NodeViewer
-                bind:history={tree[1]}
+                bind:history={tree.history}
                 location={[index]}
                 bind:dragState
                 editingPage={true}
+                bind:numPopupsOpen={tree.numPopupsOpen}
             />
         {/each}
     </div>

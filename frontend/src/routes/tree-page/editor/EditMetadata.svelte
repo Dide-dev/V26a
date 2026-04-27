@@ -9,10 +9,14 @@
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
 
-    let { treeId, prevTreeData = $bindable() }: { treeId: TreeId; prevTreeData: TreeData } =
-        $props();
+    let {
+        numPopupsOpen = $bindable(),
+        treeId,
+        prevTreeData = $bindable()
+    }: { numPopupsOpen: number; treeId: TreeId; prevTreeData: TreeData } = $props();
 
     let visible = $state(false);
+
     let treeData: TreeData = $state({
         title: prevTreeData.title ?? '',
         description: prevTreeData.description ?? '',
@@ -32,12 +36,19 @@
         });
         visible = false;
         prevTreeData = { ...treeData };
+        numPopupsOpen -= 1;
     }
 
     // Restores treeData to its original value.
     function cancelEdit() {
         treeData = { ...prevTreeData };
         visible = false;
+        numPopupsOpen -= 1;
+    }
+
+    function onEditMetadataButtonClick() {
+        visible = true;
+        numPopupsOpen += 1;
     }
 
     // The form submit keyboard shortcut
@@ -49,7 +60,7 @@
     }
 </script>
 
-<button class="cursor-pointer rounded-sm bg-emerald-500 p-1" onclick={() => (visible = !visible)}>
+<button class="cursor-pointer rounded-sm bg-emerald-500 p-1" onclick={onEditMetadataButtonClick}>
     {m.editMetadata()}
 </button>
 

@@ -21,12 +21,14 @@
         history,
         location,
         dragState = $bindable(),
-        lineLayout
+        lineLayout,
+        numPopupsOpen = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
+        numPopupsOpen: number;
     } = $props();
 
     export type Layout = LayoutRight | LayoutUnder | LayoutOver;
@@ -196,5 +198,6 @@
         confirmText={m.add()}
         confirmCallback={finishAddCard}
         cancelCallback={() => (showAddCardPopup = false)}
+        bind:numPopupsOpen
     />
 {/if}
