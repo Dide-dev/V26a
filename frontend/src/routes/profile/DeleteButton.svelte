@@ -1,0 +1,58 @@
+<!--
+    This program has been developed by students from the bachelor Computer Science at Utrecht
+    University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+-->
+
+<script lang="ts">
+    import { page } from '$app/state';
+    import iconTrash from '$lib/assets/iconTrash.svg?raw';
+    import { deleteUser, type UserInfo } from '$lib/backend/users';
+    import { m } from '$lib/paraglide/messages';
+    import Popup from '$lib/Popup.svelte';
+
+    let { user }: { user: UserInfo } = $props();
+
+    let popupVisible = $state(false);
+
+    let deleteTrees = $state(false);
+
+    function openPopup(event: Event) {
+        event.preventDefault();
+        popupVisible = true;
+    }
+
+    function cancelDelete() {
+        popupVisible = false;
+    }
+
+    async function doDelete() {
+        await deleteUser(user.sub, deleteTrees);
+    }
+</script>
+
+<a href={page.url.href} onclick={openPopup}>
+    {@html iconTrash}
+</a>
+
+{#if popupVisible}
+    <Popup>
+        <p class="text-lg font-bold">
+            {m.deleteTreeConfirmation({ title: "user" })}
+        </p>
+
+        <label class="flex items-center gap-2">
+            <input type="checkbox" data-testid="delete-checkbox" bind:checked={deleteTrees} />
+            {m.deleteOwnedTrees()}
+        </label>
+
+        <div class="flex justify-end gap-2">
+            <button class="rounded-md bg-gray-400 p-2" onclick={cancelDelete}>
+                {m.cancel()}
+            </button>
+            <button class="rounded-md bg-red-400 p-2" onclick={doDelete}>
+                {m.yes()}
+            </button>
+        </div>
+    </Popup>
+{/if}

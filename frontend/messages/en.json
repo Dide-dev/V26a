@@ -80,5 +80,6 @@
     "allTrees": "Tree list",
     "colophon": "Colophon",
     "otherProjects": "Other projects",
-    "uploadImage": "Upload image"
+    "uploadImage": "Upload image",
+    "deleteOwnedTrees": "Delete all owned trees"
 }

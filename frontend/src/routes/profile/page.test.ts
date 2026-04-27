@@ -4,11 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, waitFor } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
+import { m } from '$lib/paraglide/messages.js';
 import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
+import DeleteButton from './DeleteButton.svelte';
 import {
     updateUser,
     getOwnUserData,
@@ -95,3 +97,66 @@ test('Submission with full data', async () => {
     };
     expect(updateUser).toHaveBeenCalledWith(userInfo.sub, expectedUpdateData);
 });
+
+test('popup opens when delete button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(DeleteButton, {
+        props: { user: {
+            sub: 1,
+            exp: 123,
+            accountType: 'author'
+        } }
+    });
+
+    await user.click(screen.getByRole('link'));
+
+    await waitFor(() => {
+        expect(screen.getAllByTestId('popup').length).toBeGreaterThan(0);
+    });
+});
+
+test('popup closes when cancel is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(DeleteButton, {
+        props: { user: {
+            sub: 1,
+            exp: 123,
+            accountType: 'author'
+        } }
+    });
+
+    await user.click(screen.getByRole('link'));
+    await user.click(screen.getByText(m.cancel()));
+
+    await waitFor(() => {
+        expect(screen.getAllByTestId('popup').length).toBe(0);
+    });
+});
+
+test('checkbox toggles', async () => {
+    const user = userEvent.setup();
+
+    render(DeleteButton, {
+        props: {
+            user: {
+                sub: 1,
+                exp: 123,
+                accountType: 'author'
+            }
+        }
+    });
+
+    await user.click(screen.getByRole('link'));
+    const checkbox = await screen.findByTestId('delete-checkbox');
+
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
+    await user.click(checkbox);
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
+});
+
+
+
+
+
