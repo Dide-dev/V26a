@@ -361,7 +361,7 @@ type CardActionNone = {
     type: 'none';
     /**
      * If the `revealed` property changes, there is no need to send the structure to the backend with undo/redo.
-     * But some cards were moved, we do need to inform the backend.
+     * But if a card was moved, we do need to inform the backend.
      * This field indicates which of these two cases we are in.
      */
     sendStructureToBackend: boolean;
