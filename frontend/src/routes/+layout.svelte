@@ -106,6 +106,11 @@
             href: 'https://softwareprojecten.sites.uu.nl/',
             text: m.otherProjects(),
             target: '_blank'
+        },
+        {
+            href: '/feedback',
+            text: 'Feedback',
+            target: '_self'
         }
     ];
 </script>
