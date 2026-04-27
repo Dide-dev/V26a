@@ -123,5 +123,6 @@
     "general": "Algemeen",
     "accountSettings": "Accountinstellingen",
     "feedback": "Feedback",
-    "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik"
+    "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik",
+    "pageNotFound": "Die pagina kon niet worden gevonden"
 }
