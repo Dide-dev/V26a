@@ -22,6 +22,8 @@ services:
       - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
+    environment:
+      - BASE_URL=${BASE_URL}
     ports:
       - "8000:8000"
     depends_on:

@@ -1,4 +1,4 @@
-http://localhost:8000 {
+{$BASE_URL} {
     route {
         @api path /api/*
         reverse_proxy @api backend:3000 {
