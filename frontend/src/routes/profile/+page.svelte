@@ -108,7 +108,7 @@
                     />
                     {m.emailVisible()}
                 </label>
-                <button class="rounded-sm bg-emerald-500 p-1">{m.confirmChanges()}</button>
+                <button data-testid="confirm-button" class ="rounded-sm bg-emerald-500 p-1">{m.confirmChanges()}</button>
             </form>
             {#if userDeleteInfo}
                 <DeleteButton user={userDeleteInfo} />

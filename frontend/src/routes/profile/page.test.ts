@@ -55,7 +55,7 @@ test('No submission without name', async () => {
 
     const nameInput = await screen.findByTestId('name');
     await user.clear(nameInput);
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByTestId('confirm-button'));
 
     expect(updateUser).not.toHaveBeenCalled();
 });
@@ -84,7 +84,7 @@ test('Submission with full data', async () => {
 
     const aboutMeInput = await screen.findByTestId('about-me');
     await user.type(aboutMeInput, 'Some interesting backstory');
-    await user.click(await screen.findByRole('button'));
+    await user.click(screen.getByTestId('confirm-button'));
 
     const expectedUpdateData: UserUpdateData = {
         name: 'John Test',
@@ -112,7 +112,7 @@ test('popup opens when delete button is clicked', async () => {
     await user.click(screen.getByTestId('delete-button'));
 
     await waitFor(() => {
-        expect(screen.getAllByTestId('popup').length).toBeGreaterThan(0);
+        expect(screen.queryAllByTestId('popup').length).toBeGreaterThan(0);
     });
 });
 
@@ -127,11 +127,11 @@ test('popup closes when cancel is clicked', async () => {
         } }
     });
 
-     await user.click(screen.getByTestId('delete-button'));
+    await user.click(screen.getByTestId('delete-button'));
     await user.click(screen.getByText(m.cancel()));
 
     await waitFor(() => {
-        expect(screen.getAllByTestId('popup').length).toBe(0);
+        expect(screen.queryAllByTestId('popup').length).toBe(0);
     });
 });
 

@@ -5,7 +5,6 @@
 -->
 
 <script lang="ts">
-    import { page } from '$app/state';
     import { deleteUser, type UserInfo } from '$lib/backend/users';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
@@ -32,11 +31,9 @@
     }
 </script>
 
-<a href={page.url.href} onclick={openPopup}>
-    <button data-testid="delete-button" class="rounded-md bg-gray-400 p-2">
-        {m.deleteUser()}
-    </button>
-</a>
+<button data-testid="delete-button" class="rounded-md bg-gray-400 p-2" onclick={openPopup}>
+    {m.deleteUser()}
+</button>
 
 {#if popupVisible}
     <Popup>
