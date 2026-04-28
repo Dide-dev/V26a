@@ -222,12 +222,60 @@ pub async fn update_password(
     Ok(())
 }
 
+/// Delete a user from the database.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `user_id` - The id of the user.
+///
+/// `delete_owned_trees` - Whether the user wants to also delete their trees.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn delete_user(
+    db: &mut PgConnection,
+    user_id: i32,
+    delete_owned_trees: bool,
+) -> Result<(), ApiError> {
+    if delete_owned_trees {
+        query!("DELETE FROM trees WHERE owner_id = $1", user_id,)
+            .execute(&mut *db)
+            .await
+            .map_err(|_| ApiError::DatabaseException)?;
+    }
+
+    // Make all fields of the user empty (soft delete) and disable the account making logging in impossible.
+    query!(
+        r#"
+        UPDATE users
+        SET enabled = false,
+            email = 'deleted',
+            name = CONCAT('deleted user_', id),
+            nickname = '',
+            about_me = '',
+            email_visible = false,
+            password_hash = ''
+        WHERE id = $1
+        "#,
+        user_id,
+    )
+    .execute(&mut *db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
-    use crate::db_structs::users::{AccountType, RegisterData, UserLanguage};
+    use crate::db_structs::users::{AccountType, RegisterData, UserLanguage, UserUpdateData};
     use crate::get_connection_unwrap;
     use sqlx::PgPool;
 
@@ -510,5 +558,52 @@ mod tests {
             .unwrap();
 
         assert!(password_valid);
+    }
+
+    #[sqlx::test]
+    async fn test_delete_user(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+
+        delete_user(&mut db.acquire().await.unwrap(), user_id, true)
+            .await
+            .unwrap();
+
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        let found_update_data = RegisterData {
+            email: all_found_user_data.email,
+            password: all_found_user_data.password_hash,
+            name: all_found_user_data.name,
+            nickname: all_found_user_data.nickname,
+            about_me: all_found_user_data.about_me,
+            email_visible: all_found_user_data.email_visible,
+            language: all_found_user_data.language.parse().unwrap(),
+        };
+
+        let expected_user_data = RegisterData {
+            email: ("deleted").to_string(),
+            password: String::new(),
+            name: format!("deleted user_{user_id}"),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: register_data.language,
+        };
+
+        assert!(!all_found_user_data.enabled);
+        assert_eq!(found_update_data, expected_user_data);
     }
 }
