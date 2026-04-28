@@ -264,3 +264,52 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     let login_body: LoginResponse = response.json();
     assert!(login_body.succeeded);
 }
+
+#[sqlx::test]
+async fn test_delete_own_user(db: PgPool) {
+    let server = setup(db);
+    let email = "monkaS@gmail.com".to_owned();
+    let user_id = register(&server, email.clone()).await;
+
+    login(&server, email.clone()).await;
+
+    let response = server
+        .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
+        .await;
+
+    response.assert_status_ok();
+
+    // Check if user is logged out after deletion.
+    let response = server.get("/users/me").await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_delete_other_user(db: PgPool) {
+    let server = setup(db);
+    let email1 = "user1@gmail.com".to_owned();
+    let user_id_1 = register(&server, email1.clone()).await;
+    let email2 = "user2@gmail.com".to_owned();
+    register(&server, email2.clone()).await;
+    login(&server, email2.clone()).await;
+
+    let response = server
+        .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
+        .await;
+
+    response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_delete_nonexistent_user(db: PgPool) {
+    let server = setup(db);
+    let email = "swag@gmail.com".to_owned();
+    register(&server, email.clone()).await;
+    login(&server, email.clone()).await;
+
+    let response = server
+        .delete("/users/99999/delete?deleteOwnedTrees=false")
+        .await;
+
+    response.assert_status_bad_request();
+}

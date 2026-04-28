@@ -70,6 +70,13 @@ pub struct PasswordChangeRequestBody {
     pub new_password: String,
 }
 
+/// Optional query parameter that makes it possible to delete trees of the user too.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteOwnedTrees {
+    pub delete_owned_trees: bool,
+}
+
 /// The possible values of the `language` field of a user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

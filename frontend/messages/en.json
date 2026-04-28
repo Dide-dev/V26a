@@ -15,6 +15,9 @@
     "moveCardWithSubtree": "Move card with subtree",
     "editThisCard": "Edit this card",
     "deleteThisCard": "Delete this card",
+    "undo": "Undo",
+    "redo": "Redo",
+    "viewTree": "View tree",
     "save": "Save",
     "cancel": "Cancel",
     "createTree": "Create tree",
@@ -76,5 +79,6 @@
     "selectDate": "Select date",
     "allTrees": "Tree list",
     "colophon": "Colophon",
-    "otherProjects": "Other projects"
+    "otherProjects": "Other projects",
+    "uploadImage": "Upload image"
 }
