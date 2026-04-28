@@ -10,8 +10,6 @@
     import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import { appLink } from '$lib';
 
-    // nl-NL and en-GB behave in the same way; we will not support American time notation.
-
     onMount(async () => {
         await loadUsers();
     });
