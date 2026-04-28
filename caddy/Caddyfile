@@ -1,15 +1,19 @@
 {$BASE_URL} {
-    route {
-        @api path /api/*
-        reverse_proxy @api backend:3000 {
-        }
+	route {
+		@api path /api/*
+		reverse_proxy @api backend:3000 {
+		}
 
-        @docs path /api-docs/*
-        reverse_proxy @docs backend:3000 {
-        }
+		@docs path /api-docs/*
+		reverse_proxy @docs backend:3000 {
+		}
 
-        # Send non-backend requests to the frontend.
-        reverse_proxy frontend:3000 {
-        }
-    }
+		@uploads path /uploads/*
+		reverse_proxy @uploads backend:3000 {
+		}
+
+		# Send non-backend requests to the frontend.
+		reverse_proxy frontend:3000 {
+		}
+	}
 }
