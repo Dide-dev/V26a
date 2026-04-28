@@ -6,35 +6,41 @@
 
 <script lang="ts">
     import NodeViewer from './NodeViewer.svelte';
-    import type { TreeWithCards, Node, RootNode } from '$lib/backend/trees';
     import TreeEditButtons from './TreeEditButtons.svelte';
     import AddAndDrop from './AddAndDrop.svelte';
     import { onMount } from 'svelte';
     import CardViewer from './CardViewer.svelte';
+    import {
+        fillStateStructure,
+        followIndex,
+        initializeHistory,
+        type TreeHistory
+    } from './history.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
-        tree = $bindable(),
+        history = $bindable(),
+        location,
         dragState = $bindable(),
-        parent,
-        node,
-        parentIsVisible = false,
+        numPopupsOpen = $bindable(),
         editingPage
     }: {
-        tree: TreeWithCards;
+        history: TreeHistory;
+        location: number[];
         dragState: DragState;
-        parent: Node | RootNode;
-        node: Node | RootNode;
-        parentIsVisible?: boolean;
+        numPopupsOpen: number;
         editingPage: boolean;
     } = $props();
+
+    let node = $derived(followIndex(history.currentStructure, location));
+    let isFirstChild = $derived(location[location.length - 1] === 0);
+    let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
 
     export type DragState = null | DragStateDragging | DragStateDismissed;
     export type DragStateDragging = {
         type: 'dragging';
 
-        parent: Node | RootNode;
-        index: number;
+        nodeToMove: number[];
 
         mouseX: number;
         mouseY: number;
@@ -47,15 +53,17 @@
         type: 'dismissed';
     };
 
-    // You cannot drag a parent into it's children.
+    // You cannot drag a parent into its children.
     // So if this component is being dragged, don't tell its children.
     let iAmBeingDragged = $derived(
-        dragState?.type === 'dragging' && dragState.parent.children[dragState.index] === node
+        dragState?.type === 'dragging' &&
+            JSON.stringify(dragState.nodeToMove) === JSON.stringify(location)
     );
     // If next node is dragged there is no need to activate our own AddAndDrop under the card,
     // as it would not change anything for the user to drop it there.
     let nextIsBeingDragged = $derived(
-        dragState?.type === 'dragging' && dragState.parent.children[dragState.index - 1] === node
+        dragState?.type === 'dragging' &&
+            JSON.stringify(dragState.nodeToMove) === JSON.stringify(nextSiblingIndex)
     );
     function dragStateChildrenSet(v: DragState) {
         /// The AddAndDrop will check if it's DragState is correct before calling this 'set' function.
@@ -67,9 +75,6 @@
     function dragStateChildrenGetChildren(): DragState {
         return iAmBeingDragged ? { type: 'dismissed' } : dragState;
     }
-
-    /** Whether this card is visible. This is provided to the child to determine their clickability. */
-    let visible = $derived('label' in node);
 
     /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
     const svgWidth = 50;
@@ -162,7 +167,7 @@
 <div
     class="relative flex"
     bind:this={outermostDiv}
-    class:mt-7={editingPage && ('label' in node || parent.children[0] !== node)}
+    class:mt-7={editingPage && ('label' in node || !isFirstChild)}
 >
     <!--
         Render copy of self (but transparent and smaller) where the mouse currently is.
@@ -175,23 +180,31 @@
             style="left: {dragState.mouseX}px; top: {dragState.mouseY}px;"
         >
             <NodeViewer
-                {tree}
+                history={(() => {
+                    // Here we mock a history with the correct 'revealed' properties
+                    // TODO: Improve this in the separation of viewer and editor later.
+                    const structure = fillStateStructure(history.currentStructure, false);
+                    const parent = followIndex(structure, location.slice(0, -1));
+                    if ('revealed' in parent) {
+                        parent.revealed = true;
+                    }
+                    return initializeHistory(history.treeId, structure, history.currentCards);
+                })()}
+                {location}
                 dragState={null}
-                {parent}
-                {node}
                 editingPage={false}
-                parentIsVisible={true}
+                numPopupsOpen={0}
             />
         </div>
     {/if}
 
-    {#if editingPage && parent.children[0] === node && 'cardId' in node}
+    {#if editingPage && isFirstChild && 'cardId' in node}
         <AddAndDrop
+            {history}
+            {location}
             bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-            {tree}
-            node={parent}
-            index={0}
             lineLayout={{ type: 'over', lineOffset, svgWidth }}
+            bind:numPopupsOpen
         />
     {/if}
 
@@ -203,11 +216,11 @@
     {:else}
         <!-- Standard Node -->
         {#if editingPage}
-            <TreeEditButtons bind:tree bind:parent bind:node bind:dragState />
+            <TreeEditButtons {history} index={location} bind:dragState bind:numPopupsOpen />
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
-                <CardViewer {tree} {node} {parentIsVisible} bind:visible {editingPage} />
+                <CardViewer {history} index={location} {editingPage} />
             </div>
             {#if !editingPage}
                 <!--
@@ -217,11 +230,11 @@
                 <div class="h-5"></div>
             {:else}
                 <AddAndDrop
+                    {history}
+                    location={nextSiblingIndex}
                     bind:dragState={dragStateChildrenGetSelf, dragStateChildrenSet}
-                    {tree}
-                    node={parent}
-                    index={1 + parent.children.indexOf(node)}
                     lineLayout={{ type: 'under', lineHeight: totalHeight, lineOffset, svgWidth }}
+                    bind:numPopupsOpen
                 />
             {/if}
         </div>
@@ -242,13 +255,12 @@
 
     <!-- Here the html gets recursive as we render the 'node.children' -->
     <div bind:this={domChildren} class="flex flex-col">
-        {#each node.children as child_node (child_node)}
+        {#each node.children as child_node, index (child_node)}
             <NodeViewer
-                bind:tree
+                bind:history
+                location={[...location, index]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-                parent={node}
-                node={child_node}
-                parentIsVisible={visible}
+                bind:numPopupsOpen
                 {editingPage}
             />
         {/each}
@@ -257,11 +269,11 @@
     {#if editingPage && node.children.length === 0}
         <div class="flex h-9 items-center">
             <AddAndDrop
+                {history}
+                location={[...location, 0]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-                {tree}
-                {node}
-                index={0}
                 lineLayout={{ type: 'right' }}
+                bind:numPopupsOpen
             />
         </div>
     {/if}
