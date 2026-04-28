@@ -13,7 +13,7 @@
     import { getUserInfo, type UserInfo } from '$lib/backend/users';
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
-    import type { Option } from '$lib/backend/types.ts';
+    import type { Option } from '$lib/backend/types';
 
     let userInfo: UserInfo | null = $state(null);
 
@@ -39,6 +39,28 @@
 
     let isbnInvalid = $state(false);
     let formCompleted: boolean = $derived(treeData.title !== '');
+
+    const minInputLengths = {
+        title: 4,
+        description: 0,
+        bookName: 0,
+        bookEdition: 0,
+        bookIsbn: 10,
+        bookChapter: 0,
+        bookExercise: 0,
+        assignmentText: 0
+    };
+
+    const maxInputLengths = {
+        title: 128,
+        description: 256,
+        bookName: 192,
+        bookEdition: 32,
+        bookIsbn: 17,
+        bookChapter: 32,
+        bookExercise: 32,
+        assignmentText: 5000
+    };
 
     /* Returns either the normalized value of the ISBN if it is valid,
      * or `null` if it is not. */
@@ -128,7 +150,8 @@
                 placeholder={m.examplePlaceholder() +
                     m.exampleTitle({ name: userInfo?.sub ?? '' }) +
                     m.requiredPlaceholder()}
-                maxlength="128"
+                minlength={minInputLengths.title}
+                maxlength={maxInputLengths.title}
                 required
             />
         </div>
@@ -143,7 +166,8 @@
                 name="description"
                 data-testid="description"
                 placeholder={m.examplePlaceholder() + m.exampleDescription()}
-                maxlength="256"
+                minlength={minInputLengths.description}
+                maxlength={maxInputLengths.description}
             ></textarea>
         </div>
         <div>
@@ -158,7 +182,8 @@
                 type="text"
                 data-testid="bookname"
                 placeholder={m.examplePlaceholder() + m.exampleBookName()}
-                maxlength="192"
+                minlength={minInputLengths.bookName}
+                maxlength={maxInputLengths.bookName}
             />
         </div>
         <div>
@@ -173,7 +198,8 @@
                 type="text"
                 data-testid="bookEdition"
                 placeholder={m.examplePlaceholder() + m.exampleBookEdition()}
-                maxlength="32"
+                minlength={minInputLengths.bookEdition}
+                maxlength={maxInputLengths.bookEdition}
             />
         </div>
         <div>
@@ -188,7 +214,8 @@
                 type="text"
                 data-testid="bookIsbn"
                 placeholder={m.examplePlaceholder() + m.exampleBookISBN()}
-                maxlength="17"
+                minlength={minInputLengths.bookIsbn}
+                maxlength={maxInputLengths.bookIsbn}
             />
             {#if isbnInvalid}
                 <p class="text__error" data-testid="error">{m.invalidISBN()}</p>
@@ -206,7 +233,8 @@
                 type="text"
                 data-testid="chapter"
                 placeholder={m.examplePlaceholder() + m.exampleBookChapter()}
-                maxlength="32"
+                minlength={minInputLengths.bookChapter}
+                maxlength={maxInputLengths.bookChapter}
             />
         </div>
         <div>
@@ -221,7 +249,8 @@
                 type="text"
                 data-testid="exercise"
                 placeholder={m.examplePlaceholder() + m.exampleExercise()}
-                maxlength="32"
+                minlength={minInputLengths.bookExercise}
+                maxlength={maxInputLengths.bookExercise}
             />
         </div>
         <div>
@@ -235,7 +264,8 @@
                 name="assignment"
                 data-testid="assignment"
                 placeholder={m.examplePlaceholder() + m.exampleAssignment()}
-                maxlength="5000"
+                minlength={minInputLengths.assignmentText}
+                maxlength={maxInputLengths.assignmentText}
             ></textarea>
         </div>
         <button>{m.createTree()}</button>

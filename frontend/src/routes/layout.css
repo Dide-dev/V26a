@@ -124,6 +124,7 @@
     form .error {
         background-color: var(--color-red-100);
         border-color: var(--color-red-800);
+        border-width: 4px !important;
     }
 
     form input + input {

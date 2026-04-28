@@ -27,7 +27,6 @@
     let passwordMissingChar: boolean = $state(false);
     let passwordNotSame: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
-    let notAgreedToTOS: boolean | undefined = $derived(agreedToTOS ? false : undefined);
     let formCompleted: boolean = $derived(
         formData.email !== '' &&
             formData.password !== '' &&
@@ -35,6 +34,20 @@
             repeatPassword !== '' &&
             agreedToTOS
     );
+
+    const minInputLengths = {
+        name: 2,
+        nickname: 2,
+        email: 0,
+        password: 8
+    };
+
+    const maxInputLengths = {
+        name: 128,
+        nickname: 128,
+        email: 256,
+        password: 72
+    };
 
     // Validate input
     function checkSamePassword(): boolean {
@@ -73,11 +86,6 @@
         }
         if (!checkSamePassword()) {
             passwordNotSame = true;
-            return;
-        }
-
-        if (!agreedToTOS) {
-            notAgreedToTOS = true;
             return;
         }
 
@@ -131,7 +139,8 @@
                 type="text"
                 data-testid="name"
                 placeholder={m.examplePlaceholder() + m.exampleName() + m.requiredPlaceholder()}
-                maxlength="128"
+                minlength={minInputLengths.name}
+                maxlength={maxInputLengths.name}
                 autocomplete="name"
                 required
             />
@@ -147,7 +156,8 @@
                 name="nickname"
                 type="text"
                 placeholder={m.examplePlaceholder() + 'Johnny'}
-                maxlength="128"
+                minlength={minInputLengths.nickname}
+                maxlength={maxInputLengths.nickname}
             />
         </div>
         <div>
@@ -164,7 +174,8 @@
                 placeholder={m.examplePlaceholder() +
                     m.emailPlaceholder() +
                     m.requiredPlaceholder()}
-                maxlength="256"
+                minlength={minInputLengths.email}
+                maxlength={maxInputLengths.email}
                 autocomplete="email"
                 required
             />
@@ -184,8 +195,8 @@
                 type="password"
                 data-testid="password"
                 placeholder={m.examplePlaceholder() + examplePassword + m.requiredPlaceholder()}
-                minlength="8"
-                maxlength="72"
+                minlength={minInputLengths.password}
+                maxlength={maxInputLengths.password}
                 required
             />
             {#if passwordMissingChar}
@@ -200,8 +211,8 @@
                     type="password"
                     data-testid="repeatPassword"
                     placeholder={m.repeatPassword() + m.requiredPlaceholder()}
-                    minlength="8"
-                    maxlength="72"
+                    minlength={minInputLengths.password}
+                    maxlength={maxInputLengths.password}
                     required
                 />
             {/if}
@@ -229,11 +240,12 @@
             <div class="checkbox__container">
                 <input
                     id="tos"
-                    class={[notAgreedToTOS && 'error', 'input__checkbox']}
+                    class="input__checkbox"
                     bind:checked={agreedToTOS}
                     name="tos"
                     type="checkbox"
                     data-testid="agreeToTOS"
+                    required
                 />
                 <label for="tos">
                     <ParaglideMessage message={m.agreeToTOS} inputs={{}}>
@@ -245,9 +257,6 @@
                     </ParaglideMessage> *
                 </label>
             </div>
-            {#if notAgreedToTOS}
-                <p class="text__error" data-testid="error">{m.mustAgreeToTOS()}</p>
-            {/if}
         </div>
         <button>{m.register()}</button>
     </form>

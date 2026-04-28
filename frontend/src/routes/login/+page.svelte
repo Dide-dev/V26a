@@ -19,6 +19,16 @@
 
     let formCompleted: boolean = $derived(loginData.email !== '' && loginData.password !== '');
 
+    const minInputLengths = {
+        email: 0,
+        password: 8
+    };
+
+    const maxInputLengths = {
+        email: 256,
+        password: 72
+    };
+
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         let response = await login(loginData);
@@ -61,7 +71,8 @@
                 type="email"
                 data-testid="email"
                 placeholder={m.yourEmail()}
-                maxlength="256"
+                minlength={minInputLengths.email}
+                maxlength={maxInputLengths.email}
                 autocomplete="email"
                 required
             />
@@ -78,7 +89,8 @@
                 type="password"
                 data-testid="password"
                 placeholder={m.yourPassword()}
-                maxlength="256"
+                minlength={minInputLengths.password}
+                maxlength={maxInputLengths.password}
                 autocomplete="current-password"
                 required
             />
