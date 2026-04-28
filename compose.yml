@@ -6,6 +6,7 @@ volumes:
 services:
   db:
     image: docker.io/postgres:18
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -34,6 +35,7 @@ services:
     build:
       context: backend
       dockerfile: Containerfile
+    restart: unless-stopped
     # Docker sends a SIGTERM and waits grace_period settings.
     # A better way to do this would be to listen to SIGTERM in our backend and initiate a graceful shutdown when the signal gets sent.
     # This feels too out of scope ATM.
@@ -50,3 +52,4 @@ services:
     build:
       context: frontend
       dockerfile: Containerfile
+    restart: unless-stopped
