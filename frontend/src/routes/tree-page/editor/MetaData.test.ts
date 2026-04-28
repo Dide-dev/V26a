@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { userEvent } from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 import MetaData from './+page.svelte';
@@ -32,7 +32,7 @@ vi.mock('$app/state', () => ({
 
 test('dropdown is hidden by default', () => {
     render(MetaData);
-    expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
+    expect(screen.queryByTestId('metadata-popup')).toBeNull();
 });
 
 test('dropdown opens when edit metadata button is clicked', async () => {
@@ -41,9 +41,7 @@ test('dropdown opens when edit metadata button is clicked', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    await waitFor(() => {
-        expect(document.getElementsByClassName('meta-dropdown').length).toBeGreaterThan(0);
-    });
+    screen.getByTestId('metadata-popup');
 });
 
 test('fields are prefilled with tree data', async () => {
@@ -94,9 +92,7 @@ test('dropdown closes after save', async () => {
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await user.click(screen.getByText(m.save()));
-    await waitFor(() => {
-        expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
-    });
+    expect(screen.queryByTestId('metadata-popup')).toBeNull();
 });
 
 test('dropdown closes after cancel', async () => {
@@ -106,7 +102,6 @@ test('dropdown closes after cancel', async () => {
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     await user.click(screen.getByText(m.cancel()));
-    await waitFor(() => {
-        expect(document.getElementsByClassName('meta-dropdown').length).not.toBeGreaterThan(0);
-    });
+
+    expect(screen.queryByTestId('metadata-popup')).toBeNull();
 });
