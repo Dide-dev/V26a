@@ -102,11 +102,13 @@ test('popup opens when delete button is clicked', async () => {
     const user = userEvent.setup();
 
     render(DeleteButton, {
-        props: { user: {
-            sub: 1,
-            exp: 123,
-            accountType: 'author'
-        } }
+        props: {
+            user: {
+                sub: 1,
+                exp: 123,
+                accountType: 'author'
+            }
+        }
     });
 
     await user.click(screen.getByTestId('delete-button'));
@@ -120,11 +122,13 @@ test('popup closes when cancel is clicked', async () => {
     const user = userEvent.setup();
 
     render(DeleteButton, {
-        props: { user: {
-            sub: 1,
-            exp: 123,
-            accountType: 'author'
-        } }
+        props: {
+            user: {
+                sub: 1,
+                exp: 123,
+                accountType: 'author'
+            }
+        }
     });
 
     await user.click(screen.getByTestId('delete-button'));
@@ -155,8 +159,3 @@ test('checkbox toggles', async () => {
     await user.click(checkbox);
     expect((checkbox as HTMLInputElement).checked).toBe(true);
 });
-
-
-
-
-

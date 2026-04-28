@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import { locales } from '$lib/paraglide/runtime.js';
-    import { getOwnUserData, getUserInfo, updateUser, type UserGetData} from '$lib/backend/users';
+    import { getOwnUserData, getUserInfo, updateUser, type UserGetData } from '$lib/backend/users';
     import { m } from '$lib/paraglide/messages.js';
     import DeleteButton from './DeleteButton.svelte';
     import { redirectLogin } from '$lib/backend';
@@ -32,7 +32,6 @@
             accountType: null,
             enabled: null
         });
-
 
         // Effectively reloads the page. This is not really necessary, but prevents
         // the displayed data from being inconsistent with the database in case something
@@ -108,7 +107,9 @@
                     />
                     {m.emailVisible()}
                 </label>
-                <button data-testid="confirm-button" class ="rounded-sm bg-emerald-500 p-1">{m.confirmChanges()}</button>
+                <button data-testid="confirm-button" class="rounded-sm bg-emerald-500 p-1"
+                    >{m.confirmChanges()}</button
+                >
             </form>
             {#if userDeleteInfo}
                 <DeleteButton user={userDeleteInfo} />

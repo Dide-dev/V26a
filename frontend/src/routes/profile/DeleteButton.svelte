@@ -8,7 +8,7 @@
     import { deleteUser, type UserInfo } from '$lib/backend/users';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
-     import { goto } from '$app/navigation';
+    import { goto } from '$app/navigation';
 
     let { user }: { user: UserInfo } = $props();
 
@@ -38,7 +38,7 @@
 {#if popupVisible}
     <Popup>
         <p class="text-lg font-bold">
-            {m.deleteTreeConfirmation({ title: "user" })}
+            {m.deleteTreeConfirmation({ title: 'user' })}
         </p>
 
         <label class="flex items-center gap-2">

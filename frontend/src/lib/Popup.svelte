@@ -16,7 +16,10 @@ Only layout is provided so bring your own cancel/ok buttons.
     let { children }: { children: Snippet } = $props();
 </script>
 
-<div data-testid="popup" class="popup fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+<div
+    data-testid="popup"
+    class="popup fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+>
     <div class="rounded bg-white p-4">
         {@render children()}
     </div>
