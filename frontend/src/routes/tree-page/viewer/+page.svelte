@@ -7,12 +7,13 @@
 <script lang="ts">
     import NodeViewer from '../NodeViewer.svelte';
     import { onMount } from 'svelte';
-    import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
+    import { getTreeWithCards, type TreeData } from '$lib/backend/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
     import { getUserInfo } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
+    import { fillStateStructure, initializeHistory, type TreeHistory } from '../history.svelte';
 
     // Checks if user is logged in or not.
     let userInfo = $state(getUserInfo());
@@ -20,7 +21,7 @@
     let loading = $state(true);
     let userAllowedToEdit = $state(false);
     let id: number | null = null;
-    let tree: TreeWithCards | null = $state(null);
+    let tree: [TreeData, TreeHistory] | null = $state(null);
 
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
@@ -39,11 +40,19 @@
             return;
         }
 
-        tree = await getTreeWithCards(id);
+        const fetchedTree = await getTreeWithCards(id);
+        tree = [
+            fetchedTree.data,
+            initializeHistory(
+                fetchedTree.genData.id,
+                fillStateStructure(fetchedTree.structure, false),
+                fetchedTree.cards
+            )
+        ];
 
         loading = false;
 
-        const isOwner = tree && userInfo && tree.genData.ownerId === userInfo.sub;
+        const isOwner = tree && userInfo && fetchedTree.genData.ownerId === userInfo.sub;
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {
@@ -56,19 +65,19 @@
     {#if loading}
         <p class="text-green-800">{m.loadingTree()}</p>
     {:else if tree}
-        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree[0].title}</h1>
         <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-            {tree.data.description}
+            {tree[0].description}
         </p>
 
         <div class="m-1 flex w-full grow flex-col overflow-x-scroll pt-6">
-            {#each tree.structure.rootNodes as root (root)}
+            {#each tree[1].currentStructure.rootNodes as root, index (root)}
                 <NodeViewer
-                    bind:tree
-                    parent={root}
-                    node={root}
+                    bind:history={tree[1]}
+                    location={[index]}
                     editingPage={false}
                     dragState={null}
+                    numPopupsOpen={0}
                 />
             {/each}
         </div>

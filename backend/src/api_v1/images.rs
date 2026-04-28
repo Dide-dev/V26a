@@ -33,10 +33,8 @@ pub fn images() -> Router<Config> {
         content(
             ("image/png"),
             ("image/jpeg"),
-            ("image/apng"),
             ("image/avif"),
             ("image/gif"),
-            ("image/svg+xml"),
             ("image/webp"),
         ),
     ),
