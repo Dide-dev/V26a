@@ -5,37 +5,27 @@
 -->
 
 <script lang="ts">
-    import { page } from '$app/state';
-    import { appLink } from '$lib';
-    import { locales, localizeHref } from '$lib/paraglide/runtime';
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import { m } from '$lib/paraglide/messages.js';
+    import Navigation, { type NavLink } from './Navigation.svelte';
+    import Footer, { type FooterLink } from './Footer.svelte';
     import { getUserInfo } from '$lib/backend/users';
     import { afterNavigate } from '$app/navigation';
+    import { locales, localizeHref } from '$lib/paraglide/runtime.js';
+    import { page } from '$app/state';
 
     let { children } = $props();
-    let menu = $state(false);
     let userInfo = $state(getUserInfo());
-    let pathname = $state(page.url.pathname);
     let errors: Error[] = $state([]);
 
-    function openMenu() {
-        menu = !menu;
-    }
-
-    function closeMenu() {
-        menu = false;
-    }
-
-    // Retrieve userinfo & path after navigating to another page (refreshes navbar).
+    // Retrieve userinfo after navigating to another page (refreshes nav-bar).
     afterNavigate(() => {
         const newUserInfo = getUserInfo();
         if (JSON.stringify(newUserInfo) !== JSON.stringify(userInfo)) {
             userInfo = newUserInfo;
             window.location.reload();
         }
-        pathname = page.url.pathname;
     });
 
     function handleWindowError(event: Event) {
@@ -48,53 +38,97 @@
     function handleError(err: PromiseRejectionEvent) {
         errors.push(err.reason);
     }
+
+    let leftLinks: NavLink[] = $derived.by(() => {
+        let result = [
+            {
+                href: '/',
+                text: m.home(),
+                isThin: false
+            },
+            {
+                href: '/all-trees',
+                text: m.allTrees(),
+                isThin: false
+            }
+        ];
+
+        if (userInfo !== null) {
+            result.push({
+                href: '/tree-generator',
+                text: m.createTree(),
+                isThin: false
+            });
+            if (userInfo.accountType == 'admin') {
+                result.push({
+                    href: '/userlist',
+                    text: m.userlist(),
+                    isThin: false
+                });
+            }
+        }
+
+        return result;
+    });
+    let rightLinks: NavLink[] = $derived.by(() => {
+        let result = [];
+
+        if (userInfo !== null) {
+            result = [
+                {
+                    href: '/profile',
+                    text: m.profile(),
+                    isThin: true
+                },
+                {
+                    href: '/my-trees',
+                    text: m.myTrees(),
+                    isThin: true
+                }
+            ];
+        } else {
+            result = [
+                {
+                    href: '/registration',
+                    text: m.register(),
+                    isThin: true
+                },
+                {
+                    href: '/login',
+                    text: m.login(),
+                    isThin: true
+                }
+            ];
+        }
+
+        return result;
+    });
+    const footerLinks: FooterLink[] = [
+        {
+            href: '/colophon',
+            text: m.colophon(),
+            target: '_self'
+        },
+        {
+            href: 'https://softwareprojecten.sites.uu.nl/',
+            text: m.otherProjects(),
+            target: '_blank'
+        },
+        {
+            href: '/feedback',
+            text: 'Feedback',
+            target: '_self'
+        }
+    ];
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav class="m-1 bg-sky-400 p-1">
-    <div class="mb-0.5 flex justify-end">
-        <button
-            class="rounded-sm bg-sky-600 p-1 md:hidden"
-            onclick={openMenu}
-            aria-label="Toggle menu"
-        >
-            {#if menu}✕{:else}☰{/if}
-        </button>
-    </div>
+<Navigation {leftLinks} {rightLinks}></Navigation>
 
-    <div
-        class="
-        flex-col gap-2 *:rounded-sm *:bg-sky-600 *:p-1
-        {menu ? 'flex' : 'hidden'}
-        md:flex md:flex-row md:justify-end
-    "
-    >
-        <a href={appLink('/')} onclick={closeMenu}>{m.home()}</a>
-        {#if userInfo?.accountType === 'admin'}
-            <a href={appLink('/userlist')} onclick={closeMenu}>{m.userlist()}</a>
-        {/if}
-        {#if userInfo?.accountType === 'author' || userInfo?.accountType === 'admin'}
-            <a href={appLink('/my-trees')} onclick={closeMenu}>{m.myTrees()}</a>
-            <a href={appLink('/profile')} onclick={closeMenu}>{m.profile()}</a>
-            <a href={appLink('/tree-generator')} onclick={closeMenu}>{m.createTree()}</a>
-            <a href={appLink('/all-trees')}>All trees</a>
-        {:else}
-            <a href={appLink('/registration')} onclick={closeMenu}>{m.register()}</a>
-            <a href={appLink('/login')} onclick={closeMenu}>{m.login()}</a>
-        {/if}
-
-        <!-- Locale is filtered to show 1 language at the same time-->
-        {#each locales.filter((l) => l !== (pathname.startsWith('/en') ? 'en' : 'nl')) as locale (locale)}
-            <!-- The 'data-sveltekit-reload' is important to let the entire page reload on locale change -->
-            <a href={localizeHref(page.url.href, { locale })} data-sveltekit-reload>
-                {locale}
-            </a>
-        {/each}
-    </div>
-</nav>
-
-{@render children()}
+<main class="flex-auto">
+    {@render children()}
+</main>
 
 <svelte:window onerror={handleWindowError} onunhandledrejection={handleError} />
 
@@ -113,4 +147,11 @@
     </div>
 {/if}
 
-<footer><p class="fixed right-1 bottom-1.5">© Utrecht University (ICS).</p></footer>
+<Footer links={footerLinks}></Footer>
+
+<!-- Necessary to have svelte-kit load in the pages of the other locales. -->
+<div class="hidden">
+    {#each locales as locale (locale)}
+        <a href={localizeHref(page.url.href, { locale })}>{locale}</a>
+    {/each}
+</div>
