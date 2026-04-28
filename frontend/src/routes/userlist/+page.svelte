@@ -28,10 +28,6 @@
 
 {#if users === null}
     <p>{m.loading()}</p>
-{:else if users.length === 0}
-    <div class="text-center">
-        <p class="flex justify-center text-2xl">{m.noUsersFound()}</p>
-    </div>
 {:else}
     <div class="100vw flex justify-center">
         <table class="border-separate border-spacing-2">
