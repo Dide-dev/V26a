@@ -132,92 +132,94 @@
     }
 </script>
 
-{#if loading}
-    <p class="text-green-800">{m.loadingTree()}</p>
-{:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
-    <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree.data.description}
-    </p>
+<div class="flex h-full w-full flex-col items-start overflow-hidden">
+    {#if loading}
+        <p class="text-green-800">{m.loadingTree()}</p>
+    {:else if tree}
+        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+        <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
+            {tree.data.description}
+        </p>
 
-    <div class="relative ml-4">
-        <button class="rounded-sm bg-emerald-500 p-1" onclick={() => (dropDown = !dropDown)}
-            >{m.editMetadata()}</button
-        >
-
-        {#if dropDown}
-            <div
-                class="meta-dropdown absolute z-10 flex w-64 flex-col gap-2 rounded bg-white p-4 shadow"
+        <div class="relative ml-4">
+            <button class="rounded-sm bg-emerald-500 p-1" onclick={() => (dropDown = !dropDown)}
+                >{m.editMetadata()}</button
             >
-                <label
-                    >{m.title()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.title}
-                    /></label
-                >
-                <label
-                    >{m.description()}<textarea
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.description}
-                    ></textarea></label
-                >
-                <label
-                    >{m.bookname()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.bookName}
-                    /></label
-                >
-                <label
-                    >{m.bookEdition()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.bookEdition}
-                    /></label
-                >
-                <label
-                    >{m.bookIsbn()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.bookIsbn}
-                    /></label
-                >
-                <label
-                    >{m.bookChapter()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.bookChapter}
-                    /></label
-                >
-                <label
-                    >{m.bookExercise()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.bookExercise}
-                    /></label
-                >
-                <label
-                    >{m.assignmentText()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={treeData.assignmentText}
-                    /></label
-                >
-                <label
-                    >{m.published()}<input
-                        type="checkbox"
-                        bind:checked={treeData.published}
-                    /></label
-                >
-                <button class="rounded bg-blue-500 px-3 py-1 text-white" onclick={saveData}
-                    >{m.save()}</button
-                >
-                <button onclick={cancelEdit}>{m.cancel()}</button>
-            </div>
-        {/if}
-    </div>
 
-    <!-- The 'pt-6' is because the nodeviewer is in editing mode. It has some bits sticking out on top. -->
-    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pt-6">
-        {#each tree.structure.rootNodes as root (root)}
-            <NodeViewer bind:tree bind:dragState parent={root} node={root} editingPage={true} />
-        {/each}
-    </div>
-{/if}
+            {#if dropDown}
+                <div
+                    class="meta-dropdown absolute z-10 flex w-64 flex-col gap-2 rounded bg-white p-4 shadow"
+                >
+                    <label
+                        >{m.title()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.title}
+                        /></label
+                    >
+                    <label
+                        >{m.description()}<textarea
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.description}
+                        ></textarea></label
+                    >
+                    <label
+                        >{m.bookname()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.bookName}
+                        /></label
+                    >
+                    <label
+                        >{m.bookEdition()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.bookEdition}
+                        /></label
+                    >
+                    <label
+                        >{m.bookIsbn()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.bookIsbn}
+                        /></label
+                    >
+                    <label
+                        >{m.bookChapter()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.bookChapter}
+                        /></label
+                    >
+                    <label
+                        >{m.bookExercise()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.bookExercise}
+                        /></label
+                    >
+                    <label
+                        >{m.assignmentText()}<input
+                            class="w-full rounded border p-1"
+                            bind:value={treeData.assignmentText}
+                        /></label
+                    >
+                    <label
+                        >{m.published()}<input
+                            type="checkbox"
+                            bind:checked={treeData.published}
+                        /></label
+                    >
+                    <button class="rounded bg-blue-500 px-3 py-1 text-white" onclick={saveData}
+                        >{m.save()}</button
+                    >
+                    <button onclick={cancelEdit}>{m.cancel()}</button>
+                </div>
+            {/if}
+        </div>
+
+        <!-- The 'pt-6' is because the nodeviewer is in editing mode. It has some bits sticking out on top. -->
+        <div bind:this={scrollArea} class="m-1 flex w-full grow flex-col overflow-x-scroll pt-6">
+            {#each tree.structure.rootNodes as root (root)}
+                <NodeViewer bind:tree bind:dragState parent={root} node={root} editingPage={true} />
+            {/each}
+        </div>
+    {/if}
+</div>
 
 <!--
     We need to listen on the entire body to detect if drag & drop did not find target.
@@ -251,13 +253,11 @@
     growing in height until the scroll bar is at the bottom of the screen.
 -->
 <style>
-    :global(body) {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    :global(main) {
-        align-items: start;
+    @layer components {
+        :global(body) {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
     }
 </style>
