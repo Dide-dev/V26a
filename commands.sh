@@ -13,7 +13,6 @@ cargo clippy --all-targets -- -D warnings
 export RUSTDOCFLAGS="-D warnings"
 cargo doc --no-deps
 cargo sqlx prepare
-cargo build
 cargo test
 
 cd ../frontend/
