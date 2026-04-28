@@ -6,7 +6,7 @@
 
 #![cfg(test)]
 
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
+use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData, LibraryCardAddData};
 use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure, TreeWithCards};
 use crate::tests::api_v1::setup_login;
 use sqlx::PgPool;
@@ -108,4 +108,53 @@ async fn test_update_existing_card(db: PgPool) {
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
     assert_eq!(full_tree.cards, expected_btree);
+}
+
+#[sqlx::test]
+async fn test_library_card_add(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let library_card_add_data = LibraryCardAddData {
+        title: "title".to_owned(),
+        tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+    };
+
+    let response = server
+        .post(&format!("/cards/{}/add-to-library", 1))
+        .json(&library_card_add_data)
+        .await;
+    response.assert_status_bad_request();
+
+    let tree_data = TreeData::default();
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure: TreeStructure { root_nodes: vec![] },
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_ok();
+    let tree_id: i32 = response.json();
+
+    let card_add_data = CardAddData {
+        tree_id,
+        front: "front".to_owned(),
+        back: "back".to_owned(),
+    };
+
+    let response = server.post("/cards/add").json(&card_add_data).await;
+    response.assert_status_ok();
+    let card_id: i32 = response.json();
+
+    let library_card_add_data = LibraryCardAddData {
+        title: "title".to_owned(),
+        tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+    };
+
+    let response = server
+        .post(&format!("/cards/{card_id}/add-to-library"))
+        .json(&library_card_add_data)
+        .await;
+    response.assert_status_ok();
+
+    // TODO: Cannot test retrieving a card from cards library yet as that's not implemented yet.
+    // It's out of scope for 189.
 }

@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 <script lang="ts">
+    import { Datepicker } from 'flowbite-svelte';
     import { m } from '$lib/paraglide/messages.js';
     import {
         type FilterOptions,
@@ -12,14 +13,15 @@
         type TreeMetadata,
         getFilteredList
     } from '$lib/backend/trees';
-    import { appLink } from '$lib/index';
+    import { appLink, timeFormatString } from '$lib/index';
     import { onMount } from 'svelte';
 
-    // nl-NL and en-GB behave in the same way; we will not support American time notation.
-    const timeFormat = new Intl.DateTimeFormat('nl-NL');
+    let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
-    let pageSize = $state(5);
+    let pageSizeString = $state('10');
+    let pageSizeNumber = $derived(Number(pageSizeString));
     let thisPage = $state(1);
+
     let filterOptions: FilterOptions = $state({
         ownerId: null,
         book: [],
@@ -29,7 +31,7 @@
     });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,
-        size: pageSize
+        size: pageSizeNumber
     });
 
     let treeListResponse: null | TreeListResponse = $state(null);
@@ -37,7 +39,7 @@
 
     let prevPageExists = $derived(thisPage > 1);
     let nextPageExists = $derived(
-        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSize)
+        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
     );
 
     onMount(async () => {
@@ -82,14 +84,78 @@
     }
 </script>
 
+<div class="flex w-full justify-center">
+    <div class="flex-col">
+        <!-- Filter options -->
+        <form class="flex w-md flex-col gap-2" onsubmit={loadTrees}>
+            <b>{m.creationDate()}</b>
+            <div class="flex">
+                <label class="m-1 flex-1/2">
+                    {m.from()}
+                    <Datepicker
+                        bind:value={
+                            () => filterOptions.createdAfter ?? undefined,
+                            (v) => (filterOptions.createdAfter = v ?? null)
+                        }
+                        locale={timeFormatString}
+                        translationLocale={timeFormatString}
+                        placeholder={m.selectDate()}
+                    />
+                </label>
+                <label class="m-1 flex-1/2">
+                    {m.through()}
+                    <Datepicker
+                        bind:value={
+                            () => filterOptions.createdBefore ?? undefined,
+                            (v) =>
+                                (filterOptions.createdBefore = v
+                                    ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
+                                    : null)
+                        }
+                        locale={timeFormatString}
+                        translationLocale={timeFormatString}
+                        placeholder={m.selectDate()}
+                    />
+                </label>
+            </div>
+            <label class="m-1">
+                {m.ownerId()}
+                <input
+                    class="rounded-md border-2"
+                    type="number"
+                    bind:value={filterOptions.ownerId}
+                />
+            </label>
+            <button class="m-1 cursor-pointer rounded-sm bg-emerald-500 p-1"
+                >{m.applyFilters()}</button
+            >
+        </form>
+
+        <!-- Change the number of trees per page -->
+        <label>
+            {m.numberOfTrees()}
+            <select
+                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
+                bind:value={pageSizeString}
+                onchange={loadTrees}
+            >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
+</div>
+
 {#if trees === null}
     <p>{m.loading()}</p>
 {:else if trees.length === 0}
     <div class="text-center">
-        <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
+        <p class="flex justify-center text-2xl">{m.noAllTreesFound()}</p>
     </div>
 {:else}
-    <div class="100vw flex justify-center">
+    <div class="100vw flex flex-col items-center justify-center overflow-auto">
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>
@@ -118,14 +184,14 @@
                 {/each}
             </tbody>
         </table>
-        <div class="fixed bottom-2 left-1/2 -translate-x-1/2">
+        <div>
             <button
                 onclick={prevPage}
                 disabled={!prevPageExists}
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSize)}
+            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}
