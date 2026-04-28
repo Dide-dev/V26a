@@ -51,7 +51,7 @@
     "loadingTree": "The tree is growing...",
     "repeatPassword": "Repeat password",
     "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
-    "emailAlreadyExists": "An account with this email already exists",
+    "emailAlreadyExists": "An account with this e-mail already exists",
     "unexpectedErrorOccurred": "An unexpected error occurred :(",
     "close": "Close",
     "invalidCredentials": "Email or password is invalid. Please try again.",
@@ -91,5 +91,6 @@
     "exampleBookChapter": "VII",
     "exampleExercise": "2",
     "exampleAssignment": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
-    "noAccount": "No account yet? Register for an account here."
+    "noAccount": "No account yet? Register for an account here.",
+    "invalidISBN": "Please enter a valid ISBN of length 10 or 13"
 }

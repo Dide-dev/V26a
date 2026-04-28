@@ -51,7 +51,7 @@
     "loadingTree": "De boom groeit...",
     "repeatPassword": "Herhaal wachtwoord",
     "missingCharacter": "Wachtwoord moet tenminste een kleine letter, grote letter, getal en een speciaal karakter hebben",
-    "emailAlreadyExists": "Dit emailadres is al in gebruik",
+    "emailAlreadyExists": "Dit e-mailadres is al in gebruik",
     "unexpectedErrorOccurred": "Er deed zich een onverwachte fout voor :(",
     "close": "Sluiten",
     "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
@@ -91,5 +91,6 @@
     "exampleBookChapter": "VII",
     "exampleExercise": "2",
     "exampleAssignment": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
-    "noAccount": "Nog geen account? Registreer je hier."
+    "noAccount": "Nog geen account? Registreer je hier.",
+    "invalidISBN": "Voer een geldige ISBN van lengte 10 of 13 in"
 }

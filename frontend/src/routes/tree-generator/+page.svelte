@@ -13,6 +13,7 @@
     import { getUserInfo, type UserInfo } from '$lib/backend/users';
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
+    import type { Option } from '$lib/backend/types.ts';
 
     let userInfo: UserInfo | null = $state(null);
 
@@ -36,11 +37,74 @@
         published: false
     });
 
+    let isbnInvalid = $state(false);
     let formCompleted: boolean = $derived(treeData.title !== '');
+
+    /* Returns either the normalized value of the ISBN if it is valid,
+     * or `null` if it is not. */
+    function tryParseISBN(): Option<string> {
+        if (treeData.bookIsbn === null) {
+            return null;
+        }
+
+        const isbn = treeData.bookIsbn.trim().replaceAll('-', '');
+
+        if (isbn.length === 10 && checkISBN10(isbn)) {
+            return isbn;
+        } else if (isbn.length === 13 && checkISBN13(isbn)) {
+            return isbn;
+        } else {
+            return null;
+        }
+    }
+
+    function checkISBN10(str: string): boolean {
+        let s = 0,
+            t = 0;
+
+        for (let c of str) {
+            const d = parseInt(c);
+
+            if (isNaN(d)) {
+                return false;
+            }
+
+            t += d;
+            s += t;
+        }
+
+        return s % 11 === 0;
+    }
+
+    function checkISBN13(str: string): boolean {
+        let w = 1,
+            s = 0;
+
+        for (let c of str) {
+            const d = parseInt(c);
+
+            if (isNaN(d)) {
+                return false;
+            }
+
+            s += w * d;
+            w = (w + 2) % 4;
+        }
+
+        return s % 10 === 0;
+    }
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
+        isbnInvalid = false;
 
+        const isbn = tryParseISBN();
+        if (isbn === null) {
+            isbnInvalid = true;
+            return;
+        }
+
+        treeData.bookIsbn = isbn;
         const treeId = await addTree(treeData);
         await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
@@ -106,7 +170,7 @@
                 class="input__text"
                 bind:value={treeData.bookEdition}
                 name="bookEdition"
-                type="number"
+                type="text"
                 data-testid="bookEdition"
                 placeholder={m.examplePlaceholder() + m.exampleBookEdition()}
                 maxlength="32"
@@ -121,11 +185,14 @@
                 class="input__text"
                 bind:value={treeData.bookIsbn}
                 name="bookIsbn"
-                type="number"
+                type="text"
                 data-testid="bookIsbn"
                 placeholder={m.examplePlaceholder() + m.exampleBookISBN()}
-                maxlength="13"
+                maxlength="17"
             />
+            {#if isbnInvalid}
+                <p class="text__error" data-testid="error">{m.invalidISBN()}</p>
+            {/if}
         </div>
         <div>
             <label for="bookChapter">
