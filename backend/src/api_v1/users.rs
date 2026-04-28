@@ -307,8 +307,8 @@ async fn delete_user_data(
 
     if claims.sub == user_id {
         jar = jar
-            .remove(Cookie::from("session"))
-            .remove(Cookie::from("user_info"));
+            .remove(Cookie::build("session").path("/").build())
+            .remove(Cookie::build("user_info").path("/").build());
     }
 
     transaction

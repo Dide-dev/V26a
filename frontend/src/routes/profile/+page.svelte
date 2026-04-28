@@ -6,14 +6,14 @@
 
 <script lang="ts">
     import { locales } from '$lib/paraglide/runtime.js';
-    import { getOwnUserData, getUserInfo, updateUser, type UserGetData, type DeleteTree } from '$lib/backend/users';
-    import { deleteThisCard, m } from '$lib/paraglide/messages.js';
+    import { getOwnUserData, getUserInfo, updateUser, type UserGetData} from '$lib/backend/users';
+    import { m } from '$lib/paraglide/messages.js';
     import DeleteButton from './DeleteButton.svelte';
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
 
     let userDataPromise: Promise<UserGetData> = $state(getOwnUserData());
-    let deleteTrees = $state(false);
+    let userDeleteInfo = getUserInfo();
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
@@ -110,7 +110,9 @@
                 </label>
                 <button class="rounded-sm bg-emerald-500 p-1">{m.confirmChanges()}</button>
             </form>
-            <DeleteButton user={userData} bind:deleteTrees />
+            {#if userDeleteInfo}
+                <DeleteButton user={userDeleteInfo} />
+            {/if}
         </div>
     </div>
 {/await}

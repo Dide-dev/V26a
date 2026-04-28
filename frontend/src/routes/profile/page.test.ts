@@ -109,7 +109,7 @@ test('popup opens when delete button is clicked', async () => {
         } }
     });
 
-    await user.click(screen.getByRole('link'));
+    await user.click(screen.getByTestId('delete-button'));
 
     await waitFor(() => {
         expect(screen.getAllByTestId('popup').length).toBeGreaterThan(0);
@@ -127,7 +127,7 @@ test('popup closes when cancel is clicked', async () => {
         } }
     });
 
-    await user.click(screen.getByRole('link'));
+     await user.click(screen.getByTestId('delete-button'));
     await user.click(screen.getByText(m.cancel()));
 
     await waitFor(() => {
@@ -148,7 +148,7 @@ test('checkbox toggles', async () => {
         }
     });
 
-    await user.click(screen.getByRole('link'));
+    await user.click(screen.getByTestId('delete-button'));
     const checkbox = await screen.findByTestId('delete-checkbox');
 
     expect((checkbox as HTMLInputElement).checked).toBe(false);

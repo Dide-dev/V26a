@@ -92,7 +92,7 @@ export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEma
 
 /** Delete a user in the database */
 export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
-    return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
+    return apiCallDeleteUser(`${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */

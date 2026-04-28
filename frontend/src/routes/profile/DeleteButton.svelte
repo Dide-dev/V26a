@@ -6,10 +6,10 @@
 
 <script lang="ts">
     import { page } from '$app/state';
-    import iconTrash from '$lib/assets/iconTrash.svg?raw';
     import { deleteUser, type UserInfo } from '$lib/backend/users';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
+     import { goto } from '$app/navigation';
 
     let { user }: { user: UserInfo } = $props();
 
@@ -28,11 +28,14 @@
 
     async function doDelete() {
         await deleteUser(user.sub, deleteTrees);
+        await goto('/');
     }
 </script>
 
 <a href={page.url.href} onclick={openPopup}>
-    {@html iconTrash}
+    <button data-testid="delete-button" class="rounded-md bg-gray-400 p-2">
+        {m.deleteUser()}
+    </button>
 </a>
 
 {#if popupVisible}

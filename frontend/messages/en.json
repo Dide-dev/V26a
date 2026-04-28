@@ -81,5 +81,6 @@
     "colophon": "Colophon",
     "otherProjects": "Other projects",
     "uploadImage": "Upload image",
-    "deleteOwnedTrees": "Delete all owned trees"
+    "deleteOwnedTrees": "Delete all owned trees",
+    "deleteUser": "Delete profile"
 }
