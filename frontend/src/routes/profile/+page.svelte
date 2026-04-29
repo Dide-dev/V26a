@@ -43,6 +43,7 @@
     let passwordNotSame: boolean = $state(false);
     let unsuccesfulPasswordChange: boolean = $state(false);
     let succesfulPasswordChange: boolean = $state(false);
+    let sameOldAndNewPassword: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
@@ -84,6 +85,12 @@
         passwordNotSame = false;
         unsuccesfulPasswordChange = false;
         succesfulPasswordChange = false;
+        sameOldAndNewPassword = false;
+
+        if (changePasswordData.oldPassword == changePasswordData.newPassword) {
+            sameOldAndNewPassword = true;
+            return;
+        }
 
         if (
             !checkLowercase(changePasswordData.newPassword) ||
@@ -108,6 +115,10 @@
         if (changePasswordResponse.succeeded) {
             succesfulPasswordChange = true;
         }
+
+        changePasswordData.oldPassword = '';
+        changePasswordData.newPassword = '';
+        repeatPassword = '';
     }
 </script>
 
@@ -121,11 +132,6 @@
                 class="flex w-md flex-col gap-2"
                 onsubmit={(event) => handleSubmit(event, userData)}
             >
-                {#if succesfulPasswordChange}
-                    <p class="text-green-700" data-testid="password-change-success">
-                        {m.succesfulPasswordChange()}
-                    </p>
-                {/if}
                 <div>
                     <p class="font-bold">{m.email()}</p>
                     <p>{userData.email}</p>
@@ -236,6 +242,16 @@
                 {#if passwordChangeAttempt}
                     <p class="text-red-600" data-testid="change-attempt-error">
                         {m.changePasswordAttempt()}
+                    </p>
+                {/if}
+                {#if sameOldAndNewPassword}
+                    <p class="text-red-600" data-testid="same-old-and-new-password-error">
+                        {m.sameOldAndNewPassword()}
+                    </p>
+                {/if}
+                {#if succesfulPasswordChange}
+                    <p class="text-green-700" data-testid="password-change-success">
+                        {m.succesfulPasswordChange()}
                     </p>
                 {/if}
                 <button class="mt-4 mb-4 rounded-sm bg-emerald-500 p-1" data-testid="confirm-button"

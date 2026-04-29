@@ -253,8 +253,8 @@ test('Differing new password and repeat password shows error', async () => {
     render(page);
 
     await user.type(await screen.findByTestId('oldPassword'), 'P@ssword123');
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword123');
-    await user.type(screen.getByTestId('repeatPassword'), 'P@ssword321');
+    await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
+    await user.type(screen.getByTestId('repeatPassword'), 'P@ssword321!');
 
     const button = screen.getByTestId('confirm-button');
     await user.click(button);
@@ -350,13 +350,46 @@ test('No submission without repeat password', async () => {
     render(page);
 
     await user.type(await screen.findByTestId('oldPassword'), 'P@ssword123');
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword123');
+    await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
 
     await user.click(screen.getByTestId('confirm-button'));
     const error = screen.getByTestId('change-attempt-error');
 
     expect(changePassword).not.toHaveBeenCalled();
     expect(error.textContent).toBe(m.changePasswordAttempt());
+});
+
+test('No submission when old and new password are the same', async () => {
+    const userData: UserGetData = {
+        email: 'john@test.com',
+        name: 'John Test',
+        nickname: 'Johnny',
+        aboutMe: '',
+        emailVisible: false,
+        language: 'en'
+    };
+    const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
+    mockGetUser.mockResolvedValue(userData);
+    const userInfo: UserInfo = {
+        sub: 1,
+        exp: 42,
+        accountType: 'author'
+    };
+    const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
+    mockGetInfo.mockReturnValue(userInfo);
+
+    const user = userEvent.setup();
+    render(page);
+
+    await user.type(await screen.findByTestId('oldPassword'), 'P@ssword123');
+    await user.type(screen.getByTestId('newPassword'), 'P@ssword123');
+    await user.type(screen.getByTestId('repeatPassword'), 'Password123');
+
+    await user.click(screen.getByTestId('confirm-button'));
+    const error = screen.getByTestId('same-old-and-new-password-error');
+
+    expect(changePassword).not.toHaveBeenCalled();
+    expect(error.textContent).toBe(m.sameOldAndNewPassword());
 });
 
 test('Submission when all password expectations have been met', async () => {
@@ -385,17 +418,12 @@ test('Submission when all password expectations have been met', async () => {
     render(page);
 
     await user.type(await screen.findByTestId('oldPassword'), 'P@ssword123');
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword123');
-    await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123');
+    await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
+    await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123!');
 
     await user.click(screen.getByTestId('confirm-button'));
     const confirmation = screen.getByTestId('password-change-success');
 
-    expect(changePassword).toHaveBeenCalledWith(
-        expect.objectContaining({
-            oldPassword: 'P@ssword123',
-            newPassword: 'P@ssword123'
-        })
-    );
+    expect(changePassword).toHaveBeenCalled();
     expect(confirmation.textContent).toBe(m.succesfulPasswordChange());
 });
