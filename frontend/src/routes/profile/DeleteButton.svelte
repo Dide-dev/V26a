@@ -38,7 +38,7 @@
 {#if popupVisible}
     <Popup>
         <p class="text-lg font-bold">
-            {m.deleteTreeConfirmation({ title: 'user' })}
+            {m.deleteProfileConfirmation()}
         </p>
 
         <label class="flex items-center gap-2">
