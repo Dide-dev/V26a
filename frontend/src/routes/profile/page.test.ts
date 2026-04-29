@@ -11,7 +11,6 @@ import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import DeleteButton from './DeleteButton.svelte';
-import { m } from '$lib/paraglide/messages.js';
 import {
     updateUser,
     getOwnUserData,
@@ -58,7 +57,7 @@ test('No submission without name', async () => {
 
     const nameInput = await screen.findByTestId('name');
     await user.clear(nameInput);
-    await user.click(screen.getByTestId('confirm-button'));
+    await user.click(screen.getByTestId('confirm-profile'));
 
     expect(updateUser).not.toHaveBeenCalled();
 });
@@ -87,7 +86,7 @@ test('Submission with full data', async () => {
 
     const aboutMeInput = await screen.findByTestId('about-me');
     await user.type(aboutMeInput, 'Some interesting backstory');
-    await user.click(screen.getByTestId('confirm-button'));
+    await user.click(screen.getByTestId('confirm-profile'));
 
     const expectedUpdateData: UserUpdateData = {
         name: 'John Test',
@@ -162,6 +161,7 @@ test('checkbox toggles', async () => {
     await user.click(checkbox);
     expect((checkbox as HTMLInputElement).checked).toBe(true);
 });
+
 test('New password without upper case letter shows error', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
