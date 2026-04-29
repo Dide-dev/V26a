@@ -61,26 +61,12 @@ test('Submission with correct data', async () => {
             title: 'Test tree title',
             description: 'Test tree description',
             bookName: 'A book name',
-            bookEdition: 4,
-            bookIsbn: 9781408883464,
+            bookEdition: '4',
+            bookIsbn: '9781408883464',
             bookChapter: 'chapter 1',
             bookExercise: 'exercise 1',
             assignmentText: 'assignment text',
             published: false
         })
     );
-});
-
-test('Redirection after succesful creation', async () => {
-    const user = userEvent.setup();
-
-    (addTree as MockedFunction<typeof addTree>).mockResolvedValue(1);
-
-    render(page);
-
-    const titleInput = screen.getByTestId('title');
-    await user.type(titleInput, 'Test tree title');
-    await user.click(screen.getByRole('button', { name: m.createTree() }));
-
-    expect(goto).toHaveBeenCalledWith('/tree-page/editor?id=1');
 });

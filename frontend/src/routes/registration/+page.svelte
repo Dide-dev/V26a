@@ -138,7 +138,7 @@
                 name="name"
                 type="text"
                 data-testid="name"
-                placeholder={m.examplePlaceholder() + m.exampleName() + m.requiredPlaceholder()}
+                placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
                 minlength={minInputLengths.name}
                 maxlength={maxInputLengths.name}
                 autocomplete="name"
@@ -155,7 +155,7 @@
                 bind:value={formData.nickname}
                 name="nickname"
                 type="text"
-                placeholder={m.examplePlaceholder() + 'Johnny'}
+                placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
                 minlength={minInputLengths.nickname}
                 maxlength={maxInputLengths.nickname}
             />
@@ -171,9 +171,7 @@
                 name="email"
                 type="email"
                 data-testid="email"
-                placeholder={m.examplePlaceholder() +
-                    m.emailPlaceholder() +
-                    m.requiredPlaceholder()}
+                placeholder={m.examplePlaceholderRequired({ value: m.emailPlaceholder() })}
                 minlength={minInputLengths.email}
                 maxlength={maxInputLengths.email}
                 autocomplete="email"
@@ -194,7 +192,7 @@
                 name="password"
                 type="password"
                 data-testid="password"
-                placeholder={m.examplePlaceholder() + examplePassword + m.requiredPlaceholder()}
+                placeholder={m.examplePlaceholderRequired({ value: examplePassword })}
                 minlength={minInputLengths.password}
                 maxlength={maxInputLengths.password}
                 required
@@ -210,7 +208,7 @@
                     name="repeat password"
                     type="password"
                     data-testid="repeatPassword"
-                    placeholder={m.repeatPassword() + m.requiredPlaceholder()}
+                    placeholder={m.requiredPlaceholder({ value: m.repeatPassword() })}
                     minlength={minInputLengths.password}
                     maxlength={maxInputLengths.password}
                     required

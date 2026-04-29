@@ -30,7 +30,7 @@
     "password": "Password",
     "yourPassword": "Fill in your password",
     "language": "Language",
-    "emailVisible": "My viewable trees may show my email address. (This is useful for students to contact you, e.g., for feedback or signaling of errors.)",
+    "emailVisible": "Display my email address.",
     "register": "Register",
     "emailPlaceholder": "user@example.com",
     "madeBy": "Made by",
@@ -84,11 +84,14 @@
     "otherProjects": "Other projects",
     "uploadImage": "Upload image",
     "requiredPlaceholder": " (required)",
-    "examplePlaceholder": "E.g.: ",
+    "examplePlaceholder": "E.g.: {value}",
+    "examplePlaceholderRequired": "E.g.: {value} (required)",
+    "examplePlaceholderOptional": "E.g.: {value} (optional)",
     "agreeToTOS": "I acknowledge that I have read the {#link to=|/privacy|}privacy policy{/link} and {#link to=|/conditions|}terms and conditions{/link} and agree with their contents.",
     "mustAgreeToTOS": "You must agree to the privacy policy and terms and conditions to continue.",
     "privacy": "Privacy",
     "exampleName": "John Smith",
+    "exampleNickname": "Johnny Doe",
     "exampleTitle": "{name}'s heuristic tree",
     "exampleDescription": "My first tree!",
     "exampleBookName": "Algebra",
@@ -98,5 +101,6 @@
     "exampleExercise": "2",
     "exampleAssignment": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
     "noAccount": "No account yet? Register for an account here.",
-    "invalidISBN": "Please enter a valid ISBN of length 10 or 13"
+    "invalidISBN": "Please enter a valid ISBN of length 10 or 13",
+    "general": "General"
 }
