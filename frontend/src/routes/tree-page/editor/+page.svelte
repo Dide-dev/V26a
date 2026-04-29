@@ -25,6 +25,7 @@
         canRedo
     } from '../history.svelte';
     import EditMetadata from './EditMetadata.svelte';
+    import RootNodeAddButton from '../RootNodeAddButton.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -204,6 +205,7 @@
                 bind:numPopupsOpen={tree.numPopupsOpen}
             />
         {/each}
+        <RootNodeAddButton history={tree.history} bind:numPopupsOpen={tree.numPopupsOpen} />
     </div>
 {/if}
 
