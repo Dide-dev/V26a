@@ -3,6 +3,7 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+
 use utoipa::ToSchema;
 
 /// The basic data of the card, including the tree it belongs to.
@@ -29,4 +30,12 @@ pub struct CardUpdateData {
 pub struct CardGetData {
     pub front: String,
     pub back: String,
+}
+
+/// Data for the API-call to add a card to the library.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCardAddData {
+    pub title: String,
+    pub tags: Vec<String>,
 }

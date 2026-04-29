@@ -155,9 +155,9 @@ pub async fn update_tree_data(
         new_tree_data.assignment_text,
         new_tree_data.published,
     )
-        .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
 }
@@ -187,6 +187,7 @@ pub async fn db_get_tree_all_data(
     .fetch_optional(db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
+
     let Some(field) = field else {
         return Ok(None);
     };
