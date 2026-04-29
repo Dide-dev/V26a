@@ -32,7 +32,7 @@
 </script>
 
 <button data-testid="delete-button" class="rounded-md bg-gray-400 p-2" onclick={openPopup}>
-    {m.deleteUser()}
+    {m.deleteProfile()}
 </button>
 
 {#if popupVisible}

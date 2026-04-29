@@ -82,6 +82,6 @@
     "otherProjects": "Other projects",
     "uploadImage": "Upload image",
     "deleteOwnedTrees": "Delete all owned trees",
-    "deleteUser": "Delete user",
+    "deleteProfile": "Delete profile",
     "deleteProfileConfirmation": "Are you sure you want to delete your profile?"
 }
