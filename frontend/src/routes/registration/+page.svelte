@@ -10,6 +10,13 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
+    import {
+        checkSamePassword,
+        checkLowercase,
+        checkUppercase,
+        checkNumber,
+        checkSpecialCharacter
+    } from '$lib/passwords';
 
     let formData: RegisterData = $state({
         email: '',
@@ -26,41 +33,22 @@
     let passwordNotSame: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
 
-    function checkSamePassword(): boolean {
-        return repeatPassword == formData.password;
-    }
-
-    function checkLowercase(): boolean {
-        let passwordChecker = formData.password.toUpperCase();
-        return passwordChecker != formData.password;
-    }
-
-    function checkUppercase(): boolean {
-        let passwordChecker = formData.password.toLowerCase();
-        return passwordChecker != formData.password;
-    }
-
-    function checkNumber(): boolean {
-        let regex = /\d/;
-        return regex.test(formData.password);
-    }
-
-    function checkSpecialCharacter(): boolean {
-        let regex = /[?!@#$%^&*()+=.,<>{}[\]:;"'|~`_/\\-]/;
-        return regex.test(formData.password);
-    }
-
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         passwordMissingChar = false;
         passwordNotSame = false;
         emailAlreadyExists = false;
 
-        if (!checkLowercase() || !checkUppercase() || !checkNumber() || !checkSpecialCharacter()) {
+        if (
+            !checkLowercase(formData.password) ||
+            !checkUppercase(formData.password) ||
+            !checkNumber(formData.password) ||
+            !checkSpecialCharacter(formData.password)
+        ) {
             passwordMissingChar = true;
             return;
         }
-        if (!checkSamePassword()) {
+        if (!checkSamePassword(formData.password, repeatPassword)) {
             passwordNotSame = true;
             return;
         }
