@@ -5,6 +5,7 @@
 -->
 
 <script lang="ts">
+    import { m } from '$lib/paraglide/messages';
     import { onMount } from 'svelte';
 
     let {
@@ -20,14 +21,15 @@
     } = $props();
 
     let textareaElement: HTMLTextAreaElement;
-    async function editFinish() {
+    function editFinish() {
+        text = text.trim();
         if (text.length === 0) {
             editCancelCallback();
         } else {
             editDoneCallback();
         }
     }
-    async function editKeypress(event: KeyboardEvent) {
+    function editKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             event.preventDefault();
             event.stopPropagation();
@@ -43,12 +45,22 @@
     });
 </script>
 
-<textarea
-    class="mb-5 h-fit w-32 shrink-0 p-0 font-bold"
-    rows="3"
-    bind:this={textareaElement}
-    bind:value={text}
-    onkeypress={editKeypress}
-    onfocusout={editFinish}
-    maxlength="48"
-></textarea>
+<div class="mb-5 flex w-32 flex-col gap-1">
+    <textarea
+        class="h-fit shrink-0 p-0 font-bold"
+        rows="3"
+        bind:this={textareaElement}
+        bind:value={text}
+        onkeydown={editKeydown}
+        onfocusout={() => {
+            // In firefox this function does not get called when this component is destroyed,
+            // but in chromium it does get called... So we manually check here just in case.
+            // (This only occurs when pressing enter to save, instead of using the onfocusout directly)
+            if (text === null) return;
+
+            editFinish();
+        }}
+        maxlength="48"
+    ></textarea>
+    <button class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white">{m.save()}</button>
+</div>

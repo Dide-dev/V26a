@@ -43,7 +43,7 @@
     }
 </script>
 
-<div class="h-7"></div>
+<div class="h-5"></div>
 
 {#if text === null}
     <button
