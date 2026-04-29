@@ -9,15 +9,11 @@
     import { onMount } from 'svelte';
     import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import { appLink } from '$lib';
+    import { booleanToString } from '$lib/general';
 
     onMount(async () => {
         await loadUsers();
     });
-
-    function booleanToString(value: boolean) {
-        if (value) return m.yes();
-        return m.no();
-    }
 
     let users: null | UserGetAllData[] = $state(null);
 

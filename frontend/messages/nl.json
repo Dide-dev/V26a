@@ -66,7 +66,7 @@
     "book": "Boek",
     "id": "id",
     "enabled": "ingeschakeld",
-    "userlist": "Gebruikerslijst",
+    "userList": "Gebruikerslijst",
     "feedbackExplanation": "Vul dit formulier in als je feedback wilt geven op deze website. Als je wilt dat wij je kunnen contacteren om de feedback te bediscussiëren, kun je je e-mail adres achterlaten. Echter, dit is niet verplicht.",
     "submitFeedback": "Geef feedback",
     "succesfulFeedbackSubmission": "Feedback succesvol verzonden.",

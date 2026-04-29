@@ -61,8 +61,8 @@
             });
             if (userInfo.accountType == 'admin') {
                 result.push({
-                    href: '/userlist',
-                    text: m.userlist(),
+                    href: '/user-list',
+                    text: m.userList(),
                     isThin: false
                 });
             }

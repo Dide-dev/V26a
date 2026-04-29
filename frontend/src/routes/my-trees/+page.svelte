@@ -11,6 +11,7 @@
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
+    import { booleanToString } from '$lib/general';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
@@ -19,11 +20,6 @@
     onMount(async () => {
         trees = await getUsersOwnTrees();
     });
-
-    function booleanToString(value: boolean) {
-        if (value) return m.yes();
-        return m.no();
-    }
 </script>
 
 {#if trees === null}
