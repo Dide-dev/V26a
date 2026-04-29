@@ -258,42 +258,42 @@ pub async fn get_tree_owner(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_trees_by_owner(
-    db: impl PgExecutor<'_>,
-    owner_id: i32,
-) -> Result<Vec<TreeMetadata>, ApiError> {
-    let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+// pub async fn get_all_trees_by_owner(
+//     db: impl PgExecutor<'_>,
+//     owner_id: i32,
+// ) -> Result<Vec<TreeMetadata>, ApiError> {
+//     let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
+//         .fetch_all(db)
+//         .await
+//         .map_err(|_| ApiError::DatabaseException)?;
 
-    let trees_metadata = records
-        .into_iter()
-        .map(|t| TreeMetadata {
-            data: TreeData {
-                title: t.title,
-                description: t.description,
-                book_name: t.book_name,
-                book_edition: t.book_edition,
-                book_isbn: t.book_isbn,
-                book_chapter: t.book_chapter,
-                book_exercise: t.book_exercise,
-                assignment_text: t.assignment_text,
-                published: t.published,
-            },
-            gen_data: TreeGeneratedData {
-                id: t.id,
-                owner_id: t.owner_id,
-                created_at: t.created_at,
-                last_modified: t.last_modified,
-                times_visited: t.times_visited,
-                last_visited: t.last_visited,
-            },
-        })
-        .collect::<Vec<TreeMetadata>>();
+//     let trees_metadata = records
+//         .into_iter()
+//         .map(|t| TreeMetadata {
+//             data: TreeData {
+//                 title: t.title,
+//                 description: t.description,
+//                 book_name: t.book_name,
+//                 book_edition: t.book_edition,
+//                 book_isbn: t.book_isbn,
+//                 book_chapter: t.book_chapter,
+//                 book_exercise: t.book_exercise,
+//                 assignment_text: t.assignment_text,
+//                 published: t.published,
+//             },
+//             gen_data: TreeGeneratedData {
+//                 id: t.id,
+//                 owner_id: t.owner_id,
+//                 created_at: t.created_at,
+//                 last_modified: t.last_modified,
+//                 times_visited: t.times_visited,
+//                 last_visited: t.last_visited,
+//             },
+//         })
+//         .collect::<Vec<TreeMetadata>>();
 
-    Ok(trees_metadata)
-}
+//     Ok(trees_metadata)
+// }
 
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
 /// and whether any duplicate cards exist in the tree structure.
@@ -427,6 +427,18 @@ fn apply_tree_filters<'a>(
     }
 }
 
+fn apply_tree_filters_pagination<'a>(
+    builder: &mut QueryBuilder<'a, Postgres>,
+    user_id: i32,
+) {
+    builder.push(" WHERE ");
+    let mut separated = builder.separated(" AND ");
+        separated
+            .push("(owner_id = ")
+            .push_bind_unseparated(user_id)
+            .push_unseparated(")");
+}
+
 /// Get the amount of trees satisfying some filters.
 ///
 /// # Arguments
@@ -449,6 +461,22 @@ pub async fn get_queried_count(
     let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
 
     apply_tree_filters(&mut query, filters, user_id);
+
+    let trees_count: i64 = query
+        .build_query_scalar()
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(trees_count)
+}
+pub async fn get_queried_count_pagination(
+    db: impl PgExecutor<'_>,
+    user_id: i32,
+) -> Result<i64, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+
+    apply_tree_filters_pagination(&mut query, user_id);
 
     let trees_count: i64 = query
         .build_query_scalar()
@@ -491,6 +519,50 @@ pub async fn get_queried_list(
     );
 
     apply_tree_filters(&mut query, filters, user_id);
+    query
+        .push(
+            // newest first
+            " ORDER BY created_at DESC \
+              LIMIT ",
+        )
+        .push_bind(i64::from(page.get_size()))
+        .push(" OFFSET ")
+        // Page is 1-based
+        .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
+
+    let rows = query
+        .build()
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let trees = rows
+        .iter()
+        .map(TreeMetadata::from_pg_row)
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>();
+
+    // User requested a page that yields no results. This should only occur if the user requests a
+    // page that is too high, as get_queried_count should be used to confirm results exist.
+    if trees.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    Ok(trees)
+}
+
+pub async fn get_queried_list_pagination(
+    db: impl PgExecutor<'_>,
+    page: &PaginationOptions,
+    user_id: i32,
+) -> Result<Vec<TreeMetadata>, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("
+        SELECT id, owner_id, created_at, last_modified, times_visited, last_visited,
+        title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
+        FROM trees"
+    );
+
+    apply_tree_filters_pagination(&mut query, user_id);
     query
         .push(
             // newest first

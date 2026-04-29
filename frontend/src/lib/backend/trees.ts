@@ -172,11 +172,6 @@ export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<voi
     return apiCallPostTree('update-data', newTreeData);
 }
 
-/** Request all trees owned by the logged-in user. */
-export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
-    return apiCallGetTree(`get-mine-all`);
-}
-
 export function isNullOrEmpty(value: unknown): boolean {
     return value == null || (Array.isArray(value) && value.length === 0);
 }
@@ -209,6 +204,17 @@ export function getPaginationAndFilterParams(
     return String(params);
 }
 
+export function getPaginationParams(pageOptions: PaginationOptions): string {
+    const params = new URLSearchParams();
+
+    Object.entries(pageOptions).forEach(([key, value]) => {
+        if (value !== null) {
+            params.append(key, String(value));
+        }
+    });
+    return String(params);
+}
+
 /** Get the list of all trees satisfying some filters at a given page. */
 export function getFilteredList(
     pageOptions: PaginationOptions,
@@ -216,4 +222,10 @@ export function getFilteredList(
 ): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
+}
+
+/** Request all trees owned by the logged-in user satisfying some pagination options. */
+export function getUsersOwnTrees(pageOptions: PaginationOptions): Promise<TreeListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetTree(`get-mine-all?${params}`);
 }

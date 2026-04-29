@@ -7,7 +7,7 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count, get_queried_list,
+    add_tree, db_get_tree_all_data, get_queried_count, get_queried_count_pagination, get_queried_list, get_queried_list_pagination,
     get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
@@ -425,38 +425,6 @@ async fn get_tree_with_cards(
     }))
 }
 
-#[utoipa::path(
-    get,
-    path = "/get-mine-all",
-    context_path = "/api/v1/trees",
-    responses(
-        (status = 200, description = "Successfully retrieved all owned trees.", body = Vec<TreeMetadata>),
-        (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 500, description = "Internal server error."),
-    ),
-    params(
-        ("session" = Claims, Cookie),
-    )
-)]
-/// Request metadata of all trees from the user.
-///
-/// # Arguments
-/// `claims` - The session cookie of the user.
-///
-/// # Returns
-/// A list containing the metadata of all trees owned by the user, as [`Vec<TreeMetadata>`].
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-async fn get_all_owned_trees(
-    claims: Claims,
-    Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<TreeMetadata>>, ApiError> {
-    let trees_metadata = get_all_trees_by_owner(&db, claims.sub).await?;
-
-    Ok(Json(trees_metadata))
-}
-
 /// Checks whether the tree exists and if it is owned by the user,
 /// or if the user is an admin.
 /// This function could be expanded in the future if multiple users can be
@@ -567,3 +535,67 @@ pub async fn get_list(
 
     Ok(Json(list))
 }
+
+#[utoipa::path(
+    get,
+    path = "/get-mine-all",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully retrieved all owned trees.", body = Vec<TreeMetadata>),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Request metadata of all trees from the user.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// # Returns
+/// A list containing the metadata of all trees owned by the user, as [`Vec<TreeMetadata>`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_all_owned_trees(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<TreeListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let trees_count = get_queried_count_pagination(&mut *transaction, claims.sub).await?;
+    if trees_count == 0 {
+        return Ok(Json(TreeListResponse {
+            total_trees: 0,
+            trees: Vec::new(),
+        }));
+    }
+
+    let trees = get_queried_list_pagination(&mut *transaction, &page, claims.sub).await?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let list = TreeListResponse {
+        total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
+        trees,
+    };
+
+    Ok(Json(list))
+}
+// async fn get_all_owned_trees(
+//     claims: Claims,
+//     Extension(db): Extension<PgPool>,
+//     Query(page): Query<OptionalPaginationOptions>,
+// ) -> Result<Json<TreeListResponse>, ApiError> {
+//     let trees_metadata = get_all_trees_by_owner(&db, claims.sub).await?;
+
+//     Ok(Json(trees_metadata))
+// }
