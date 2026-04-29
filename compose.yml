@@ -26,10 +26,8 @@ services:
     environment:
       - BASE_URL=${BASE_URL}
     ports:
-      - "8000:8000"
-    depends_on:
-      - backend
-      - frontend
+      - "80:80"
+      - "443:443"
 
   backend:
     build:
