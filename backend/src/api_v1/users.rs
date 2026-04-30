@@ -38,12 +38,15 @@ pub fn users() -> Router<Config> {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type")]
-pub enum AddUserResponse {
-    /// Return body signaling the user has been successfully added with the contained `user_id`.
+pub enum UserResponse {
+    /// Return body signaling the user has been successfully added/updated with the contained `user_id`.
     Success { user_id: i32 },
-    /// Return body signaling the user could not be added, as the e-mail was already in use.
+    /// Return body signaling the user could not be added/updated, as the e-mail was already in use.
     EmailAlreadyUsed,
+     /// Return body signaling the user could not be added/updated, as the username was already in use.
+    UsernameAlreadyUsed,
 }
+
 
 #[utoipa::path(
     post,
@@ -51,10 +54,9 @@ pub enum AddUserResponse {
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
-        (status = 200, description = "Successfully registered user with the returned id.", body = AddUserResponse, content_type = "application/json"),
+        (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
-        (status = 409, description = ApiError::UsernameTaken.to_string()),
         (status = 500, description = "Internal server error."),
     )
 )]
@@ -64,8 +66,9 @@ pub enum AddUserResponse {
 /// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
 /// # Returns
-/// [`Success`](AddUserResponse::Success) with the id assigned to the new user
-/// if the email has not yet been used, or [`EmailAlreadyUsed`](AddUserResponse::EmailAlreadyUsed) otherwise.
+/// [`Success`](UserResponse::Success) with the id assigned to the new user
+/// if the email has not yet been used, or [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) otherwise.
+/// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException) or
@@ -73,19 +76,19 @@ pub enum AddUserResponse {
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
-) -> Result<Json<AddUserResponse>, ApiError> {
+) -> Result<Json<UserResponse>, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
     let exists = user_email_exists(&mut *transaction, &user_data.email).await?;
 
     if exists {
-        return Ok(Json(AddUserResponse::EmailAlreadyUsed));
+        return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
     let name_taken = user_name_exists(&mut *transaction, &user_data.name).await?;
 
     if name_taken {
-        return Err(ApiError::UsernameTaken);
+         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
     let user_id = add_user(&mut transaction, &user_data).await?;
@@ -95,7 +98,7 @@ async fn add_new_user(
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(Json(AddUserResponse::Success { user_id }))
+    Ok(Json(UserResponse::Success { user_id }))
 }
 
 #[utoipa::path(
@@ -141,7 +144,6 @@ async fn get_own_user_data(
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
-        (status = 409, description = ApiError::UsernameTaken.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
@@ -177,7 +179,7 @@ async fn update_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
-) -> Result<(), ApiError> {
+) -> Result<Json<UserResponse>, ApiError> {
     // A user can only update another user's data if they are an administrator.
     if claims.sub != user_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
@@ -197,10 +199,12 @@ async fn update_user_data(
     let name_taken = user_name_exists(&db, &new_data.name).await?;
 
     if name_taken {
-        return Err(ApiError::UsernameTaken);
+         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    update_user(&db, user_id, &new_data).await
+    update_user(&db, user_id, &new_data).await?;
+    
+    Ok(Json(UserResponse::Success { user_id }))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
