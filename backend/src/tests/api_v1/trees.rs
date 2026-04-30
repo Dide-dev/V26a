@@ -8,14 +8,14 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeAddData, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData,
-    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
+    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
 use crate::tests::api_v1::{login, register, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
     let basic_tree_structure = TreeStructure {
@@ -90,7 +90,7 @@ async fn test_new_invalid_tree(db: PgPool) {
 
     // Create tree with invalid subject
     let tree_data = TreeData {
-        subject: Some("Notasubject".to_string()),
+        subject_id: Some(420),
         ..Default::default()
     };
     let tree_structure = TreeStructure {
@@ -105,7 +105,7 @@ async fn test_new_invalid_tree(db: PgPool) {
     };
     let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_bad_request();
-    response.assert_text(ApiError::MissingSubject("Notasubject".to_string()).to_string());
+    response.assert_text(ApiError::MissingSubject(420).to_string());
 }
 
 #[sqlx::test]
@@ -117,7 +117,7 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
         description: Some("This is used for testing".to_string()),
         language_code: "en".to_string(),
         tags: vec!["geometry".to_string(), "difficult".to_string()],
-        subject: Some("Wiskunde B".to_string()),
+        subject_id: Some(2),
         book_name: Some("Introduction to mathematics".to_string()),
         book_author: Some("Leonhard Euler".to_string()),
         book_edition: Some("4b".to_string()),
@@ -734,7 +734,7 @@ async fn test_update_metadata(db: PgPool) {
         title: "Updated tree".to_string(),
         language_code: "en".to_string(),
         tags: vec!["tag1".to_string(), "tag2".to_string()],
-        subject: Some("Duits".to_string()),
+        subject_id: Some(1),
         description: Some("Updated description".to_string()),
         book_name: Some("Updated book".to_string()),
         book_author: Some("Updated author".to_string()),
@@ -771,7 +771,7 @@ async fn test_get_languages(db: PgPool) {
     let response = server.get("/trees/get-all-languages").await;
     response.assert_status_ok();
 
-    let languages: Vec<String> = response.json();
+    let languages: Vec<Language> = response.json();
     assert_ne!(languages.len(), 0);
 }
 
@@ -782,6 +782,6 @@ async fn test_get_subjects(db: PgPool) {
     let response = server.get("/trees/get-all-subjects").await;
     response.assert_status_ok();
 
-    let subjects: Vec<String> = response.json();
+    let subjects: HashMap<i32, Subject> = response.json();
     assert_ne!(subjects.len(), 0);
 }

@@ -10,7 +10,7 @@ CREATE EXTENSION citext;
 
 CREATE TABLE languages
 (
-    code CHAR(2) PRIMARY KEY,
+    code CHAR(2)     PRIMARY KEY,
     name VARCHAR(32) NOT NULL UNIQUE
 );
 
@@ -33,7 +33,10 @@ CREATE TABLE users
 
 CREATE TABLE subjects
 (
-    name VARCHAR(32) PRIMARY KEY
+    id            SERIAL      PRIMARY KEY,
+    language_code CHAR(2)     NOT NULL,
+    name          VARCHAR(32) NOT NULL,
+    FOREIGN KEY (language_code) REFERENCES languages (code)
 );
 
 CREATE TABLE books
@@ -55,16 +58,16 @@ CREATE TABLE trees
     times_visited   BIGINT       NOT NULL DEFAULT 0,
     last_visited    TIMESTAMPTZ           DEFAULT NULL,              -- commonly NULL in prototype, can consider setting NOT NULL and filling the null values with last_edited
     title           VARCHAR(128) NOT NULL,
-    language_code   CHAR(2)   NOT NULL,
+    language_code   CHAR(2)      NOT NULL,
     description     VARCHAR(256)          DEFAULT NULL,
-    subject         VARCHAR(32)           DEFAULT NULL,
+    subject_id      INTEGER               DEFAULT NULL,
     book_isbn       VARCHAR(13)           DEFAULT NULL,
     book_chapter    VARCHAR(32)           DEFAULT NULL,
     book_exercise   VARCHAR(32)           DEFAULT NULL,
     assignment_text VARCHAR(5000)         DEFAULT NULL,              -- currently stored as HTML with images in BASE64. We might want to consider Markdown or some other way of storing this.
     structure       JSONB        NOT NULL,
     FOREIGN KEY (language_code) REFERENCES languages (code),
-    FOREIGN KEY (subject) REFERENCES subjects (name),
+    FOREIGN KEY (subject_id) REFERENCES subjects (id),
     FOREIGN KEY (book_isbn) REFERENCES books (isbn),
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE   -- deletes the tree if the user is ever deleted, not sure if we ever want this, but NOT NULL would mess things up anyway
 );
@@ -75,7 +78,7 @@ CREATE INDEX trees_filter_book_isbn ON trees (book_isbn);
 
 CREATE TABLE tags
 (
-    tree_id SERIAL      NOT NULL,
+    tree_id INTEGER     NOT NULL,
     tag     VARCHAR(32) NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE, -- deleting a tree also deletes its tags
     UNIQUE (tree_id, tag)

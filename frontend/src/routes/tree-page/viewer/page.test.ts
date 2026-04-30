@@ -34,7 +34,7 @@ function createTree(): TreeWithCards {
         description: 'Test Tree Description',
         languageCode: 'en',
         tags: [],
-        subject: 'Wiskunde B',
+        subjectId: 1,
         bookName: 'Test book name',
         bookAuthor: 'Test author',
         bookEdition: 'Test edition',

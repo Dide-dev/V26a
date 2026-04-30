@@ -7,35 +7,33 @@
 use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
-        TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeMetadata, TreeStructure,
+        Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeMetadata,
+        TreeStructure,
     },
     errors::ApiError,
 };
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Check whether the given subject exists.
 ///
 /// # Arguments
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `subject` - The subject whose existence to check.
+/// `id` - The id of the subject whose existence to check.
 ///
 /// # Returns
 /// A `bool` indicating whether the given subject exists.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn subject_exists(db: impl PgExecutor<'_>, subject: &str) -> Result<bool, ApiError> {
-    query!(
-        "SELECT EXISTS(SELECT 1 FROM subjects WHERE name = $1)",
-        subject
-    )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .exists
-    .ok_or(ApiError::DatabaseException)
+pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
+    query!("SELECT EXISTS (SELECT 1 FROM subjects WHERE id = $1)", id)
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .exists
+        .ok_or(ApiError::DatabaseException)
 }
 
 /// Retrieve the list of all subjects from the database.
@@ -48,13 +46,24 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, subject: &str) -> Result<bo
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_subjects(db: impl PgExecutor<'_>) -> Result<Vec<String>, ApiError> {
+pub async fn get_subjects(db: impl PgExecutor<'_>) -> Result<HashMap<i32, Subject>, ApiError> {
     let mut results = query!("SELECT * FROM subjects")
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(results.drain(..).map(|r| r.name).collect::<Vec<_>>())
+    Ok(results
+        .drain(..)
+        .map(|r| {
+            (
+                r.id,
+                Subject {
+                    language_code: r.language_code,
+                    name: r.name,
+                },
+            )
+        })
+        .collect::<HashMap<_, _>>())
 }
 
 /// Check whether the given language exists.
@@ -74,7 +83,7 @@ pub async fn language_exists(
     language_code: &str,
 ) -> Result<bool, ApiError> {
     query!(
-        "SELECT EXISTS(SELECT 1 FROM languages WHERE code = $1)",
+        "SELECT EXISTS (SELECT 1 FROM languages WHERE code = $1)",
         language_code
     )
     .fetch_one(db)
@@ -94,13 +103,19 @@ pub async fn language_exists(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<String>, ApiError> {
+pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, ApiError> {
     let mut results = query!("SELECT * FROM languages")
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(results.drain(..).map(|r| r.name).collect::<Vec<_>>())
+    Ok(results
+        .drain(..)
+        .map(|r| Language {
+            code: r.code,
+            name: r.name,
+        })
+        .collect::<Vec<_>>())
 }
 
 /// Add a new book to the database. If a book with the given isbn already exists, do nothing.
@@ -196,7 +211,7 @@ pub async fn add_tree(
     add_book(&mut *db, tree_data).await?;
 
     let tree_id = query!(
-        "INSERT INTO trees (owner_id, published, title, description, language_code, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+        "INSERT INTO trees (owner_id, published, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
@@ -204,7 +219,7 @@ pub async fn add_tree(
         tree_data.title,
         tree_data.description,
         tree_data.language_code,
-        tree_data.subject,
+        tree_data.subject_id,
         tree_data.book_isbn,
         tree_data.book_chapter,
         tree_data.book_exercise,
@@ -301,14 +316,14 @@ pub async fn update_tree_data(
 
     query!(
         "UPDATE trees SET
-        (last_modified, title, description, language_code, subject, book_isbn, book_chapter, book_exercise, assignment_text, published)
+        (last_modified, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, published)
         = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         WHERE id = $1",
         tree_id,
         new_tree_data.title,
         new_tree_data.description,
         new_tree_data.language_code,
-        new_tree_data.subject,
+        new_tree_data.subject_id,
         new_tree_data.book_isbn,
         new_tree_data.book_chapter,
         new_tree_data.book_exercise,
@@ -372,7 +387,7 @@ pub async fn db_get_tree_all_data(
         description: field.description,
         tags: tags.drain(..).map(|r| r.tag).collect::<Vec<_>>(),
         language_code: field.language_code,
-        subject: field.subject,
+        subject_id: field.subject_id,
         book_name: field.book_name,
         book_edition: field.book_edition,
         book_author: field.book_author,
@@ -457,7 +472,7 @@ pub async fn get_all_trees_by_owner(
                 description: t.description,
                 tags: t.tags.unwrap_or(Vec::new()),
                 language_code: t.language_code,
-                subject: t.subject,
+                subject_id: t.subject_id,
                 book_name: t.book_name,
                 book_edition: t.book_edition,
                 book_author: t.book_author,
@@ -748,7 +763,7 @@ mod tests {
         assert_eq!(found_owner_id, user_id);
 
         let record = query!(
-            "SELECT trees.title, trees.description, trees.language_code, trees.subject, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
+            "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
             FROM trees 
             LEFT JOIN books ON trees.book_isbn = books.isbn
             WHERE id = $1", tree_id)
@@ -760,7 +775,7 @@ mod tests {
             description: record.description,
             tags: record.tags.unwrap_or(Vec::new()),
             language_code: record.language_code,
-            subject: record.subject,
+            subject_id: record.subject_id,
             book_name: record.book_name,
             book_edition: record.book_edition,
             book_author: record.book_author,
@@ -838,7 +853,7 @@ mod tests {
             description: Some("Updated description".to_string()),
             language_code: "nl".to_string(),
             tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
-            subject: Some("Engels".to_string()),
+            subject_id: Some(3),
             book_name: Some("Updated book".to_string()),
             book_author: Some("John Writer".to_string()),
             book_edition: Some("2nd".to_string()),

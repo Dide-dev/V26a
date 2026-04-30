@@ -6,4 +6,4 @@
 
 INSERT INTO languages (code, name) VALUES ('nl', 'Nederlands'), ('en', 'English'), ('de', 'Deutsch'), ('fr', 'Français');
 
-INSERT INTO subjects VALUES ('Wiskunde A'), ('Wiskunde B'), ('Wiskunde C'), ('Wiskunde D'), ('Nederlands'), ('Engels'), ('Frans'), ('Duits');
+INSERT INTO subjects (language_code, name) VALUES ('nl', 'Wiskunde A'), ('nl', 'Wiskunde B'), ('nl', 'Wiskunde C'), ('nl', 'Wiskunde D'), ('nl', 'Nederlands'), ('nl', 'Engels')

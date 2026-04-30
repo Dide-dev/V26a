@@ -152,7 +152,7 @@ pub mod test {
         }
 
         query!(
-            "INSERT INTO trees (owner_id, published, title, description, language_code, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+            "INSERT INTO trees (owner_id, published, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, structure)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING id",
             owner_id,
@@ -160,7 +160,7 @@ pub mod test {
             tree_data.title,
             tree_data.description,
             tree_data.language_code,
-            tree_data.subject,
+            tree_data.subject_id,
             tree_data.book_isbn,
             tree_data.book_chapter,
             tree_data.book_exercise,

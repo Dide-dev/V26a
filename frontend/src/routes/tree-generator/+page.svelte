@@ -27,7 +27,7 @@
         description: '',
         languageCode: 'nl',
         tags: [],
-        subject: 'Wiskunde B',
+        subjectId: 1,
         bookName: '',
         bookAuthor: '',
         bookEdition: '',

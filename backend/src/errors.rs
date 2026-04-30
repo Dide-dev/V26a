@@ -30,8 +30,8 @@ pub enum ApiError {
     MissingCard(i32),
     /// An error to return when a non-existing `language` is used when creating or updating a tree.
     MissingLanguage(String),
-    /// An error to return when a non-existing `subject` is used when creating or updating a tree.
-    MissingSubject(String),
+    /// An error to return when a non-existing `subject_id` is used when creating or updating a tree.
+    MissingSubject(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
@@ -113,7 +113,7 @@ impl Display for ApiError {
             ),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
             ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
-            ApiError::MissingSubject(sub) => write!(f, "The subject {sub} does not exist."),
+            ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
             ApiError::NoImageBodyProvidedException => {

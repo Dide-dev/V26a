@@ -13,8 +13,8 @@ use crate::db::trees::{
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
-    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
-    TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Subject, TreeAddData, TreeFilters, TreeListResponse, TreeMetadata,
+    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
@@ -25,6 +25,8 @@ use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgExecutor, PgPool};
+
+use std::collections::HashMap;
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<Config> {
@@ -85,10 +87,10 @@ async fn add_new_tree(
             tree_add_data.tree_data.language_code.clone(),
         ));
     }
-    if let Some(subject) = &tree_add_data.tree_data.subject
-        && !subject_exists(&mut *transaction, subject).await?
+    if let Some(subject_id) = &tree_add_data.tree_data.subject_id
+        && !subject_exists(&mut *transaction, *subject_id).await?
     {
-        return Err(ApiError::MissingSubject(subject.clone()));
+        return Err(ApiError::MissingSubject(*subject_id));
     }
     let id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
 
@@ -623,7 +625,7 @@ pub async fn get_list(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_languages(
     Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<String>>, ApiError> {
+) -> Result<Json<Vec<Language>>, ApiError> {
     Ok(Json(get_languages(&db).await?))
 }
 
@@ -648,6 +650,6 @@ pub async fn get_all_languages(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_subjects(
     Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<String>>, ApiError> {
+) -> Result<Json<HashMap<i32, Subject>>, ApiError> {
     Ok(Json(get_subjects(&db).await?))
 }

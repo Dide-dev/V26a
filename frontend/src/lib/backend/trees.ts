@@ -39,7 +39,7 @@ export type TreeData = {
     languageCode: string;
     tags: string[];
     description: Option<string>;
-    subject: Option<string>;
+    subjectId: Option<number>;
     bookName: Option<string>;
     bookEdition: Option<string>;
     bookAuthor: Option<string>;
@@ -85,6 +85,16 @@ export type TreeMetadata = {
 export type TreeAddData = {
     treeData: TreeData;
     treeStructure: TreeStructure;
+};
+
+export type Subject = {
+    languageCode: string;
+    name: string;
+};
+
+export type Language = {
+    code: string;
+    name: string;
 };
 
 // Default tree structure used in addTree.
@@ -220,4 +230,14 @@ export function getFilteredList(
 ): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
+}
+
+/** Get the list of all languages. */
+export function getAllLanguages(): Promise<Language[]> {
+    return apiCallGetTree('get-all-languages');
+}
+
+/** Get the list of all subjects. */
+export function getAllSubjects(): Promise<Record<number, Subject>> {
+    return apiCallGetTree('get-all-subjects');
 }
