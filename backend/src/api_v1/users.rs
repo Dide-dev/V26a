@@ -47,7 +47,6 @@ pub enum UserResponse {
     UsernameAlreadyUsed,
 }
 
-
 #[utoipa::path(
     post,
     path = "/add-new-user",
