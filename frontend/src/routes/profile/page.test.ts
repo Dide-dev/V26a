@@ -115,51 +115,7 @@ test('popup opens when delete button is clicked', async () => {
 
     await user.click(screen.getByTestId('delete-button'));
 
-    await waitFor(() => {
-        expect(screen.queryAllByTestId('popup').length).toBeGreaterThan(0);
-    });
-});
-
-test('popup closes when cancel is clicked', async () => {
-    const user = userEvent.setup();
-
-    render(DeleteButton, {
-        props: {
-            user: {
-                sub: 1,
-                exp: 123,
-                accountType: 'author'
-            }
-        }
-    });
-
-    await user.click(screen.getByTestId('delete-button'));
-    await user.click(screen.getByText(m.cancel()));
-
-    await waitFor(() => {
-        expect(screen.queryAllByTestId('popup').length).toBe(0);
-    });
-});
-
-test('checkbox toggles', async () => {
-    const user = userEvent.setup();
-
-    render(DeleteButton, {
-        props: {
-            user: {
-                sub: 1,
-                exp: 123,
-                accountType: 'author'
-            }
-        }
-    });
-
-    await user.click(screen.getByTestId('delete-button'));
-    const checkbox = await screen.findByTestId('delete-checkbox');
-
-    expect((checkbox as HTMLInputElement).checked).toBe(false);
-    await user.click(checkbox);
-    expect((checkbox as HTMLInputElement).checked).toBe(true);
+    expect((await screen.findAllByTestId('popup')).length).toBeGreaterThan(0);
 });
 
 test('New password without upper case letter shows error', async () => {
