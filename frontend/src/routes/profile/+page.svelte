@@ -27,7 +27,7 @@
     import { page } from '$app/state';
 
     let userDataPromise: Promise<UserGetData> = $state(getOwnUserData());
-    let userDeleteInfo = getUserInfo();
+    let userInfo = getUserInfo();
 
     let changePasswordData: ChangePasswordData = $state({
         oldPassword: '',
@@ -266,8 +266,8 @@
                     <p class="text-red-600">{m.unsuccesfulPasswordChange()}</p>
                 {/if}
             </form>
-            {#if userDeleteInfo}
-                <DeleteButton user={userDeleteInfo} />
+            {#if userInfo}
+                <DeleteButton user={userInfo} />
             {/if}
         </div>
     </div>

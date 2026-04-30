@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
 import { m } from '$lib/paraglide/messages.js';
 import type { MockedFunction } from 'vitest';
