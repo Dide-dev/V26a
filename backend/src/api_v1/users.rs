@@ -9,7 +9,7 @@ use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
     add_user, delete_user, get_user, update_password, update_user, user_email_exists,
-    user_name_exists, user_id_exists,
+    user_id_exists, user_name_exists,
 };
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
@@ -43,7 +43,7 @@ pub enum UserResponse {
     Success { user_id: i32 },
     /// Return body signaling the user could not be added/updated, as the e-mail was already in use.
     EmailAlreadyUsed,
-     /// Return body signaling the user could not be added/updated, as the username was already in use.
+    /// Return body signaling the user could not be added/updated, as the username was already in use.
     UsernameAlreadyUsed,
 }
 
@@ -87,7 +87,7 @@ async fn add_new_user(
     let name_taken = user_name_exists(&mut *transaction, &user_data.name).await?;
 
     if name_taken {
-         return Ok(Json(UserResponse::UsernameAlreadyUsed));
+        return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
     let user_id = add_user(&mut transaction, &user_data).await?;
@@ -198,11 +198,11 @@ async fn update_user_data(
     let name_taken = user_name_exists(&db, &new_data.name).await?;
 
     if name_taken {
-         return Ok(Json(UserResponse::UsernameAlreadyUsed));
+        return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
     update_user(&db, user_id, &new_data).await?;
-    
+
     Ok(Json(UserResponse::Success { user_id }))
 }
 

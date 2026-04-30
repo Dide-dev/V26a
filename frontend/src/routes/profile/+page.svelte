@@ -58,14 +58,14 @@
             return;
         }
         const result = await updateUser(userInfo.sub, {
-        name: userData.name,
-        nickname: userData.nickname,
-        aboutMe: userData.aboutMe,
-        emailVisible: userData.emailVisible,
-        language: userData.language,
-        accountType: null,
-        enabled: null
-    });
+            name: userData.name,
+            nickname: userData.nickname,
+            aboutMe: userData.aboutMe,
+            emailVisible: userData.emailVisible,
+            language: userData.language,
+            accountType: null,
+            enabled: null
+        });
 
         if (result.type === 'UsernameAlreadyUsed') {
             usernameAlreadyExists = true;

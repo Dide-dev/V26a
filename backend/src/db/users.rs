@@ -90,19 +90,14 @@ pub async fn user_email_exists(db: impl PgExecutor<'_>, email: &str) -> Result<b
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-
 pub async fn user_name_exists(db: impl PgExecutor<'_>, name: &str) -> Result<bool, ApiError> {
-    query!(
-        "SELECT EXISTS(SELECT 1 FROM users WHERE name = $1)",
-        name,
-    )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .exists
-    .ok_or(ApiError::DatabaseException)
+    query!("SELECT EXISTS(SELECT 1 FROM users WHERE name = $1)", name,)
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .exists
+        .ok_or(ApiError::DatabaseException)
 }
-
 
 /// Checks if a user with a given id exists in the given database.
 ///

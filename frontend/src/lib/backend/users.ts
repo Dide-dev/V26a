@@ -54,7 +54,7 @@ export type UpdateUserSuccess = {
 };
 
 export type UpdateUsernameInvalid = {
-    type: 'UsernameAlreadyUsed'
+    type: 'UsernameAlreadyUsed';
 };
 
 /** The data of the user that is returned when requesting it */
@@ -99,7 +99,9 @@ export type ChangePasswordData = {
 };
 
 /** Add a user to the database */
-export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid |AddUsernameInvalid> {
+export function addUser(
+    user: RegisterData
+): Promise<AddUserSuccess | AddUserEmailInvalid | AddUsernameInvalid> {
     return apiCallPostUser('add', user);
 }
 
@@ -114,7 +116,10 @@ export function getOwnUserData(): Promise<UserGetData> {
 }
 
 /** Update a user's data */
-export function updateUser(userId: UserId, newData: UserUpdateData): Promise<UpdateUserSuccess | UpdateUsernameInvalid> {
+export function updateUser(
+    userId: UserId,
+    newData: UserUpdateData
+): Promise<UpdateUserSuccess | UpdateUsernameInvalid> {
     return apiCallPostUser(`update/${userId}`, newData);
 }
 

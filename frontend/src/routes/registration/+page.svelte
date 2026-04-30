@@ -62,7 +62,7 @@
             await goto(appLink('/login'));
         } else if (addResponse.type === 'EmailAlreadyUsed') {
             emailAlreadyExists = true;
-        } else if (addResponse.type === 'UsernameAlreadyUsed') {     
+        } else if (addResponse.type === 'UsernameAlreadyUsed') {
             usernameAlreadyExists = true;
         } else {
             throw new Error('ERROR: Unexpected output from API.');
@@ -100,7 +100,7 @@
                 required
             />
         </label>
-         {#if usernameAlreadyExists}
+        {#if usernameAlreadyExists}
             <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
         {/if}
         <label>

@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{UserResponse, ChangePasswordResponse};
+use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
