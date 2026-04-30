@@ -6,25 +6,79 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { getUsersOwnTrees, type TreeMetadata } from '$lib/backend/trees';
+    import {
+        getUsersOwnTrees,
+        type TreeMetadata,
+        type TreeListResponse,
+        type PaginationOptions
+    } from '$lib/backend/trees';
     import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
+    import { calcTotalPages, showTreeCount } from '$lib/pagination';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
+    let treeListResponse: null | TreeListResponse = $state(null);
     let trees: null | TreeMetadata[] = $state(null);
 
-    onMount(async () => {
-        trees = await getUsersOwnTrees();
+    let pageSizeString = $state('10');
+    let pageSizeNumber = $derived(Number(pageSizeString));
+    let thisPage = $state(1);
+
+    let paginationOptions: PaginationOptions = $derived({
+        page: thisPage,
+        size: pageSizeNumber
     });
+
+    onMount(async () => {
+        await loadTrees();
+    });
+
+    async function loadTrees() {
+        treeListResponse = await getUsersOwnTrees(paginationOptions);
+        trees = treeListResponse.trees;
+    }
 
     function booleanToString(value: boolean) {
         if (value) return m.yes();
         return m.no();
     }
+    let prevPageExists = $derived(thisPage > 1);
+    let nextPageExists = $derived(
+        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
+    );
+
+    function prevPage() {
+        thisPage -= 1;
+        loadTrees();
+    }
+
+    function nextPage() {
+        thisPage += 1;
+        loadTrees();
+    }
 </script>
+
+<div class="flex w-full justify-center">
+    <div class="flex-col">
+        <!-- Change the number of trees per page -->
+        <label>
+            {m.numberOfTrees()}
+            <select
+                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
+                bind:value={pageSizeString}
+                onchange={loadTrees}
+            >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
+</div>
 
 {#if trees === null}
     <p>{m.loading()}</p>
@@ -36,7 +90,7 @@
         >
     </div>
 {:else}
-    <div class="100vw flex justify-center">
+    <div class="100vw flex flex-col items-center justify-center overflow-auto">
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>
@@ -78,5 +132,20 @@
                 {/each}
             </tbody>
         </table>
+        <div>
+            <button
+                onclick={prevPage}
+                disabled={!prevPageExists}
+                class="mx-5"
+                class:cursor-pointer={prevPageExists}>Prev</button
+            >
+            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
+            <button
+                onclick={nextPage}
+                disabled={!nextPageExists}
+                class="mx-5"
+                class:cursor-pointer={nextPageExists}>Next</button
+            >
+        </div>
     </div>
 {/if}

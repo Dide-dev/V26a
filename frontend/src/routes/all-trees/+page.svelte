@@ -15,6 +15,7 @@
     } from '$lib/backend/trees';
     import { appLink, timeFormatString } from '$lib/index';
     import { onMount } from 'svelte';
+    import { calcTotalPages, showTreeCount } from '$lib/pagination';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
@@ -59,18 +60,6 @@
     function nextPage() {
         thisPage += 1;
         loadTrees();
-    }
-
-    function calcTotalPages(totalTrees: number, pageSize: number): number {
-        return Math.ceil(totalTrees / pageSize);
-    }
-
-    function showTreeCount(treeListResponse: TreeListResponse | null): number {
-        if (treeListResponse == null) {
-            return 0;
-        } else {
-            return treeListResponse.totalTrees;
-        }
     }
 
     function showBookName(bookName: string | null): string {
