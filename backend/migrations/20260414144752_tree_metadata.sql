@@ -4,6 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-INSERT INTO languages VALUES ('Nederlands'), ('English'), ('Deutsch'), ('Français');
+INSERT INTO languages (code, name) VALUES ('nl', 'Nederlands'), ('en', 'English'), ('de', 'Deutsch'), ('fr', 'Français');
 
 INSERT INTO subjects VALUES ('Wiskunde A'), ('Wiskunde B'), ('Wiskunde C'), ('Wiskunde D'), ('Nederlands'), ('Engels'), ('Frans'), ('Duits');

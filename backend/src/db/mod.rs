@@ -84,7 +84,7 @@ pub mod test {
         let password_hash = bcrypt::hash(register_data.password.clone(), 6).unwrap();
 
         query!(
-            "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+            "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language_code) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
             register_data.email,
             password_hash,
             register_data.name,
@@ -152,14 +152,14 @@ pub mod test {
         }
 
         query!(
-            "INSERT INTO trees (owner_id, published, title, description, language, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+            "INSERT INTO trees (owner_id, published, title, description, language_code, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING id",
             owner_id,
             tree_data.published,
             tree_data.title,
             tree_data.description,
-            tree_data.language,
+            tree_data.language_code,
             tree_data.subject,
             tree_data.book_isbn,
             tree_data.book_chapter,

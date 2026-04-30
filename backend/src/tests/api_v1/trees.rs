@@ -71,7 +71,7 @@ async fn test_new_invalid_tree(db: PgPool) {
 
     // Create tree with invalid language
     let tree_data = TreeData {
-        language: "Notalanguage".to_string(),
+        language_code: "NO".to_string(),
         ..Default::default()
     };
     let tree_structure = TreeStructure {
@@ -86,7 +86,7 @@ async fn test_new_invalid_tree(db: PgPool) {
     };
     let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_bad_request();
-    response.assert_text(ApiError::MissingLanguage("Notalanguage".to_string()).to_string());
+    response.assert_text(ApiError::MissingLanguage("NO".to_string()).to_string());
 
     // Create tree with invalid subject
     let tree_data = TreeData {
@@ -115,7 +115,7 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
     let tree_data = TreeData {
         title: "Test tree".to_string(),
         description: Some("This is used for testing".to_string()),
-        language: "English".to_string(),
+        language_code: "en".to_string(),
         tags: vec!["geometry".to_string(), "difficult".to_string()],
         subject: Some("Wiskunde B".to_string()),
         book_name: Some("Introduction to mathematics".to_string()),
@@ -732,7 +732,7 @@ async fn test_update_metadata(db: PgPool) {
     // Update the metadata
     let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
-        language: "English".to_string(),
+        language_code: "en".to_string(),
         tags: vec!["tag1".to_string(), "tag2".to_string()],
         subject: Some("Duits".to_string()),
         description: Some("Updated description".to_string()),

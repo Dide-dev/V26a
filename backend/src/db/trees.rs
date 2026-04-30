@@ -62,17 +62,20 @@ pub async fn get_subjects(db: impl PgExecutor<'_>) -> Result<Vec<String>, ApiErr
 /// # Arguments
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `language` - The language whose existence to check.
+/// `language_code` - The code of the language whose existence to check.
 ///
 /// # Returns
 /// A `bool` indicating whether the given language exists.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn language_exists(db: impl PgExecutor<'_>, language: &str) -> Result<bool, ApiError> {
+pub async fn language_exists(
+    db: impl PgExecutor<'_>,
+    language_code: &str,
+) -> Result<bool, ApiError> {
     query!(
-        "SELECT EXISTS(SELECT 1 FROM languages WHERE name = $1)",
-        language
+        "SELECT EXISTS(SELECT 1 FROM languages WHERE code = $1)",
+        language_code
     )
     .fetch_one(db)
     .await
@@ -193,14 +196,14 @@ pub async fn add_tree(
     add_book(&mut *db, tree_data).await?;
 
     let tree_id = query!(
-        "INSERT INTO trees (owner_id, published, title, description, language, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+        "INSERT INTO trees (owner_id, published, title, description, language_code, subject, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
         tree_data.published,
         tree_data.title,
         tree_data.description,
-        tree_data.language,
+        tree_data.language_code,
         tree_data.subject,
         tree_data.book_isbn,
         tree_data.book_chapter,
@@ -298,13 +301,13 @@ pub async fn update_tree_data(
 
     query!(
         "UPDATE trees SET
-        (last_modified, title, description, language, subject, book_isbn, book_chapter, book_exercise, assignment_text, published)
+        (last_modified, title, description, language_code, subject, book_isbn, book_chapter, book_exercise, assignment_text, published)
         = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         WHERE id = $1",
         tree_id,
         new_tree_data.title,
         new_tree_data.description,
-        new_tree_data.language,
+        new_tree_data.language_code,
         new_tree_data.subject,
         new_tree_data.book_isbn,
         new_tree_data.book_chapter,
@@ -368,7 +371,7 @@ pub async fn db_get_tree_all_data(
         title: field.title,
         description: field.description,
         tags: tags.drain(..).map(|r| r.tag).collect::<Vec<_>>(),
-        language: field.language,
+        language_code: field.language_code,
         subject: field.subject,
         book_name: field.book_name,
         book_edition: field.book_edition,
@@ -453,7 +456,7 @@ pub async fn get_all_trees_by_owner(
                 title: t.title,
                 description: t.description,
                 tags: t.tags.unwrap_or(Vec::new()),
-                language: t.language,
+                language_code: t.language_code,
                 subject: t.subject,
                 book_name: t.book_name,
                 book_edition: t.book_edition,
@@ -745,7 +748,7 @@ mod tests {
         assert_eq!(found_owner_id, user_id);
 
         let record = query!(
-            "SELECT trees.title, trees.description, trees.language, trees.subject, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
+            "SELECT trees.title, trees.description, trees.language_code, trees.subject, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
             FROM trees 
             LEFT JOIN books ON trees.book_isbn = books.isbn
             WHERE id = $1", tree_id)
@@ -756,7 +759,7 @@ mod tests {
             title: record.title,
             description: record.description,
             tags: record.tags.unwrap_or(Vec::new()),
-            language: record.language,
+            language_code: record.language_code,
             subject: record.subject,
             book_name: record.book_name,
             book_edition: record.book_edition,
@@ -833,7 +836,7 @@ mod tests {
         let new_tree_data = TreeData {
             title: "Updated tree".to_string(),
             description: Some("Updated description".to_string()),
-            language: "Nederlands".to_string(),
+            language_code: "nl".to_string(),
             tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
             subject: Some("Engels".to_string()),
             book_name: Some("Updated book".to_string()),

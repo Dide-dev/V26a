@@ -80,9 +80,9 @@ async fn add_new_tree(
         return Err(ApiError::NonEmptyStructure);
     }
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
-    if !language_exists(&mut *transaction, &tree_add_data.tree_data.language).await? {
+    if !language_exists(&mut *transaction, &tree_add_data.tree_data.language_code).await? {
         return Err(ApiError::MissingLanguage(
-            tree_add_data.tree_data.language.clone(),
+            tree_add_data.tree_data.language_code.clone(),
         ));
     }
     if let Some(subject) = &tree_add_data.tree_data.subject

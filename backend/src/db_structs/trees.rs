@@ -189,7 +189,7 @@ impl TreeMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct TreeData {
     pub title: String,
-    pub language: String,
+    pub language_code: String,
     pub tags: Vec<String>,
     pub description: Option<String>,
     pub subject: Option<String>,
@@ -207,7 +207,7 @@ impl Default for TreeData {
     fn default() -> Self {
         Self {
             title: String::new(),
-            language: "English".to_owned(),
+            language_code: "nl".to_owned(),
             tags: Vec::new(),
             description: None,
             subject: None,

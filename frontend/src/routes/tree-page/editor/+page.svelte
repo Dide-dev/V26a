@@ -66,7 +66,7 @@
     let treeData: TreeData = $state({
         title: '',
         description: '',
-        language: 'Nederlands',
+        languageCode: 'nl',
         tags: [],
         subject: 'Wiskunde B',
         bookName: '',
@@ -107,7 +107,7 @@
         treeData = {
             title: tree.data.title ?? '',
             description: tree.data.description ?? '',
-            language: 'Nederlands',
+            languageCode: 'nl',
             tags: [],
             subject: 'Wiskunde B',
             bookName: tree.data.bookName ?? '',
