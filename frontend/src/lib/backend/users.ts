@@ -101,7 +101,7 @@ export type ChangePasswordData = {
 /** Add a user to the database */
 export function addUser(
     user: RegisterData
-): Promise<AddUserSuccess | AddUserEmailInvalid | AddUsernameInvalid> {
+): Promise<AddUserSuccess | AddUserEmailInvalid | UpdateUsernameInvalid> {
     return apiCallPostUser('add', user);
 }
 
