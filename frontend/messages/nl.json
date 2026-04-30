@@ -15,6 +15,9 @@
     "moveCardWithSubtree": "Verplaats kaart met deelboom",
     "editThisCard": "Bewerk deze kaart",
     "deleteThisCard": "Verwijder deze kaart",
+    "undo": "Ongedaan maken",
+    "redo": "Opnieuw doen",
+    "viewTree": "Bekijk boom",
     "save": "Sla op",
     "cancel": "Annuleer",
     "createTree": "Creëer boom",
@@ -64,6 +67,13 @@
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
     "book": "Boek",
+    "newPassword": "Nieuw wachtwoord",
+    "oldPassword": "Oud wachtwoord",
+    "changePassword": "Wachtwoord wijzigen",
+    "unsuccesfulPasswordChange": "Er is iets fout gegaan bij het wijzigen van het wachtwoord. Probeer opnieuw.",
+    "succesfulPasswordChange": "Wachtwoord succesvol gewijzigd.",
+    "changePasswordAttempt": "Als u uw wachtwoord wilt wijzigen, vul dan uw oude wachtwoord, uw nieuwe wachtwoord, én een herhaling van het nieuwe wachtwoord hierboven in. Mocht dit niet zo zijn, verwijder dan de invoer uit de velden.",
+    "sameOldAndNewPassword": "Het ingevoerde oude en nieuwe wachtwoord zijn hetzelfde. Voer een nieuw wachtwoord in dat anders is dan het oude wachtwoord.",
     "feedbackExplanation": "Vul dit formulier in als je feedback wilt geven op deze website. Als je wilt dat wij je kunnen contacteren om de feedback te bediscussiëren, kun je je e-mail adres achterlaten. Echter, dit is niet verplicht.",
     "submitFeedback": "Geef feedback",
     "succesfulFeedbackSubmission": "Feedback succesvol verzonden.",
@@ -76,5 +86,6 @@
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
-    "otherProjects": "Andere projecten"
+    "otherProjects": "Andere projecten",
+    "uploadImage": "Upload afbeelding"
 }

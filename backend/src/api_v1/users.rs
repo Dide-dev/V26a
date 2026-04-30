@@ -8,16 +8,20 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    add_user, get_user, update_password, update_user, user_email_exists, user_id_exists,
+    add_user, delete_user, get_user, update_password, update_user, user_email_exists,
+    user_id_exists,
 };
 use crate::db_structs::users::{
-    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
+    UserUpdateData,
 };
 use crate::errors::ApiError;
 
 use axum::extract::Path;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
+use axum_extra::extract::Query;
+use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -29,6 +33,7 @@ pub fn users() -> Router<Config> {
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
+        .route("/{user_id}/delete", delete(delete_user_data))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -238,4 +243,78 @@ async fn change_password(
     update_password(&db, claims.sub, &password_change_request.new_password).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/{user_id}/delete",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "User data successfully deleted."),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("user_id" = i32, Path),
+        ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Delete a user from the database.
+///
+/// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
+///
+/// # Arguments
+/// `jar` - The jar with the cookies (`user_info` & session).
+///
+/// `claims` - The session cookie of the user.
+///
+/// `user_id` - The user to delete.
+///
+/// `deleteOwnedTrees` - Delete all the trees of the user.
+///
+/// # Returns
+/// The (cookie) jar that is empty.
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete
+/// the user.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn delete_user_data(
+    mut jar: CookieJar,
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(user_id): Path<i32>,
+    Query(delete): Query<DeleteOwnedTrees>,
+) -> Result<CookieJar, ApiError> {
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+
+    // A user can only delete their own account unless they are an admin.
+    if claims.sub != user_id && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
+
+    if claims.sub == user_id {
+        jar = jar
+            .remove(Cookie::from("session"))
+            .remove(Cookie::from("user_info"));
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(jar)
 }

@@ -15,6 +15,9 @@
     "moveCardWithSubtree": "Move card with subtree",
     "editThisCard": "Edit this card",
     "deleteThisCard": "Delete this card",
+    "undo": "Undo",
+    "redo": "Redo",
+    "viewTree": "View tree",
     "save": "Save",
     "cancel": "Cancel",
     "createTree": "Create tree",
@@ -64,6 +67,13 @@
     "timesVisited": "Times visited",
     "createdAt": "Created at",
     "book": "Book",
+    "newPassword": "New password",
+    "oldPassword": "Old password",
+    "changePassword": "Change password",
+    "unsuccesfulPasswordChange": "Something went wrong while changing the password. Please try again.",
+    "succesfulPasswordChange": "Password changed succesfully.",
+    "changePasswordAttempt": "If you want to change your password, please fill in your old password, your new password, and repeat your new password in the dedicated fields above. If not, please remove the input from the fields.",
+    "sameOldAndNewPassword": "The old and new password are the same. Please fill in a new password that differs from the new password.",
     "feedbackExplanation": "Please fill out this form if you want to give feedback on this website. If you want us to be able to contact you to discuss the feedback, you may leave behind your email address. Please note that this is not required.",
     "submitFeedback": "Submit feedback",
     "succesfulFeedbackSubmission": "Feedback submitted successfully.",
@@ -76,5 +86,6 @@
     "selectDate": "Select date",
     "allTrees": "Tree list",
     "colophon": "Colophon",
-    "otherProjects": "Other projects"
+    "otherProjects": "Other projects",
+    "uploadImage": "Upload image"
 }

@@ -4,13 +4,17 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 
 const prefix = 'users/';
 
 function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
+}
+
+function apiCallDeleteUser(path: string) {
+    return apiCallDelete(prefix + path);
 }
 
 function apiCallGetUser(path: string) {
@@ -38,6 +42,10 @@ export type AddUserSuccess = {
 
 export type AddUserEmailInvalid = {
     type: 'EmailAlreadyUsed';
+};
+
+export type ChangePasswordResponse = {
+    succeeded: boolean;
 };
 
 /** The data of the user that is returned when requesting it */
@@ -86,6 +94,11 @@ export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEma
     return apiCallPostUser('add', user);
 }
 
+/** Delete a user in the database */
+export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
+    return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
+}
+
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
@@ -112,6 +125,8 @@ export function getUserInfo(): UserInfo | null {
 }
 
 /** Change a user's password */
-export function changePassword(changePasswordData: ChangePasswordData) {
+export function changePassword(
+    changePasswordData: ChangePasswordData
+): Promise<ChangePasswordResponse> {
     return apiCallPostUser('change-password', changePasswordData);
 }
