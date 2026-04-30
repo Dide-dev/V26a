@@ -44,7 +44,7 @@
     let unsuccesfulPasswordChange: boolean = $state(false);
     let succesfulPasswordChange: boolean = $state(false);
     let sameOldAndNewPassword: boolean = $state(false);
-    let usernameAlreadyExists: boolean = $state(false);    
+    let usernameAlreadyExists: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
