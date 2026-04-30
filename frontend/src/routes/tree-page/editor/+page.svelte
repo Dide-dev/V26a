@@ -195,7 +195,7 @@
         <!--
             The padding on the bottom is to make the scrollbar not intersect with some buttons.
         -->
-        <div bind:this={scrollArea} class="m-1 flex w-full grow flex-col overflow-x-scroll pb-7">
+        <div bind:this={scrollArea} class="m-1 flex w-full grow flex-col overflow-x-auto pb-7">
             {#each tree.history.currentStructure.rootNodes as root, index (root)}
                 <NodeViewer
                     bind:history={tree.history}

@@ -13,6 +13,8 @@
 
 @source '../../node_modules/flowbite-svelte/dist';
 
+@import '../lib/assets/katex/katex.css';
+
 @theme {
     /* Custom colours */
     --color-tree-50: oklch(0.982 0.02 142.42);
@@ -75,13 +77,13 @@
     .page__title {
         font-size: var(--text-4xl);
         font-weight: var(--font-weight-bold);
-        margin-bottom: var(--spacing-text-normal);
+        margin-top: var(--spacing-text-normal);
     }
 
     .page__heading {
         font-size: var(--text-2xl);
-        font-weight: var(--font-weight-semibold);
-        margin-bottom: var(--spacing-text-small);
+        font-weight: var(--font-weight-bold);
+        margin-top: var(--spacing-text-small);
     }
 
     .text__link {
@@ -100,6 +102,10 @@
         color: var(--color-red-700);
     }
 
+    .text__success {
+        color: var(--color-green-700);
+    }
+
     /* Form layout */
     form {
         display: flex;
@@ -114,7 +120,8 @@
             margin-bottom: 0;
         }
 
-        input, select {
+        input,
+        select {
             border-color: var(--color-gray-500);
         }
 
@@ -138,14 +145,14 @@
 
         :disabled {
             color: var(--color-neutral-900);
-            background-color: var(--color-neutral-350);
+            background-color: var(--color-neutral-300);
             font-style: italic;
         }
 
         .error {
             background-color: var(--color-red-100);
             border-color: var(--color-red-800);
-            border-width: 4px !important;
+            border-width: 3px !important;
         }
 
         input + input {
@@ -158,10 +165,6 @@
         .input__select {
             border-width: 2px;
             border-radius: var(--radius-md);
-        }
-
-        .input__select.open {
-            border-radius: var(--radius-md) var(--radius-md) 0 0;
         }
 
         input::placeholder,
@@ -192,7 +195,8 @@
             margin-bottom: var(--spacing-text-normal);
         }
 
-        .checkbox__container {
+        .checkbox__container,
+        .label__container {
             display: flex;
             flex-direction: row;
             gap: var(--spacing);
@@ -209,11 +213,6 @@
             background-color: var(--color-neutral-400);
             border-color: currentColor;
         }
-
-        /*button:hover {*/
-        /*    color: var(--color-neutral-900);*/
-        /*    background-color: var(--color-neutral-350);*/
-        /*}*/
     }
 
     form.completed {
@@ -231,7 +230,6 @@
         }
     }
 
-
     @keyframes completedFormButtonSelect {
         0% {
             background-color: var(--color-neutral-200);
@@ -240,6 +238,16 @@
         100% {
             background-color: var(--color-neutral-600);
             color: var(--color-white);
+        }
+    }
+
+    @keyframes invalidInputClick {
+        0% {
+            color: initial;
+            padding-left: initial;
+        }
+        25% {
+            padding-left: calc(initial - 1rem);
         }
     }
 

@@ -6,12 +6,10 @@
 
 import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
-import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { addTree } from '$lib/backend/trees';
-import { goto } from '$app/navigation';
 
 vi.mock('$lib/backend/trees', () => {
     return {

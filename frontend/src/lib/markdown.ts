@@ -6,14 +6,20 @@
 
 import remarkHtml from 'remark-html';
 import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm';
 import { unified } from 'unified';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
 
 export function htmlFromMarkdown(markdown: string): string {
     return unified()
         .use(remarkParse)
-        .use(remarkGfm)
+        .use(remarkMath)
         .use(remarkHtml)
+        .use(remarkRehype)
+        .use(rehypeKatex)
+        .use(rehypeStringify)
         .processSync(markdown)
         .toString();
 }

@@ -57,8 +57,10 @@
 </script>
 
 <div>
-    <h1 class="page__title">{m.login()}</h1>
     <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
+        <div>
+            <h1 class="page__title">{m.login()}</h1>
+        </div>
         <div>
             <label for="email">
                 {m.email()}

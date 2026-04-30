@@ -147,9 +147,9 @@
                 name="title"
                 type="text"
                 data-testid="title"
-                placeholder={m.examplePlaceholder() +
-                    m.exampleTitle({ name: userInfo?.sub ?? '' }) +
-                    m.requiredPlaceholder()}
+                placeholder={m.examplePlaceholderRequired({
+                    value: m.exampleTitle({ name: userInfo?.sub ?? '' })
+                })}
                 minlength={minInputLengths.title}
                 maxlength={maxInputLengths.title}
                 required
@@ -165,7 +165,7 @@
                 bind:value={treeData.description}
                 name="description"
                 data-testid="description"
-                placeholder={m.examplePlaceholder() + m.exampleDescription()}
+                placeholder={m.examplePlaceholder({ value: m.exampleDescription() })}
                 minlength={minInputLengths.description}
                 maxlength={maxInputLengths.description}
             ></textarea>
@@ -181,7 +181,7 @@
                 name="bookname"
                 type="text"
                 data-testid="bookname"
-                placeholder={m.examplePlaceholder() + m.exampleBookName()}
+                placeholder={m.examplePlaceholder({ value: m.exampleBookName() })}
                 minlength={minInputLengths.bookName}
                 maxlength={maxInputLengths.bookName}
             />
@@ -197,7 +197,7 @@
                 name="bookEdition"
                 type="text"
                 data-testid="bookEdition"
-                placeholder={m.examplePlaceholder() + m.exampleBookEdition()}
+                placeholder={m.examplePlaceholder({ value: m.exampleBookEdition() })}
                 minlength={minInputLengths.bookEdition}
                 maxlength={maxInputLengths.bookEdition}
             />
@@ -208,12 +208,12 @@
             </label>
             <input
                 id="bookIsbn"
-                class="input__text"
+                class={[isbnInvalid && 'error', 'input__text']}
                 bind:value={treeData.bookIsbn}
                 name="bookIsbn"
                 type="text"
                 data-testid="bookIsbn"
-                placeholder={m.examplePlaceholder() + m.exampleBookISBN()}
+                placeholder={m.examplePlaceholder({ value: m.exampleBookISBN() })}
                 minlength={minInputLengths.bookIsbn}
                 maxlength={maxInputLengths.bookIsbn}
             />
@@ -232,7 +232,7 @@
                 name="chapter"
                 type="text"
                 data-testid="chapter"
-                placeholder={m.examplePlaceholder() + m.exampleBookChapter()}
+                placeholder={m.examplePlaceholder({ value: m.exampleBookChapter() })}
                 minlength={minInputLengths.bookChapter}
                 maxlength={maxInputLengths.bookChapter}
             />
@@ -248,7 +248,7 @@
                 name="exercise"
                 type="text"
                 data-testid="exercise"
-                placeholder={m.examplePlaceholder() + m.exampleExercise()}
+                placeholder={m.examplePlaceholder({ value: m.exampleExercise() })}
                 minlength={minInputLengths.bookExercise}
                 maxlength={maxInputLengths.bookExercise}
             />
@@ -263,7 +263,7 @@
                 bind:value={treeData.assignmentText}
                 name="assignment"
                 data-testid="assignment"
-                placeholder={m.examplePlaceholder() + m.exampleAssignment()}
+                placeholder={m.examplePlaceholder({ value: m.exampleAssignment() })}
                 minlength={minInputLengths.assignmentText}
                 maxlength={maxInputLengths.assignmentText}
             ></textarea>

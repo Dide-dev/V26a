@@ -70,7 +70,7 @@
             {tree[0].description}
         </p>
 
-        <div class="m-1 flex w-full grow flex-col overflow-x-scroll pt-6">
+        <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
             {#each tree[1].currentStructure.rootNodes as root, index (root)}
                 <NodeViewer
                     bind:history={tree[1]}
