@@ -57,7 +57,7 @@ test('No submission without name', async () => {
 
     const nameInput = await screen.findByTestId('name');
     await user.clear(nameInput);
-    await user.click(screen.getByTestId('confirm-profile'));
+    await user.click(screen.getByTestId('confirm-button'));
 
     expect(updateUser).not.toHaveBeenCalled();
 });
@@ -86,7 +86,7 @@ test('Submission with full data', async () => {
 
     const aboutMeInput = await screen.findByTestId('about-me');
     await user.type(aboutMeInput, 'Some interesting backstory');
-    await user.click(screen.getByTestId('confirm-profile'));
+    await user.click(screen.getByTestId('confirm-button'));
 
     const expectedUpdateData: UserUpdateData = {
         name: 'John Test',

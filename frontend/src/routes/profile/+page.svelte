@@ -191,9 +191,6 @@
                     />
                     {m.emailVisible()}
                 </label>
-                <button data-testid="confirm-profile" class="rounded-sm bg-emerald-500 p-1"
-                    >{m.confirmChanges()}</button
-                >
                 <h1 class="mt-2 text-3xl font-bold">{m.changePassword()}</h1>
                 <label>
                     <p class="font-bold">{m.oldPassword()}</p>
