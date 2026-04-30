@@ -25,6 +25,8 @@
         canRedo
     } from '../history.svelte';
     import EditMetadata from './EditMetadata.svelte';
+    import type { SideBar } from '../Sidebar.svelte';
+    import Sidebar from '../Sidebar.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -82,6 +84,7 @@
          * Currently should only be 0 or 1, but in the future that could change.
          */
         numPopupsOpen: number;
+        sidebar: null | SideBar;
     } | null = $state(null);
 
     onMount(async () => {
@@ -109,7 +112,8 @@
                 fillStateStructure(fetchedTree.structure, true),
                 fetchedTree.cards
             ),
-            numPopupsOpen: 0
+            numPopupsOpen: 0,
+            sidebar: null
         };
 
         loading = false;
@@ -191,19 +195,23 @@
         </a>
     </div>
 
-    <!--
-        The padding on the bottom is to make the scrollbar not intersect with some buttons.
-    -->
-    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pb-7">
-        {#each tree.history.currentStructure.rootNodes as root, index (root)}
-            <NodeViewer
-                bind:history={tree.history}
-                location={[index]}
-                bind:dragState
-                editingPage={true}
-                bind:numPopupsOpen={tree.numPopupsOpen}
-            />
-        {/each}
+    <div class="flex items-start">
+        <!--
+            The padding on the bottom is to make the scrollbar not intersect with some buttons.
+        -->
+        <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pb-7">
+            {#each tree.history.currentStructure.rootNodes as root, index (root)}
+                <NodeViewer
+                    bind:history={tree.history}
+                    location={[index]}
+                    bind:dragState
+                    editingPage={true}
+                    bind:numPopupsOpen={tree.numPopupsOpen}
+                    bind:sidebar={tree.sidebar}
+                />
+            {/each}
+        </div>
+        <Sidebar bind:sidebar={tree.sidebar} />
     </div>
 {/if}
 

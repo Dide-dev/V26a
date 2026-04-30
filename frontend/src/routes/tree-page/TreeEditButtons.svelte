@@ -13,17 +13,20 @@
     import type { DragState } from './NodeViewer.svelte';
     import CardEditor from './CardEditor.svelte';
     import { doDeleteCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte';
+    import type { SideBar } from './Sidebar.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history,
         index,
         dragState = $bindable(),
+        sidebar = $bindable(),
         numPopupsOpen = $bindable()
     }: {
         history: TreeHistory;
         index: number[];
         dragState: null | DragState;
+        sidebar: null | SideBar;
         numPopupsOpen: number;
     } = $props();
 
@@ -53,6 +56,13 @@
         return node.cardId;
     });
     let card = $derived(history.currentCards[cardId]);
+
+    function editClick() {
+        sidebar = {
+            location: index,
+            editingVersion: $state.snapshot(card)
+        };
+    }
 </script>
 
 <div class="absolute -top-6 left-2 h-7 border border-fuchsia-600 bg-fuchsia-300">
@@ -64,7 +74,7 @@
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html iconMove}
     </button>
-    <button class="cursor-pointer" title={m.editThisCard()} onclick={() => (showEditPopup = true)}>
+    <button class="cursor-pointer" title={m.editThisCard()} onclick={editClick}>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html iconEdit}
     </button>
@@ -74,12 +84,12 @@
     </button>
 </div>
 
-<!-- Edit card popup -->
+<!-- Edit card popup -- >
 {#if showEditPopup}
     <!--
         Very important to make a copy of the card here.
         We want the user to use the cancel/confirm buttons, not to directly edit the card itself.
-    -->
+    -- >
     <CardEditor
         card={{ ...card }}
         confirmText={m.edit()}
@@ -88,3 +98,4 @@
         bind:numPopupsOpen
     />
 {/if}
+-->

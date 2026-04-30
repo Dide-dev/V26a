@@ -7,18 +7,27 @@
 <script lang="ts">
     import { followIndex, followIndexNode, setRevealed, type TreeHistory } from './history.svelte';
     import { htmlFromMarkdown } from '$lib/markdown';
+    import type { SideBar } from './Sidebar.svelte';
     let {
         history,
         index,
+        sidebar,
         editingPage
     }: {
         history: TreeHistory;
         index: number[];
+        sidebar: SideBar | null;
         editingPage: boolean;
     } = $props();
 
     let node = $derived(followIndexNode(history.currentStructure, index));
-    let card = $derived(history.currentCards[node.cardId]);
+    let card = $derived.by(() => {
+        if (sidebar !== null && JSON.stringify(sidebar.location) === JSON.stringify(index)) {
+            return sidebar.editingVersion;
+        } else {
+            return history.currentCards[node.cardId];
+        }
+    });
     let visible = $derived(node.revealed);
 
     let parentIsVisible = $derived.by(() => {
@@ -33,30 +42,22 @@
     function setVisible() {
         setRevealed(history, index, true);
     }
-    function toggleVisible() {
-        setRevealed(history, index, !visible);
-    }
 </script>
 
 {#if editingPage}
     <!-- Cards layout in the editor -->
-    {#if visible}
-        <button
-            class="h-fit min-h-9 w-xl cursor-pointer overflow-auto border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
-            onclick={toggleVisible}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html htmlFromMarkdown(card.back)}
-        </button>
-    {:else}
-        <button
-            class="h-fit min-h-9 w-xl cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
-            onclick={toggleVisible}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html htmlFromMarkdown(card.front)}
-        </button>
-    {/if}
+    <p
+        class="h-fit min-h-9 w-xl overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html htmlFromMarkdown(card.front)}
+    </p>
+    <p
+        class="h-fit min-h-9 w-xl overflow-auto border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html htmlFromMarkdown(card.back)}
+    </p>
 {:else}
     <!-- Cards layout in the viewer -->
     {#if visible}

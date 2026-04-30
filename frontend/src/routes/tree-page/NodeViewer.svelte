@@ -16,18 +16,21 @@
         initializeHistory,
         type TreeHistory
     } from './history.svelte';
+    import type { SideBar } from './Sidebar.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history = $bindable(),
         location,
         dragState = $bindable(),
+        sidebar = $bindable(),
         numPopupsOpen = $bindable(),
         editingPage
     }: {
         history: TreeHistory;
         location: number[];
         dragState: DragState;
+        sidebar: SideBar | null;
         numPopupsOpen: number;
         editingPage: boolean;
     } = $props();
@@ -192,6 +195,7 @@
                 })()}
                 {location}
                 dragState={null}
+                sidebar={null}
                 editingPage={false}
                 numPopupsOpen={0}
             />
@@ -216,11 +220,17 @@
     {:else}
         <!-- Standard Node -->
         {#if editingPage}
-            <TreeEditButtons {history} index={location} bind:dragState bind:numPopupsOpen />
+            <TreeEditButtons
+                {history}
+                index={location}
+                bind:dragState
+                bind:sidebar
+                bind:numPopupsOpen
+            />
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
-                <CardViewer {history} index={location} {editingPage} />
+                <CardViewer {history} {sidebar} index={location} {editingPage} />
             </div>
             {#if !editingPage}
                 <!--
@@ -260,6 +270,7 @@
                 bind:history
                 location={[...location, index]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                bind:sidebar
                 bind:numPopupsOpen
                 {editingPage}
             />
