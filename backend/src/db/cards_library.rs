@@ -69,12 +69,7 @@ pub async fn get_queried_cards_count(
 ) -> Result<i64, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM library_cards");
 
-    if !filters.owner_id.is_none()
-        && !filters.created_after.is_none()
-        && !filters.created_before.is_none()
-    {
-        apply_card_filters(&mut query, filters);
-    }
+    apply_card_filters(&mut query, filters);
 
     let card_count: i64 = query
         .build_query_scalar()
@@ -103,16 +98,12 @@ pub async fn get_queried_cards_list(
 ) -> Result<Vec<LibraryCardGetData>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new(
         "
-        SELECT id, owner_id, created_at, title, tags, front, back
+        SELECT id AS card_id, owner_id, created_at, title, tags, front, back
         FROM library_cards",
     );
 
-    if !filters.owner_id.is_none()
-        && !filters.created_after.is_none()
-        && !filters.created_before.is_none()
-    {
-        apply_card_filters(&mut query, filters);
-    }
+    apply_card_filters(&mut query, filters);
+
     query.push(
         // newest first
         " ORDER BY created_at DESC ",
@@ -138,7 +129,13 @@ fn apply_card_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a
         owner_id,
         created_after,
         created_before,
+        tags,
     } = filters;
+
+    if owner_id.is_none() && created_after.is_none() && created_before.is_none() && tags.is_empty()
+    {
+        return;
+    }
 
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
@@ -159,6 +156,12 @@ fn apply_card_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a
             .push("(created_at <= ")
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
+    }
+    if !tags.is_empty() {
+        separated
+            .push("(tags @>")
+            .push_bind_unseparated(tags)
+            .push_unseparated("::varchar[])");
     }
 }
 
@@ -198,5 +201,47 @@ mod tests {
         assert_eq!(found_card_data.tags.unwrap(), tags);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
+    }
+
+    #[test]
+    fn test_apply_card_filters() {
+        use chrono::{DateTime, Utc};
+
+        let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM library_cards");
+        let empty_filters = CardFilters {
+            owner_id: None,
+            created_after: None,
+            created_before: None,
+            tags: vec![],
+        };
+        apply_card_filters(&mut no_filters_query, &empty_filters);
+        assert_eq!(no_filters_query.sql(), "SELECT * FROM library_cards");
+
+        let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM library_cards");
+        let all_filters = CardFilters {
+            owner_id: Some(67),
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            created_before: Some(DateTime::<Utc>::MAX_UTC),
+            tags: vec!["tags".to_owned()],
+        };
+        apply_card_filters(&mut all_filters_query, &all_filters);
+        assert_eq!(
+            all_filters_query.sql(),
+            "SELECT * FROM library_cards WHERE (owner_id = $1) AND (created_at >= $2) AND (created_at <= $3) AND (tags @>$4::varchar[])"
+        );
+
+        let mut partial_filters_query =
+            QueryBuilder::<Postgres>::new("SELECT * FROM cards_library");
+        let partial_filters = CardFilters {
+            owner_id: Some(67),
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            created_before: None,
+            tags: vec![],
+        };
+        apply_card_filters(&mut partial_filters_query, &partial_filters);
+        assert_eq!(
+            partial_filters_query.sql(),
+            "SELECT * FROM cards_library WHERE (owner_id = $1) AND (created_at >= $2)"
+        );
     }
 }

@@ -64,4 +64,5 @@ pub struct CardFilters {
     #[serde(default)]
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
+    pub tags: Vec<String>,
 }
