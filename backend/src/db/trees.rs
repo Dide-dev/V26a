@@ -427,6 +427,23 @@ fn apply_tree_filters<'a>(
     }
 }
 
+/// Adds user_id to a Postgres [`QueryBuilder`]
+///
+/// # Arguments
+/// `builder` - The [`QueryBuilder`] to be mutated in-place.
+///
+/// `user_id` - The logged in user.
+///
+/// # Example:
+/// ```rs
+/// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+/// apply_tree_filters(query, &filters);
+/// let trees_count: i64 = query
+///         .build_query_scalar()
+///         .fetch_one(db)
+///         .await
+///         .map_err(|_| ApiError::DatabaseException)?;
+/// ```
 fn apply_tree_filters_pagination<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
     user_id: i32,
@@ -470,6 +487,19 @@ pub async fn get_queried_count(
 
     Ok(trees_count)
 }
+
+/// Get the amount of trees of a user.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `user_id` - The logged in user.
+///
+/// # Returns
+/// The amount of trees satisfying the filters at the requested page,
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_count_pagination(
     db: impl PgExecutor<'_>,
     user_id: i32,
@@ -551,6 +581,22 @@ pub async fn get_queried_list(
     Ok(trees)
 }
 
+/// Get the list of all trees of a user based on the page size.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// `user_id` - The logged in user.
+///
+/// # Returns
+/// A list with the trees satisfying the filters at the requested page,
+///
+/// # Errors
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_list_pagination(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,

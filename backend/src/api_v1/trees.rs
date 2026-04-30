@@ -549,15 +549,20 @@ pub async fn get_list(
         ("session" = Claims, Cookie),
     )
 )]
+
 /// Request metadata of all trees from the user.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
+///
 /// # Returns
-/// A list containing the metadata of all trees owned by the user, as [`Vec<TreeMetadata>`].
+/// A list containing the metadata of all trees owned by the user and the total amount of trees owned by the user, as [`TreeListResponse`].
 ///
 /// # Errors
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the trees count.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_owned_trees(
     claims: Claims,
@@ -590,12 +595,3 @@ async fn get_all_owned_trees(
 
     Ok(Json(list))
 }
-// async fn get_all_owned_trees(
-//     claims: Claims,
-//     Extension(db): Extension<PgPool>,
-//     Query(page): Query<OptionalPaginationOptions>,
-// ) -> Result<Json<TreeListResponse>, ApiError> {
-//     let trees_metadata = get_all_trees_by_owner(&db, claims.sub).await?;
-
-//     Ok(Json(trees_metadata))
-// }

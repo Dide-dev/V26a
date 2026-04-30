@@ -271,6 +271,16 @@ pub async fn delete_user(
     Ok(())
 }
 
+/// Get the amount of users in the databse.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// # Returns
+/// The amount of users in the database,
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_count_users_pagination(
     db: impl PgExecutor<'_>,
 ) -> Result<i64, ApiError> {
@@ -285,6 +295,20 @@ pub async fn get_queried_count_users_pagination(
     Ok(users_count)
 }
 
+/// Get the list of all users at a given page.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// # Returns
+/// A list with the users at the requested page,
+///
+/// # Errors
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_list_users_pagination(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
