@@ -1,4 +1,5 @@
 import { apiCallGet } from './index';
+import { type PaginationOptions, getPaginationParams } from './trees';
 
 const prefix = 'admin/';
 
@@ -14,7 +15,13 @@ export type UserGetAllData = {
     enabled: boolean;
 };
 
-/** Get the user's own data */
-export function getAllUserData(): Promise<UserGetAllData[]> {
-    return apiCallGetUser('all-user-data');
+export type UserListResponse = {
+    totalTrees: number;
+    users: UserGetAllData[];
+};
+
+/** Get the data of all user's */
+export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetUser(`all-user-data?${params}`);
 }

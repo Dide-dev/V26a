@@ -11,14 +11,16 @@ use axum::{
     response::Response,
     routing::get,
 };
+use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 use crate::{
     api_v1::session::Claims,
     config::Config,
-    db::users::get_all_users,
-    db_structs::users::{AccountType, UserGetAllData},
+    db::users::{get_queried_count_users_pagination, get_queried_list_users_pagination,},
+    db_structs::users::{AccountType, UserListResponse},
     errors::ApiError,
+    db_structs::pagination::OptionalPaginationOptions,
 };
 
 /// Checks if the user is an admin. This is used as a middleware in the `admin` function below.
@@ -48,7 +50,7 @@ pub fn admin(config: Config) -> Router<Config> {
     path = "/all-user-data",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = Vec<UserGetAllData>),
+        (status = 200, description = "Successfully retrieved data.", body = UserListResponse),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -61,7 +63,8 @@ pub fn admin(config: Config) -> Router<Config> {
 /// Gets the data of all the users from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
 /// the data form all users as [`Vec<UserGetAllData>`].
@@ -74,8 +77,40 @@ pub fn admin(config: Config) -> Router<Config> {
 /// the data of all users.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+
+
+
+// async fn get_all_user_data(
+//     Extension(db): Extension<PgPool>,
+// ) -> Result<Json<Vec<UserGetAllData>>, ApiError> {
+//     get_all_users(&db).await.map(Json)
+// }
+
 async fn get_all_user_data(
     Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<UserGetAllData>>, ApiError> {
-    get_all_users(&db).await.map(Json)
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<UserListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let users_count = get_queried_count_users_pagination(&mut *transaction).await?;
+
+    if users_count == 0 {
+        return Ok(Json(UserListResponse {
+            total_users: 0,
+            users: Vec::new(),
+        }));
+    }
+    let users = get_queried_list_users_pagination(&mut *transaction, &page).await?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    let list = UserListResponse {
+        total_users: i32::try_from(users_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
+        users,
+    };
+
+    Ok(Json(list))
 }

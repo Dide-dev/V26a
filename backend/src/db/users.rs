@@ -7,10 +7,11 @@
 use crate::db_structs::users::{
     RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
 };
+use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{PgConnection, PgExecutor, query, query_as};
+use sqlx::{PgConnection, QueryBuilder, Postgres, PgExecutor, query, query_as};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -268,6 +269,46 @@ pub async fn delete_user(
     .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(())
+}
+
+pub async fn get_queried_count_users_pagination(
+    db: impl PgExecutor<'_>,
+) -> Result<i64, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM users");
+
+    let users_count: i64 = query
+        .build_query_scalar()
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(users_count)
+}
+
+pub async fn get_queried_list_users_pagination(
+    db: impl PgExecutor<'_>,
+    page: &PaginationOptions,
+) -> Result<Vec<UserGetAllData>, ApiError> {
+    let limit = i64::from(page.get_size());
+    let offset = i64::from((page.get_page() - 1) * page.get_size());
+
+    let users = query_as!(
+        UserGetAllData,
+        "SELECT id, email, name, enabled FROM users
+         ORDER BY id DESC
+         LIMIT $1 OFFSET $2",
+        limit,
+        offset
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    if users.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    Ok(users)
 }
 
 #[cfg(test)]
