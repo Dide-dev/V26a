@@ -56,6 +56,12 @@ pub enum ApiError {
     /// authorized.
     NoPermission,
 
+    //---------------------//
+    // 409: CONFLICT ERROR //
+    //---------------------//
+    /// An error to return when a username is already taken.
+    UsernameTaken,
+
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
@@ -130,6 +136,11 @@ impl Display for ApiError {
             //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
+            //---------------------//
+            // 409: CONFLICT ERROR //
+            //---------------------//
+            ApiError::UsernameTaken => write!(f, "This username is already taken."),
+
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
             //----------------------------//
@@ -185,6 +196,8 @@ impl ApiError {
             | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
+            
+            ApiError::UsernameTaken => StatusCode::CONFLICT,
 
             ApiError::CreateDirException
             | ApiError::DatabaseException

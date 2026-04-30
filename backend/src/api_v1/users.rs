@@ -9,7 +9,7 @@ use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
     add_user, delete_user, get_user, update_password, update_user, user_email_exists,
-    user_id_exists,
+    user_name_exists, user_id_exists,
 };
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
@@ -54,6 +54,7 @@ pub enum AddUserResponse {
         (status = 200, description = "Successfully registered user with the returned id.", body = AddUserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 409, description = ApiError::UsernameTaken.to_string()),
         (status = 500, description = "Internal server error."),
     )
 )]
@@ -79,6 +80,12 @@ async fn add_new_user(
 
     if exists {
         return Ok(Json(AddUserResponse::EmailAlreadyUsed));
+    }
+
+    let name_taken = user_name_exists(&mut *transaction, &user_data.name).await?;
+
+    if name_taken {
+        return Err(ApiError::UsernameTaken);
     }
 
     let user_id = add_user(&mut transaction, &user_data).await?;
@@ -134,6 +141,7 @@ async fn get_own_user_data(
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 409, description = ApiError::UsernameTaken.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
@@ -184,6 +192,12 @@ async fn update_user_data(
 
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
+    }
+
+    let name_taken = user_name_exists(&db, &new_data.name).await?;
+
+    if name_taken {
+        return Err(ApiError::UsernameTaken);
     }
 
     update_user(&db, user_id, &new_data).await

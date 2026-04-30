@@ -23,7 +23,7 @@
     "createTree": "Create tree",
     "optional": "Optional",
     "email": "E-mail",
-    "name": "Name",
+    "name": "Username",
     "nickname": "Nickname",
     "aboutMe": "About me",
     "password": "Password",
@@ -87,5 +87,6 @@
     "allTrees": "Tree list",
     "colophon": "Colophon",
     "otherProjects": "Other projects",
-    "uploadImage": "Upload image"
+    "uploadImage": "Upload image",
+    "usernameAlreadyExists": "An account with this username already exists"
 }

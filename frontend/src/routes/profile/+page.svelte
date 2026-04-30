@@ -44,9 +44,11 @@
     let unsuccesfulPasswordChange: boolean = $state(false);
     let succesfulPasswordChange: boolean = $state(false);
     let sameOldAndNewPassword: boolean = $state(false);
+    let usernameAlreadyExists: boolean = $state(false);    
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
+        usernameAlreadyExists = false;
 
         handlePasswordChange();
 
@@ -55,15 +57,20 @@
             await redirectLogin(page.url);
             return;
         }
-        await updateUser(userInfo.sub, {
-            name: userData.name,
-            nickname: userData.nickname,
-            aboutMe: userData.aboutMe,
-            emailVisible: userData.emailVisible,
-            language: userData.language,
-            accountType: null,
-            enabled: null
-        });
+        const result = await updateUser(userInfo.sub, {
+        name: userData.name,
+        nickname: userData.nickname,
+        aboutMe: userData.aboutMe,
+        emailVisible: userData.emailVisible,
+        language: userData.language,
+        accountType: null,
+        enabled: null
+    });
+
+        if (result.type === 'UsernameAlreadyUsed') {
+            usernameAlreadyExists = true;
+            return;
+        }
 
         // Effectively reloads the page. This is not really necessary, but prevents
         // the displayed data from being inconsistent with the database in case something
@@ -148,6 +155,9 @@
                         required
                     />
                 </label>
+                {#if usernameAlreadyExists}
+                    <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
+                {/if}
                 <label>
                     <p class="font-bold">{m.nickname()}</p>
                     <input
