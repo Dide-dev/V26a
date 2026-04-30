@@ -139,7 +139,7 @@ async fn get_own_user_data(
     context_path = "/api/v1/users",
     request_body = UserUpdateData,
     responses(
-        (status = 200, description = "User data successfully updated."),
+        (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),

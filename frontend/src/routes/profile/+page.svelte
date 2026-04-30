@@ -45,6 +45,7 @@
     let succesfulPasswordChange: boolean = $state(false);
     let sameOldAndNewPassword: boolean = $state(false);
     let usernameAlreadyExists: boolean = $state(false);
+    let emailAlreadyExists: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
@@ -67,9 +68,15 @@
             enabled: null
         });
 
-        if (result.type === 'UsernameAlreadyUsed') {
+        if (result.type === 'Success') {
+            emailAlreadyExists = false;
+            usernameAlreadyExists = false;
+        } else if (result.type === 'EmailAlreadyUsed') {
+            emailAlreadyExists = true;
+        } else if (result.type === 'UsernameAlreadyUsed') {
             usernameAlreadyExists = true;
-            return;
+        } else {
+            throw new Error('ERROR: Unexpected output from API.');
         }
 
         // Effectively reloads the page. This is not really necessary, but prevents
@@ -155,6 +162,9 @@
                         required
                     />
                 </label>
+                {#if emailAlreadyExists}
+                    <p class="text-red-600" data-testid="error">{m.emailAlreadyExists()}</p>
+                {/if}
                 {#if usernameAlreadyExists}
                     <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
                 {/if}
