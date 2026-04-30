@@ -16,7 +16,7 @@ export type UserGetAllData = {
 };
 
 export type UserListResponse = {
-    totalTrees: number;
+    totalUsers: number;
     users: UserGetAllData[];
 };
 

@@ -295,7 +295,7 @@ pub async fn get_queried_list_users_pagination(
     let users = query_as!(
         UserGetAllData,
         "SELECT id, email, name, enabled FROM users
-         ORDER BY id DESC
+         ORDER BY id
          LIMIT $1 OFFSET $2",
         limit,
         offset

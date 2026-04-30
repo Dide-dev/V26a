@@ -5,27 +5,74 @@
 -->
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { type UserGetAllData, getAllUserData } from '$lib/backend/admin';
+    import { type UserGetAllData, getAllUserData, type UserListResponse } from '$lib/backend/admin';
     import { onMount } from 'svelte';
     import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import { appLink } from '$lib';
     import { booleanToString } from '$lib/general';
+    import { type PaginationOptions } from '$lib/backend/trees';
+    import { calcTotalPages, showUserCount } from '$lib/pagination';
+
+    let userListResponse: null | UserListResponse = $state(null);
+    let users: null | UserGetAllData[] = $state(null);
+
+    let pageSizeString = $state('10');
+    let pageSizeNumber = $derived(Number(pageSizeString));
+    let thisPage = $state(1);
+
+    let paginationOptions: PaginationOptions = $derived({
+        page: thisPage,
+        size: pageSizeNumber
+    });
 
     onMount(async () => {
         await loadUsers();
     });
 
-    let users: null | UserGetAllData[] = $state(null);
-
     async function loadUsers() {
-        users = await getAllUserData();
+        userListResponse = await getAllUserData(paginationOptions);
+        users = userListResponse.users;
+        console.log(userListResponse);
+    }
+    let prevPageExists = $derived(thisPage > 1);
+    let nextPageExists = $derived(
+        thisPage < calcTotalPages(showUserCount(userListResponse), pageSizeNumber)
+    );
+
+    function prevPage() {
+        thisPage -= 1;
+        loadUsers();
+    }
+
+    function nextPage() {
+        thisPage += 1;
+        loadUsers();
     }
 </script>
+
+<div class="flex w-full justify-center">
+    <div class="flex-col">
+        <!-- Change the number of users per page -->
+        <label>
+            {m.numberOfUsers()}
+            <select
+                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
+                bind:value={pageSizeString}
+                onchange={loadUsers}
+            >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
+</div>
 
 {#if users === null}
     <p>{m.loading()}</p>
 {:else}
-    <div class="100vw flex justify-center">
+    <div class="100vw flex flex-col items-center justify-center overflow-auto">
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>
@@ -54,5 +101,20 @@
                 {/each}
             </tbody>
         </table>
+        <div>
+            <button
+                onclick={prevPage}
+                disabled={!prevPageExists}
+                class="mx-5"
+                class:cursor-pointer={prevPageExists}>Prev</button
+            >
+            {thisPage}/{calcTotalPages(showUserCount(userListResponse), pageSizeNumber)}
+            <button
+                onclick={nextPage}
+                disabled={!nextPageExists}
+                class="mx-5"
+                class:cursor-pointer={nextPageExists}>Next</button
+            >
+        </div>
     </div>
 {/if}
