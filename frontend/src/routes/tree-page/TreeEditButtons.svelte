@@ -8,11 +8,9 @@
     import iconEdit from '$lib/assets/iconEdit.svg?raw';
     import iconTrash from '$lib/assets/iconTrash.svg?raw';
     import iconMove from '$lib/assets/iconMove.svg?raw';
-    import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './NodeViewer.svelte';
-    import CardEditor from './CardEditor.svelte';
-    import { doDeleteCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte';
+    import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
@@ -31,16 +29,16 @@
     } = $props();
 
     /** In this component the card editor popup is only used with the 'edit' button */
-    let showEditPopup = $state(false);
+    //let showEditPopup = $state(false);
 
     async function removeButtonClick() {
         await doDeleteCard(history, index);
     }
 
-    async function finishEdit(newCard: CardGetData) {
+    /*async function finishEdit(newCard: CardGetData) {
         await doEditCard(history, cardId, newCard);
         showEditPopup = false;
-    }
+    }*/
 
     function startDrag(event: MouseEvent) {
         dragState = {
@@ -86,7 +84,7 @@
 
 <!-- Edit card popup -- >
 {#if showEditPopup}
-    <!--
+    <! --
         Very important to make a copy of the card here.
         We want the user to use the cancel/confirm buttons, not to directly edit the card itself.
     -- >

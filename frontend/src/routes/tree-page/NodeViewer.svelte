@@ -208,6 +208,7 @@
             {location}
             bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
             lineLayout={{ type: 'over', lineOffset, svgWidth }}
+            bind:sidebar
             bind:numPopupsOpen
         />
     {/if}
@@ -244,6 +245,7 @@
                     location={nextSiblingIndex}
                     bind:dragState={dragStateChildrenGetSelf, dragStateChildrenSet}
                     lineLayout={{ type: 'under', lineHeight: totalHeight, lineOffset, svgWidth }}
+                    bind:sidebar
                     bind:numPopupsOpen
                 />
             {/if}
@@ -284,6 +286,7 @@
                 location={[...location, 0]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                 lineLayout={{ type: 'right' }}
+                bind:sidebar
                 bind:numPopupsOpen
             />
         </div>

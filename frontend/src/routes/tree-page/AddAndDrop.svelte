@@ -11,23 +11,23 @@
  -->
 <script lang="ts">
     import iconAdd from '$lib/assets/iconAdd.svg?raw';
-    import type { CardGetData } from '$lib/backend/cards';
-    import { m } from '$lib/paraglide/messages';
-    import CardEditor from './CardEditor.svelte';
     import { doAddCard, doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './NodeViewer.svelte';
+    import type { SideBar } from './Sidebar.svelte';
 
     let {
         history,
         location,
         dragState = $bindable(),
         lineLayout,
+        sidebar = $bindable(),
         numPopupsOpen = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
+        sidebar: null | SideBar;
         numPopupsOpen: number;
     } = $props();
 
@@ -66,20 +66,24 @@
     let isHovered = $state(false);
     let highlight = $derived((dragState == null && isHovered) || dragState?.type === 'dragging');
 
-    let showAddCardPopup = $state(false);
 
-    // Clicking for adding cards
-    function onclick() {
+    // Clicking for adding cards // TODO remove card when cancel button is pressed (or a new card is added when no new text is added)
+    async function onclick() {
         if (dragState !== null) {
             return;
         }
-        showAddCardPopup = true;
+        await doAddCard(history, location, {front: '', back: ''});
+        // This does the same as the editClick() functionality in TreeEditButtons.svelte
+        sidebar = {
+            location: location,
+            editingVersion: {front: '', back: ''}
+        };
     }
 
-    async function finishAddCard(newCard: CardGetData) {
+    /*async function finishAddCard(newCard: CardGetData) {
         await doAddCard(history, location, newCard);
         showAddCardPopup = false;
-    }
+    }*/
 
     // This mouse event is for drag & drop
     async function onmouseup(event: MouseEvent) {
@@ -192,12 +196,3 @@
     </div>
 {/if}
 
-{#if showAddCardPopup}
-    <CardEditor
-        card={{ front: '', back: '' }}
-        confirmText={m.add()}
-        confirmCallback={finishAddCard}
-        cancelCallback={() => (showAddCardPopup = false)}
-        bind:numPopupsOpen
-    />
-{/if}
