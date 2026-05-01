@@ -6,7 +6,9 @@
 
 #![cfg(test)]
 
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData, LibraryCardAddData, LibraryCardGetData};
+use crate::db_structs::cards::{
+    CardAddData, CardGetData, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
+};
 use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure, TreeWithCards};
 use crate::tests::api_v1::setup_login;
 use sqlx::PgPool;
@@ -157,7 +159,7 @@ async fn test_library_card_add(db: PgPool) {
 
     let response = server.get("/cards/get-library?tags=tag1&tags=tag2").await;
     response.assert_status_ok();
-    let library_card_get_data : Vec<LibraryCardGetData> = response.json();
+    let library_card_get_data: Vec<LibraryCardGetData> = response.json();
     assert!(library_card_get_data.len() == 1);
 
     let retrieved_library_card = &library_card_get_data[0];
