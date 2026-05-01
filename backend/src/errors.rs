@@ -17,6 +17,8 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
+    /// An error to return when an invalid isbn is attempted to be put in the database.
+    InvalidIsbn,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page number that exceeds the defined maximum.
@@ -94,6 +96,9 @@ impl Display for ApiError {
             //------------------//
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
+            }
+            ApiError::InvalidIsbn => {
+                write!(f, "An invalid isbn was uploaded.")
             }
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
@@ -176,6 +181,7 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::InvalidImageType
+            | ApiError::InvalidIsbn
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)

@@ -118,6 +118,64 @@ pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, Api
         .collect::<Vec<_>>())
 }
 
+/// Parse an ISBN of either 10 or 13 digits, and return it as integer in the 13-digit
+/// representation.
+///
+/// # Arguments
+/// `isbn` - The ISBN to parse, as [`&str`].
+///
+/// # Returns
+/// The given ISBN in the 13-digit format as integer.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the given string is not a valid ISBN.
+pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
+    let check_digit_13 = |mut n: i64| -> i64 {
+        let mut s = 0;
+        n /= 10;
+        for i in 0..12 {
+            let d = n % 10;
+            s += d * if i % 2 == 0 { 3 } else { 1 };
+            n /= 10;
+        }
+        (10 - s % 10) % 10
+    };
+
+    let no_dashes = isbn.chars().filter(|c| *c != '-').collect::<String>();
+    if no_dashes.len() == 10 {
+        let mut s = 0;
+        for (i, d) in no_dashes[..9].chars().map(|c| c.to_digit(10)).enumerate() {
+            let d = d.ok_or(ApiError::InvalidIsbn)?;
+            s += d * (10 - u32::try_from(i).unwrap());
+        }
+        let check_digit = if no_dashes.as_bytes()[9] == b'X' {
+            10
+        } else {
+            (no_dashes.as_bytes()[9] as char)
+                .to_digit(10)
+                .ok_or(ApiError::InvalidIsbn)?
+        };
+        if (11 - s % 11) % 11 != check_digit {
+            return Err(ApiError::InvalidIsbn);
+        }
+        // We can safely unwrap here since we have already verified each digit.
+        let non_check_number = no_dashes[..9].parse::<i64>().unwrap();
+        #[allow(clippy::inconsistent_digit_grouping)]
+        let num = 978_0_000_00000_0_i64 + 10 * non_check_number;
+        Ok(num + check_digit_13(num))
+    } else if no_dashes.len() == 13 {
+        let num = no_dashes
+            .parse::<i64>()
+            .map_err(|_| ApiError::InvalidIsbn)?;
+        if check_digit_13(num) != num % 10 {
+            return Err(ApiError::InvalidIsbn);
+        }
+        Ok(num)
+    } else {
+        Err(ApiError::InvalidIsbn)
+    }
+}
+
 /// Add a new book to the database. If a book with the given isbn already exists, do nothing.
 ///
 /// # Arguments
@@ -139,7 +197,11 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<(
         "INSERT INTO books (isbn, title, author, edition)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT DO NOTHING",
-        tree_data.book_isbn,
+        tree_data
+            .book_isbn
+            .as_ref()
+            .map(|isbn| parse_isbn(isbn))
+            .transpose()?,
         tree_data.book_name,
         tree_data.book_author,
         tree_data.book_edition,
@@ -220,7 +282,7 @@ pub async fn add_tree(
         tree_data.description,
         tree_data.language_code,
         tree_data.subject_id,
-        tree_data.book_isbn,
+        tree_data.book_isbn.as_ref().map(|isbn| parse_isbn(isbn)).transpose()?,
         tree_data.book_chapter,
         tree_data.book_exercise,
         tree_data.assignment_text,
@@ -324,7 +386,7 @@ pub async fn update_tree_data(
         new_tree_data.description,
         new_tree_data.language_code,
         new_tree_data.subject_id,
-        new_tree_data.book_isbn,
+        new_tree_data.book_isbn.as_ref().map(|isbn| parse_isbn(isbn)).transpose()?,
         new_tree_data.book_chapter,
         new_tree_data.book_exercise,
         new_tree_data.assignment_text,
@@ -391,7 +453,7 @@ pub async fn db_get_tree_all_data(
         book_name: field.book_name,
         book_edition: field.book_edition,
         book_author: field.book_author,
-        book_isbn: field.book_isbn,
+        book_isbn: field.book_isbn.map(|n| n.to_string()),
         book_chapter: field.book_chapter,
         book_exercise: field.book_exercise,
         assignment_text: field.assignment_text,
@@ -476,7 +538,7 @@ pub async fn get_all_trees_by_owner(
                 book_name: t.book_name,
                 book_edition: t.book_edition,
                 book_author: t.book_author,
-                book_isbn: t.book_isbn,
+                book_isbn: t.book_isbn.map(|n| n.to_string()),
                 book_chapter: t.book_chapter,
                 book_exercise: t.book_exercise,
                 assignment_text: t.assignment_text,
@@ -570,7 +632,7 @@ pub async fn is_structure_valid(
 /// # Example:
 /// ```rs
 /// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
-/// apply_tree_filters(query, &filters);
+/// apply_tree_filters(query, &filters)?;
 /// let trees_count: i64 = query
 ///         .build_query_scalar()
 ///         .fetch_one(db)
@@ -584,7 +646,7 @@ fn apply_tree_filters<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
     filters: &'a TreeFilters,
     user_id: Option<i32>,
-) {
+) -> Result<(), ApiError> {
     let TreeFilters {
         owner_id,
         book,
@@ -608,10 +670,14 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(owner_id)
             .push_unseparated(")");
     }
-    if !filters.book.is_empty() {
+    if !book.is_empty() {
+        let parsed_isbns = book
+            .iter()
+            .map(|isbn| parse_isbn(isbn))
+            .collect::<Result<Vec<_>, _>>()?;
         separated
             .push("(book_isbn = ANY(")
-            .push_bind_unseparated(book)
+            .push_bind_unseparated(parsed_isbns)
             .push_unseparated("))");
     }
     if let Some(created_after) = created_after {
@@ -626,6 +692,8 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
     }
+
+    Ok(())
 }
 
 /// Get the amount of trees satisfying some filters.
@@ -649,7 +717,7 @@ pub async fn get_queried_count(
 ) -> Result<i64, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
 
-    apply_tree_filters(&mut query, filters, user_id);
+    apply_tree_filters(&mut query, filters, user_id)?;
 
     let trees_count: i64 = query
         .build_query_scalar()
@@ -691,7 +759,7 @@ pub async fn get_queried_list(
         LEFT JOIN books ON trees.book_isbn = books.isbn"
     );
 
-    apply_tree_filters(&mut query, filters, user_id);
+    apply_tree_filters(&mut query, filters, user_id)?;
     query
         .push(
             // newest first
@@ -736,6 +804,29 @@ mod tests {
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
 
+    #[test]
+    fn test_parse_isbn() {
+        // Valid ISBN 10
+        let result = parse_isbn("0-451-52493-4");
+        assert_eq!(result, Ok(9780451524935));
+
+        // Invalid ISBN 10
+        let result = parse_isbn("0-451-52493-5");
+        assert_eq!(result, Err(ApiError::InvalidIsbn));
+
+        // Valid ISBN 10 with X check digit
+        let result = parse_isbn("0-074-62542-X");
+        assert_eq!(result, Ok(9780074625422));
+
+        // Valid ISBN 13
+        let result = parse_isbn("979-1-034-90821-9");
+        assert_eq!(result, Ok(9791034908219));
+
+        // Invalid ISBN 13
+        let result = parse_isbn("979-1-034-90821-1");
+        assert_eq!(result, Err(ApiError::InvalidIsbn));
+    }
+
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
@@ -779,7 +870,7 @@ mod tests {
             book_name: record.book_name,
             book_edition: record.book_edition,
             book_author: record.book_author,
-            book_isbn: record.book_isbn,
+            book_isbn: record.book_isbn.map(|n| n.to_string()),
             book_chapter: record.book_chapter,
             book_exercise: record.book_exercise,
             assignment_text: record.assignment_text,
@@ -987,7 +1078,7 @@ mod tests {
         let empty_filters = TreeFilters {
             ..Default::default()
         };
-        apply_tree_filters(&mut no_filters_query, &empty_filters, None);
+        apply_tree_filters(&mut no_filters_query, &empty_filters, None).unwrap();
         assert_eq!(
             no_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
@@ -996,12 +1087,12 @@ mod tests {
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_id: Some(67),
-            book: vec!["1984".to_owned()],
+            book: vec!["0-451-52493-4".to_owned()],
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
             show_own_private: true,
         };
-        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123));
+        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_isbn = ANY($3)) AND (created_at >= $4) AND (created_at <= $5)"
@@ -1013,7 +1104,7 @@ mod tests {
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             ..Default::default()
         };
-        apply_tree_filters(&mut partial_filters_query, &partial_filters, None);
+        apply_tree_filters(&mut partial_filters_query, &partial_filters, None).unwrap();
         assert_eq!(
             partial_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (created_at >= $2)"
@@ -1028,7 +1119,8 @@ mod tests {
             &mut show_private_no_id_query,
             &show_private_no_id_filters,
             None,
-        );
+        )
+        .unwrap();
         assert_eq!(
             show_private_no_id_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
@@ -1043,7 +1135,8 @@ mod tests {
             &mut hide_private_with_id_query,
             &show_private_no_id_filters,
             Some(123),
-        );
+        )
+        .unwrap();
         assert_eq!(
             hide_private_with_id_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
@@ -1130,11 +1223,11 @@ mod tests {
         );
 
         let book_filter = TreeFilters {
-            book: vec!["9781234567890".to_owned()],
+            book: vec!["978-0-061-12008-4".to_owned()],
             ..Default::default()
         };
         let book_tree = TreeData {
-            book_isbn: Some("9781234567890".to_owned()),
+            book_isbn: Some("978-0-061-12008-4".to_owned()),
             published: true,
             ..Default::default()
         };
@@ -1283,11 +1376,11 @@ mod tests {
         );
 
         let book_filter = TreeFilters {
-            book: vec!["9781234567890".to_owned()],
+            book: vec!["978-0-061-12008-4".to_owned()],
             ..Default::default()
         };
         let book_tree = TreeData {
-            book_isbn: Some("9781234567890".to_owned()),
+            book_isbn: Some("9780061120084".to_owned()),
             published: true,
             ..Default::default()
         };

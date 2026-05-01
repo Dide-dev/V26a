@@ -43,6 +43,7 @@ macro_rules! get_connection_unwrap {
 
 #[cfg(test)]
 pub mod test {
+    use crate::db::trees::parse_isbn;
     use crate::db_structs::cards::CardAddData;
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::RegisterData;
@@ -141,7 +142,7 @@ pub mod test {
         if let Some(isbn) = &tree_data.book_isbn {
             query!(
                 "INSERT INTO books (isbn, title, author, edition) VALUES ($1, $2, $3, $4)",
-                isbn,
+                parse_isbn(isbn).unwrap(),
                 tree_data.book_name,
                 tree_data.book_author,
                 tree_data.book_edition,
@@ -161,7 +162,7 @@ pub mod test {
             tree_data.description,
             tree_data.language_code,
             tree_data.subject_id,
-            tree_data.book_isbn,
+            tree_data.book_isbn.as_ref().map(|isbn| parse_isbn(isbn).unwrap()),
             tree_data.book_chapter,
             tree_data.book_exercise,
             tree_data.assignment_text,

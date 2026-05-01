@@ -41,7 +41,7 @@ CREATE TABLE subjects
 
 CREATE TABLE books
 (
-    isbn    VARCHAR(13)  PRIMARY KEY,
+    isbn    BIGINT       PRIMARY KEY,
     title   VARCHAR(192) DEFAULT NULL,
     author  VARCHAR(192) DEFAULT NULL,
     edition VARCHAR(32)  DEFAULT NULL
@@ -61,7 +61,7 @@ CREATE TABLE trees
     language_code   CHAR(2)      NOT NULL,
     description     VARCHAR(256)          DEFAULT NULL,
     subject_id      INTEGER               DEFAULT NULL,
-    book_isbn       VARCHAR(13)           DEFAULT NULL,
+    book_isbn       BIGINT                DEFAULT NULL,
     book_chapter    VARCHAR(32)           DEFAULT NULL,
     book_exercise   VARCHAR(32)           DEFAULT NULL,
     assignment_text VARCHAR(5000)         DEFAULT NULL,              -- currently stored as HTML with images in BASE64. We might want to consider Markdown or some other way of storing this.

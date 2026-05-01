@@ -419,7 +419,7 @@ async fn test_filter_tree_list(db: PgPool) {
             ..Default::default()
         },
         TreeData {
-            book_isbn: Some("9781234567890".to_string()),
+            book_isbn: Some("9780061120084".to_string()),
             published: true,
             ..Default::default()
         },
@@ -431,9 +431,16 @@ async fn test_filter_tree_list(db: PgPool) {
 
     add_multiple_trees(&server, &trees_data).await;
 
+    // A search with an invalid isbn
+    let response = server
+        .get("/trees/get-list?page=1&size=1&book=not-an-isbn")
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::InvalidIsbn.to_string());
+
     // A search that yields no results
     let response = server
-        .get("/trees/get-list?page=1&size=1&book=no+results")
+        .get("/trees/get-list?page=1&size=1&book=978-0-306-40615-7")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -476,23 +483,10 @@ async fn test_filter_tree_list(db: PgPool) {
         .collect::<Vec<_>>();
     assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
-    // Filter on book with space
-    let response = server
-        .get("/trees/get-list?page=1&size=2&book=9781234567890")
-        .await;
-    response.assert_status_ok();
-    let requested_trees: TreeListResponse = response.json();
-    let requested_trees_data = requested_trees
-        .trees
-        .into_iter()
-        .map(|t| t.data)
-        .collect::<Vec<_>>();
-    assert_eq!(requested_trees_data, vec![trees_data[1].clone()]);
-
     login(&server, emails[1].clone()).await;
     let other_user_trees_data = vec![
         TreeData {
-            book_isbn: Some("9780987654321".to_string()),
+            book_isbn: Some("9780306406157".to_string()),
             published: true,
             ..Default::default()
         },
@@ -524,7 +518,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=9781234567890&book=9780987654321")
+        .get("/trees/get-list?page=1&size=100&book=978-0-061-12008-4&book=978-0-306-40615-7")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -540,11 +534,10 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books, incorrectly formatted
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=9781234567890,9780987654321")
+        .get("/trees/get-list?page=1&size=100&book=978-0-061-12008-4,978-0-306-40615-7")
         .await;
-    response.assert_status_ok();
-    let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, Vec::new());
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::InvalidIsbn.to_string());
 
     // All public trees from user 0
     let response = server
