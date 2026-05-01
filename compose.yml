@@ -2,6 +2,7 @@ volumes:
   postgres_dir:
   caddy_data:
   caddy_config:
+  uploads:
 
 services:
   db:
@@ -23,6 +24,7 @@ services:
       start_period: 5s
 
   caddy:
+    profiles: [ "dev", "prod" ]
     image: docker.io/caddy:2.11
     restart: unless-stopped
     volumes:
@@ -36,6 +38,7 @@ services:
       - "443:443"
 
   backend:
+    profiles: [ "dev", "prod" ]
     build:
       context: backend
       dockerfile: Containerfile
@@ -44,6 +47,8 @@ services:
     # A better way to do this would be to listen to SIGTERM in our backend and initiate a graceful shutdown when the signal gets sent.
     # This feels too out of scope ATM.
     stop_grace_period: 2s
+    volumes:
+      - uploads:/uploads
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
       - RUST_LOG=${RUST_LOG}
@@ -54,7 +59,7 @@ services:
         condition: service_healthy
 
   frontend:
-    profiles: [ "production" ]
+    profiles: [ "prod" ]
     build:
       context: frontend
       dockerfile: Containerfile
