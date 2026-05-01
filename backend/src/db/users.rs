@@ -133,25 +133,6 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
     })
 }
 
-/// Query the user data of all users for the given database.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
-///
-/// # Returns
-/// A [`Vec<UserGetAllData>`] object containing the data of all the users, minus their password.
-///
-/// # Errors
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
-    query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)
-}
-
 /// Updates a user in the database.
 ///
 /// # Arguments

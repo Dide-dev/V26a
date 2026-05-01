@@ -209,8 +209,11 @@ async fn test_retrieving_owned_trees(db: PgPool) {
 
     let response = server.get("/trees/get-mine-all").await;
     response.assert_status_ok();
-    let vec: Vec<TreeMetadata> = response.json();
-    let empty: Vec<TreeMetadata> = Vec::new();
+    let vec: TreeListResponse = response.json();
+    let empty: TreeListResponse = TreeListResponse{
+        total_trees: 0,
+        trees: Vec::new()
+    };
     assert_eq!(empty, vec);
 
     let tree_data = TreeData::default();
@@ -230,8 +233,8 @@ async fn test_retrieving_owned_trees(db: PgPool) {
 
     let response = server.get("/trees/get-mine-all").await;
     response.assert_status_ok();
-    let vec: Vec<TreeMetadata> = response.json();
-    let tree_metadata: &TreeMetadata = vec.first().unwrap();
+    let vec: TreeListResponse = response.json();
+    let tree_metadata: &TreeMetadata = vec.trees.first().unwrap();
     assert_eq!(tree_id, tree_metadata.gen_data.id);
     assert_eq!(tree_add_data.tree_data, tree_metadata.data);
 }
