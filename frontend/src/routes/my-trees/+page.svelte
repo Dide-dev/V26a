@@ -7,7 +7,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import { getUsersOwnTrees, type TreeMetadata } from '$lib/backend/trees';
-    import iconEdit from '$lib/assets/iconEdit.svg?raw';
+    import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
