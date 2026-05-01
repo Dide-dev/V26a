@@ -67,6 +67,8 @@ services:
     environment:
       NODE_ENV: production
     restart: unless-stopped
+    depends_on:
+      - backend
 
   frontend-dev:
     container_name: frontend
@@ -89,3 +91,5 @@ services:
           initial_sync: true
         - path: ./frontend/package.json
           action: rebuild
+    depends_on:
+      - backend
