@@ -11,6 +11,7 @@
     import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
+    import EditAreaComponent from './EditAreaComponent.svelte';
 
     let {
         sidebar = $bindable(),
@@ -41,7 +42,6 @@
         sidebar = null;
     }
 
-    // COPY FROM CardEditor.svelte
     function confirmClick() {
         if (sidebar === null) {
             return;
@@ -82,26 +82,20 @@
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <textarea
-                class="border"
-                rows="3"
-                maxlength={frontMaxLength}
-                bind:value={sidebar.editingVersion.front}
-            ></textarea>
-            <p class="text-xs">{sidebar.editingVersion.front.length}/{frontMaxLength}</p>
+            <EditAreaComponent maxLength={frontMaxLength} height={2} bind:valueText={sidebar.editingVersion.front}></EditAreaComponent>
             <p>Back</p>
-            <textarea rows="16" maxlength={backMaxLength} bind:value={sidebar.editingVersion.back}
-            ></textarea>
-            <p class="text-xs">{sidebar.editingVersion.back.length}/{backMaxLength}</p>
+            <EditAreaComponent maxLength={backMaxLength} height={10} bind:valueText={sidebar.editingVersion.back}></EditAreaComponent>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>
             {/if}
-            <button class="cursor-pointer" onclick={() => (sidebar = null)}>
-                {m.cancel()}
-            </button>
-            <button class="cursor-pointer" onclick={confirmClick}>
-                {m.save()}
-            </button>
+            <div class="flex gap-2">
+                <button class="cursor-pointer" onclick={() => (sidebar = null)}>
+                    {m.cancel()}
+                </button>
+                <button class="cursor-pointer" onclick={confirmClick}>
+                    {m.save()}
+                </button>
+            </div>
         </div>
     </div>
 {/if}
