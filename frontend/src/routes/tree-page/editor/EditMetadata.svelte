@@ -53,6 +53,8 @@
 
     // The form submit keyboard shortcut
     function onkeydown(event: KeyboardEvent) {
+        if (!visible) return;
+
         if (event.ctrlKey && event.key == 'Enter') {
             saveData();
             event.stopPropagation();

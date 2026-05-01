@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{AddUserResponse, ChangePasswordResponse};
+use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
@@ -32,8 +32,8 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
     let response = server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
-    let response = response.json::<AddUserResponse>();
-    let AddUserResponse::Success { user_id } = response else {
+    let response = response.json::<UserResponse>();
+    let UserResponse::Success { user_id } = response else {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };

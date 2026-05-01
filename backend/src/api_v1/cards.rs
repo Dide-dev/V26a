@@ -7,13 +7,18 @@
 use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{add_card, get_card_text, get_tree_of_card, update_card};
-use crate::db::cards_library::cards_library_add;
-use crate::db_structs::cards::{CardAddData, CardUpdateData, LibraryCardAddData};
+use crate::db::cards_library::{
+    cards_library_add, get_queried_cards_count, get_queried_cards_list,
+};
+use crate::db_structs::cards::{
+    CardAddData, CardFilters, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
+};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
 use axum::extract::Path;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
+use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the cards category.
@@ -22,6 +27,7 @@ pub fn cards() -> Router<Config> {
         .route("/add", post(add_new_card))
         .route("/update", post(update_existing_card))
         .route("/{card_id}/add-to-library", post(add_card_to_library))
+        .route("/get-library", get(get_cards_from_library))
 }
 
 #[utoipa::path(
@@ -183,4 +189,51 @@ async fn add_card_to_library(
     .await?;
 
     Ok(Json(library_card_id))
+}
+
+#[utoipa::path(
+    post,
+    path = "/get-library",
+    context_path = "/api/v1/cards",
+    responses(
+        (status = 200, description = "Successfully retrieved cards from libary."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("filters" = CardFilters, Query),
+    )
+)]
+/// Gets cards from the card library given the name of the id of the owner or given tags.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `filters` - The requested filters to apply to the cards, given as [`CardFilters`] through a query.
+///
+/// # Returns
+/// A list with the cards satisfying the filters.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_cards_from_library(
+    _claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Query(filters): Query<CardFilters>,
+) -> Result<Json<Vec<LibraryCardGetData>>, ApiError> {
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    let cards_count = get_queried_cards_count(&mut *transaction, &filters).await?;
+    if cards_count == 0 {
+        return Ok(Json(Vec::new()));
+    }
+
+    let cards = get_queried_cards_list(&mut *transaction, &filters).await?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(Json(cards))
 }

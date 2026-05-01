@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import { page } from '$app/state';
-    import iconTrash from '$lib/assets/iconTrash.svg?raw';
+    import iconTrash from '$lib/assets/icons/trash.svg?raw';
     import { removeTree, type TreeMetadata } from '$lib/backend/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';

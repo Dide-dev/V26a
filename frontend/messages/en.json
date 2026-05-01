@@ -15,6 +15,11 @@
     "moveCardWithSubtree": "Move card with subtree",
     "editThisCard": "Edit this card",
     "deleteThisCard": "Delete this card",
+    "editRootnodeLabel": "Edit branch label",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "deleteRootnode": "Remove this branch",
+    "deleteRootnodeBlocked": "Cannot remove branch, please remove cards right from here first",
     "undo": "Undo",
     "redo": "Redo",
     "viewTree": "View tree",
@@ -23,7 +28,7 @@
     "createTree": "Create tree",
     "optional": "Optional",
     "email": "E-mail",
-    "name": "Name",
+    "name": "Username",
     "nickname": "Nickname",
     "aboutMe": "About me",
     "password": "Password",
@@ -90,5 +95,6 @@
     "uploadImage": "Upload image",
     "deleteOwnedTrees": "Delete all owned trees",
     "deleteProfile": "Delete profile",
-    "deleteProfileConfirmation": "Are you sure you want to delete your profile?"
+    "deleteProfileConfirmation": "Are you sure you want to delete your profile?",
+    "usernameAlreadyExists": "An account with this username already exists"
 }

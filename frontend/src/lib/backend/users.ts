@@ -35,13 +35,17 @@ export type RegisterData = {
     language: string;
 };
 
-export type AddUserSuccess = {
+export type UserSuccess = {
     type: 'Success';
     userId: UserId;
 };
 
-export type AddUserEmailInvalid = {
+export type UserEmailInvalid = {
     type: 'EmailAlreadyUsed';
+};
+
+export type UsernameInvalid = {
+    type: 'UsernameAlreadyUsed';
 };
 
 export type ChangePasswordResponse = {
@@ -90,7 +94,9 @@ export type ChangePasswordData = {
 };
 
 /** Add a user to the database */
-export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid> {
+export function addUser(
+    user: RegisterData
+): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser('add', user);
 }
 
@@ -105,7 +111,10 @@ export function getOwnUserData(): Promise<UserGetData> {
 }
 
 /** Update a user's data */
-export function updateUser(userId: UserId, newData: UserUpdateData): Promise<void> {
+export function updateUser(
+    userId: UserId,
+    newData: UserUpdateData
+): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser(`update/${userId}`, newData);
 }
 

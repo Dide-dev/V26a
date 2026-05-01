@@ -78,6 +78,27 @@ pub async fn user_email_exists(db: impl PgExecutor<'_>, email: &str) -> Result<b
     .ok_or(ApiError::DatabaseException)
 }
 
+/// Checks if a user with a given username exists in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `name` - A reference to the username of the user being checked.
+///
+/// # Returns
+/// `true` if the username exists or `false` if they do not.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn user_name_exists(db: impl PgExecutor<'_>, name: &str) -> Result<bool, ApiError> {
+    query!("SELECT EXISTS(SELECT 1 FROM users WHERE name = $1)", name,)
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .exists
+        .ok_or(ApiError::DatabaseException)
+}
+
 /// Checks if a user with a given id exists in the given database.
 ///
 /// # Arguments
@@ -341,6 +362,31 @@ mod tests {
 
         // Assert user does exist after adding to the database.
         let does_user_exist = user_email_exists(&db, &email).await.unwrap();
+        assert!(does_user_exist);
+    }
+
+    #[sqlx::test]
+    async fn test_user_name_exists(db: PgPool) {
+        let name = "name".to_owned();
+
+        let register_data = RegisterData {
+            email: "hoi@gmail.com".to_owned(),
+            password: "password".to_owned(),
+            name: name.clone(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        };
+
+        // Assert user does not exist before adding to the database.
+        let does_user_exist = user_name_exists(&db, &name).await.unwrap();
+        assert!(!does_user_exist);
+
+        initialize_user(&db, &register_data).await;
+
+        // Assert user does exist after adding to the database.
+        let does_user_exist = user_name_exists(&db, &name).await.unwrap();
         assert!(does_user_exist);
     }
 

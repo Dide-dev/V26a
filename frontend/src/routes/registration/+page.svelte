@@ -31,6 +31,7 @@
 
     let passwordMissingChar: boolean = $state(false);
     let passwordNotSame: boolean = $state(false);
+    let usernameAlreadyExists: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent) {
@@ -38,6 +39,7 @@
         passwordMissingChar = false;
         passwordNotSame = false;
         emailAlreadyExists = false;
+        usernameAlreadyExists = false;
 
         if (
             !checkLowercase(formData.password) ||
@@ -56,9 +58,12 @@
         let addResponse = await addUser(formData);
         if (addResponse.type === 'Success') {
             emailAlreadyExists = false;
+            usernameAlreadyExists = false;
             await goto(appLink('/login'));
         } else if (addResponse.type === 'EmailAlreadyUsed') {
             emailAlreadyExists = true;
+        } else if (addResponse.type === 'UsernameAlreadyUsed') {
+            usernameAlreadyExists = true;
         } else {
             throw new Error('ERROR: Unexpected output from API.');
         }
@@ -95,6 +100,9 @@
                 required
             />
         </label>
+        {#if usernameAlreadyExists}
+            <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
+        {/if}
         <label>
             {m.nickname()}
             <input
