@@ -11,7 +11,7 @@
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './NodeViewer.svelte';
     import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './SidebarComponent.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {

@@ -25,8 +25,8 @@
         canRedo
     } from '../history.svelte';
     import EditMetadata from './EditMetadata.svelte';
-    import type { SideBar } from '../Sidebar.svelte';
-    import Sidebar from '../Sidebar.svelte';
+    import type { SideBar } from '../SidebarComponent.svelte';
+    import SidebarComponent from '../SidebarComponent.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -85,6 +85,7 @@
          */
         numPopupsOpen: number;
         sidebar: null | SideBar;
+        sidebarElement: null | SidebarComponent;
     } | null = $state(null);
 
     onMount(async () => {
@@ -113,7 +114,8 @@
                 fetchedTree.cards
             ),
             numPopupsOpen: 0,
-            sidebar: null
+            sidebar: null,
+            sidebarElement: null
         };
 
         loading = false;
@@ -195,23 +197,29 @@
         </a>
     </div>
 
-    <div class="flex items-start">
+    <div class="relative">
         <!--
             The padding on the bottom is to make the scrollbar not intersect with some buttons.
         -->
-        <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pb-7">
-            {#each tree.history.currentStructure.rootNodes as root, index (root)}
-                <NodeViewer
-                    bind:history={tree.history}
-                    location={[index]}
-                    bind:dragState
-                    editingPage={true}
-                    bind:numPopupsOpen={tree.numPopupsOpen}
-                    bind:sidebar={tree.sidebar}
-                />
-            {/each}
+        <div bind:this={scrollArea} class="m-1 flex overflow-auto pb-7">
+            <div class="flex grow flex-col">
+                {#each tree.history.currentStructure.rootNodes as root, index (root)}
+                    <NodeViewer
+                        bind:history={tree.history}
+                        location={[index]}
+                        bind:dragState
+                        editingPage={true}
+                        bind:numPopupsOpen={tree.numPopupsOpen}
+                        bind:sidebar={tree.sidebar}
+                    />
+                {/each}
+            </div>
+            <div
+                class="shrink-0"
+                style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.fullwidth}px`}
+            ></div>
         </div>
-        <Sidebar bind:sidebar={tree.sidebar} />
+        <SidebarComponent bind:this={tree.sidebarElement} bind:sidebar={tree.sidebar} />
     </div>
 {/if}
 

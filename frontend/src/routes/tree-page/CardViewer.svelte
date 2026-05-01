@@ -7,7 +7,7 @@
 <script lang="ts">
     import { followIndex, followIndexNode, setRevealed, type TreeHistory } from './history.svelte';
     import { htmlFromMarkdown } from '$lib/markdown';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './SidebarComponent.svelte';
     let {
         history,
         index,
