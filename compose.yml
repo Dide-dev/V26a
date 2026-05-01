@@ -47,8 +47,8 @@ services:
       context: backend
       dockerfile: Containerfile
     restart: unless-stopped
-    # Docker sends a SIGTERM and waits grace_period settings.
-    # A better way to do this would be to listen to SIGTERM in our backend and initiate a graceful shutdown when the signal gets sent.
+    # Docker sends a SIGTERM signal and waits grace_period seconds before forcefully killing the container.
+    # A better way to do this would be to listen for a SIGTERM in our backend and initiate a graceful shutdown when the signal gets sent.
     # This feels too out of scope ATM.
     stop_grace_period: 2s
     volumes:
