@@ -83,7 +83,6 @@ services:
       target: dev
     environment:
       NODE_ENV: development
-      CHOKIDAR_USEPOLLING: "true"
     develop:
       watch:
         - path: ./frontend
