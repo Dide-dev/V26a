@@ -24,7 +24,7 @@
 {#if sidebar !== null}
     <div class="pointer-events-none absolute top-0 right-0 h-full" style="width: {fullwidth}px;">
         <div
-            class="sticky top-0 z-50 flex w-full flex-col gap-2 bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
+            class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col gap-2 bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
         >
             <h1>{m.editThisCard()}</h1>
 
