@@ -10,13 +10,56 @@
 <script lang="ts">
     import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages';
+    import {doEditCard, followIndexNode, type TreeHistory} from "./history.svelte.ts";
 
-    let { sidebar = $bindable() }: { sidebar: SideBar | null } = $props();
+    let {
+        sidebar = $bindable(),
+        history,
+    }: {
+        sidebar: SideBar | null,
+        history: TreeHistory,
+    } = $props();
 
     export type SideBar = {
+        type: 'NewCard' | 'EditCard';
         location: number[];
         editingVersion: CardGetData;
     };
+
+    const frontMaxLength = 1024;
+    const backMaxLength = 5000;
+    let errorMessage = $state('');
+
+    async function finishEdit(newCard: CardGetData) {
+        let node = followIndexNode(history.currentStructure, sidebar!.location)
+        await doEditCard(history, node.cardId, newCard);
+        sidebar = null;
+    }
+
+    // COPY FROM CardEditor.svelte
+    function confirmClick() {
+        if (sidebar === null) {
+            return;
+        }
+            sidebar.editingVersion.front = sidebar.editingVersion.front.trim();
+            sidebar.editingVersion.back = sidebar.editingVersion.back.trim();
+
+            if (sidebar.editingVersion.back.length === 0) {
+                errorMessage = m.backTextRequired();
+                return;
+            }
+
+            if (sidebar.editingVersion.front.length > frontMaxLength) {
+                errorMessage = m.frontTextCharacterLimit({limit: frontMaxLength});
+                return;
+            }
+            if (sidebar.editingVersion.back.length > backMaxLength) {
+                errorMessage = m.backTextCharacterLimit({limit: backMaxLength});
+                return;
+            }
+
+            finishEdit(sidebar.editingVersion);
+    }
 
     export const fullwidth: number = 350;
 </script>
@@ -33,10 +76,13 @@
 
             <p>Back</p>
             <textarea rows="10" bind:value={sidebar.editingVersion.back}></textarea>
+            {#if errorMessage}
+                <p class="text-red-600">{errorMessage}</p>
+            {/if}
             <button class="cursor-pointer" onclick={() => (sidebar = null)}>
                 {m.cancel()}
             </button>
-            <button class="cursor-pointer" onclick={() => alert('todo')}>
+            <button class="cursor-pointer" onclick={confirmClick}>
                 {m.save()}
             </button>
         </div>

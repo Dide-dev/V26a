@@ -203,10 +203,10 @@
         -->
         <div bind:this={scrollArea} class="m-1 flex overflow-auto pb-7">
             <div class="flex grow flex-col">
-                {#each tree.history.currentStructure.rootNodes as root, index (root)}
+                {#each tree.history.currentStructure.rootNodes as root, location (root)}
                     <NodeViewer
                         bind:history={tree.history}
-                        location={[index]}
+                        location={[location]}
                         bind:dragState
                         editingPage={true}
                         bind:numPopupsOpen={tree.numPopupsOpen}
@@ -219,7 +219,7 @@
                 style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.fullwidth}px`}
             ></div>
         </div>
-        <SidebarComponent bind:this={tree.sidebarElement} bind:sidebar={tree.sidebar} />
+        <SidebarComponent bind:this={tree.sidebarElement} bind:sidebar={tree.sidebar} history={tree.history} />
     </div>
 {/if}
 

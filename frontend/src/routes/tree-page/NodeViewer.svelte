@@ -223,7 +223,7 @@
         {#if editingPage}
             <TreeEditButtons
                 {history}
-                index={location}
+                {location}
                 bind:dragState
                 bind:sidebar
                 bind:numPopupsOpen
@@ -231,7 +231,7 @@
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
-                <CardViewer {history} {sidebar} index={location} {editingPage} />
+                <CardViewer {history} {sidebar} {location} {editingPage} />
             </div>
             {#if !editingPage}
                 <!--

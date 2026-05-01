@@ -13,7 +13,7 @@
     import iconAdd from '$lib/assets/iconAdd.svg?raw';
     import { doAddCard, doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './NodeViewer.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './SidebarComponent.svelte';
 
     let {
         history,
@@ -75,6 +75,7 @@
         await doAddCard(history, location, {front: '', back: ''});
         // This does the same as the editClick() functionality in TreeEditButtons.svelte
         sidebar = {
+            type: 'EditCard',
             location: location,
             editingVersion: {front: '', back: ''}
         };

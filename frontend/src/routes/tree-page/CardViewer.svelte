@@ -10,19 +10,19 @@
     import type { SideBar } from './SidebarComponent.svelte';
     let {
         history,
-        index,
+        location,
         sidebar,
         editingPage
     }: {
         history: TreeHistory;
-        index: number[];
+        location: number[];
         sidebar: SideBar | null;
         editingPage: boolean;
     } = $props();
 
-    let node = $derived(followIndexNode(history.currentStructure, index));
+    let node = $derived(followIndexNode(history.currentStructure, location));
     let card = $derived.by(() => {
-        if (sidebar !== null && JSON.stringify(sidebar.location) === JSON.stringify(index)) {
+        if (sidebar !== null && JSON.stringify(sidebar.location) === JSON.stringify(location)) {
             return sidebar.editingVersion;
         } else {
             return history.currentCards[node.cardId];
@@ -31,7 +31,7 @@
     let visible = $derived(node.revealed);
 
     let parentIsVisible = $derived.by(() => {
-        let parent = followIndex(history.currentStructure, index.slice(0, -1));
+        let parent = followIndex(history.currentStructure, location.slice(0, -1));
         if ('revealed' in parent) {
             return parent.revealed;
         } else {
@@ -40,7 +40,7 @@
     });
 
     function setVisible() {
-        setRevealed(history, index, true);
+        setRevealed(history, location, true);
     }
 </script>
 

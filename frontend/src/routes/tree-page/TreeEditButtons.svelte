@@ -16,13 +16,13 @@
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history,
-        index,
+        location,
         dragState = $bindable(),
         sidebar = $bindable(),
         numPopupsOpen = $bindable()
     }: {
         history: TreeHistory;
-        index: number[];
+        location: number[];
         dragState: null | DragState;
         sidebar: null | SideBar;
         numPopupsOpen: number;
@@ -32,7 +32,7 @@
     //let showEditPopup = $state(false);
 
     async function removeButtonClick() {
-        await doDeleteCard(history, index);
+        await doDeleteCard(history, location);
     }
 
     /*async function finishEdit(newCard: CardGetData) {
@@ -43,21 +43,22 @@
     function startDrag(event: MouseEvent) {
         dragState = {
             type: 'dragging',
-            nodeToMove: index,
+            nodeToMove: location,
             mouseX: event.clientX,
             mouseY: event.clientY
         };
     }
 
     let cardId = $derived.by(() => {
-        let node = followIndexNode(history.currentStructure, index);
+        let node = followIndexNode(history.currentStructure, location);
         return node.cardId;
     });
     let card = $derived(history.currentCards[cardId]);
 
     function editClick() {
         sidebar = {
-            location: index,
+            type: 'EditCard',
+            location: location,
             editingVersion: $state.snapshot(card)
         };
     }
