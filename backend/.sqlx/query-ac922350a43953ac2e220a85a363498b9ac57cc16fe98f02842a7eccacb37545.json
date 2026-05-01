@@ -11,7 +11,12 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        }
       ]
     },
     "nullable": [

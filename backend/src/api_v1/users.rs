@@ -78,9 +78,9 @@ async fn add_new_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let exists = user_email_exists(&mut *transaction, &user_data.email).await?;
+    let email_taken = user_email_exists(&mut *transaction, &user_data.email).await?;
 
-    if exists {
+    if email_taken {
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
