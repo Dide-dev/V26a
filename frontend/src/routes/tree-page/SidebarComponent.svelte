@@ -24,11 +24,12 @@
         type: 'NewCard' | 'EditCard';
         location: number[];
         editingVersion: CardGetData;
+        errorMessage?: string;
     };
 
-    const frontMaxLength = 1024;
+    const frontMaxLength = 250;
     const backMaxLength = 5000;
-    let errorMessage = $state('');
+
 
     async function finishEdit(newCard: CardGetData) {
         let node = followIndexNode(history.currentStructure, sidebar!.location)
@@ -45,19 +46,19 @@
             sidebar.editingVersion.back = sidebar.editingVersion.back.trim();
 
             if (sidebar.editingVersion.back.length === 0) {
-                errorMessage = m.backTextRequired();
+                sidebar.errorMessage = m.backTextRequired();
                 return;
             }
 
             if (sidebar.editingVersion.front.length > frontMaxLength) {
-                errorMessage = m.frontTextCharacterLimit({limit: frontMaxLength});
+                sidebar.errorMessage = m.frontTextCharacterLimit({limit: frontMaxLength});
                 return;
             }
             if (sidebar.editingVersion.back.length > backMaxLength) {
-                errorMessage = m.backTextCharacterLimit({limit: backMaxLength});
+                sidebar.errorMessage = m.backTextCharacterLimit({limit: backMaxLength});
                 return;
             }
-
+            sidebar.errorMessage = '';
             finishEdit(sidebar.editingVersion);
     }
 
@@ -72,12 +73,13 @@
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <input class="border" bind:value={sidebar.editingVersion.front} />
-
+            <textarea class="border" rows="3" maxlength={frontMaxLength} bind:value={sidebar.editingVersion.front}></textarea>
+            <p class="text-xs">{sidebar.editingVersion.front.length}/{frontMaxLength}</p>
             <p>Back</p>
-            <textarea rows="10" bind:value={sidebar.editingVersion.back}></textarea>
-            {#if errorMessage}
-                <p class="text-red-600">{errorMessage}</p>
+            <textarea rows="16" maxlength={backMaxLength} bind:value={sidebar.editingVersion.back}></textarea>
+            <p class="text-xs">{sidebar.editingVersion.back.length}/{backMaxLength}</p>
+            {#if sidebar.errorMessage}
+                <p class="text-red-600">{sidebar.errorMessage}</p>
             {/if}
             <button class="cursor-pointer" onclick={() => (sidebar = null)}>
                 {m.cancel()}
