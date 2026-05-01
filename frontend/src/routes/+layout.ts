@@ -4,5 +4,5 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-// Required for the static site generation
+// Improve performance at the cost of slightly longer build times.
 export const prerender = true;
