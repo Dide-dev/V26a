@@ -33,13 +33,13 @@
 </script>
 
 <button data-testid="delete-button" class="rounded-md bg-red-800 p-2" onclick={openPopup}>
-    {m.deleteProfile()}
+    {m.deleteAccount()}
 </button>
 
 {#if popupVisible}
     <Popup>
         <p class="text-lg font-bold">
-            {m.deleteProfileConfirmation()}
+            {m.deleteAccountConfirmation()}
         </p>
 
         <label class="flex items-center gap-2">

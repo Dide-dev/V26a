@@ -93,8 +93,8 @@
     "colophon": "Colophon",
     "otherProjects": "Other projects",
     "uploadImage": "Upload image",
-    "deleteOwnedTrees": "Delete all owned trees",
-    "deleteProfile": "Delete profile",
-    "deleteProfileConfirmation": "Are you sure you want to delete your profile?",
+    "deleteOwnedTrees": "Delete all my trees",
+    "deleteAccount": "Delete account",
+    "deleteAccountConfirmation": "Are you sure you want to delete your account?",
     "usernameAlreadyExists": "An account with this username already exists"
 }
