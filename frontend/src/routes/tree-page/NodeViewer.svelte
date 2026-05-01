@@ -14,6 +14,8 @@
         fillStateStructure,
         followIndex,
         initializeHistory,
+        type StateNode,
+        type StateRootNode,
         type TreeHistory
     } from './history.svelte';
     import type { SideBar } from './SidebarComponent.svelte';
@@ -35,7 +37,11 @@
         editingPage: boolean;
     } = $props();
 
-    let node = $derived(followIndex(history.currentStructure, location));
+    // Having null is possible if this is a fake node not present in the currentStructure,
+    // but currently being created in the sidebar.
+    let node: null | StateRootNode | StateNode = $derived(
+        followIndex(history.currentStructure, location)
+    );
     let isFirstChild = $derived(location[location.length - 1] === 0);
     let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
 
@@ -107,7 +113,9 @@
 
         totalHeight = outermostDiv.getBoundingClientRect().height;
 
-        if (node.children.length === 0) return;
+        // It is possible that node.children.length === 0, but domChildren.children.length > 0.
+        // This happens when adding a new Card and a sidebar is open
+        if (domChildren.children.length === 0) return;
 
         let top = domChildren.getBoundingClientRect().top;
 
@@ -170,7 +178,7 @@
 <div
     class="relative flex"
     bind:this={outermostDiv}
-    class:mt-7={editingPage && ('label' in node || !isFirstChild)}
+    class:mt-7={editingPage && node !== null && ('label' in node || !isFirstChild)}
 >
     <!--
         Render copy of self (but transparent and smaller) where the mouse currently is.
@@ -188,7 +196,7 @@
                     // TODO: Improve this in the separation of viewer and editor later.
                     const structure = fillStateStructure(history.currentStructure, false);
                     const parent = followIndex(structure, location.slice(0, -1));
-                    if ('revealed' in parent) {
+                    if (parent !== null && 'revealed' in parent) {
                         parent.revealed = true;
                     }
                     return initializeHistory(history.treeId, structure, history.currentCards);
@@ -202,7 +210,7 @@
         </div>
     {/if}
 
-    {#if editingPage && isFirstChild && 'cardId' in node}
+    {#if editingPage && isFirstChild && (node === null || 'cardId' in node)}
         <AddAndDrop
             {history}
             {location}
@@ -213,14 +221,14 @@
         />
     {/if}
 
-    {#if 'label' in node}
+    {#if node !== null && 'label' in node}
         <!-- Root Node -->
         <div class="mb-5 h-fit w-32 shrink-0 cursor-default">
             <strong>{node.label}</strong>
         </div>
     {:else}
         <!-- Standard Node -->
-        {#if editingPage}
+        {#if editingPage && dragState === null}
             <TreeEditButtons
                 {history}
                 {location}
@@ -252,7 +260,7 @@
         </div>
     {/if}
 
-    {#if node.children.length !== 0}
+    {#if svgLines.length !== 0}
         <svg width={svgWidth} height={svgHeight} class="shrink-0">
             {#each svgLines as line (line)}
                 <line
@@ -267,19 +275,60 @@
 
     <!-- Here the html gets recursive as we render the 'node.children' -->
     <div bind:this={domChildren} class="flex flex-col">
-        {#each node.children as child_node, index (child_node)}
+        {#each node?.children as child_node, index (child_node)}
+            {#if sidebar?.type === 'NewCard' && JSON.stringify( [...location, index] ) === JSON.stringify(sidebar.location)}
+                <!-- This is the new dummy card currently being created, above the real card -->
+                <NodeViewer
+                    bind:history
+                    location={[...location, index]}
+                    dragState={{ type: 'dismissed' }}
+                    bind:sidebar
+                    bind:numPopupsOpen
+                    {editingPage}
+                />
+                <!--
+                    We need to create a separate nodeviewer here for the real card,
+                    to configure that the sidebar is null.
+                    That prevents this nodeviewer from displaying the contents,
+                    because the location is the same for this real node and the fake node above here.
+                -->
+                <NodeViewer
+                    bind:history
+                    location={[...location, index]}
+                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                    sidebar={null}
+                    bind:numPopupsOpen
+                    {editingPage}
+                />
+            {:else}
+                <NodeViewer
+                    bind:history
+                    location={[...location, index]}
+                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                    bind:sidebar
+                    bind:numPopupsOpen
+                    {editingPage}
+                />
+            {/if}
+        {/each}
+
+        <!--
+            This gets used whenever this is the last child in a list of childs,
+            but also whenever there are no children at all and this one is displayed
+        -->
+        {#if sidebar?.type === 'NewCard' && node !== null && JSON.stringify( [...location, node.children.length] ) === JSON.stringify(sidebar.location)}
             <NodeViewer
                 bind:history
-                location={[...location, index]}
-                bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                location={[...location, node.children.length]}
+                dragState={{ type: 'dismissed' }}
                 bind:sidebar
                 bind:numPopupsOpen
                 {editingPage}
             />
-        {/each}
+        {/if}
     </div>
 
-    {#if editingPage && node.children.length === 0}
+    {#if editingPage && svgLines.length === 0}
         <div class="flex h-9 items-center">
             <AddAndDrop
                 {history}

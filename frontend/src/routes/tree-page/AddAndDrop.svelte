@@ -11,7 +11,7 @@
  -->
 <script lang="ts">
     import iconAdd from '$lib/assets/iconAdd.svg?raw';
-    import { doAddCard, doMove, type TreeHistory } from './history.svelte';
+    import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './NodeViewer.svelte';
     import type { SideBar } from './SidebarComponent.svelte';
 
@@ -66,18 +66,15 @@
     let isHovered = $state(false);
     let highlight = $derived((dragState == null && isHovered) || dragState?.type === 'dragging');
 
-
     // Clicking for adding cards // TODO remove card when cancel button is pressed (or a new card is added when no new text is added)
     async function onclick() {
         if (dragState !== null) {
             return;
         }
-        await doAddCard(history, location, {front: '', back: ''});
-        // This does the same as the editClick() functionality in TreeEditButtons.svelte
         sidebar = {
-            type: 'EditCard',
+            type: 'NewCard',
             location: location,
-            editingVersion: {front: '', back: ''}
+            editingVersion: { front: '', back: '' }
         };
     }
 
@@ -102,13 +99,14 @@
 
 {#snippet buttonArea()}
     <button
-        class="flex w-2xs cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed"
+        class="flex w-2xs items-center justify-center rounded-2xl border-2 border-dashed"
         style="height: {buttonHeight}px"
         class:bg-amber-200={isHovered && dragState?.type == 'dragging'}
         class:fill-gray-300={!highlight}
         class:fill-gray-800={highlight}
         class:border-gray-300={!highlight}
         class:border-gray-800={highlight}
+        class:cursor-pointer={highlight}
         {onclick}
         {onmouseup}
         onmouseenter={() => (isHovered = true)}
@@ -196,4 +194,3 @@
         </div>
     </div>
 {/if}
-

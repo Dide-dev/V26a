@@ -32,7 +32,7 @@
 
     let parentIsVisible = $derived.by(() => {
         let parent = followIndex(history.currentStructure, location.slice(0, -1));
-        if ('revealed' in parent) {
+        if (parent !== null && 'revealed' in parent) {
             return parent.revealed;
         } else {
             return true;

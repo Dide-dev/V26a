@@ -93,9 +93,9 @@ export async function doMove(history: TreeHistory, nodeToMove: number[], newLoca
 
     const node = followIndexNode(newStructure, nodeToMove);
 
-    const parent = followIndex(newStructure, nodeToMove.slice(0, -1));
+    const parent = followIndex(newStructure, nodeToMove.slice(0, -1))!;
     const parentIndex = nodeToMove[nodeToMove.length - 1];
-    const placementParent = followIndex(newStructure, newLocation.slice(0, -1));
+    const placementParent = followIndex(newStructure, newLocation.slice(0, -1))!;
     const placementIndex = newLocation[newLocation.length - 1];
 
     parent.children.splice(parentIndex, 1);
@@ -117,7 +117,7 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
     });
 
     const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
-    const parent = followIndex(newStructure, location.slice(0, -1));
+    const parent = followIndex(newStructure, location.slice(0, -1))!;
     parent.children.splice(location[location.length - 1], 0, {
         revealed: true,
         cardId,
@@ -157,7 +157,7 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
     const card = followIndexNode(newStructure, index);
 
     // Perform actual structural removal locally here
-    const parent = followIndex(newStructure, index.slice(0, -1));
+    const parent = followIndex(newStructure, index.slice(0, -1))!;
     const parentIndex = index[index.length - 1];
     parent.children.splice(parentIndex, 1, ...card.children);
 
@@ -487,10 +487,14 @@ export function fillStateStructure(
 export function followIndex(
     treeStructure: StateTreeStructure,
     index: number[]
-): StateRootNode | StateNode {
-    let node: StateRootNode | StateNode = treeStructure.rootNodes[index[0]];
+): StateRootNode | StateNode | null {
+    let node: StateRootNode | StateNode | null = treeStructure.rootNodes[index[0]];
     for (let i = 1; i < index.length; i++) {
         node = node.children[index[i]];
+
+        if (node === undefined) {
+            return null;
+        }
     }
     return node;
 }
@@ -500,9 +504,11 @@ export function followIndex(
  */
 export function followIndexNode(treeStructure: StateTreeStructure, index: number[]): StateNode {
     const node = followIndex(treeStructure, index);
-    if (!('cardId' in node)) {
+    if (node === null || !('cardId' in node)) {
         // This should NEVER happen, but we have to check for typescript
-        throw new Error('followIndexNode was called with index referencing RootNode');
+        throw new Error(
+            'followIndexNode was called with index referencing RootNode or non-existing node'
+        );
     }
     return node;
 }

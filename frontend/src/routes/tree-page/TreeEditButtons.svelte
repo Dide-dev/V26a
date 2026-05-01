@@ -32,6 +32,7 @@
     //let showEditPopup = $state(false);
 
     async function removeButtonClick() {
+        sidebar = null;
         await doDeleteCard(history, location);
     }
 
@@ -47,6 +48,7 @@
             mouseX: event.clientX,
             mouseY: event.clientY
         };
+        sidebar = null;
     }
 
     let cardId = $derived.by(() => {
@@ -58,7 +60,7 @@
     function editClick() {
         sidebar = {
             type: 'EditCard',
-            location: location,
+            location,
             editingVersion: $state.snapshot(card)
         };
     }

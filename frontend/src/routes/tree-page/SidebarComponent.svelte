@@ -10,14 +10,14 @@
 <script lang="ts">
     import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages';
-    import {doEditCard, followIndexNode, type TreeHistory} from "./history.svelte.ts";
+    import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
 
     let {
         sidebar = $bindable(),
-        history,
+        history
     }: {
-        sidebar: SideBar | null,
-        history: TreeHistory,
+        sidebar: SideBar | null;
+        history: TreeHistory;
     } = $props();
 
     export type SideBar = {
@@ -30,10 +30,14 @@
     const frontMaxLength = 250;
     const backMaxLength = 5000;
 
+    async function finishEdit() {
+        let node = followIndexNode(history.currentStructure, sidebar!.location);
+        await doEditCard(history, node.cardId, sidebar!.editingVersion);
+        sidebar = null;
+    }
 
-    async function finishEdit(newCard: CardGetData) {
-        let node = followIndexNode(history.currentStructure, sidebar!.location)
-        await doEditCard(history, node.cardId, newCard);
+    async function finishAdd() {
+        await doAddCard(history, sidebar!.location, sidebar!.editingVersion);
         sidebar = null;
     }
 
@@ -42,24 +46,29 @@
         if (sidebar === null) {
             return;
         }
-            sidebar.editingVersion.front = sidebar.editingVersion.front.trim();
-            sidebar.editingVersion.back = sidebar.editingVersion.back.trim();
+        sidebar.editingVersion.front = sidebar.editingVersion.front.trim();
+        sidebar.editingVersion.back = sidebar.editingVersion.back.trim();
 
-            if (sidebar.editingVersion.back.length === 0) {
-                sidebar.errorMessage = m.backTextRequired();
-                return;
-            }
+        if (sidebar.editingVersion.back.length === 0) {
+            sidebar.errorMessage = m.backTextRequired();
+            return;
+        }
 
-            if (sidebar.editingVersion.front.length > frontMaxLength) {
-                sidebar.errorMessage = m.frontTextCharacterLimit({limit: frontMaxLength});
-                return;
-            }
-            if (sidebar.editingVersion.back.length > backMaxLength) {
-                sidebar.errorMessage = m.backTextCharacterLimit({limit: backMaxLength});
-                return;
-            }
-            sidebar.errorMessage = '';
-            finishEdit(sidebar.editingVersion);
+        if (sidebar.editingVersion.front.length > frontMaxLength) {
+            sidebar.errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
+            return;
+        }
+        if (sidebar.editingVersion.back.length > backMaxLength) {
+            sidebar.errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
+            return;
+        }
+        sidebar.errorMessage = '';
+
+        if (sidebar.type === 'NewCard') {
+            finishAdd();
+        } else {
+            finishEdit();
+        }
     }
 
     export const fullwidth: number = 350;
@@ -73,10 +82,16 @@
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <textarea class="border" rows="3" maxlength={frontMaxLength} bind:value={sidebar.editingVersion.front}></textarea>
+            <textarea
+                class="border"
+                rows="3"
+                maxlength={frontMaxLength}
+                bind:value={sidebar.editingVersion.front}
+            ></textarea>
             <p class="text-xs">{sidebar.editingVersion.front.length}/{frontMaxLength}</p>
             <p>Back</p>
-            <textarea rows="16" maxlength={backMaxLength} bind:value={sidebar.editingVersion.back}></textarea>
+            <textarea rows="16" maxlength={backMaxLength} bind:value={sidebar.editingVersion.back}
+            ></textarea>
             <p class="text-xs">{sidebar.editingVersion.back.length}/{backMaxLength}</p>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>
