@@ -28,7 +28,7 @@
     "createTree": "Creëer boom",
     "optional": "Optioneel",
     "email": "E-mail",
-    "name": "Naam",
+    "name": "Gebruikersnaam",
     "nickname": "Pseudoniem",
     "aboutMe": "Over mij",
     "password": "Wachtwoord",
@@ -92,5 +92,6 @@
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
     "otherProjects": "Andere projecten",
-    "uploadImage": "Upload afbeelding"
+    "uploadImage": "Upload afbeelding",
+    "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik"
 }

@@ -44,9 +44,12 @@
     let unsuccesfulPasswordChange: boolean = $state(false);
     let succesfulPasswordChange: boolean = $state(false);
     let sameOldAndNewPassword: boolean = $state(false);
+    let usernameAlreadyExists: boolean = $state(false);
+    let emailAlreadyExists: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
+        usernameAlreadyExists = false;
 
         handlePasswordChange();
 
@@ -55,7 +58,7 @@
             await redirectLogin(page.url);
             return;
         }
-        await updateUser(userInfo.sub, {
+        const result = await updateUser(userInfo.sub, {
             name: userData.name,
             nickname: userData.nickname,
             aboutMe: userData.aboutMe,
@@ -64,6 +67,17 @@
             accountType: null,
             enabled: null
         });
+
+        if (result.type === 'Success') {
+            emailAlreadyExists = false;
+            usernameAlreadyExists = false;
+        } else if (result.type === 'EmailAlreadyUsed') {
+            emailAlreadyExists = true;
+        } else if (result.type === 'UsernameAlreadyUsed') {
+            usernameAlreadyExists = true;
+        } else {
+            throw new Error('ERROR: Unexpected output from API.');
+        }
 
         // Effectively reloads the page. This is not really necessary, but prevents
         // the displayed data from being inconsistent with the database in case something
@@ -148,6 +162,12 @@
                         required
                     />
                 </label>
+                {#if emailAlreadyExists}
+                    <p class="text-red-600" data-testid="error">{m.emailAlreadyExists()}</p>
+                {/if}
+                {#if usernameAlreadyExists}
+                    <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
+                {/if}
                 <label>
                     <p class="font-bold">{m.nickname()}</p>
                     <input
