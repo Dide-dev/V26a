@@ -42,7 +42,7 @@
     <!-- Cards layout in the editor -->
     {#if visible}
         <button
-            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer overflow-auto border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
             onclick={toggleVisible}
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -50,7 +50,7 @@
         </button>
     {:else}
         <button
-            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={toggleVisible}
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -60,13 +60,15 @@
 {:else}
     <!-- Cards layout in the viewer -->
     {#if visible}
-        <p class="h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere">
+        <p
+            class="h-fit min-h-9 w-xl overflow-auto border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
+        >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html htmlFromMarkdown(card.back)}
         </p>
     {:else if parentIsVisible}
         <button
-            class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={setVisible}
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
