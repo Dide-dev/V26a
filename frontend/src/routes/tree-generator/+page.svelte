@@ -65,8 +65,8 @@
     /* Returns either the normalized value of the ISBN if it is valid,
      * or `null` if it is not. */
     function tryParseISBN(): Option<string> {
-        if (treeData.bookIsbn === null) {
-            return null;
+        if (!treeData.bookIsbn) {
+            return '';
         }
 
         const isbn = treeData.bookIsbn.trim().replaceAll('-', '');
@@ -84,8 +84,8 @@
         let s = 0,
             t = 0;
 
-        for (let c of str) {
-            const d = parseInt(c);
+        for (let i = 0; i < 9; i++) {
+            let d = parseInt(str[i]);
 
             if (isNaN(d)) {
                 return false;
@@ -95,7 +95,15 @@
             s += t;
         }
 
-        return s % 11 === 0;
+        s += t;
+
+        const lastChar = str[9];
+        if (lastChar === 'X') {
+            // X is used to indicate a checksum digit value of '10'
+            return 11 - (s % 11) === 10;
+        } else {
+            return 11 - (s % 11) === parseInt(lastChar);
+        }
     }
 
     function checkISBN13(str: string): boolean {

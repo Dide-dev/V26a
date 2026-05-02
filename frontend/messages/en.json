@@ -32,6 +32,7 @@
     "yourFeedback": "Enter your feedback",
     "language": "Language",
     "emailVisible": "Display my email address.",
+    "emailVisibleInfo": "This is useful for students to contact you, e.g., for feedback or signaling of errors.",
     "register": "Register",
     "emailPlaceholder": "user@example.com",
     "madeBy": "Made by",
