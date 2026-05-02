@@ -5,9 +5,9 @@
 -->
 
 <script lang="ts">
-    import iconUndo from '$lib/assets/iconUndo.svg?raw';
-    import iconRedo from '$lib/assets/iconRedo.svg?raw';
-    import iconExternalLink from '$lib/assets/iconExternalLink.svg?raw';
+    import iconUndo from '$lib/assets/icons/undo.svg?raw';
+    import iconRedo from '$lib/assets/icons/redo.svg?raw';
+    import iconExternalLink from '$lib/assets/icons/externalLink.svg?raw';
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
@@ -25,6 +25,7 @@
         canRedo
     } from '../history.svelte';
     import EditMetadata from './EditMetadata.svelte';
+    import RootNodeAddButton from '../RootNodeAddButton.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -205,6 +206,7 @@
                     bind:numPopupsOpen={tree.numPopupsOpen}
                 />
             {/each}
+            <RootNodeAddButton history={tree.history} bind:numPopupsOpen={tree.numPopupsOpen} />
         </div>
     {/if}
 </div>

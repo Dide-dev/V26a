@@ -15,6 +15,11 @@
     "moveCardWithSubtree": "Verplaats kaart met deelboom",
     "editThisCard": "Bewerk deze kaart",
     "deleteThisCard": "Verwijder deze kaart",
+    "editRootnodeLabel": "Bewerk taklabel",
+    "moveUp": "Verplaats omhoog",
+    "moveDown": "Verplaats naar beneden",
+    "deleteRootnode": "Verwijder deze tak",
+    "deleteRootnodeBlocked": "Deze tak kan niet verwijderd worden, verwijder eerst de kaarten rechts van hier",
     "undo": "Ongedaan maken",
     "redo": "Opnieuw doen",
     "viewTree": "Bekijk boom",
@@ -23,7 +28,7 @@
     "createTree": "Creëer boom",
     "optional": "Optioneel",
     "email": "E-mail",
-    "name": "Naam",
+    "name": "Gebruikersnaam",
     "nickname": "Pseudoniem",
     "aboutMe": "Over mij",
     "password": "Wachtwoord",
@@ -114,5 +119,6 @@
     "invalidISBN": "Voer een geldige ISBN van lengte 10 of 13 in",
     "general": "Algemeen",
     "accountSettings": "Accountinstellingen",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik"
 }

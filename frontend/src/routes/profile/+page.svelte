@@ -36,6 +36,8 @@
     let incorrectPassword: boolean = $state(false);
     let passwordMissingChar: boolean = $state(false);
     let sameOldAndNewPassword: boolean = $state(false);
+    let usernameAlreadyExists: boolean = $state(false);
+    let emailAlreadyExists: boolean = $state(false);
     let passwordNotSame: boolean = $state(false);
     let successfulPasswordChange: boolean = $state(false);
 
@@ -101,9 +103,10 @@
             return;
         }
 
+        usernameAlreadyExists = false;
         resetInputStates();
 
-        await updateUser(userInfo.sub, {
+        const result = await updateUser(userInfo.sub, {
             name: userData.name,
             nickname: userData.nickname,
             aboutMe: userData.aboutMe,
@@ -112,6 +115,19 @@
             accountType: null,
             enabled: null
         });
+
+        if (result.type === 'Success') {
+            emailAlreadyExists = false;
+            usernameAlreadyExists = false;
+        } else if (result.type === 'EmailAlreadyUsed') {
+            emailAlreadyExists = true;
+            return;
+        } else if (result.type === 'UsernameAlreadyUsed') {
+            usernameAlreadyExists = true;
+            return;
+        } else {
+            throw new Error('ERROR: Unexpected output from API.');
+        }
 
         // Effectively reloads the page. This is not really necessary, but prevents
         // the displayed data from being inconsistent with the database in case something
@@ -183,7 +199,11 @@
                 <label for="email">{m.email()}</label>
                 <input
                     id="email"
-                    class={[!inputsChanged.emailChanged && 'inactive', 'input__text']}
+                    class={[
+                        !inputsChanged.emailChanged && 'inactive',
+                        emailAlreadyExists && 'error',
+                        'input__text'
+                    ]}
                     name="email"
                     type="email"
                     data-testid="email"
@@ -195,12 +215,19 @@
                     }}
                     disabled
                 />
+                {#if emailAlreadyExists}
+                    <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
+                {/if}
             </div>
             <div>
                 <label for="name">{m.name()}</label>
                 <input
                     id="name"
-                    class={[!inputsChanged.nameChanged && 'inactive', 'input__text']}
+                    class={[
+                        !inputsChanged.nameChanged && 'inactive',
+                        usernameAlreadyExists && 'error',
+                        'input__text'
+                    ]}
                     bind:value={userData.name}
                     name="name"
                     type="text"
@@ -213,6 +240,9 @@
                     }}
                     required
                 />
+                {#if usernameAlreadyExists}
+                    <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
+                {/if}
             </div>
             <div>
                 <label for="nickname">{m.nickname()}</label>

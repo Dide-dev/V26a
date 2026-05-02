@@ -130,17 +130,22 @@
             margin: 2px;
             text-underline-offset: 4px;
             text-decoration: underline var(--color-neutral-350) 2px;
-        }
 
-        input[type='text'].inactive:not(:focus):hover,
-        input[type='text'].inactive:not(:focus):hover::placeholder {
-            text-decoration-color: var(--color-neutral-500);
-        }
+            &::placeholder {
+                padding-bottom: 2px;
+                text-underline-offset: 4px;
+                text-decoration: underline var(--color-neutral-350) 2px;
+            }
 
-        input[type='text'].inactive:not(:focus)::placeholder {
-            padding-bottom: 2px;
-            text-underline-offset: 4px;
-            text-decoration: underline var(--color-neutral-350) 2px;
+            &:hover,
+            &:hover::placeholder {
+                text-decoration-color: var(--color-neutral-500);
+            }
+
+            &.error {
+                text-decoration-color: var(--color-red-800);
+                background: none;
+            }
         }
 
         :disabled {
@@ -153,6 +158,8 @@
             background-color: var(--color-red-100);
             border-color: var(--color-red-800);
             border-width: 3px !important;
+
+            animation: invalidInputClick linear 0.15s;
         }
 
         input + input {
@@ -165,24 +172,23 @@
         .input__select {
             border-width: 2px;
             border-radius: var(--radius-md);
+
+            &::placeholder {
+                font-style: italic;
+            }
         }
 
-        input::placeholder,
-        textarea::placeholder {
-            font-style: italic;
-        }
-
-        input[type='checkbox'] {
+        .input__checkbox {
             margin-top: calc(1rem / 3);
             margin-bottom: auto;
             color: var(--color-gray-600);
             cursor: pointer;
-        }
 
-        input[type='checkbox'] + label {
-            font-weight: var(--font-weight-normal);
-            font-style: italic;
-            line-height: var(--text-base--line-height);
+            + label {
+                font-weight: var(--font-weight-normal);
+                font-style: italic;
+                line-height: var(--text-base--line-height);
+            }
         }
 
         .input__select {
@@ -213,20 +219,20 @@
             background-color: var(--color-neutral-400);
             border-color: currentColor;
         }
-    }
 
-    form.completed {
-        button {
-            color: var(--color-black);
-            background-color: var(--color-neutral-200);
-            border-color: var(--color-neutral-600);
-            cursor: pointer;
-        }
+        &.completed {
+            button {
+                color: var(--color-black);
+                background-color: var(--color-neutral-200);
+                border-color: var(--color-neutral-600);
+                cursor: pointer;
+            }
 
-        button:hover {
-            color: var(--color-white);
-            background-color: var(--color-neutral-600);
-            animation: completedFormButtonSelect 0.15s ease-in-out;
+            button:hover {
+                color: var(--color-white);
+                background-color: var(--color-neutral-600);
+                animation: completedFormButtonSelect 0.15s ease-in-out;
+            }
         }
     }
 
@@ -243,11 +249,16 @@
 
     @keyframes invalidInputClick {
         0% {
-            color: initial;
-            padding-left: initial;
         }
         25% {
-            padding-left: calc(initial - 1rem);
+            color: var(--color-red-800);
+            padding-left: calc(var(--spacing) * 2.5);
+        }
+        75% {
+            color: var(--color-red-800);
+            padding-left: calc(var(--spacing) * 3.5);
+        }
+        100% {
         }
     }
 

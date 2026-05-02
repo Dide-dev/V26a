@@ -33,6 +33,7 @@
     let agreedToTOS = $state(false);
     let passwordMissingChar: boolean = $state(false);
     let passwordNotSame: boolean = $state(false);
+    let usernameAlreadyExists: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
     let formCompleted: boolean = $derived(
         formData.email !== '' &&
@@ -61,6 +62,7 @@
         passwordMissingChar = false;
         passwordNotSame = false;
         emailAlreadyExists = false;
+        usernameAlreadyExists = false;
 
         if (
             !checkLowercase(formData.password) ||
@@ -79,9 +81,12 @@
         let addResponse = await addUser(formData);
         if (addResponse.type === 'Success') {
             emailAlreadyExists = false;
+            usernameAlreadyExists = false;
             await goto(appLink('/login'));
         } else if (addResponse.type === 'EmailAlreadyUsed') {
             emailAlreadyExists = true;
+        } else if (addResponse.type === 'UsernameAlreadyUsed') {
+            usernameAlreadyExists = true;
         } else {
             throw new Error('ERROR: Unexpected output from API.');
         }
@@ -121,7 +126,7 @@
             </label>
             <input
                 id="name"
-                class="input__text"
+                class={[usernameAlreadyExists && 'error', 'input__text']}
                 bind:value={formData.name}
                 name="name"
                 type="text"
@@ -132,6 +137,9 @@
                 autocomplete="name"
                 required
             />
+            {#if usernameAlreadyExists}
+                <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
+            {/if}
         </div>
         <div>
             <label for="nickname">

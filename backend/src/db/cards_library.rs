@@ -4,9 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::cards::CardGetData;
+use crate::db_structs::cards::{CardFilters, CardGetData, LibraryCardGetData};
 use crate::errors::ApiError;
-use sqlx::{PgExecutor, query};
+use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
 
 /// Add a card to the card library database.
 ///
@@ -51,6 +51,120 @@ pub async fn cards_library_add(
     Ok(library_card_id)
 }
 
+/// Get the amount of cards satisfying some filters.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// # Returns
+/// The amount of cards satisfying the filters.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_queried_cards_count(
+    db: impl PgExecutor<'_>,
+    filters: &CardFilters,
+) -> Result<i64, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM library_cards");
+
+    apply_card_filters(&mut query, filters);
+
+    let card_count: i64 = query
+        .build_query_scalar()
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(card_count)
+}
+
+/// Get the list of all cards satisfying some filters.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `filters` - The filters to apply to the trees.
+///
+/// # Returns
+/// A list with the trees satisfying the filters.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_queried_cards_list(
+    db: impl PgExecutor<'_>,
+    filters: &CardFilters,
+) -> Result<Vec<LibraryCardGetData>, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new(
+        "
+        SELECT id AS card_id, owner_id, created_at, title, tags, front, back
+        FROM library_cards",
+    );
+
+    apply_card_filters(&mut query, filters);
+
+    query.push(
+        // newest first
+        " ORDER BY created_at DESC ",
+    );
+
+    let library_cards = query
+        .build_query_as::<LibraryCardGetData>()
+        .fetch_all(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(library_cards)
+}
+
+/// Adds [`CardFilters`] to a Postgres [`QueryBuilder`]
+///
+/// # Arguments
+/// `builder` - The [`QueryBuilder`] to be mutated in-place.
+///
+/// `filters` - The [`CardFilters`] to apply to the query.
+fn apply_card_filters<'a>(builder: &mut QueryBuilder<'a, Postgres>, filters: &'a CardFilters) {
+    let CardFilters {
+        owner_id,
+        created_after,
+        created_before,
+        tags,
+    } = filters;
+
+    if owner_id.is_none() && created_after.is_none() && created_before.is_none() && tags.is_empty()
+    {
+        return;
+    }
+
+    builder.push(" WHERE ");
+    let mut separated = builder.separated(" AND ");
+    if let Some(owner_id) = owner_id {
+        separated
+            .push("(owner_id = ")
+            .push_bind_unseparated(owner_id)
+            .push_unseparated(")");
+    }
+    if let Some(created_after) = created_after {
+        separated
+            .push("(created_at >= ")
+            .push_bind_unseparated(created_after)
+            .push_unseparated(")");
+    }
+    if let Some(created_before) = created_before {
+        separated
+            .push("(created_at <= ")
+            .push_bind_unseparated(created_before)
+            .push_unseparated(")");
+    }
+    if !tags.is_empty() {
+        separated
+            .push("(tags @>")
+            .push_bind_unseparated(tags)
+            .push_unseparated("::varchar[])");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,5 +201,47 @@ mod tests {
         assert_eq!(found_card_data.tags.unwrap(), tags);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
+    }
+
+    #[test]
+    fn test_apply_card_filters() {
+        use chrono::{DateTime, Utc};
+
+        let mut no_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM library_cards");
+        let empty_filters = CardFilters {
+            owner_id: None,
+            created_after: None,
+            created_before: None,
+            tags: vec![],
+        };
+        apply_card_filters(&mut no_filters_query, &empty_filters);
+        assert_eq!(no_filters_query.sql(), "SELECT * FROM library_cards");
+
+        let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM library_cards");
+        let all_filters = CardFilters {
+            owner_id: Some(67),
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            created_before: Some(DateTime::<Utc>::MAX_UTC),
+            tags: vec!["tags".to_owned()],
+        };
+        apply_card_filters(&mut all_filters_query, &all_filters);
+        assert_eq!(
+            all_filters_query.sql(),
+            "SELECT * FROM library_cards WHERE (owner_id = $1) AND (created_at >= $2) AND (created_at <= $3) AND (tags @>$4::varchar[])"
+        );
+
+        let mut partial_filters_query =
+            QueryBuilder::<Postgres>::new("SELECT * FROM cards_library");
+        let partial_filters = CardFilters {
+            owner_id: Some(67),
+            created_after: Some(DateTime::<Utc>::MIN_UTC),
+            created_before: None,
+            tags: vec![],
+        };
+        apply_card_filters(&mut partial_filters_query, &partial_filters);
+        assert_eq!(
+            partial_filters_query.sql(),
+            "SELECT * FROM cards_library WHERE (owner_id = $1) AND (created_at >= $2)"
+        );
     }
 }
