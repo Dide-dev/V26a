@@ -1,12 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS(SELECT 1 FROM users WHERE name = $1)",
+  "query": "SELECT id FROM users WHERE email = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "exists",
-        "type_info": "Bool"
+        "name": "id",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -20,8 +20,8 @@
       ]
     },
     "nullable": [
-      null
+      false
     ]
   },
-  "hash": "ac922350a43953ac2e220a85a363498b9ac57cc16fe98f02842a7eccacb37545"
+  "hash": "4560c237741ce9d4166aecd669770b3360a3ac71e649b293efb88d92c3254068"
 }
