@@ -50,7 +50,7 @@ pub fn trees() -> Router<Config> {
     request_body = TreeAddData,
     responses(
         (status = 200, description = "Tree successfully added with returned id.", body = i32, content_type = "application/json"),
-        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
+        (status = 400, description = "Tree structure contains cards, invalid ISBN provided, non-existent language provided or non-existent subject provided"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error.")
     ),
@@ -69,7 +69,16 @@ pub fn trees() -> Router<Config> {
 /// The id assigned to the new tree.
 ///
 /// # Errors
-/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`] in
+/// [`TreeAddData`] contains an invalid ISBN.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`] in
+/// [`TreeAddData`] contains a non-existent language.
+///
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`] in
+/// [`TreeAddData`] contains a non-existent subject.
+///
+/// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
 /// [`TreeAddData`] contains cards.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -160,7 +169,7 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
     request_body = TreeUpdateStructureData,
     responses(
         (status = 200, description = "Tree structure successfully updated."),
-        (status = 400, description = "Tree with given id cannot be found or the new structure is not valid."),
+        (status = 400, description = "Tree with given id cannot be found, new structure is not valid, invalid ISBN provided, non-existent language provided or non-existent subject provided."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -181,6 +190,15 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
 /// Nothing.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`] in
+/// [`TreeAddData`] contains an invalid ISBN.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`] in
+/// [`TreeAddData`] contains a non-existent language.
+///
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`] in
+/// [`TreeAddData`] contains a non-existent subject.
+///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
 /// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
@@ -376,6 +394,17 @@ async fn update_tree_data(
 
     // Verify the tree's existence and the user's permissions.
     verify_tree_permissions(&mut *transaction, tree_update_data.id, claims).await?;
+
+    if !language_exists(&mut *transaction, &tree_update_data.new_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(
+            tree_update_data.new_data.language_code.clone(),
+        ));
+    }
+    if let Some(subject_id) = &tree_update_data.new_data.subject_id
+        && !subject_exists(&mut *transaction, *subject_id).await?
+    {
+        return Err(ApiError::MissingSubject(*subject_id));
+    }
 
     db::trees::update_tree_data(
         &mut transaction,

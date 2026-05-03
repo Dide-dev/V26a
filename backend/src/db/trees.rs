@@ -42,7 +42,8 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// # Returns
-/// A list of all the possible tree subjects stored in the database.
+/// A map of all the possible tree subjects stored in the database indexed by id,
+/// as [`HashMap<i32, Subject>`].
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -99,7 +100,7 @@ pub async fn language_exists(
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// # Returns
-/// A list of all the possible tree languages stored in the database.
+/// A list of all the possible tree languages stored in the database, as [`Vec<Language>`].
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -176,7 +177,7 @@ pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
     }
 }
 
-/// Add a new book to the database. If a book with the given isbn already exists, do nothing.
+/// Add a new book to the database. If a book with the given ISBN already exists, do nothing.
 ///
 /// # Arguments
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -184,19 +185,27 @@ pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
 /// `tree_data` - The [`TreeData`] which contains the book data.
 ///
 /// # Returns
-/// Nothing.
+/// `true` if a book with the given ISBN already existed, `false` otherwise.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the book's ISBN is invalid.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<(), ApiError> {
+pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<bool, ApiError> {
     if tree_data.book_isbn.is_none() {
-        return Ok(());
+        return Ok(false);
     }
 
-    query!(
-        "INSERT INTO books (isbn, title, author, edition)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT DO NOTHING",
+    let result = query!(
+        "WITH insertion AS (
+            INSERT INTO books (isbn, title, author, edition)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT DO NOTHING
+            RETURNING FALSE AS exists
+        )
+        SELECT * FROM insertion
+        UNION
+        SELECT TRUE AS exists FROM books WHERE isbn = $1",
         tree_data
             .book_isbn
             .as_ref()
@@ -206,17 +215,17 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<(
         tree_data.book_author,
         tree_data.book_edition,
     )
-    .execute(db)
+    .fetch_one(db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(())
+    Ok(result.exists.unwrap_or(false))
 }
 
 /// Add a list of tags for a given tree in the database.
 ///
 /// # Arguments
-/// `db` - A connection to the database.
+/// `db` - A connection to the database, as [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree to assign the tags to.
 ///
@@ -264,12 +273,12 @@ pub async fn add_tags(
 
 /// Add a new tree to the database.
 ///
+/// Also adds a new book, if the referenced book ISBN does not yet exist.
+///
 /// # Arguments
-/// `db` - A connection to the database.
+/// `db` - A connection to the database, as [`&mut PgConnection`](PgConnection).
 ///
-/// `tree_data` - The data assigned to the new tree as [`TreeData`].
-///
-/// `tree_structure` - The tree structure with cards as [`TreeStructure`].
+/// `tree_add_data` - The data assigned to the new tree as [`TreeAddData`].
 ///
 /// `owner_id` - The id of the owner of the tree.
 ///
@@ -277,6 +286,8 @@ pub async fn add_tags(
 /// The id assigned to the new tree.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the book's ISBN is invalid.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: &mut PgConnection,
@@ -374,7 +385,7 @@ pub async fn update_tree_structure(
 /// Update the data of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - A connection to the database.
+/// `db` - A connection to the database, as [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -385,6 +396,8 @@ pub async fn update_tree_structure(
 /// Nothing.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the new book's ISBN is invalid.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_tree_data(
     db: &mut PgConnection,
@@ -641,7 +654,7 @@ pub async fn is_structure_valid(
 ///
 /// `user_id` - The logged in user performing the filter, optional.
 ///
-/// # Example:
+/// # Example
 /// ```rs
 /// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
 /// apply_tree_filters(query, &filters)?;
@@ -652,7 +665,13 @@ pub async fn is_structure_valid(
 ///         .map_err(|_| ApiError::DatabaseException)?;
 /// ```
 ///
-/// # To future developers:
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the filters contain an invalid ISBN.
+///
+/// # To future developers
 /// This function can and will become too big, good luck if that happens!
 fn apply_tree_filters<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
@@ -837,6 +856,26 @@ mod tests {
         // Invalid ISBN 13
         let result = parse_isbn("979-1-034-90821-1");
         assert_eq!(result, Err(ApiError::InvalidIsbn));
+    }
+
+    #[sqlx::test]
+    async fn test_add_book(db: PgPool) {
+        let tree_data = TreeData {
+            book_isbn: Some("978-0-061-12008-4".to_string()),
+            ..Default::default()
+        };
+
+        // Insert when ISBN does not exist
+        let existed = add_book(get_connection_unwrap!(db), &tree_data)
+            .await
+            .unwrap();
+        assert!(!existed);
+
+        // Insert when ISBN exists
+        let existed = add_book(get_connection_unwrap!(db), &tree_data)
+            .await
+            .unwrap();
+        assert!(existed);
     }
 
     #[sqlx::test]
