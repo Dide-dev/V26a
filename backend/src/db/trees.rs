@@ -466,7 +466,7 @@ fn apply_tree_filters_pagination<'a>(
 /// `user_id` - The logged in user performing the filter, optional.
 ///
 /// # Returns
-/// The amount of trees satisfying the filters at the requested page,
+/// The amount of trees satisfying the filters at the requested page.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

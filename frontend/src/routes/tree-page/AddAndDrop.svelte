@@ -10,7 +10,7 @@
     - Destination for moving cards with drag & drop
  -->
 <script lang="ts">
-    import iconAdd from '$lib/assets/iconAdd.svg?raw';
+    import iconAdd from '$lib/assets/icons/add.svg?raw';
     import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages';
     import CardEditor from './CardEditor.svelte';

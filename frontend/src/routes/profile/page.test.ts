@@ -80,6 +80,11 @@ test('Submission with full data', async () => {
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
 
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -118,6 +123,11 @@ test('New password without upper case letter shows error', async () => {
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
 
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -151,6 +161,11 @@ test('New password without lower case letter shows error', async () => {
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
 
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -183,6 +198,12 @@ test('New password without special character shows error', async () => {
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
+
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -215,6 +236,11 @@ test('New password without number shows error', async () => {
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
+
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
 
     const user = userEvent.setup();
     render(page);
@@ -249,6 +275,11 @@ test('Differing new password and repeat password shows error', async () => {
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
 
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -282,6 +313,11 @@ test('No submission without old password', async () => {
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
 
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -313,6 +349,11 @@ test('No submission without new password', async () => {
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
+
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
 
     const user = userEvent.setup();
     render(page);
@@ -346,6 +387,11 @@ test('No submission without repeat password', async () => {
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
 
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
+
     const user = userEvent.setup();
     render(page);
 
@@ -377,6 +423,11 @@ test('No submission when old and new password are the same', async () => {
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
     mockGetInfo.mockReturnValue(userInfo);
+
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
+    });
 
     const user = userEvent.setup();
     render(page);
@@ -412,6 +463,11 @@ test('Submission when all password expectations have been met', async () => {
     mockGetInfo.mockReturnValue(userInfo);
     (changePassword as MockedFunction<typeof changePassword>).mockResolvedValue({
         succeeded: true
+    });
+
+    (updateUser as MockedFunction<typeof updateUser>).mockResolvedValue({
+        type: 'Success',
+        userId: 1
     });
 
     const user = userEvent.setup();
