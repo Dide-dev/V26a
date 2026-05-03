@@ -210,9 +210,9 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     let response = server.get("/trees/get-mine-all").await;
     response.assert_status_ok();
     let vec: TreeListResponse = response.json();
-    let empty: TreeListResponse = TreeListResponse{
+    let empty: TreeListResponse = TreeListResponse {
         total_trees: 0,
-        trees: Vec::new()
+        trees: Vec::new(),
     };
     assert_eq!(empty, vec);
 

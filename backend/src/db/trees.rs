@@ -244,57 +244,6 @@ pub async fn get_tree_owner(
     Ok(owner)
 }
 
-// TODO: unit tests
-/// Get the list of all trees owned by some owner.
-/// Should only be called if the user is authorised to see private trees!
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-///
-/// `owner_id` - The id of the owner that is queried on.
-///
-/// # Returns
-/// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-// pub async fn get_all_trees_by_owner(
-//     db: impl PgExecutor<'_>,
-//     owner_id: i32,
-// ) -> Result<Vec<TreeMetadata>, ApiError> {
-//     let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
-//         .fetch_all(db)
-//         .await
-//         .map_err(|_| ApiError::DatabaseException)?;
-
-//     let trees_metadata = records
-//         .into_iter()
-//         .map(|t| TreeMetadata {
-//             data: TreeData {
-//                 title: t.title,
-//                 description: t.description,
-//                 book_name: t.book_name,
-//                 book_edition: t.book_edition,
-//                 book_isbn: t.book_isbn,
-//                 book_chapter: t.book_chapter,
-//                 book_exercise: t.book_exercise,
-//                 assignment_text: t.assignment_text,
-//                 published: t.published,
-//             },
-//             gen_data: TreeGeneratedData {
-//                 id: t.id,
-//                 owner_id: t.owner_id,
-//                 created_at: t.created_at,
-//                 last_modified: t.last_modified,
-//                 times_visited: t.times_visited,
-//                 last_visited: t.last_visited,
-//             },
-//         })
-//         .collect::<Vec<TreeMetadata>>();
-
-//     Ok(trees_metadata)
-// }
-
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
 /// and whether any duplicate cards exist in the tree structure.
 ///
@@ -427,7 +376,7 @@ fn apply_tree_filters<'a>(
     }
 }
 
-/// Adds user_id to a Postgres [`QueryBuilder`]
+/// Adds `user_id` to a Postgres [`QueryBuilder`]
 ///
 /// # Arguments
 /// `builder` - The [`QueryBuilder`] to be mutated in-place.
@@ -444,16 +393,13 @@ fn apply_tree_filters<'a>(
 ///         .await
 ///         .map_err(|_| ApiError::DatabaseException)?;
 /// ```
-fn apply_tree_filters_pagination<'a>(
-    builder: &mut QueryBuilder<'a, Postgres>,
-    user_id: i32,
-) {
+fn apply_tree_filters_pagination(builder: &mut QueryBuilder<Postgres>, user_id: i32) {
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
-        separated
-            .push("(owner_id = ")
-            .push_bind_unseparated(user_id)
-            .push_unseparated(")");
+    separated
+        .push("(owner_id = ")
+        .push_bind_unseparated(user_id)
+        .push_unseparated(")");
 }
 
 /// Get the amount of trees satisfying some filters.

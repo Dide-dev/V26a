@@ -17,10 +17,10 @@ use sqlx::PgPool;
 use crate::{
     api_v1::session::Claims,
     config::Config,
-    db::users::{get_queried_count_users_pagination, get_queried_list_users_pagination,},
+    db::users::{get_queried_count_users_pagination, get_queried_list_users_pagination},
+    db_structs::pagination::OptionalPaginationOptions,
     db_structs::users::{AccountType, UserListResponse},
     errors::ApiError,
-    db_structs::pagination::OptionalPaginationOptions,
 };
 
 /// Checks if the user is an admin. This is used as a middleware in the `admin` function below.
@@ -67,7 +67,7 @@ pub fn admin(config: Config) -> Router<Config> {
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
-/// the data form all users and the amount of pages as [`UserListResponse>`].
+/// the data form all users and the amount of pages as [`UserListResponse`].
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
@@ -79,7 +79,6 @@ pub fn admin(config: Config) -> Router<Config> {
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the user count.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-
 async fn get_all_user_data(
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,

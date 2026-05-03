@@ -4,14 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
     RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
 };
-use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{PgConnection, QueryBuilder, Postgres, PgExecutor, query, query_as};
+use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -283,9 +283,7 @@ pub async fn delete_user(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_queried_count_users_pagination(
-    db: impl PgExecutor<'_>,
-) -> Result<i64, ApiError> {
+pub async fn get_queried_count_users_pagination(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM users");
 
     let users_count: i64 = query
@@ -505,11 +503,13 @@ mod tests {
             email_visible: true,
             language: UserLanguage::En,
         };
-        let pagination_options= PaginationOptions::new(1, 5, 1000, 500).unwrap();
+        let pagination_options = PaginationOptions::new(1, 5, 1000, 500).unwrap();
 
         initialize_user(&db, &register_data).await;
         initialize_user(&db, &register_data2).await;
-        let all_user_data = get_queried_list_users_pagination(&db, &pagination_options).await.unwrap();
+        let all_user_data = get_queried_list_users_pagination(&db, &pagination_options)
+            .await
+            .unwrap();
 
         let expected_user_data = vec![
             UserGetAllData {
