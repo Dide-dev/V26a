@@ -541,12 +541,13 @@ pub async fn get_list(
     path = "/get-mine-all",
     context_path = "/api/v1/trees",
     responses(
-        (status = 200, description = "Successfully retrieved all owned trees.", body = Vec<TreeMetadata>),
+        (status = 200, description = "Successfully retrieved all owned trees.", body = TreeListResponse),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
     )
 )]
 
