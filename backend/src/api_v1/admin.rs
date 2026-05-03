@@ -88,12 +88,6 @@ async fn get_all_user_data(
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
     let users_count = get_queried_count_users_pagination(&mut *transaction).await?;
 
-    if users_count == 0 {
-        return Ok(Json(UserListResponse {
-            total_users: 0,
-            users: Vec::new(),
-        }));
-    }
     let users = get_queried_list_users_pagination(&mut *transaction, &page).await?;
     transaction
         .commit()
