@@ -12,7 +12,7 @@
         type TreeListResponse,
         type PaginationOptions
     } from '$lib/backend/trees';
-    import iconEdit from '$lib/assets/iconEdit.svg?raw';
+    import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
