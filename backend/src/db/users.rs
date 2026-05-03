@@ -459,10 +459,11 @@ mod tests {
             email_visible: true,
             language: UserLanguage::En,
         };
+        let pagination_options= PaginationOptions::new(1, 5, 1000, 500).unwrap();
 
         initialize_user(&db, &register_data).await;
         initialize_user(&db, &register_data2).await;
-        let all_user_data = get_all_users(&db).await.unwrap();
+        let all_user_data = get_queried_list_users_pagination(&db, &pagination_options).await.unwrap();
 
         let expected_user_data = vec![
             UserGetAllData {
