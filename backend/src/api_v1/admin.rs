@@ -57,8 +57,6 @@ pub fn admin(config: Config) -> Router<Config> {
     ),
     params(
         ("session" = Claims, Cookie),
-    params(
-        ("session" = Claims, Cookie),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
