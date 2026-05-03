@@ -9,7 +9,7 @@
     import { onMount } from 'svelte';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
-    import { booleanToString } from '$lib/general';
+    import { booleanToString } from '$lib/index';
     import { type PaginationOptions } from '$lib/backend/trees';
     import { calcTotalPages, showUserCount } from '$lib/pagination';
 

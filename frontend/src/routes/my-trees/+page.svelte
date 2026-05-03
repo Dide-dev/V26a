@@ -17,7 +17,7 @@
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
     import { calcTotalPages, showTreeCount } from '$lib/pagination';
-    import { booleanToString } from '$lib/general';
+    import { booleanToString } from '$lib/index';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.

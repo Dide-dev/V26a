@@ -3,7 +3,7 @@ import { type PaginationOptions, getPaginationParams } from './trees';
 
 const prefix = 'admin/';
 
-function apiCallGetUser(path: string) {
+function apiCallGetAdmin(path: string) {
     return apiCallGet(prefix + path);
 }
 
@@ -23,5 +23,5 @@ export type UserListResponse = {
 /** Get the data of all user's */
 export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
     const params: string = getPaginationParams(pageOptions);
-    return apiCallGetUser(`all-user-data?${params}`);
+    return apiCallGetAdmin(`all-user-data?${params}`);
 }
