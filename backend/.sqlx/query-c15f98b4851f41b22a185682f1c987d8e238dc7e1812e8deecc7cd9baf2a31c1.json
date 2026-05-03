@@ -5,6 +5,11 @@
     "columns": [
       {
         "ordinal": 0,
+        "name": "code",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
         "name": "name",
         "type_info": "Varchar"
       }
@@ -13,6 +18,7 @@
       "Left": []
     },
     "nullable": [
+      false,
       false
     ]
   },

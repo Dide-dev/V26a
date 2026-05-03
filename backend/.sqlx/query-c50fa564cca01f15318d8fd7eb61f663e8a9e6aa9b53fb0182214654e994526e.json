@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        WHERE id = $1",
+  "query": "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags\n        FROM trees \n        LEFT JOIN books ON trees.book_isbn = books.isbn \n        WHERE owner_id = $1",
   "describe": {
     "columns": [
       {
@@ -45,8 +45,8 @@
       },
       {
         "ordinal": 8,
-        "name": "language",
-        "type_info": "Varchar"
+        "name": "language_code",
+        "type_info": "Bpchar"
       },
       {
         "ordinal": 9,
@@ -55,13 +55,13 @@
       },
       {
         "ordinal": 10,
-        "name": "subject",
-        "type_info": "Varchar"
+        "name": "subject_id",
+        "type_info": "Int4"
       },
       {
         "ordinal": 11,
         "name": "book_isbn",
-        "type_info": "Varchar"
+        "type_info": "Int8"
       },
       {
         "ordinal": 12,
@@ -97,6 +97,11 @@
         "ordinal": 18,
         "name": "book_edition",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "tags",
+        "type_info": "VarcharArray"
       }
     ],
     "parameters": {
@@ -123,8 +128,9 @@
       false,
       true,
       true,
-      true
+      true,
+      null
     ]
   },
-  "hash": "72191ca981ec3c73c162e31559e565e3522eae56068b4ed4b93fc2f1614b9d37"
+  "hash": "c50fa564cca01f15318d8fd7eb61f663e8a9e6aa9b53fb0182214654e994526e"
 }

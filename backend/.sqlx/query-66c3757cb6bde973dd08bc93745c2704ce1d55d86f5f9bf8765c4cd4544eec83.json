@@ -5,6 +5,16 @@
     "columns": [
       {
         "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "language_code",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
         "name": "name",
         "type_info": "Varchar"
       }
@@ -13,6 +23,8 @@
       "Left": []
     },
     "nullable": [
+      false,
+      false,
       false
     ]
   },

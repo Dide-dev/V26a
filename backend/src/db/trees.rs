@@ -216,13 +216,11 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<(
 /// Add a list of tags for a given tree in the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - A connection to the database.
 ///
 /// `tree_id` - The id of the tree to assign the tags to.
 ///
 /// `tags` - The list of tags as [`&[String]`].
-///
-/// `owner_id` - The id of the owner of the tree.
 ///
 /// # Returns
 /// Nothing.
@@ -230,18 +228,37 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<(
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tags(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     tree_id: i32,
     tags: &[String],
 ) -> Result<(), ApiError> {
     query!(
-        "INSERT INTO tags (tree_id, tag) SELECT $1 AS tree_id, tag FROM UNNEST($2::VARCHAR(32)[]) AS DATA(tag)",
-        tree_id,
+        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
         tags
     )
-        .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    .execute(&mut *db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    // This needs to be queried separately because the previous query doesn't insert all of the tags
+    // if there are duplicates.
+    let tag_ids = query!(
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
+        tags
+    )
+    .fetch_all(&mut *db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    query!(
+        "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        tree_id,
+        &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
+    )
+    .execute(&mut *db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
     Ok(())
 }
 
@@ -288,10 +305,10 @@ pub async fn add_tree(
         tree_data.assignment_text,
         tree_structure,
     )
-        .fetch_one(&mut *db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .id;
+    .fetch_one(&mut *db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .id;
 
     add_tags(db, tree_id, &tree_data.tags).await?;
 
@@ -392,12 +409,12 @@ pub async fn update_tree_data(
         new_tree_data.assignment_text,
         new_tree_data.published,
     )
-        .execute(&mut *db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    .execute(&mut *db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
     // Delete the old tags and add the new ones.
-    query!("DELETE FROM tags WHERE tree_id = $1", tree_id)
+    query!("DELETE FROM tree_tags WHERE tree_id = $1", tree_id)
         .execute(&mut *db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
@@ -423,7 +440,7 @@ pub async fn db_get_tree_all_data(
     tree_id: i32,
 ) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
     let field = query!(
-        "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition
+        "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
         WHERE id = $1",
@@ -436,18 +453,13 @@ pub async fn db_get_tree_all_data(
         return Ok(None);
     };
 
-    let mut tags = query!("SELECT tag FROM tags WHERE tree_id = $1", tree_id,)
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
-
     let tree_structure =
         serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
 
     let tree_data = TreeData {
         title: field.title,
         description: field.description,
-        tags: tags.drain(..).map(|r| r.tag).collect::<Vec<_>>(),
+        tags: field.tags.unwrap_or(Vec::new()),
         language_code: field.language_code,
         subject_id: field.subject_id,
         book_name: field.book_name,
@@ -516,15 +528,15 @@ pub async fn get_all_trees_by_owner(
     owner_id: i32,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let records = query!(
-        "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
+        "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees 
         LEFT JOIN books ON trees.book_isbn = books.isbn 
         WHERE owner_id = $1", 
         owner_id
     )
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    .fetch_all(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
 
     let trees_metadata = records
         .into_iter()
@@ -754,7 +766,7 @@ pub async fn get_queried_list(
     user_id: Option<i32>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("
-        SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
+        SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn"
     );
@@ -854,7 +866,7 @@ mod tests {
         assert_eq!(found_owner_id, user_id);
 
         let record = query!(
-            "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT tag FROM tags WHERE tree_id = trees.id) AS tags
+            "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
             FROM trees 
             LEFT JOIN books ON trees.book_isbn = books.isbn
             WHERE id = $1", tree_id)
@@ -923,7 +935,10 @@ mod tests {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
-        let tree_data = TreeData::default();
+        let tree_data = TreeData {
+            tags: vec!["tag1".to_string()],
+            ..Default::default()
+        };
         let tree_structure = TreeStructure {
             root_nodes: vec![RootNode {
                 label: "RootNode".to_string(),

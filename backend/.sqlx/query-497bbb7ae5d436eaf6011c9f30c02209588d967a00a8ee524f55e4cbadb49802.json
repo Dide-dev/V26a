@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE trees SET\n        (last_modified, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, published)\n        = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n        WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Bpchar",
+        "Int4",
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "497bbb7ae5d436eaf6011c9f30c02209588d967a00a8ee524f55e4cbadb49802"
+}

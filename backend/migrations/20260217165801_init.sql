@@ -78,14 +78,21 @@ CREATE INDEX trees_filter_book_isbn ON trees (book_isbn);
 
 CREATE TABLE tags
 (
-    tree_id INTEGER     NOT NULL,
-    tag     VARCHAR(32) NOT NULL,
-    FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE, -- deleting a tree also deletes its tags
-    UNIQUE (tree_id, tag)
+    id   SERIAL      PRIMARY KEY,
+    name VARCHAR(32) NOT NULL UNIQUE
 );
 
-CREATE INDEX tags_tree ON tags (tree_id);
-CREATE INDEX tags_tag ON tags (tag);
+CREATE TABLE tree_tags
+(
+    tree_id INTEGER NOT NULL,
+    tag_id  INTEGER NOT NULL,
+    FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE, -- deleting a tree also deletes its tags
+    FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE, -- deleting a tag also removes it from all trees
+    UNIQUE (tree_id, tag_id)
+);
+
+CREATE INDEX tags_tree ON tree_tags (tree_id);
+CREATE INDEX tags_tag ON tree_tags (tag_id);
 
 CREATE TABLE cards
 (
