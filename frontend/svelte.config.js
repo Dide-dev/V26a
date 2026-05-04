@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-node';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {

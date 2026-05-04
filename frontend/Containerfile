@@ -1,0 +1,41 @@
+# This program has been developed by students from the bachelor Computer Science at
+# Utrecht University within the Software Project course.
+# © Copyright Utrecht University (Department of Information and Computing Sciences)
+
+# -- Builder --
+FROM docker.io/library/node:24-alpine AS base
+
+WORKDIR /app
+
+# Cache dependencies
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# -- Dev Runtime --
+FROM base AS dev
+
+ENV NODE_ENV=development
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+
+# -- Builder --
+FROM base as builder
+
+ENV CI=true
+
+RUN npm run build
+RUN npm prune --omit=dev
+
+# -- Production Runtime --
+FROM docker.io/library/node:24-alpine AS prod
+
+WORKDIR /app
+COPY --from=builder /app/build build/
+COPY --from=builder /app/node_modules node_modules/
+COPY package.json .
+
+ENV NODE_ENV=production
+
+CMD ["node", "build"]
