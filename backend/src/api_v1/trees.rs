@@ -12,7 +12,7 @@ use crate::db::trees::{
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
-    TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
+    TreeAddData, TreeFilters, TreeListResponse, TreeRemoveCardData, TreeStructure,
     TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;

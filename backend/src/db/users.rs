@@ -11,7 +11,7 @@ use crate::db_structs::users::{
 use crate::errors::ApiError;
 
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
+use sqlx::{PgConnection, PgExecutor, query, query_as, query_scalar};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -284,13 +284,10 @@ pub async fn delete_user(
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_queried_count_users_pagination(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM users");
-
-    let users_count: i64 = query
-        .build_query_scalar()
+    let users_count: i64 = query_scalar!("SELECT COUNT(*) FROM users")
         .fetch_one(db)
         .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .map_err(|_| ApiError::DatabaseException)?.ok_or(ApiError::DatabaseException)?;
 
     Ok(users_count)
 }
