@@ -8,7 +8,10 @@
     import { uploadImage } from '$lib/backend/images';
     import { m } from '$lib/paraglide/messages';
 
-    let { valueText = $bindable(), input = $bindable() }: { valueText: string, input: HTMLTextAreaElement } = $props();
+    let {
+        valueText = $bindable(),
+        input = $bindable()
+    }: { valueText: string; input: HTMLTextAreaElement } = $props();
 
     const validImageTypes = ['images/png', 'image/jpeg', 'image/avif', 'image/gif', 'image/webp'];
 
@@ -20,7 +23,6 @@
         const markdown = '![' + file.name + '](' + url + ')';
         const end = input.selectionEnd;
         valueText = valueText.slice(0, end) + markdown + valueText.slice(end);
-
     }
     async function promptImageUpload() {
         if (imageInput.files!.length !== 1) {
@@ -39,4 +41,3 @@
     onchange={promptImageUpload}
 />
 <label for="image-upload" class="mr-2 cursor-pointer">{m.uploadImage()}</label>
-

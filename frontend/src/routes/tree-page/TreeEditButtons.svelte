@@ -8,7 +8,6 @@
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import iconTrash from '$lib/assets/icons/trash.svg?raw';
     import iconMove from '$lib/assets/icons/move.svg?raw';
-    import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './NodeViewer.svelte';
     import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
