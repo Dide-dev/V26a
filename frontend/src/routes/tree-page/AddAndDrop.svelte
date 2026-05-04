@@ -11,6 +11,7 @@
  -->
 <script lang="ts">
     import iconAdd from '$lib/assets/iconAdd.svg?raw';
+    import type { CardGetData } from '$lib/backend/cards';
     import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './NodeViewer.svelte';
     import type { SideBar } from './SidebarComponent.svelte';
@@ -66,15 +67,20 @@
     let isHovered = $state(false);
     let highlight = $derived((dragState == null && isHovered) || dragState?.type === 'dragging');
 
-    // Clicking for adding cards // TODO remove card when cancel button is pressed (or a new card is added when no new text is added)
+    // Clicking for adding cards
     async function onclick() {
         if (dragState !== null) {
             return;
         }
+        let editingVersion: CardGetData = { front: '', back: '' };
+        if (sidebar?.type === 'NewCard') {
+            // Don't forget what the user typed if the user clicks a different add card.
+            editingVersion = sidebar.editingVersion;
+        }
         sidebar = {
             type: 'NewCard',
             location: location,
-            editingVersion: { front: '', back: '' }
+            editingVersion
         };
     }
 

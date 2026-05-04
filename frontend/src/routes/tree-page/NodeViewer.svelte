@@ -24,6 +24,11 @@
     let {
         history = $bindable(),
         location,
+        /**
+         * Is set to true if this node is not present in history.currentLocation,
+         * instead just being used for mock displaying the new card to be created.
+         */
+        fakeNode = false,
         dragState = $bindable(),
         sidebar = $bindable(),
         numPopupsOpen = $bindable(),
@@ -31,18 +36,27 @@
     }: {
         history: TreeHistory;
         location: number[];
+        fakeNode?: boolean;
         dragState: DragState;
         sidebar: SideBar | null;
         numPopupsOpen: number;
         editingPage: boolean;
     } = $props();
 
-    // Having null is possible if this is a fake node not present in the currentStructure,
-    // but currently being created in the sidebar.
-    let node: null | StateRootNode | StateNode = $derived(
-        followIndex(history.currentStructure, location)
+    /** This will be null if `fakeNode` is set to true. */
+    let node: null | StateRootNode | StateNode = $derived.by(() => {
+        if (fakeNode) return null;
+
+        return followIndex(history.currentStructure, location);
+    });
+    let isFirstChild = $derived(
+        // Extra care here to detect if we are not the first child because of a fake node above here being inserted,
+        // but the fake node itself should still have it set to true.
+        location[location.length - 1] === 0 &&
+            (fakeNode ||
+                sidebar?.type !== 'NewCard' ||
+                JSON.stringify(location) !== JSON.stringify(sidebar?.location))
     );
-    let isFirstChild = $derived(location[location.length - 1] === 0);
     let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
 
     export type DragState = null | DragStateDragging | DragStateDismissed;
@@ -178,7 +192,7 @@
 <div
     class="relative flex"
     bind:this={outermostDiv}
-    class:mt-7={editingPage && node !== null && ('label' in node || !isFirstChild)}
+    class:mt-7={editingPage && ((node !== null && 'label' in node) || !isFirstChild)}
 >
     <!--
         Render copy of self (but transparent and smaller) where the mouse currently is.
@@ -229,17 +243,20 @@
     {:else}
         <!-- Standard Node -->
         {#if editingPage && dragState === null}
-            <TreeEditButtons
-                {history}
-                {location}
-                bind:dragState
-                bind:sidebar
-                bind:numPopupsOpen
-            />
+            <TreeEditButtons {history} {location} bind:dragState bind:sidebar bind:numPopupsOpen />
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
-                <CardViewer {history} {sidebar} {location} {editingPage} />
+                <CardViewer
+                    {history}
+                    overwriteContent={fakeNode ||
+                    (sidebar?.type == 'EditCard' &&
+                        JSON.stringify(sidebar.location) === JSON.stringify(location))
+                        ? sidebar!.editingVersion
+                        : history.currentCards[node!.cardId]}
+                    {location}
+                    {editingPage}
+                />
             </div>
             {#if !editingPage}
                 <!--
@@ -275,10 +292,11 @@
 
     <!-- Here the html gets recursive as we render the 'node.children' -->
     <div bind:this={domChildren} class="flex flex-col">
-        {#each node?.children as child_node, index (child_node)}
+        {#each node?.children ?? [] as child_node, index (child_node)}
             {#if sidebar?.type === 'NewCard' && JSON.stringify( [...location, index] ) === JSON.stringify(sidebar.location)}
                 <!-- This is the new dummy card currently being created, above the real card -->
                 <NodeViewer
+                    fakeNode={true}
                     bind:history
                     location={[...location, index]}
                     dragState={{ type: 'dismissed' }}
@@ -296,7 +314,7 @@
                     bind:history
                     location={[...location, index]}
                     bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-                    sidebar={null}
+                    bind:sidebar
                     bind:numPopupsOpen
                     {editingPage}
                 />
@@ -318,6 +336,7 @@
         -->
         {#if sidebar?.type === 'NewCard' && node !== null && JSON.stringify( [...location, node.children.length] ) === JSON.stringify(sidebar.location)}
             <NodeViewer
+                fakeNode={true}
                 bind:history
                 location={[...location, node.children.length]}
                 dragState={{ type: 'dismissed' }}

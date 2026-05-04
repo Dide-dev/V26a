@@ -482,7 +482,7 @@ export function fillStateStructure(
 
 /**
  * Returns reference to a RootNode or Node, found by following index array in the given tree.
- * Could also return undefined if the index array is invalid.
+ * Could also return null if the index array is invalid.
  */
 export function followIndex(
     treeStructure: StateTreeStructure,

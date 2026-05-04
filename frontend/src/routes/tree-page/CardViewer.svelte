@@ -7,27 +7,21 @@
 <script lang="ts">
     import { followIndex, followIndexNode, setRevealed, type TreeHistory } from './history.svelte';
     import { htmlFromMarkdown } from '$lib/markdown';
-    import type { SideBar } from './SidebarComponent.svelte';
+    import type { CardGetData } from '$lib/backend/cards';
     let {
         history,
         location,
-        sidebar,
+        overwriteContent,
         editingPage
     }: {
         history: TreeHistory;
         location: number[];
-        sidebar: SideBar | null;
+        overwriteContent: CardGetData | null;
         editingPage: boolean;
     } = $props();
 
     let node = $derived(followIndexNode(history.currentStructure, location));
-    let card = $derived.by(() => {
-        if (sidebar !== null && JSON.stringify(sidebar.location) === JSON.stringify(location)) {
-            return sidebar.editingVersion;
-        } else {
-            return history.currentCards[node.cardId];
-        }
-    });
+    let card = $derived(overwriteContent ?? history.currentCards[node.cardId]);
     let visible = $derived(node.revealed);
 
     let parentIsVisible = $derived.by(() => {

@@ -5,31 +5,42 @@
 -->
 
 <script lang="ts">
+    import { onMount } from 'svelte';
+    import ImageUploadButton from './ImageUploadButton.svelte';
 
-    import ImageUploadButton from "./ImageUploadButton.svelte";
-
-    let { maxLength, height, hasMenubar, valueText = $bindable() }: { maxLength: number; height: number; hasMenubar: boolean; valueText: string; } = $props();
+    let {
+        maxLength,
+        height,
+        hasMenubar,
+        valueText = $bindable()
+    }: {
+        maxLength: number;
+        height: number | 'full';
+        hasMenubar: boolean;
+        valueText: string;
+    } = $props();
     // We ignore these warnings here because these variables are not actually used
     // reactively, but only in event handlers.
     // svelte-ignore non_reactive_update
     let input: HTMLTextAreaElement;
 
+    onMount(() => {
+        input.focus();
+    });
 </script>
 
-
-<div class="w-full">
-    <!-- Menubar lookalike -->
-    {#if hasMenubar}
-        <div class="flex justify-end gap-2">
-            <ImageUploadButton bind:valueText={valueText} bind:input={input} ></ImageUploadButton>
-        </div>
-    {/if}
-    <textarea
-        class="border w-full"
-        rows={height}
-        maxlength={maxLength}
-        bind:value={valueText}
-        bind:this={input}
-    ></textarea>
-    <p class="text-xs">{valueText.length}/{maxLength}</p>
-</div>
+<!-- Menubar lookalike -->
+{#if hasMenubar}
+    <div class="flex justify-end gap-2 bg-blue-200">
+        <ImageUploadButton bind:valueText bind:input></ImageUploadButton>
+    </div>
+{/if}
+<textarea
+    class="w-full border"
+    class:h-full={height === 'full'}
+    rows={height !== 'full' ? height : null}
+    maxlength={maxLength}
+    bind:value={valueText}
+    bind:this={input}
+></textarea>
+<p class="text-xs">{valueText.length}/{maxLength}</p>

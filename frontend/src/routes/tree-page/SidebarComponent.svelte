@@ -71,28 +71,44 @@
         }
     }
 
-    export const fullwidth: number = 350;
+    export const htmlWidth: number = 350;
+    export const htmlHeight: number = 650;
 </script>
 
 {#if sidebar !== null}
-    <div class="pointer-events-none absolute top-0 right-0 h-full" style="width: {fullwidth}px;">
+    <div style="width: {htmlWidth}px;" class="pointer-events-none absolute top-0 right-0 h-full">
         <div
-            class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col gap-2 bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
+            style="height: {htmlHeight}px;"
+            class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
         >
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <EditAreaComponent maxLength={frontMaxLength} height={2} hasMenubar={false} bind:valueText={sidebar.editingVersion.front}></EditAreaComponent>
+            <EditAreaComponent
+                maxLength={frontMaxLength}
+                height={2}
+                hasMenubar={false}
+                bind:valueText={sidebar.editingVersion.front}
+            ></EditAreaComponent>
+            <div class="h-5"></div>
             <p>Back</p>
-            <EditAreaComponent maxLength={backMaxLength} height={10} hasMenubar={true} bind:valueText={sidebar.editingVersion.back}></EditAreaComponent>
+            <EditAreaComponent
+                maxLength={backMaxLength}
+                height="full"
+                hasMenubar={true}
+                bind:valueText={sidebar.editingVersion.back}
+            ></EditAreaComponent>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>
             {/if}
             <div class="flex gap-2">
-                <button class="cursor-pointer" onclick={() => (sidebar = null)}>
+                <button
+                    class="cursor-pointer rounded bg-red-300 p-1"
+                    onclick={() => (sidebar = null)}
+                >
                     {m.cancel()}
                 </button>
-                <button class="cursor-pointer" onclick={confirmClick}>
+                <button class="cursor-pointer rounded bg-green-300 p-1" onclick={confirmClick}>
                     {m.save()}
                 </button>
             </div>
