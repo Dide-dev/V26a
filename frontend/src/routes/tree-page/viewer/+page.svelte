@@ -76,6 +76,7 @@
                 location={[index]}
                 editingPage={false}
                 dragState={null}
+                sidebar={null}
                 numPopupsOpen={0}
             />
         {/each}

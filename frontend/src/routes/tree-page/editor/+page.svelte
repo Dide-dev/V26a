@@ -25,6 +25,8 @@
         canRedo
     } from '../history.svelte';
     import EditMetadata from './EditMetadata.svelte';
+    import type { SideBar } from '../Sidebar.svelte';
+    import SidebarComponent from '../Sidebar.svelte';
     import RootNodeAddButton from '../RootNodeAddButton.svelte';
 
     let dragState: DragState = $state(null);
@@ -83,6 +85,8 @@
          * Currently should only be 0 or 1, but in the future that could change.
          */
         numPopupsOpen: number;
+        sidebar: null | SideBar;
+        sidebarElement: null | SidebarComponent;
     } | null = $state(null);
 
     onMount(async () => {
@@ -110,16 +114,20 @@
                 fillStateStructure(fetchedTree.structure, true),
                 fetchedTree.cards
             ),
-            numPopupsOpen: 0
+            numPopupsOpen: 0,
+            sidebar: null,
+            sidebarElement: null
         };
 
         loading = false;
     });
 
     function undoButtonClick() {
+        tree!.sidebar = null;
         undo(tree!.history);
     }
     function redoButtonClick() {
+        tree!.sidebar = null;
         redo(tree!.history);
     }
     // The undo & redo keyboard shortcuts
@@ -192,20 +200,38 @@
         </a>
     </div>
 
-    <!--
-        The padding on the bottom is to make the scrollbar not intersect with some buttons.
-    -->
-    <div bind:this={scrollArea} class="m-1 flex grow flex-col overflow-auto pb-7">
-        {#each tree.history.currentStructure.rootNodes as root, index (root)}
-            <NodeViewer
-                bind:history={tree.history}
-                location={[index]}
-                bind:dragState
-                editingPage={true}
-                bind:numPopupsOpen={tree.numPopupsOpen}
-            />
-        {/each}
-        <RootNodeAddButton history={tree.history} bind:numPopupsOpen={tree.numPopupsOpen} />
+    <div class="relative">
+        <!--
+            The padding on the bottom is to make the scrollbar not intersect with some buttons.
+        -->
+        <div
+            bind:this={scrollArea}
+            class="m-1 flex overflow-auto pb-7"
+            style:min-height={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlHeight}px`}
+        >
+            <div class="flex grow flex-col">
+                {#each tree.history.currentStructure.rootNodes as root, location (root)}
+                    <NodeViewer
+                        bind:history={tree.history}
+                        location={[location]}
+                        bind:dragState
+                        editingPage={true}
+                        bind:numPopupsOpen={tree.numPopupsOpen}
+                        bind:sidebar={tree.sidebar}
+                    />
+                {/each}
+                <RootNodeAddButton history={tree.history} bind:numPopupsOpen={tree.numPopupsOpen} />
+            </div>
+            <div
+                class="shrink-0"
+                style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
+            ></div>
+        </div>
+        <SidebarComponent
+            bind:this={tree.sidebarElement}
+            bind:sidebar={tree.sidebar}
+            history={tree.history}
+        />
     </div>
 {/if}
 
