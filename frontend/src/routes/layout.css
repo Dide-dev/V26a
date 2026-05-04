@@ -125,7 +125,7 @@
             border-color: var(--color-gray-500);
         }
 
-        input[type='text'].inactive:not(:focus) {
+        .input__text.inactive:not(:focus) {
             border: 0;
             margin: 2px;
             text-underline-offset: 4px;
@@ -146,12 +146,12 @@
                 text-decoration-color: var(--color-red-800);
                 background: none;
             }
-        }
 
-        :disabled {
-            color: var(--color-neutral-900);
-            background-color: var(--color-neutral-300);
-            font-style: italic;
+            &:disabled {
+                color: var(--color-neutral-900);
+                text-decoration: none;
+                padding: 0;
+            }
         }
 
         .error {
@@ -198,7 +198,7 @@
         > div {
             display: flex;
             flex-direction: column;
-            margin-bottom: var(--spacing-text-normal);
+            margin: var(--spacing-text-small) 0;
         }
 
         .checkbox__container,

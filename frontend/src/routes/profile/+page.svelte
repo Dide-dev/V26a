@@ -136,6 +136,8 @@
     }
 
     async function handlePasswordChange() {
+        successfulPasswordChange = false;
+
         // Return if the user has not entered all required fields.
         if (!(changePasswordData.oldPassword && changePasswordData.newPassword && repeatPassword)) {
             return;
@@ -144,7 +146,6 @@
         passwordMissingChar = false;
         passwordNotSame = false;
         incorrectPassword = false;
-        successfulPasswordChange = false;
         sameOldAndNewPassword = false;
 
         if (changePasswordData.oldPassword == changePasswordData.newPassword) {
@@ -191,9 +192,7 @@
             class={[formChanged && 'completed']}
             onsubmit={(event) => handleSubmit(event, userData)}
         >
-            <div>
-                <h1 class="page__title">{m.profile()}</h1>
-            </div>
+            <h1 class="page__title">{m.profile()}</h1>
             <h2 class="page__heading">{m.general()}</h2>
             <div>
                 <label for="email">{m.email()}</label>
