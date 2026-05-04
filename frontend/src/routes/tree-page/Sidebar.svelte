@@ -74,6 +74,10 @@
     // Prevent any ctrl+z or the like in the sidebar from undo-ing actions in the tree.
     function onkeydown(event: KeyboardEvent) {
         event.stopPropagation();
+
+        if (event.ctrlKey && event.key == 'Enter') {
+            confirmClick();
+        }
     }
 
     export const htmlWidth: number = 350;
