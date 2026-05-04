@@ -28,18 +28,10 @@
         numPopupsOpen: number;
     } = $props();
 
-    /** In this component the card editor popup is only used with the 'edit' button */
-    //let showEditPopup = $state(false);
-
     async function removeButtonClick() {
         sidebar = null;
         await doDeleteCard(history, location);
     }
-
-    /*async function finishEdit(newCard: CardGetData) {
-        await doEditCard(history, cardId, newCard);
-        showEditPopup = false;
-    }*/
 
     function startDrag(event: MouseEvent) {
         dragState = {
@@ -84,19 +76,3 @@
         {@html iconTrash}
     </button>
 </div>
-
-<!-- Edit card popup -- >
-{#if showEditPopup}
-    <! --
-        Very important to make a copy of the card here.
-        We want the user to use the cancel/confirm buttons, not to directly edit the card itself.
-    -- >
-    <CardEditor
-        card={{ ...card }}
-        confirmText={m.edit()}
-        confirmCallback={finishEdit}
-        cancelCallback={() => (showEditPopup = false)}
-        bind:numPopupsOpen
-    />
-{/if}
--->

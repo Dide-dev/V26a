@@ -25,8 +25,8 @@
         history = $bindable(),
         location,
         /**
-         * Is set to true if this node is not present in history.currentLocation,
-         * instead just being used for mock displaying the new card to be created.
+         * Is set to true if this node is not present in `history.currentLocation`.
+         * In that case this component is just being used for mock displaying the new card to be created.
          */
         fakeNode = false,
         dragState = $bindable(),
