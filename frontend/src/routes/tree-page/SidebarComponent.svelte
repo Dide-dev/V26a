@@ -82,9 +82,9 @@
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <EditAreaComponent maxLength={frontMaxLength} height={2} bind:valueText={sidebar.editingVersion.front}></EditAreaComponent>
+            <EditAreaComponent maxLength={frontMaxLength} height={2} hasMenubar={false} bind:valueText={sidebar.editingVersion.front}></EditAreaComponent>
             <p>Back</p>
-            <EditAreaComponent maxLength={backMaxLength} height={10} bind:valueText={sidebar.editingVersion.back}></EditAreaComponent>
+            <EditAreaComponent maxLength={backMaxLength} height={10} hasMenubar={true} bind:valueText={sidebar.editingVersion.back}></EditAreaComponent>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>
             {/if}
