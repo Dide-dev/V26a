@@ -84,11 +84,6 @@
         };
     }
 
-    /*async function finishAddCard(newCard: CardGetData) {
-        await doAddCard(history, location, newCard);
-        showAddCardPopup = false;
-    }*/
-
     // This mouse event is for drag & drop
     async function onmouseup(event: MouseEvent) {
         if (dragState?.type !== 'dragging') {
