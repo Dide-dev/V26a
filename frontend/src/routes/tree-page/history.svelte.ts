@@ -176,6 +176,64 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
     commitActionLocal(history, newStructure, action);
 }
 
+export async function doRootNodeMove(history: TreeHistory, index: number, newIndex: number) {
+    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const rootnode = newStructure.rootNodes[index];
+
+    newStructure.rootNodes.splice(index, 1);
+    newStructure.rootNodes.splice(newIndex, 0, rootnode);
+
+    await updateTreeStructure({
+        id: history.treeId,
+        newStructure: stripStateStructure(newStructure)
+    });
+
+    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
+}
+
+export async function doRootNodeEdit(history: TreeHistory, index: number, newLabel: string) {
+    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    newStructure.rootNodes[index].label = newLabel;
+
+    await updateTreeStructure({
+        id: history.treeId,
+        newStructure: stripStateStructure(newStructure)
+    });
+
+    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
+}
+
+export async function doRootNodeDelete(history: TreeHistory, index: number) {
+    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+
+    // This should NEVER happen, but just in case a sanity check
+    if (newStructure.rootNodes[index].children.length !== 0) {
+        throw new Error('Tried to doRootNodeRemove on rootnode with children');
+    }
+
+    newStructure.rootNodes.splice(index, 1);
+
+    await updateTreeStructure({
+        id: history.treeId,
+        newStructure: stripStateStructure(newStructure)
+    });
+
+    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
+}
+
+export async function doRootNodeAdd(history: TreeHistory, index: number, label: string) {
+    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+
+    newStructure.rootNodes.splice(index, 0, { label, children: [] });
+
+    await updateTreeStructure({
+        id: history.treeId,
+        newStructure: stripStateStructure(newStructure)
+    });
+
+    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
+}
+
 export function canUndo(history: TreeHistory): boolean {
     return history.listBack.length > 0;
 }

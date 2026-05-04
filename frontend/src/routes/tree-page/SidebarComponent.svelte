@@ -76,7 +76,7 @@
 </script>
 
 {#if sidebar !== null}
-    <div style="width: {htmlWidth}px;" class="pointer-events-none absolute top-0 right-0 h-full">
+    <div style="width: {htmlWidth}px;" class="pointer-events-none absolute -top-12 right-0 h-full">
         <div
             style="height: {htmlHeight}px;"
             class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"

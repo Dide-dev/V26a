@@ -19,6 +19,7 @@
         type TreeHistory
     } from './history.svelte';
     import type { SideBar } from './SidebarComponent.svelte';
+    import RootNodeViewAndEdit from './RootNodeViewAndEdit.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -237,9 +238,7 @@
 
     {#if node !== null && 'label' in node}
         <!-- Root Node -->
-        <div class="mb-5 h-fit w-32 shrink-0 cursor-default">
-            <strong>{node.label}</strong>
-        </div>
+        <RootNodeViewAndEdit {history} index={location[0]} bind:numPopupsOpen {editingPage} />
     {:else}
         <!-- Standard Node -->
         {#if editingPage && dragState === null}
