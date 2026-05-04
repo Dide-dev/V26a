@@ -221,7 +221,8 @@ pub async fn get_queried_count_users_pagination(db: impl PgExecutor<'_>) -> Resu
     let users_count: i64 = query_scalar!("SELECT COUNT(*) FROM users")
         .fetch_one(db)
         .await
-        .map_err(|_| ApiError::DatabaseException)?.ok_or(ApiError::DatabaseException)?;
+        .map_err(|_| ApiError::DatabaseException)?
+        .ok_or(ApiError::DatabaseException)?;
 
     Ok(users_count)
 }

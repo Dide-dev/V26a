@@ -206,8 +206,9 @@ async fn test_deleting_trees_denied(db: PgPool) {
 #[sqlx::test]
 async fn test_retrieving_owned_trees(db: PgPool) {
     let server = setup_login(db).await;
-
-    let response = server.get("/trees/get-mine-all").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
+        .await;
     response.assert_status_ok();
     let vec: TreeListResponse = response.json();
     let empty: TreeListResponse = TreeListResponse {
@@ -231,7 +232,9 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let response = server.get("/trees/get-mine-all").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
+        .await;
     response.assert_status_ok();
     let vec: TreeListResponse = response.json();
     let tree_metadata: &TreeMetadata = vec.trees.first().unwrap();
