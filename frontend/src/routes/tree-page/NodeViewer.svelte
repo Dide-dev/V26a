@@ -18,7 +18,7 @@
         type StateRootNode,
         type TreeHistory
     } from './history.svelte';
-    import type { SideBar } from './SidebarComponent.svelte';
+    import type { SideBar } from './Sidebar.svelte';
     import RootNodeViewAndEdit from './RootNodeViewAndEdit.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */

@@ -25,8 +25,8 @@
         canRedo
     } from '../history.svelte';
     import EditMetadata from './EditMetadata.svelte';
-    import type { SideBar } from '../SidebarComponent.svelte';
-    import SidebarComponent from '../SidebarComponent.svelte';
+    import type { SideBar } from '../Sidebar.svelte';
+    import SidebarComponent from '../Sidebar.svelte';
     import RootNodeAddButton from '../RootNodeAddButton.svelte';
 
     let dragState: DragState = $state(null);
