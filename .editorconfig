@@ -1,3 +1,7 @@
+# This program has been developed by students from the bachelor Computer Science at
+# Utrecht University within the Software Project course.
+# © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 # EditorConfig helps developers define and maintain consistent
 # coding styles between different editors and IDEs
 # editorconfig.org
@@ -17,3 +21,6 @@ max_line_length = 100
 
 [*.yml]
 indent_size = 2
+
+[Caddyfile]
+indent_style = tab
