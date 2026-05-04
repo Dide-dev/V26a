@@ -55,72 +55,6 @@ pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result
     Ok(user_id)
 }
 
-/// Checks if a user with a given e-mail exists in the given database.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
-///
-/// `email` - A reference to the email of the user being checked.
-///
-/// # Returns
-/// `true` if the user exists or `false` if they do not.
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn user_email_exists(db: impl PgExecutor<'_>, email: &str) -> Result<bool, ApiError> {
-    query!(
-        "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
-        email,
-    )
-    .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
-    .exists
-    .ok_or(ApiError::DatabaseException)
-}
-
-/// Checks if a user with a given username exists in the given database.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
-///
-/// `name` - A reference to the username of the user being checked.
-///
-/// # Returns
-/// `true` if the username exists or `false` if they do not.
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn user_name_exists(db: impl PgExecutor<'_>, name: &str) -> Result<bool, ApiError> {
-    query!("SELECT EXISTS(SELECT 1 FROM users WHERE name = $1)", name,)
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .exists
-        .ok_or(ApiError::DatabaseException)
-}
-
-/// Checks if a user with a given id exists in the given database.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
-///
-/// `id` - The id of the user being checked.
-///
-/// # Returns
-/// `true` if the user exists or `false` if they do not.
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn user_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
-    query!("SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)", id,)
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .exists
-        .ok_or(ApiError::DatabaseException)
-}
-
 /// Query the data for the given user id in the given database.
 ///
 /// # Arguments
@@ -332,6 +266,73 @@ pub async fn get_queried_list_users_pagination(
     Ok(users)
 }
 
+/// Checks if a user with a given e-mail exists in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `email` - A reference to the email of the user being checked.
+///
+/// # Returns
+/// The `user_id` corresponding to `email` if it is used, or `None` if it is not.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_by_email(
+    db: impl PgExecutor<'_>,
+    email: &str,
+) -> Result<Option<i32>, ApiError> {
+    query!("SELECT id FROM users WHERE email = $1", email,)
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)
+        .map(|o| o.map(|r| r.id))
+}
+
+/// Checks if a user with a given username exists in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `name` - A reference to the username of the user being checked.
+///
+/// # Returns
+/// The `user_id` corresponding to `name` if it is used, or `None` if it is not.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_by_name(
+    db: impl PgExecutor<'_>,
+    name: &str,
+) -> Result<Option<i32>, ApiError> {
+    query!("SELECT id FROM users WHERE name = $1", name,)
+        .fetch_optional(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)
+        .map(|o| o.map(|r| r.id))
+}
+
+/// Checks if a user with a given id exists in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user being checked.
+///
+/// # Returns
+/// `true` if the user exists or `false` if they do not.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn user_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
+    query!("SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)", id,)
+        .fetch_one(db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .exists
+        .ok_or(ApiError::DatabaseException)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -382,7 +383,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn test_user_email_exists(db: PgPool) {
+    async fn test_get_user_by_email(db: PgPool) {
         let email = "email".to_owned();
 
         let register_data = RegisterData {
@@ -396,18 +397,18 @@ mod tests {
         };
 
         // Assert user does not exist before adding to the database.
-        let does_user_exist = user_email_exists(&db, &email).await.unwrap();
-        assert!(!does_user_exist);
+        let found_user_id = get_user_by_email(&db, &email).await.unwrap();
+        assert!(found_user_id.is_none());
 
-        initialize_user(&db, &register_data).await;
+        let user_id = initialize_user(&db, &register_data).await;
 
         // Assert user does exist after adding to the database.
-        let does_user_exist = user_email_exists(&db, &email).await.unwrap();
-        assert!(does_user_exist);
+        let found_user_id = get_user_by_email(&db, &email).await.unwrap();
+        assert_eq!(found_user_id, Some(user_id));
     }
 
     #[sqlx::test]
-    async fn test_user_name_exists(db: PgPool) {
+    async fn test_get_user_by_name(db: PgPool) {
         let name = "name".to_owned();
 
         let register_data = RegisterData {
@@ -421,14 +422,14 @@ mod tests {
         };
 
         // Assert user does not exist before adding to the database.
-        let does_user_exist = user_name_exists(&db, &name).await.unwrap();
-        assert!(!does_user_exist);
+        let found_user_id = get_user_by_name(&db, &name).await.unwrap();
+        assert!(found_user_id.is_none());
 
-        initialize_user(&db, &register_data).await;
+        let user_id = initialize_user(&db, &register_data).await;
 
         // Assert user does exist after adding to the database.
-        let does_user_exist = user_name_exists(&db, &name).await.unwrap();
-        assert!(does_user_exist);
+        let found_user_id = get_user_by_name(&db, &name).await.unwrap();
+        assert_eq!(found_user_id, Some(user_id));
     }
 
     #[sqlx::test]
