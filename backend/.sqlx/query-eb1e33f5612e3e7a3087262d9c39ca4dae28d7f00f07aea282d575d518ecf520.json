@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags\n        FROM trees \n        LEFT JOIN books ON trees.book_isbn = books.isbn \n        WHERE owner_id = $1",
+  "query": "SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags\n        FROM trees \n        LEFT JOIN books ON trees.book_isbn = books.isbn \n        WHERE owner_id = $1",
   "describe": {
     "columns": [
       {
@@ -119,18 +119,18 @@
       true,
       false,
       false,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
       false,
       true,
       true,
-      true,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
       null
     ]
   },
-  "hash": "c50fa564cca01f15318d8fd7eb61f663e8a9e6aa9b53fb0182214654e994526e"
+  "hash": "eb1e33f5612e3e7a3087262d9c39ca4dae28d7f00f07aea282d575d518ecf520"
 }

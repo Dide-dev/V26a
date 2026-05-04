@@ -38,15 +38,15 @@ export type TreeData = {
     title: string;
     languageCode: string;
     tags: string[];
-    description: Option<string>;
+    description: string;
     subjectId: Option<number>;
-    bookName: Option<string>;
-    bookEdition: Option<string>;
-    bookAuthor: Option<string>;
+    bookName: string;
+    bookEdition: string;
+    bookAuthor: string;
     bookIsbn: Option<string>;
-    bookChapter: Option<string>;
-    bookExercise: Option<string>;
-    assignmentText: Option<string>;
+    bookChapter: string;
+    bookExercise: string;
+    assignmentText: string;
     published: boolean;
 };
 

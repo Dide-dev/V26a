@@ -10,30 +10,25 @@
     - Destination for moving cards with drag & drop
  -->
 <script lang="ts">
-    import iconAdd from '$lib/assets/iconAdd.svg?raw';
-    import { addCard, type CardGetData } from '$lib/backend/cards';
-    import {
-        type RootNode,
-        type Node,
-        type TreeWithCards,
-        updateTreeStructure
-    } from '$lib/backend/trees';
+    import iconAdd from '$lib/assets/icons/add.svg?raw';
+    import type { CardGetData } from '$lib/backend/cards';
     import { m } from '$lib/paraglide/messages';
     import CardEditor from './CardEditor.svelte';
+    import { doAddCard, doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './NodeViewer.svelte';
 
     let {
-        tree,
-        node,
-        index,
+        history,
+        location,
         dragState = $bindable(),
-        lineLayout
+        lineLayout,
+        numPopupsOpen = $bindable()
     }: {
-        tree: TreeWithCards;
-        node: RootNode | Node;
-        index: number;
+        history: TreeHistory;
+        location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
+        numPopupsOpen: number;
     } = $props();
 
     export type Layout = LayoutRight | LayoutUnder | LayoutOver;
@@ -82,21 +77,11 @@
     }
 
     async function finishAddCard(newCard: CardGetData) {
-        let cardId = await addCard({
-            treeId: tree.genData.id,
-            front: newCard.front,
-            back: newCard.back
-        });
-        tree.cards[cardId] = newCard;
-        node.children.splice(index, 0, { cardId, children: [] });
-        await updateTreeStructure({
-            id: tree.genData.id,
-            newStructure: tree.structure
-        });
+        await doAddCard(history, location, newCard);
         showAddCardPopup = false;
     }
 
-    // All these mouse events are for drag & drop
+    // This mouse event is for drag & drop
     async function onmouseup(event: MouseEvent) {
         if (dragState?.type !== 'dragging') {
             return;
@@ -104,14 +89,8 @@
 
         event.stopPropagation();
 
-        let previousNode = dragState.parent.children[dragState.index];
-        dragState.parent.children.splice(dragState.index, 1);
-        node.children.splice(index, 0, previousNode);
+        await doMove(history, dragState.nodeToMove, location);
 
-        await updateTreeStructure({
-            id: tree.genData.id,
-            newStructure: tree.structure
-        });
         dragState = null;
     }
 </script>
@@ -219,5 +198,6 @@
         confirmText={m.add()}
         confirmCallback={finishAddCard}
         cancelCallback={() => (showAddCardPopup = false)}
+        bind:numPopupsOpen
     />
 {/if}

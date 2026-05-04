@@ -51,12 +51,30 @@ pub struct UserUpdateData {
     pub enabled: Option<bool>,
 }
 
+/// Data received when getting all user data from the database.
+/// Should only be used by admins
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserGetAllData {
+    pub id: i32,
+    pub email: String,
+    pub name: String,
+    pub enabled: bool,
+}
+
 /// The body for a password change request that contains the old password, and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PasswordChangeRequestBody {
     pub old_password: String,
     pub new_password: String,
+}
+
+/// Optional query parameter that makes it possible to delete trees of the user too.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteOwnedTrees {
+    pub delete_owned_trees: bool,
 }
 
 /// The possible values of the `language` field of a user.

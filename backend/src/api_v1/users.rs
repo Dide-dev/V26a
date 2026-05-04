@@ -8,16 +8,20 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    add_user, get_user, update_password, update_user, user_email_exists, user_id_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
+    update_user, user_id_exists,
 };
 use crate::db_structs::users::{
-    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
+    UserUpdateData,
 };
 use crate::errors::ApiError;
 
 use axum::extract::Path;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
+use axum_extra::extract::Query;
+use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -29,15 +33,18 @@ pub fn users() -> Router<Config> {
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
+        .route("/{user_id}/delete", delete(delete_user_data))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type")]
-pub enum AddUserResponse {
-    /// Return body signaling the user has been successfully added with the contained `user_id`.
+pub enum UserResponse {
+    /// Return body signaling the user has been successfully added/updated with the contained `user_id`.
     Success { user_id: i32 },
-    /// Return body signaling the user could not be added, as the e-mail was already in use.
+    /// Return body signaling the user could not be added/updated, as the e-mail was already in use.
     EmailAlreadyUsed,
+    /// Return body signaling the user could not be added/updated, as the username was already in use.
+    UsernameAlreadyUsed,
 }
 
 #[utoipa::path(
@@ -46,7 +53,7 @@ pub enum AddUserResponse {
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
-        (status = 200, description = "Successfully registered user with the returned id.", body = AddUserResponse, content_type = "application/json"),
+        (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -58,8 +65,9 @@ pub enum AddUserResponse {
 /// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
 /// # Returns
-/// [`Success`](AddUserResponse::Success) with the id assigned to the new user
-/// if the email has not yet been used, or [`EmailAlreadyUsed`](AddUserResponse::EmailAlreadyUsed) otherwise.
+/// [`Success`](UserResponse::Success) with the id assigned to the new user
+/// if the email has not yet been used, or [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) otherwise.
+/// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException) or
@@ -67,13 +75,19 @@ pub enum AddUserResponse {
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
-) -> Result<Json<AddUserResponse>, ApiError> {
+) -> Result<Json<UserResponse>, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let exists = user_email_exists(&mut *transaction, &user_data.email).await?;
+    let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
 
-    if exists {
-        return Ok(Json(AddUserResponse::EmailAlreadyUsed));
+    if found_user_id.is_some() {
+        return Ok(Json(UserResponse::EmailAlreadyUsed));
+    }
+
+    let found_user_id = get_user_by_name(&mut *transaction, &user_data.name).await?;
+
+    if found_user_id.is_some() {
+        return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
     let user_id = add_user(&mut transaction, &user_data).await?;
@@ -83,7 +97,7 @@ async fn add_new_user(
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(Json(AddUserResponse::Success { user_id }))
+    Ok(Json(UserResponse::Success { user_id }))
 }
 
 #[utoipa::path(
@@ -125,7 +139,7 @@ async fn get_own_user_data(
     context_path = "/api/v1/users",
     request_body = UserUpdateData,
     responses(
-        (status = 200, description = "User data successfully updated."),
+        (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -164,7 +178,7 @@ async fn update_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
-) -> Result<(), ApiError> {
+) -> Result<Json<UserResponse>, ApiError> {
     // A user can only update another user's data if they are an administrator.
     if claims.sub != user_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
@@ -181,7 +195,17 @@ async fn update_user_data(
         return Err(ApiError::MissingUser(user_id));
     }
 
-    update_user(&db, user_id, &new_data).await
+    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+
+    if let Some(id) = found_user_id
+        && id != claims.sub
+    {
+        return Ok(Json(UserResponse::UsernameAlreadyUsed));
+    }
+
+    update_user(&db, user_id, &new_data).await?;
+
+    Ok(Json(UserResponse::Success { user_id }))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -238,4 +262,78 @@ async fn change_password(
     update_password(&db, claims.sub, &password_change_request.new_password).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/{user_id}/delete",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "User data successfully deleted."),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("user_id" = i32, Path),
+        ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Delete a user from the database.
+///
+/// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
+///
+/// # Arguments
+/// `jar` - The jar with the cookies (`user_info` & session).
+///
+/// `claims` - The session cookie of the user.
+///
+/// `user_id` - The user to delete.
+///
+/// `deleteOwnedTrees` - Delete all the trees of the user.
+///
+/// # Returns
+/// The (cookie) jar that is empty.
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete
+/// the user.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn delete_user_data(
+    mut jar: CookieJar,
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(user_id): Path<i32>,
+    Query(delete): Query<DeleteOwnedTrees>,
+) -> Result<CookieJar, ApiError> {
+    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+
+    // A user can only delete their own account unless they are an admin.
+    if claims.sub != user_id && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
+
+    if claims.sub == user_id {
+        jar = jar
+            .remove(Cookie::from("session"))
+            .remove(Cookie::from("user_info"));
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(jar)
 }

@@ -7,7 +7,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import { getUsersOwnTrees, type TreeMetadata } from '$lib/backend/trees';
-    import iconEdit from '$lib/assets/iconEdit.svg?raw';
+    import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
@@ -30,7 +30,7 @@
     <p>{m.loading()}</p>
 {:else if trees.length === 0}
     <div class="text-center">
-        <p class="flex justify-center text-2xl">{m.noTreesFound()}</p>
+        <p class="flex justify-center text-2xl">{m.noMyTreesFound()}</p>
         <button class="m-2 rounded-sm bg-emerald-500 p-1"
             ><a href={appLink('/tree-generator')}>{m.createTree()}</a></button
         >

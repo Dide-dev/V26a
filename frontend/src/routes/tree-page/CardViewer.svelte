@@ -5,26 +5,36 @@
 -->
 
 <script lang="ts">
-    import type { TreeWithCards, Node } from '$lib/backend/trees';
+    import { followIndex, followIndexNode, setRevealed, type TreeHistory } from './history.svelte';
+    import { htmlFromMarkdown } from '$lib/markdown';
     let {
-        tree,
-        node,
-        visible = $bindable(),
-        parentIsVisible = false,
+        history,
+        index,
         editingPage
     }: {
-        tree: TreeWithCards;
-        node: Node;
-        visible: boolean;
-        parentIsVisible: boolean;
+        history: TreeHistory;
+        index: number[];
         editingPage: boolean;
     } = $props();
 
+    let node = $derived(followIndexNode(history.currentStructure, index));
+    let card = $derived(history.currentCards[node.cardId]);
+    let visible = $derived(node.revealed);
+
+    let parentIsVisible = $derived.by(() => {
+        let parent = followIndex(history.currentStructure, index.slice(0, -1));
+        if ('revealed' in parent) {
+            return parent.revealed;
+        } else {
+            return true;
+        }
+    });
+
     function setVisible() {
-        visible = true;
+        setRevealed(history, index, true);
     }
     function toggleVisible() {
-        visible = !visible;
+        setRevealed(history, index, !visible);
     }
 </script>
 
@@ -32,31 +42,37 @@
     <!-- Cards layout in the editor -->
     {#if visible}
         <button
-            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer overflow-auto border-2 border-green-800 bg-green-50 p-1 text-left wrap-anywhere"
             onclick={toggleVisible}
         >
-            {tree.cards[node.cardId].back}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(card.back)}
         </button>
     {:else}
         <button
-            class="h-fit min-h-9 w-xl cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-xl cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={toggleVisible}
         >
-            {tree.cards[node.cardId].front}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(card.front)}
         </button>
     {/if}
 {:else}
     <!-- Cards layout in the viewer -->
     {#if visible}
-        <p class="h-fit min-h-9 w-xl border-2 border-green-800 bg-green-50 p-1 wrap-anywhere">
-            {tree.cards[node.cardId].back}
+        <p
+            class="h-fit min-h-9 w-xl overflow-auto border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
+        >
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(card.back)}
         </p>
     {:else if parentIsVisible}
         <button
-            class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+            class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
             onclick={setVisible}
         >
-            {tree.cards[node.cardId].front}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html htmlFromMarkdown(card.front)}
         </button>
     {:else}
         <p class="tree-node h-fit min-h-9 w-4 border-2 border-green-800 bg-green-800 p-1"><br /></p>

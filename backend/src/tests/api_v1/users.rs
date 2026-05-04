@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{AddUserResponse, ChangePasswordResponse};
+use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
@@ -32,8 +32,8 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
     let response = server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
-    let response = response.json::<AddUserResponse>();
-    let AddUserResponse::Success { user_id } = response else {
+    let response = response.json::<UserResponse>();
+    let UserResponse::Success { user_id } = response else {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
@@ -96,6 +96,20 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
     let user_data: UserGetData = response.json();
     assert_eq!(user_data, expected_user_data);
+}
+
+#[sqlx::test]
+async fn test_get_all_users(db: PgPool) {
+    let server = setup(db);
+
+    // Create two accounts and log in as one of them.
+    register(&server, "1@gmail.com".to_owned()).await;
+    register(&server, "2@gmail.com".to_owned()).await;
+    login(&server, "2@gmail.com".to_owned()).await;
+
+    let response = server.get("/admin/all-user-data").await;
+    // It should fail because the user is not an admin
+    response.assert_status_forbidden();
 }
 
 #[sqlx::test]
@@ -249,4 +263,53 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
     let login_body: LoginResponse = response.json();
     assert!(login_body.succeeded);
+}
+
+#[sqlx::test]
+async fn test_delete_own_user(db: PgPool) {
+    let server = setup(db);
+    let email = "monkaS@gmail.com".to_owned();
+    let user_id = register(&server, email.clone()).await;
+
+    login(&server, email.clone()).await;
+
+    let response = server
+        .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
+        .await;
+
+    response.assert_status_ok();
+
+    // Check if user is logged out after deletion.
+    let response = server.get("/users/me").await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_delete_other_user(db: PgPool) {
+    let server = setup(db);
+    let email1 = "user1@gmail.com".to_owned();
+    let user_id_1 = register(&server, email1.clone()).await;
+    let email2 = "user2@gmail.com".to_owned();
+    register(&server, email2.clone()).await;
+    login(&server, email2.clone()).await;
+
+    let response = server
+        .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
+        .await;
+
+    response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_delete_nonexistent_user(db: PgPool) {
+    let server = setup(db);
+    let email = "swag@gmail.com".to_owned();
+    register(&server, email.clone()).await;
+    login(&server, email.clone()).await;
+
+    let response = server
+        .delete("/users/99999/delete?deleteOwnedTrees=false")
+        .await;
+
+    response.assert_status_bad_request();
 }

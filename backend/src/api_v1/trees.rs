@@ -69,13 +69,13 @@ pub fn trees() -> Router<Config> {
 /// The id assigned to the new tree.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`] in
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
 /// [`TreeAddData`] contains an invalid ISBN.
 ///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`] in
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
 /// [`TreeAddData`] contains a non-existent language.
 ///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`] in
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
 /// [`TreeAddData`] contains a non-existent subject.
 ///
 /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
@@ -190,13 +190,13 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`] in
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
 /// [`TreeAddData`] contains an invalid ISBN.
 ///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`] in
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
 /// [`TreeAddData`] contains a non-existent language.
 ///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`] in
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
 /// [`TreeAddData`] contains a non-existent subject.
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.

@@ -7,11 +7,12 @@
 #![cfg(test)]
 
 mod cards;
+mod feedback;
 mod images;
 mod trees;
 mod users;
 
-use crate::api_v1::users::AddUserResponse;
+use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
@@ -32,7 +33,7 @@ fn setup(db: PgPool) -> TestServer {
     let mut config = crate::Config::load();
     config.upload_dir = temp_dir.path().to_string_lossy().to_string();
 
-    let router = crate::api_v1::v1_api()
+    let router = crate::api_v1::v1_api(config.clone())
         .layer(Extension(db))
         .with_state(config);
     TestServer::builder().save_cookies().build(router)
@@ -53,7 +54,7 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         .json(&RegisterData {
             email,
             password: "a$$word".to_string(),
-            name: "John Test".to_string(),
+            name: format!("John Test {}", uuid::Uuid::new_v4()),
             nickname: String::new(),
             about_me: String::new(),
             email_visible: false,
@@ -62,8 +63,8 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         .await;
     response.assert_status_ok();
 
-    let response = response.json::<AddUserResponse>();
-    let AddUserResponse::Success { user_id } = response else {
+    let response = response.json::<UserResponse>();
+    let UserResponse::Success { user_id } = response else {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };

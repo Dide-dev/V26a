@@ -453,7 +453,7 @@ pub async fn db_get_tree_all_data(
     tree_id: i32,
 ) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
     let field = query!(
-        "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+        "SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
         WHERE id = $1",
@@ -462,6 +462,7 @@ pub async fn db_get_tree_all_data(
     .fetch_optional(&mut *db)
     .await
     .map_err(|_| ApiError::DatabaseException)?;
+
     let Some(field) = field else {
         return Ok(None);
     };
@@ -475,9 +476,9 @@ pub async fn db_get_tree_all_data(
         tags: field.tags.unwrap_or(Vec::new()),
         language_code: field.language_code,
         subject_id: field.subject_id,
-        book_name: field.book_name,
-        book_edition: field.book_edition,
-        book_author: field.book_author,
+        book_name: field.book_name.unwrap(),
+        book_edition: field.book_edition.unwrap(),
+        book_author: field.book_author.unwrap(),
         book_isbn: field.book_isbn.map(|n| n.to_string()),
         book_chapter: field.book_chapter,
         book_exercise: field.book_exercise,
@@ -541,7 +542,7 @@ pub async fn get_all_trees_by_owner(
     owner_id: i32,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let records = query!(
-        "SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+        "SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees 
         LEFT JOIN books ON trees.book_isbn = books.isbn 
         WHERE owner_id = $1", 
@@ -560,9 +561,9 @@ pub async fn get_all_trees_by_owner(
                 tags: t.tags.unwrap_or(Vec::new()),
                 language_code: t.language_code,
                 subject_id: t.subject_id,
-                book_name: t.book_name,
-                book_edition: t.book_edition,
-                book_author: t.book_author,
+                book_name: t.book_name.unwrap(),
+                book_edition: t.book_edition.unwrap(),
+                book_author: t.book_author.unwrap(),
                 book_isbn: t.book_isbn.map(|n| n.to_string()),
                 book_chapter: t.book_chapter,
                 book_exercise: t.book_exercise,
@@ -737,7 +738,7 @@ fn apply_tree_filters<'a>(
 /// `user_id` - The logged in user performing the filter, optional.
 ///
 /// # Returns
-/// The amount of trees satisfying the filters at the requested page,
+/// The amount of trees satisfying the filters at the requested page.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -785,7 +786,7 @@ pub async fn get_queried_list(
     user_id: Option<i32>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("
-        SELECT trees.*, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+        SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn"
     );
@@ -824,6 +825,7 @@ pub async fn get_queried_list(
 }
 
 #[cfg(test)]
+#[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
     use super::*;
     use crate::db::test::{
@@ -839,7 +841,7 @@ mod tests {
     fn test_parse_isbn() {
         // Valid ISBN 10
         let result = parse_isbn("0-451-52493-4");
-        assert_eq!(result, Ok(9780451524935));
+        assert_eq!(result, Ok(978_0_451_52493_5));
 
         // Invalid ISBN 10
         let result = parse_isbn("0-451-52493-5");
@@ -847,11 +849,11 @@ mod tests {
 
         // Valid ISBN 10 with X check digit
         let result = parse_isbn("0-074-62542-X");
-        assert_eq!(result, Ok(9780074625422));
+        assert_eq!(result, Ok(978_0_074_62542_2));
 
         // Valid ISBN 13
         let result = parse_isbn("979-1-034-90821-9");
-        assert_eq!(result, Ok(9791034908219));
+        assert_eq!(result, Ok(979_1_034_90821_9));
 
         // Invalid ISBN 13
         let result = parse_isbn("979-1-034-90821-1");
@@ -905,7 +907,7 @@ mod tests {
         assert_eq!(found_owner_id, user_id);
 
         let record = query!(
-            "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, books.title AS book_name, books.author AS book_author, books.edition AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+            "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
             FROM trees 
             LEFT JOIN books ON trees.book_isbn = books.isbn
             WHERE id = $1", tree_id)
@@ -918,9 +920,9 @@ mod tests {
             tags: record.tags.unwrap_or(Vec::new()),
             language_code: record.language_code,
             subject_id: record.subject_id,
-            book_name: record.book_name,
-            book_edition: record.book_edition,
-            book_author: record.book_author,
+            book_name: record.book_name.unwrap(),
+            book_edition: record.book_edition.unwrap(),
+            book_author: record.book_author.unwrap(),
             book_isbn: record.book_isbn.map(|n| n.to_string()),
             book_chapter: record.book_chapter,
             book_exercise: record.book_exercise,
@@ -995,17 +997,17 @@ mod tests {
         // Update the tree data
         let new_tree_data = TreeData {
             title: "Updated tree".to_string(),
-            description: Some("Updated description".to_string()),
+            description: "Updated description".to_string(),
             language_code: "nl".to_string(),
             tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
             subject_id: Some(3),
-            book_name: Some("Updated book".to_string()),
-            book_author: Some("John Writer".to_string()),
-            book_edition: Some("2nd".to_string()),
+            book_name: "Updated book".to_string(),
+            book_author: "John Writer".to_string(),
+            book_edition: "2nd".to_string(),
             book_isbn: Some("9780136019701".to_string()),
-            book_chapter: Some("3".to_string()),
-            book_exercise: Some("5b".to_string()),
-            assignment_text: Some("Updated assignment".to_string()),
+            book_chapter: "3".to_string(),
+            book_exercise: "5b".to_string(),
+            assignment_text: "Updated assignment".to_string(),
             published: true,
         };
         update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone())

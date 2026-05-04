@@ -41,7 +41,10 @@
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
 
-        const treeId = await addTree(treeData);
+        const treeId = await addTree({
+            ...treeData,
+            bookIsbn: treeData.bookIsbn === '' ? null : treeData.bookIsbn
+        });
         await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
 </script>

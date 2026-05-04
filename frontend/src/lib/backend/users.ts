@@ -4,13 +4,17 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 
 const prefix = 'users/';
 
 function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
+}
+
+function apiCallDeleteUser(path: string) {
+    return apiCallDelete(prefix + path);
 }
 
 function apiCallGetUser(path: string) {
@@ -31,13 +35,21 @@ export type RegisterData = {
     language: string;
 };
 
-export type AddUserSuccess = {
+export type UserSuccess = {
     type: 'Success';
     userId: UserId;
 };
 
-export type AddUserEmailInvalid = {
+export type UserEmailInvalid = {
     type: 'EmailAlreadyUsed';
+};
+
+export type UsernameInvalid = {
+    type: 'UsernameAlreadyUsed';
+};
+
+export type ChangePasswordResponse = {
+    succeeded: boolean;
 };
 
 /** The data of the user that is returned when requesting it */
@@ -82,8 +94,15 @@ export type ChangePasswordData = {
 };
 
 /** Add a user to the database */
-export function addUser(user: RegisterData): Promise<AddUserSuccess | AddUserEmailInvalid> {
+export function addUser(
+    user: RegisterData
+): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser('add', user);
+}
+
+/** Delete a user in the database */
+export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
+    return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */
@@ -92,7 +111,10 @@ export function getOwnUserData(): Promise<UserGetData> {
 }
 
 /** Update a user's data */
-export function updateUser(userId: UserId, newData: UserUpdateData): Promise<void> {
+export function updateUser(
+    userId: UserId,
+    newData: UserUpdateData
+): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser(`update/${userId}`, newData);
 }
 
@@ -112,6 +134,8 @@ export function getUserInfo(): UserInfo | null {
 }
 
 /** Change a user's password */
-export function changePassword(changePasswordData: ChangePasswordData) {
+export function changePassword(
+    changePasswordData: ChangePasswordData
+): Promise<ChangePasswordResponse> {
     return apiCallPostUser('change-password', changePasswordData);
 }
