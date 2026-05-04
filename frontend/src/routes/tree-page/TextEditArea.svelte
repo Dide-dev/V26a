@@ -36,7 +36,7 @@
     </div>
 {/if}
 <textarea
-    class="w-full border"
+    class="w-full resize-none border"
     class:h-full={height === 'full'}
     rows={height !== 'full' ? height : null}
     maxlength={maxLength}

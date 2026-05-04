@@ -71,15 +71,22 @@
         }
     }
 
+    // Prevent any ctrl+z or the like in the sidebar from undo-ing actions in the tree.
+    function onkeydown(event: KeyboardEvent) {
+        event.stopPropagation();
+    }
+
     export const htmlWidth: number = 350;
     export const htmlHeight: number = 650;
 </script>
 
 {#if sidebar !== null}
     <div style="width: {htmlWidth}px;" class="pointer-events-none absolute -top-12 right-0 h-full">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             style="height: {htmlHeight}px;"
             class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
+            {onkeydown}
         >
             <h1>{m.editThisCard()}</h1>
 

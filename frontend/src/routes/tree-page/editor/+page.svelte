@@ -123,9 +123,11 @@
     });
 
     function undoButtonClick() {
+        tree!.sidebar = null;
         undo(tree!.history);
     }
     function redoButtonClick() {
+        tree!.sidebar = null;
         redo(tree!.history);
     }
     // The undo & redo keyboard shortcuts
