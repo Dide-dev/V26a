@@ -330,8 +330,8 @@
         {/each}
 
         <!--
-            This gets used whenever this is the last child in a list of childs,
-            but also whenever there are no children at all and this one is displayed
+            This gets used whenever this is the last child in a list of children,
+            but also whenever there are no children at all and this one is displayed.
         -->
         {#if sidebar?.type === 'NewCard' && node !== null && JSON.stringify( [...location, node.children.length] ) === JSON.stringify(sidebar.location)}
             <NodeViewer
