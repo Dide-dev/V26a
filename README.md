@@ -76,7 +76,6 @@ is used.
 For component testing on the frontend, the vitest library is used.
 Unit and integration tests in the backend are
 written using the built-in testing functionality of cargo, combined with the axum-testing library.
-For end-to-end testing, Playwright is used.
 
 ## Contributing
 
@@ -85,6 +84,8 @@ To run the tests in the backend, run `cargo test` in the `backend` directory.
 
 When working on the frontend, it is advised to run the application in `dev` mode. This allows you to
 enable "watch", which will automatically update the frontend when changes to source files are found.
+
+To enable watch, either use the displayed hotkey within the container, or start the container with `--watch` at the end.
 
 If any new queries were added in the backend, then run `cargo sqlx prepare` in the `backend` directory,
 before making a pull request.
