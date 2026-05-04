@@ -102,7 +102,7 @@
             // X is used to indicate a checksum digit value of '10'
             return 11 - (s % 11) === 10;
         } else {
-            return 11 - (s % 11) === parseInt(lastChar);
+            return (11 - (s % 11)) % 11 === parseInt(lastChar);
         }
     }
 
