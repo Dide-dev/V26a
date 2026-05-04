@@ -8,8 +8,8 @@ use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    add_user, delete_user, get_user, update_password, update_user, user_email_exists,
-    user_id_exists, user_name_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
+    update_user, user_id_exists,
 };
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
@@ -78,15 +78,15 @@ async fn add_new_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    let email_taken = user_email_exists(&mut *transaction, &user_data.email).await?;
+    let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
 
-    if email_taken {
+    if found_user_id.is_some() {
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
-    let name_taken = user_name_exists(&mut *transaction, &user_data.name).await?;
+    let found_user_id = get_user_by_name(&mut *transaction, &user_data.name).await?;
 
-    if name_taken {
+    if found_user_id.is_some() {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
@@ -195,9 +195,11 @@ async fn update_user_data(
         return Err(ApiError::MissingUser(user_id));
     }
 
-    let name_taken = user_name_exists(&db, &new_data.name).await?;
+    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
-    if name_taken {
+    if let Some(id) = found_user_id
+        && id != claims.sub
+    {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 

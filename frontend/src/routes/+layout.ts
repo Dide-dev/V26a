@@ -4,8 +4,5 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-// Required for the static site generation
+// Improve performance at the cost of slightly longer build times.
 export const prerender = true;
-// If this is not set, the static site contains files like 'abc.hmtl', instead of 'abc/index.html'.
-// The `tower_http::services::ServeDir` in the backend expects the latter.
-export const trailingSlash = 'always';
