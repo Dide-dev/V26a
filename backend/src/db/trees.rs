@@ -376,32 +376,6 @@ fn apply_tree_filters<'a>(
     }
 }
 
-/// Adds `user_id` to a Postgres [`QueryBuilder`]
-///
-/// # Arguments
-/// `builder` - The [`QueryBuilder`] to be mutated in-place.
-///
-/// `user_id` - The logged in user.
-///
-/// # Example:
-/// ```rs
-/// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
-/// apply_tree_filters(query, &filters);
-/// let trees_count: i64 = query
-///         .build_query_scalar()
-///         .fetch_one(db)
-///         .await
-///         .map_err(|_| ApiError::DatabaseException)?;
-/// ```
-fn apply_tree_filters_pagination(builder: &mut QueryBuilder<Postgres>, user_id: i32) {
-    builder.push(" WHERE ");
-    let mut separated = builder.separated(" AND ");
-    separated
-        .push("(owner_id = ")
-        .push_bind_unseparated(user_id)
-        .push_unseparated(")");
-}
-
 /// Get the amount of trees satisfying some filters.
 ///
 /// # Arguments
@@ -424,35 +398,6 @@ pub async fn get_queried_count(
     let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
 
     apply_tree_filters(&mut query, filters, user_id);
-
-    let trees_count: i64 = query
-        .build_query_scalar()
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
-
-    Ok(trees_count)
-}
-
-/// Get the amount of trees of a user.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-///
-/// `user_id` - The logged in user.
-///
-/// # Returns
-/// The amount of trees satisfying the filters at the requested page,
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_queried_count_pagination(
-    db: impl PgExecutor<'_>,
-    user_id: i32,
-) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
-
-    apply_tree_filters_pagination(&mut query, user_id);
 
     let trees_count: i64 = query
         .build_query_scalar()
@@ -495,66 +440,6 @@ pub async fn get_queried_list(
     );
 
     apply_tree_filters(&mut query, filters, user_id);
-    query
-        .push(
-            // newest first
-            " ORDER BY created_at DESC \
-              LIMIT ",
-        )
-        .push_bind(i64::from(page.get_size()))
-        .push(" OFFSET ")
-        // Page is 1-based
-        .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
-
-    let rows = query
-        .build()
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
-
-    let trees = rows
-        .iter()
-        .map(TreeMetadata::from_pg_row)
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
-
-    // User requested a page that yields no results. This should only occur if the user requests a
-    // page that is too high, as get_queried_count should be used to confirm results exist.
-    if trees.is_empty() {
-        return Err(ApiError::InvalidPage);
-    }
-
-    Ok(trees)
-}
-
-/// Get the list of all trees of a user based on the page size.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-///
-/// `page` - Which page is requested.
-///
-/// `user_id` - The logged in user.
-///
-/// # Returns
-/// A list with the trees satisfying the filters at the requested page,
-///
-/// # Errors
-/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_queried_list_pagination(
-    db: impl PgExecutor<'_>,
-    page: &PaginationOptions,
-    user_id: i32,
-) -> Result<Vec<TreeMetadata>, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("
-        SELECT id, owner_id, created_at, last_modified, times_visited, last_visited,
-        title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
-        FROM trees"
-    );
-
-    apply_tree_filters_pagination(&mut query, user_id);
     query
         .push(
             // newest first

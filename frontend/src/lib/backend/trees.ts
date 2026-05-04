@@ -223,9 +223,3 @@ export function getFilteredList(
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
 }
-
-/** Request all trees owned by the logged-in user satisfying some pagination options. */
-export function getUsersOwnTrees(pageOptions: PaginationOptions): Promise<TreeListResponse> {
-    const params: string = getPaginationParams(pageOptions);
-    return apiCallGetTree(`get-mine-all?${params}`);
-}

@@ -7,10 +7,11 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import {
-        getUsersOwnTrees,
+        getFilteredList,
         type TreeMetadata,
         type TreeListResponse,
-        type PaginationOptions
+        type PaginationOptions,
+        type FilterOptions
     } from '$lib/backend/trees';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
@@ -18,6 +19,7 @@
     import { onMount } from 'svelte';
     import { calcTotalPages, showTreeCount } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
+    import { getUserInfo, type UserInfo } from '$lib/backend/users';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
@@ -28,6 +30,15 @@
     let pageSizeNumber = $derived(Number(pageSizeString));
     let thisPage = $state(1);
 
+    let userInfo = $state(getUserInfo());
+
+    let filterOptions: FilterOptions = $derived({
+        ownerId: getUserId(userInfo),
+        book: [],
+        createdAfter: null,
+        createdBefore: null,
+        showOwnPrivate: true
+    });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,
         size: pageSizeNumber
@@ -38,8 +49,10 @@
     });
 
     async function loadTrees() {
-        treeListResponse = await getUsersOwnTrees(paginationOptions);
-        trees = treeListResponse.trees;
+        if (userInfo != null) {
+            treeListResponse = await getFilteredList(paginationOptions, filterOptions);
+            trees = treeListResponse.trees;
+        }
     }
 
     let prevPageExists = $derived(thisPage > 1);
@@ -47,6 +60,13 @@
         thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
     );
 
+    function getUserId(userInfo: UserInfo | null): number {
+        if (userInfo == null) {
+            return 0;
+        } else {
+            return userInfo.sub;
+        }
+    }
     function prevPage() {
         thisPage -= 1;
         loadTrees();

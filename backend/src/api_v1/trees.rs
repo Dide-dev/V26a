@@ -7,8 +7,8 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_queried_count, get_queried_count_pagination,
-    get_queried_list, get_queried_list_pagination, get_tree_owner, is_structure_valid,
+    add_tree, db_get_tree_all_data, get_queried_count,
+    get_queried_list, get_tree_owner, is_structure_valid,
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
@@ -35,7 +35,6 @@ pub fn trees() -> Router<Config> {
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
         .route("/get-list", get(get_list))
         .route("/update-data", post(update_tree_data))
-        .route("/get-mine-all", get(get_all_owned_trees))
 }
 
 #[utoipa::path(
@@ -522,67 +521,6 @@ pub async fn get_list(
     }
 
     let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
-
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
-
-    let list = TreeListResponse {
-        total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
-        trees,
-    };
-
-    Ok(Json(list))
-}
-
-#[utoipa::path(
-    get,
-    path = "/get-mine-all",
-    context_path = "/api/v1/trees",
-    responses(
-        (status = 200, description = "Successfully retrieved all owned trees.", body = TreeListResponse),
-        (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 500, description = "Internal server error."),
-    ),
-    params(
-        ("session" = Claims, Cookie),
-        ("page" = OptionalPaginationOptions, Query),
-    )
-)]
-
-/// Request metadata of all trees from the user.
-///
-/// # Arguments
-/// `claims` - The session cookie of the user.
-///
-/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
-///
-/// # Returns
-/// A list containing the metadata of all trees owned by the user and the total amount of trees owned by the user, as [`TreeListResponse`].
-///
-/// # Errors
-/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the trees count.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-async fn get_all_owned_trees(
-    claims: Claims,
-    Extension(db): Extension<PgPool>,
-    Query(page): Query<OptionalPaginationOptions>,
-) -> Result<Json<TreeListResponse>, ApiError> {
-    let page = page.to_some_with_default(1, 50, 1000, 100)?;
-
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
-
-    let trees_count = get_queried_count_pagination(&mut *transaction, claims.sub).await?;
-    if trees_count == 0 {
-        return Ok(Json(TreeListResponse {
-            total_trees: 0,
-            trees: Vec::new(),
-        }));
-    }
-
-    let trees = get_queried_list_pagination(&mut *transaction, &page, claims.sub).await?;
 
     transaction
         .commit()
