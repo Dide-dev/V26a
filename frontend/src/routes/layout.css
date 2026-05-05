@@ -175,7 +175,7 @@
                 z-index: 1;
             }
 
-            &:has(:hover:not(:disabled))::before {
+            &:has(:hover:not(.error))::before {
                 background-color: var(--color-neutral-500);
             }
 

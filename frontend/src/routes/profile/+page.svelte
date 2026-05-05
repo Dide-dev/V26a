@@ -48,11 +48,13 @@
         aboutMeChanged: false,
         languageChanged: false,
         emailVisibleChanged: false,
-        passwordChanged: false
+        passwordChanged: false,
+        error: false
     });
 
     let formChanged: boolean = $derived(
-        inputsChanged.emailChanged ||
+        inputsChanged.error ||
+            inputsChanged.emailChanged ||
             inputsChanged.nameChanged ||
             inputsChanged.nicknameChanged ||
             inputsChanged.aboutMeChanged ||
@@ -86,6 +88,17 @@
         inputsChanged.aboutMeChanged = false;
         inputsChanged.languageChanged = false;
         inputsChanged.emailVisibleChanged = false;
+        inputsChanged.error = false;
+    }
+
+    function resetInputResponses() {
+        incorrectPassword = false;
+        passwordMissingChar = false;
+        sameOldAndNewPassword = false;
+        usernameAlreadyExists = false;
+        emailAlreadyExists = false;
+        passwordNotSame = false;
+        successfulPasswordChange = false;
     }
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
@@ -121,9 +134,11 @@
             usernameAlreadyExists = false;
         } else if (result.type === 'EmailAlreadyUsed') {
             emailAlreadyExists = true;
+            inputsChanged.error = true;
             return;
         } else if (result.type === 'UsernameAlreadyUsed') {
             usernameAlreadyExists = true;
+            inputsChanged.error = true;
             return;
         } else {
             throw new Error('ERROR: Unexpected output from API.');
@@ -392,8 +407,10 @@
                 <button data-testid="confirm-button">{m.confirmChanges()}</button>
                 <button
                     onclick={(e) => {
+                        if (!formChanged) return;
                         e.preventDefault();
                         resetInputStates();
+                        resetInputResponses();
                         userDataPromise = getOwnUserData();
                     }}>{m.cancel()}</button
                 >
