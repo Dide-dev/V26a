@@ -1,0 +1,17 @@
+name: Backend Rust CI
+
+on:
+  push:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: /srv/V26a/
+
+    steps:
+      - name: Test
+        run: touch hi.txt
