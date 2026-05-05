@@ -220,44 +220,48 @@
             </div>
             <div>
                 <label for="name">{m.name()}</label>
-                <input
-                    id="name"
-                    class={[
-                        !inputsChanged.nameChanged && 'inactive',
-                        usernameAlreadyExists && 'error',
-                        'input__text'
-                    ]}
-                    bind:value={userData.name}
-                    name="name"
-                    type="text"
-                    data-testid="name"
-                    placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
-                    minlength={minInputLengths.name}
-                    maxlength={maxInputLengths.name}
-                    oninput={() => {
-                        inputsChanged.nameChanged = true;
-                    }}
-                    required
-                />
+                <div class="input__container">
+                    <input
+                        id="name"
+                        class={[
+                            !inputsChanged.nameChanged && 'inactive',
+                            usernameAlreadyExists && 'error',
+                            'input__text'
+                        ]}
+                        bind:value={userData.name}
+                        name="name"
+                        type="text"
+                        data-testid="name"
+                        placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
+                        minlength={minInputLengths.name}
+                        maxlength={maxInputLengths.name}
+                        oninput={() => {
+                            inputsChanged.nameChanged = true;
+                        }}
+                        required
+                    />
+                </div>
                 {#if usernameAlreadyExists}
                     <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
                 {/if}
             </div>
             <div>
                 <label for="nickname">{m.nickname()}</label>
-                <input
-                    id="nickname"
-                    class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
-                    bind:value={userData.nickname}
-                    name="nickname"
-                    type="text"
-                    placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
-                    minlength={minInputLengths.nickname}
-                    maxlength={maxInputLengths.nickname}
-                    oninput={() => {
-                        inputsChanged.nicknameChanged = true;
-                    }}
-                />
+                <div class="input__container">
+                    <input
+                        id="nickname"
+                        class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
+                        bind:value={userData.nickname}
+                        name="nickname"
+                        type="text"
+                        placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
+                        minlength={minInputLengths.nickname}
+                        maxlength={maxInputLengths.nickname}
+                        oninput={() => {
+                            inputsChanged.nicknameChanged = true;
+                        }}
+                    />
+                </div>
             </div>
             <div>
                 <label for="aboutMe">{m.aboutMe()}</label>

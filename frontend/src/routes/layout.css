@@ -111,9 +111,7 @@
         display: flex;
         flex-direction: column;
         width: min(var(--container-md), 90vw);
-    }
 
-    form {
         label {
             font-size: var(--text-lg);
             font-weight: var(--font-weight-semibold);
@@ -151,6 +149,38 @@
                 color: var(--color-neutral-900);
                 text-decoration: none;
                 padding: 0;
+                border-radius: 0;
+            }
+        }
+
+        .input__container {
+            width: 100%;
+
+            > * {
+                width: 100%;
+            }
+        }
+
+        .input__container:has(.input__text.inactive:not(:focus)) {
+            position: relative;
+
+            &::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: 15%;
+                background-color: var(--color-neutral-350);
+                width: var(--spacing-padding-minor);
+                height: 65%;
+                z-index: 1;
+            }
+
+            &:has(:hover:not(:disabled))::before {
+                background-color: var(--color-neutral-500);
+            }
+
+            &:has(.error)::before {
+                background-color: var(--color-red-800);
             }
         }
 

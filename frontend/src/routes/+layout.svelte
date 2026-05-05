@@ -95,22 +95,32 @@
         {
             href: '/privacy',
             text: m.privacy(),
-            target: '_self'
+            target: '_self',
+            localized: true
         },
         {
             href: '/colophon',
             text: m.colophon(),
-            target: '_self'
+            target: '_self',
+            localized: true
         },
         {
             href: '/feedback',
             text: 'Feedback',
-            target: '_self'
+            target: '_self',
+            localized: true
+        },
+        {
+            href: '/api-docs/',
+            text: 'API documentation',
+            target: '_blank',
+            localized: false
         },
         {
             href: 'https://softwareprojecten.sites.uu.nl/',
             text: m.otherProjects(),
-            target: '_blank'
+            target: '_blank',
+            localized: false
         }
     ];
 </script>
