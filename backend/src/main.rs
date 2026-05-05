@@ -13,25 +13,25 @@ mod db_structs;
 mod errors;
 mod tests;
 
+use crate::errors::ApiError;
 use crate::{api_v1::v1_api, config::Config};
 use axum::extract::DefaultBodyLimit;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use std::sync::Arc;
+use tower::ServiceBuilder;
 use tower_governor::GovernorLayer;
+use tower_governor::governor::GovernorConfigBuilder;
+use tower_governor::key_extractor::GlobalKeyExtractor;
 use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use utoipauto::utoipauto;
-use tower_governor::governor::GovernorConfigBuilder;
-use std::sync::Arc;
-use axum::http::StatusCode;
-use tower::ServiceBuilder;
-use axum::response::IntoResponse;
-use crate::errors::ApiError;
-use axum::response::Response;
-use tower_governor::key_extractor::GlobalKeyExtractor;
 
 #[allow(clippy::needless_for_each)]
 mod api_doc {
@@ -90,6 +90,14 @@ async fn main() {
 /// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
 /// Also sets up the global configuration and the database.
 async fn backend(config: Config) -> Router {
+    // Map status code 429 to api-error.
+    fn map_response_error(res: Response) -> Response {
+        if res.status() == StatusCode::TOO_MANY_REQUESTS {
+            return ApiError::RateLimitExceeded.into_response();
+        }
+        res
+    }
+
     // Set up and migrate database.
     let db = PgPoolOptions::new()
         .max_connections(20)
@@ -124,14 +132,6 @@ async fn backend(config: Config) -> Router {
             governor_limiter.retain_recent();
         }
     });
-
-    // Map status code 429 to api-error.
-    fn map_response_error(res: Response) -> Response {
-        if res.status() == StatusCode::TOO_MANY_REQUESTS {
-            return ApiError::RateLimitExceeded.into_response();
-        }
-        res
-    }
 
     Router::new()
         .nest("/v1", v1_api(config.clone()))

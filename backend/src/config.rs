@@ -59,7 +59,7 @@ impl Config {
                 .expect("Environment variable JWT_SECRET must be set")
                 .as_bytes(),
         );
-        
+
         let rate_limit_per_second = env::var("RATE_LIMIT_PER_SECOND")
             .unwrap_or("5".to_string())
             .parse::<u64>()
@@ -68,7 +68,7 @@ impl Config {
         let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
             .unwrap_or("10".to_string())
             .parse::<u32>()
-            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");        
+            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
 
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
