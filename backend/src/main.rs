@@ -17,12 +17,21 @@ use crate::{api_v1::v1_api, config::Config};
 use axum::extract::DefaultBodyLimit;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use tower_governor::GovernorLayer;
 use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use utoipauto::utoipauto;
+use tower_governor::governor::GovernorConfigBuilder;
+use std::sync::Arc;
+use axum::http::StatusCode;
+use tower::ServiceBuilder;
+use axum::response::IntoResponse;
+use crate::errors::ApiError;
+use axum::response::Response;
+use tower_governor::key_extractor::GlobalKeyExtractor;
 
 #[allow(clippy::needless_for_each)]
 mod api_doc {
@@ -92,8 +101,41 @@ async fn backend(config: Config) -> Router {
         .await
         .expect("failed to run database migrations.");
 
+    // Extract governor config.
+    let governor_conf = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(config.rate_limit_per_second)
+            .burst_size(config.rate_limit_burst_size)
+            .key_extractor(GlobalKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
+    // Create governor layer.
+    let governor_layer = ServiceBuilder::new()
+        .map_response(map_response_error)
+        .layer(GovernorLayer::new(governor_conf.clone()));
+
+    // Cleanup to prevent high memory usage.
+    let governor_limiter = governor_conf.limiter().clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+            governor_limiter.retain_recent();
+        }
+    });
+
+    // Map status code 429 to api-error.
+    fn map_response_error(res: Response) -> Response {
+        if res.status() == StatusCode::TOO_MANY_REQUESTS {
+            return ApiError::RateLimitExceeded.into_response();
+        }
+        res
+    }
+
     Router::new()
         .nest("/v1", v1_api(config.clone()))
+        .layer(governor_layer)
         .layer(Extension(db))
         .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)
