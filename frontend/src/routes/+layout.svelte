@@ -59,6 +59,13 @@
                 text: m.createTree(),
                 isThin: false
             });
+            if (userInfo.accountType == 'admin') {
+                result.push({
+                    href: '/user-list',
+                    text: m.userList(),
+                    isThin: false
+                });
+            }
         }
 
         return result;
