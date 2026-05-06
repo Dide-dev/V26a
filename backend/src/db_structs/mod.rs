@@ -10,3 +10,4 @@ pub mod feedback;
 pub mod pagination;
 pub mod trees;
 pub mod users;
+pub mod classrooms;
