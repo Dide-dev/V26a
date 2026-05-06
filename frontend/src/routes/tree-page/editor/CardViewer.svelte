@@ -14,7 +14,6 @@
     } = $props();
 </script>
 
-<!-- Cards layout in the viewer -->
 <p
     class="h-fit min-h-9 w-xl overflow-auto border-2 border-b-0 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
 >

@@ -15,11 +15,9 @@
     import RootNodeTextarea from './RootNodeTextarea.svelte';
 
     let {
-        history,
-        numPopupsOpen = $bindable()
+        history
     }: {
         history: TreeHistory;
-        numPopupsOpen: number;
     } = $props();
 
     /**
@@ -58,5 +56,5 @@
         {@html iconAdd}
     </button>
 {:else}
-    <RootNodeTextarea bind:text bind:numPopupsOpen {editDoneCallback} {editCancelCallback} />
+    <RootNodeTextarea bind:text {editDoneCallback} {editCancelCallback} />
 {/if}

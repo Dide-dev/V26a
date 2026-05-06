@@ -21,15 +21,13 @@
         location,
         dragState = $bindable(),
         lineLayout,
-        sidebar = $bindable(),
-        numPopupsOpen = $bindable()
+        sidebar = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
         sidebar: null | SideBar;
-        numPopupsOpen: number;
     } = $props();
 
     export type Layout = LayoutRight | LayoutUnder | LayoutOver;

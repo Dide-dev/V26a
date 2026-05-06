@@ -30,15 +30,13 @@
          */
         fakeNode = false,
         dragState = $bindable(),
-        sidebar = $bindable(),
-        numPopupsOpen = $bindable()
+        sidebar = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         fakeNode?: boolean;
         dragState: DragState;
         sidebar: SideBar | null;
-        numPopupsOpen: number;
     } = $props();
 
     /** This will be null if `fakeNode` is set to true. */
@@ -213,17 +211,16 @@
             bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
             lineLayout={{ type: 'over', lineOffset, svgWidth }}
             bind:sidebar
-            bind:numPopupsOpen
         />
     {/if}
 
     {#if node !== null && 'label' in node}
         <!-- Root Node -->
-        <RootNodeEditor {history} index={location[0]} bind:numPopupsOpen />
+        <RootNodeEditor {history} index={location[0]} />
     {:else}
         <!-- Standard Node -->
         {#if dragState === null}
-            <TreeEditButtons {history} {location} bind:dragState bind:sidebar bind:numPopupsOpen />
+            <TreeEditButtons {history} {location} bind:dragState bind:sidebar />
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
@@ -241,7 +238,6 @@
                 bind:dragState={dragStateChildrenGetSelf, dragStateChildrenSet}
                 lineLayout={{ type: 'under', lineHeight: totalHeight, lineOffset, svgWidth }}
                 bind:sidebar
-                bind:numPopupsOpen
             />
         </div>
     {/if}
@@ -270,7 +266,6 @@
                     location={[...location, index]}
                     dragState={{ type: 'dismissed' }}
                     bind:sidebar
-                    bind:numPopupsOpen
                 />
                 <!--
                     We need to create a separate nodeviewer here for the real card,
@@ -283,7 +278,6 @@
                     location={[...location, index]}
                     bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                     bind:sidebar
-                    bind:numPopupsOpen
                 />
             {:else}
                 <SubtreeEditor
@@ -291,7 +285,6 @@
                     location={[...location, index]}
                     bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                     bind:sidebar
-                    bind:numPopupsOpen
                 />
             {/if}
         {/each}
@@ -307,7 +300,6 @@
                 location={[...location, node.children.length]}
                 dragState={{ type: 'dismissed' }}
                 bind:sidebar
-                bind:numPopupsOpen
             />
         {/if}
     </div>
@@ -320,7 +312,6 @@
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                 lineLayout={{ type: 'right' }}
                 bind:sidebar
-                bind:numPopupsOpen
             />
         </div>
     {/if}

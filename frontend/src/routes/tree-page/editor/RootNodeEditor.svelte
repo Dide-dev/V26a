@@ -21,12 +21,10 @@
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history,
-        index,
-        numPopupsOpen = $bindable()
+        index
     }: {
         history: TreeHistory;
         index: number;
-        numPopupsOpen: number;
     } = $props();
 
     /**
@@ -115,7 +113,6 @@
 {:else}
     <RootNodeTextarea
         bind:text={inlineEditing}
-        bind:numPopupsOpen
         editDoneCallback={editFinish}
         editCancelCallback={editCancel}
     />

@@ -18,14 +18,12 @@
         history,
         location,
         dragState = $bindable(),
-        sidebar = $bindable(),
-        numPopupsOpen = $bindable()
+        sidebar = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
         sidebar: null | SideBar;
-        numPopupsOpen: number;
     } = $props();
 
     async function removeButtonClick() {
