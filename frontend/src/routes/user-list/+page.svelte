@@ -7,7 +7,7 @@
     import { m } from '$lib/paraglide/messages.js';
     import { type UserGetAllData, getAllUserData } from '$lib/backend/admin';
     import { onMount } from 'svelte';
-    import iconEdit from '$lib/assets/iconEdit.svg?raw';
+    import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import { booleanToString } from '$lib/general';
 
