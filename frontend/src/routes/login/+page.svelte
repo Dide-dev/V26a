@@ -17,6 +17,18 @@
     });
     let loginFailed: boolean = $state(false);
 
+    let formCompleted: boolean = $derived(loginData.email !== '' && loginData.password !== '');
+
+    const minInputLengths = {
+        email: 0,
+        password: 8
+    };
+
+    const maxInputLengths = {
+        email: 256,
+        password: 72
+    };
+
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         let response = await login(loginData);
@@ -44,33 +56,51 @@
     }
 </script>
 
-<div class="flex w-full justify-center">
-    <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
-        <label>
-            {m.email()}
+<div>
+    <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
+        <div>
+            <h1 class="page__title">{m.login()}</h1>
+        </div>
+        <div>
+            <label for="email">
+                {m.email()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="email"
+                class={[loginFailed && 'error', 'input__text']}
                 bind:value={loginData.email}
                 name="email"
                 type="email"
                 data-testid="email"
+                placeholder={m.yourEmail()}
+                minlength={minInputLengths.email}
+                maxlength={maxInputLengths.email}
+                autocomplete="email"
                 required
             />
-        </label>
-        <label>
-            {m.password()}
+        </div>
+        <div>
+            <label for="password">
+                {m.password()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="password"
+                class={[loginFailed && 'error', 'input__text']}
                 bind:value={loginData.password}
                 name="password"
                 type="password"
                 data-testid="password"
+                placeholder={m.yourPassword()}
+                minlength={minInputLengths.password}
+                maxlength={maxInputLengths.password}
+                autocomplete="current-password"
                 required
             />
-        </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.login()}</button>
+        </div>
+        <button>{m.login()}</button>
         {#if loginFailed}
-            <p class="text-red-600">{m.invalidCredentials()}</p>
+            <p class="text__error">{m.invalidCredentials()}</p>
         {/if}
+        <a class="text__link mt-2 italic" href={appLink('/registration')}>{m.noAccount()}</a>
     </form>
 </div>

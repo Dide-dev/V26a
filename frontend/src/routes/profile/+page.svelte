@@ -25,7 +25,7 @@
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
 
-    let userDataPromise: Promise<UserGetData> = $state(getOwnUserData());
+    let userDataPromise = $state(getOwnUserData());
 
     let changePasswordData: ChangePasswordData = $state({
         oldPassword: '',
@@ -33,31 +33,92 @@
     });
     let repeatPassword = $state('');
 
-    // Variable to check whether a user tries to change the password. Returns true if at least one of the change-password fields are filled in, returns false if not or if all three password change fields are filled in.
-    const passwordChangeAttempt = $derived(
-        (changePasswordData.oldPassword || changePasswordData.newPassword || repeatPassword) &&
-            (!changePasswordData.oldPassword || !changePasswordData.newPassword || !repeatPassword)
-    );
-
+    let incorrectPassword: boolean = $state(false);
     let passwordMissingChar: boolean = $state(false);
-    let passwordNotSame: boolean = $state(false);
-    let unsuccesfulPasswordChange: boolean = $state(false);
-    let succesfulPasswordChange: boolean = $state(false);
     let sameOldAndNewPassword: boolean = $state(false);
     let usernameAlreadyExists: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
+    let passwordNotSame: boolean = $state(false);
+    let successfulPasswordChange: boolean = $state(false);
+
+    let inputsChanged = $state({
+        emailChanged: false,
+        nameChanged: false,
+        nicknameChanged: false,
+        aboutMeChanged: false,
+        languageChanged: false,
+        emailVisibleChanged: false,
+        passwordChanged: false,
+        error: false
+    });
+
+    let formChanged: boolean = $derived(
+        inputsChanged.error ||
+            inputsChanged.emailChanged ||
+            inputsChanged.nameChanged ||
+            inputsChanged.nicknameChanged ||
+            inputsChanged.aboutMeChanged ||
+            inputsChanged.languageChanged ||
+            inputsChanged.emailVisibleChanged ||
+            (changePasswordData.oldPassword.length > 0 &&
+                changePasswordData.newPassword.length > 0 &&
+                repeatPassword.length > 0)
+    );
+
+    const minInputLengths = {
+        email: 0,
+        name: 2,
+        nickname: 2,
+        aboutMe: 0,
+        password: 8
+    };
+
+    const maxInputLengths = {
+        email: 256,
+        name: 128,
+        nickname: 128,
+        aboutMe: 160,
+        password: 72
+    };
+
+    function resetInputStates() {
+        inputsChanged.emailChanged = false;
+        inputsChanged.nameChanged = false;
+        inputsChanged.nicknameChanged = false;
+        inputsChanged.aboutMeChanged = false;
+        inputsChanged.languageChanged = false;
+        inputsChanged.emailVisibleChanged = false;
+        inputsChanged.error = false;
+    }
+
+    function resetInputResponses() {
+        incorrectPassword = false;
+        passwordMissingChar = false;
+        sameOldAndNewPassword = false;
+        usernameAlreadyExists = false;
+        emailAlreadyExists = false;
+        passwordNotSame = false;
+        successfulPasswordChange = false;
+    }
 
     async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
         event.preventDefault();
-        usernameAlreadyExists = false;
 
-        handlePasswordChange();
+        if (!formChanged) {
+            return;
+        }
+
+        await handlePasswordChange();
 
         const userInfo = getUserInfo();
         if (userInfo === null) {
             await redirectLogin(page.url);
             return;
         }
+
+        usernameAlreadyExists = false;
+        resetInputStates();
+
         const result = await updateUser(userInfo.sub, {
             name: userData.name,
             nickname: userData.nickname,
@@ -73,8 +134,12 @@
             usernameAlreadyExists = false;
         } else if (result.type === 'EmailAlreadyUsed') {
             emailAlreadyExists = true;
+            inputsChanged.error = true;
+            return;
         } else if (result.type === 'UsernameAlreadyUsed') {
             usernameAlreadyExists = true;
+            inputsChanged.error = true;
+            return;
         } else {
             throw new Error('ERROR: Unexpected output from API.');
         }
@@ -86,19 +151,16 @@
     }
 
     async function handlePasswordChange() {
-        // Return if the user is not attempting to change the password at all.
-        if (!changePasswordData.oldPassword && !changePasswordData.newPassword && !repeatPassword) {
-            return;
-        }
-        // Return if not all fields are filled in.
-        if (!changePasswordData.oldPassword || !changePasswordData.newPassword || !repeatPassword) {
+        successfulPasswordChange = false;
+
+        // Return if the user has not entered all required fields.
+        if (!(changePasswordData.oldPassword && changePasswordData.newPassword && repeatPassword)) {
             return;
         }
 
         passwordMissingChar = false;
         passwordNotSame = false;
-        unsuccesfulPasswordChange = false;
-        succesfulPasswordChange = false;
+        incorrectPassword = false;
         sameOldAndNewPassword = false;
 
         if (changePasswordData.oldPassword == changePasswordData.newPassword) {
@@ -123,164 +185,239 @@
         let changePasswordResponse = await changePassword(changePasswordData);
 
         if (!changePasswordResponse.succeeded) {
-            unsuccesfulPasswordChange = true;
+            incorrectPassword = true;
             return;
         }
         if (changePasswordResponse.succeeded) {
-            succesfulPasswordChange = true;
+            successfulPasswordChange = true;
         }
 
         changePasswordData.oldPassword = '';
         changePasswordData.newPassword = '';
         repeatPassword = '';
     }
+
+    function handleCancel(e: Event) {
+        if (!formChanged) return;
+        e.preventDefault();
+        resetInputStates();
+        resetInputResponses();
+        changePasswordData.oldPassword = '';
+        changePasswordData.newPassword = '';
+        repeatPassword = '';
+        userDataPromise = getOwnUserData();
+    }
 </script>
 
-{#await userDataPromise}
-    <p>{m.loading()}</p>
-{:then userData}
-    <div class="flex flex-col items-center">
-        <div>
-            <h1 class="mb-4 text-3xl font-bold">{m.profile()}</h1>
-            <form
-                class="flex w-md flex-col gap-2"
-                onsubmit={(event) => handleSubmit(event, userData)}
-            >
-                <div>
-                    <p class="font-bold">{m.email()}</p>
-                    <p>{userData.email}</p>
-                </div>
-                <label>
-                    <p class="font-bold">{m.name()}</p>
+<div>
+    {#await userDataPromise}
+        <p>{m.loading()}</p>
+    {:then userData}
+        <form
+            data-testid="profile-form"
+            class={[formChanged && 'completed']}
+            onsubmit={(event) => handleSubmit(event, userData)}
+        >
+            <h1 class="page__title">{m.profile()}</h1>
+            <h2 class="page__heading">{m.general()}</h2>
+            <div>
+                <label for="email">{m.email()}</label>
+                <input
+                    id="email"
+                    class={[
+                        !inputsChanged.emailChanged && 'inactive',
+                        emailAlreadyExists && 'error',
+                        'input__text'
+                    ]}
+                    name="email"
+                    type="email"
+                    data-testid="email"
+                    minlength={minInputLengths.email}
+                    maxlength={maxInputLengths.email}
+                    value={userData.email}
+                    oninput={() => {
+                        inputsChanged.emailChanged = true;
+                    }}
+                    disabled
+                />
+                {#if emailAlreadyExists}
+                    <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
+                {/if}
+            </div>
+            <div>
+                <label for="name">{m.name()}</label>
+                <div class="input__container">
                     <input
-                        class="w-full rounded-md border-2"
+                        id="name"
+                        class={[
+                            !inputsChanged.nameChanged && 'inactive',
+                            usernameAlreadyExists && 'error',
+                            'input__text'
+                        ]}
                         bind:value={userData.name}
                         name="name"
                         type="text"
                         data-testid="name"
-                        maxlength="128"
+                        placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
+                        minlength={minInputLengths.name}
+                        maxlength={maxInputLengths.name}
+                        oninput={() => {
+                            inputsChanged.nameChanged = true;
+                        }}
                         required
                     />
-                </label>
-                {#if emailAlreadyExists}
-                    <p class="text-red-600" data-testid="error">{m.emailAlreadyExists()}</p>
-                {/if}
+                </div>
                 {#if usernameAlreadyExists}
-                    <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
+                    <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
                 {/if}
-                <label>
-                    <p class="font-bold">{m.nickname()}</p>
+            </div>
+            <div>
+                <label for="nickname">{m.nickname()}</label>
+                <div class="input__container">
                     <input
-                        class="w-full rounded-md border-2"
+                        id="nickname"
+                        class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
                         bind:value={userData.nickname}
                         name="nickname"
                         type="text"
-                        placeholder={m.optional()}
-                        maxlength="128"
+                        placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
+                        minlength={minInputLengths.nickname}
+                        maxlength={maxInputLengths.nickname}
+                        oninput={() => {
+                            inputsChanged.nicknameChanged = true;
+                        }}
                     />
-                </label>
-                <label>
-                    <p class="font-bold">{m.aboutMe()}</p>
-                    <textarea
-                        class="w-full rounded-md border-2"
-                        bind:value={userData.aboutMe}
-                        name="aboutMe"
-                        placeholder={m.optional()}
-                        maxlength="160"
-                        rows="4"
-                        data-testid="about-me"
-                    ></textarea>
-                </label>
-                <label>
-                    <p class="font-bold">{m.language()}</p>
-                    <select class="rounded-md border-2" bind:value={userData.language}>
-                        {#each locales as value (value)}
-                            <option {value}>{value}</option>
-                        {/each}
-                    </select>
-                </label>
-                <label>
-                    <input
-                        class="rounded-md border-2"
-                        bind:checked={userData.emailVisible}
-                        name="emailVisible"
-                        type="checkbox"
-                        maxlength="128"
-                    />
+                </div>
+            </div>
+            <div>
+                <label for="aboutMe">{m.aboutMe()}</label>
+                <textarea
+                    id="aboutMe"
+                    class={[!inputsChanged.aboutMeChanged && 'inactive', 'input__long_text']}
+                    bind:value={userData.aboutMe}
+                    name="aboutMe"
+                    placeholder={m.optional()}
+                    minlength={minInputLengths.aboutMe}
+                    maxlength={maxInputLengths.aboutMe}
+                    rows="2"
+                    data-testid="about-me"
+                    oninput={() => {
+                        inputsChanged.aboutMeChanged = true;
+                    }}
+                ></textarea>
+            </div>
+            <h2 class="page__heading">{m.accountSettings()}</h2>
+            <div>
+                <label for="language">{m.language()}</label>
+                <select
+                    id="language"
+                    class={[!inputsChanged.languageChanged && 'inactive', 'input__select']}
+                    bind:value={userData.language}
+                    oninput={() => {
+                        inputsChanged.languageChanged = true;
+                    }}
+                >
+                    {#each locales as value (value)}
+                        <option class={['input__select_option']}>
+                            {value}
+                        </option>
+                    {/each}
+                </select>
+            </div>
+            <div class="checkbox__container">
+                <input
+                    id="emailVisible"
+                    class={[!inputsChanged.emailVisibleChanged && 'inactive', 'input__checkbox']}
+                    bind:checked={userData.emailVisible}
+                    name="emailVisible"
+                    type="checkbox"
+                    oninput={() => {
+                        inputsChanged.emailVisibleChanged = true;
+                    }}
+                />
+                <label for="emailVisible">
                     {m.emailVisible()}
                 </label>
-                <h1 class="mt-2 text-3xl font-bold">{m.changePassword()}</h1>
-                <label>
-                    <p class="font-bold">{m.oldPassword()}</p>
-                    <input
-                        class="w-full rounded-md border-2"
-                        bind:value={changePasswordData.oldPassword}
-                        name="oldPassword"
-                        type="password"
-                        data-testid="oldPassword"
-                        placeholder={m.oldPassword()}
-                        minlength="8"
-                        maxlength="72"
-                    />
-                </label>
-                <label>
-                    <p class="font-bold">{m.newPassword()}</p>
-                    <input
-                        class="w-full rounded-md border-2"
-                        bind:value={changePasswordData.newPassword}
-                        name="newPassword"
-                        type="password"
-                        data-testid="newPassword"
-                        placeholder={m.newPassword()}
-                        minlength="8"
-                        maxlength="72"
-                    />
-                </label>
+                <div class="info">
+                    <sup>🛈</sup>
+                    <div class="info__content">{m.emailVisibleInfo()}</div>
+                </div>
+            </div>
+            <h2 class="page__heading">{m.changePassword()}</h2>
+            <div>
+                <label for="oldPassword">{m.oldPassword()}</label>
+                <input
+                    id="oldPassword"
+                    class={[(incorrectPassword || sameOldAndNewPassword) && 'error', 'input__text']}
+                    bind:value={changePasswordData.oldPassword}
+                    name="oldPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    data-testid="oldPassword"
+                    placeholder={m.requiredPlaceholder({ value: m.oldPassword() })}
+                    minlength={minInputLengths.password}
+                    maxlength={maxInputLengths.password}
+                />
+                {#if incorrectPassword}
+                    <p class="text__error">{m.incorrectPassword()}</p>
+                {/if}
+                <label for="newPassword">{m.newPassword()}</label>
+                <input
+                    id="newPassword"
+                    class={[
+                        (sameOldAndNewPassword || passwordMissingChar || passwordNotSame) &&
+                            'error',
+                        'input__text'
+                    ]}
+                    bind:value={changePasswordData.newPassword}
+                    name="newPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    data-testid="newPassword"
+                    placeholder={m.requiredPlaceholder({ value: m.newPassword() })}
+                    minlength={minInputLengths.password}
+                    maxlength={maxInputLengths.password}
+                />
                 {#if passwordMissingChar}
-                    <p class="text-red-600" data-testid="missing-char-error">
+                    <p class="text__error" data-testid="missing-char-error">
                         {m.missingCharacter()}
                     </p>
                 {/if}
-                <label>
-                    <p class="font-bold">{m.repeatPassword()}</p>
+                {#if changePasswordData.newPassword}
                     <input
-                        class="w-full rounded-md border-2"
+                        class={[passwordNotSame && 'error', 'input__text']}
                         bind:value={repeatPassword}
                         name="repeatPassword"
                         type="password"
+                        autocomplete="new-password"
                         data-testid="repeatPassword"
-                        placeholder={m.repeatPassword()}
-                        minlength="8"
-                        maxlength="72"
+                        placeholder={m.requiredPlaceholder({ value: m.repeatPassword() })}
+                        minlength={minInputLengths.password}
+                        maxlength={maxInputLengths.password}
+                        required
                     />
-                </label>
-                {#if passwordNotSame}
-                    <p class="text-red-600" data-testid="differing-password-error">
-                        {m.passwordsNotTheSame()}
-                    </p>
-                {/if}
-                {#if passwordChangeAttempt}
-                    <p class="text-red-600" data-testid="change-attempt-error">
-                        {m.changePasswordAttempt()}
-                    </p>
+
+                    {#if passwordNotSame}
+                        <p class="text__error" data-testid="differing-password-error">
+                            {m.passwordsNotTheSame()}
+                        </p>
+                    {/if}
                 {/if}
                 {#if sameOldAndNewPassword}
-                    <p class="text-red-600" data-testid="same-old-and-new-password-error">
+                    <p class="text__error" data-testid="same-old-and-new-password-error">
                         {m.sameOldAndNewPassword()}
                     </p>
                 {/if}
-                {#if succesfulPasswordChange}
-                    <p class="text-green-700" data-testid="password-change-success">
+                {#if successfulPasswordChange}
+                    <p class="text__success" data-testid="password-change-success">
                         {m.succesfulPasswordChange()}
                     </p>
                 {/if}
-                <button class="mt-4 mb-4 rounded-sm bg-emerald-500 p-1" data-testid="confirm-button"
-                    >{m.confirmChanges()}</button
-                >
-                {#if unsuccesfulPasswordChange}
-                    <p class="text-red-600">{m.unsuccesfulPasswordChange()}</p>
-                {/if}
-            </form>
-        </div>
-    </div>
-{/await}
+            </div>
+            <div class="mb-0 flex flex-row gap-1 *:w-1/2">
+                <button data-testid="confirm-button">{m.confirmChanges()}</button>
+                <button onclick={handleCancel}>{m.cancel()}</button>
+            </div>
+        </form>
+    {/await}
+</div>

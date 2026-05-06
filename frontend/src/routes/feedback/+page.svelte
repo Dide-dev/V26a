@@ -27,41 +27,50 @@
     }
 </script>
 
-<br />
-<div class="flex w-full justify-center">
-    <form class="flex w-md flex-col gap-6 rounded-xl bg-white p-6 shadow" onsubmit={handleSubmit}>
-        <h1 class="mb-0 text-3xl font-bold">Feedback</h1>
-        {#if successfulSubmission}
-            <p class="text-green-700" data-testid="submission-success">
-                {m.succesfulFeedbackSubmission()}
-            </p>
-        {/if}
-        <p class="flex w-full justify-center">{m.feedbackExplanation()}</p>
-        <label class="flex flex-col gap-1 text-sm">
-            <p class="font-bold">{m.email()}</p>
+<div>
+    <form class={[feedbackData.feedback && 'completed']} onsubmit={handleSubmit}>
+        <div>
+            <h1 class="page__title">Feedback</h1>
+            <p>{m.feedbackExplanation()}</p>
+        </div>
+        <div>
+            <div class="label__container">
+                <label for="email">{m.email()}</label>
+                <div class="info">
+                    <sup>🛈</sup>
+                    <div class="info__content transform-none">{m.emailFeedbackInfo()}</div>
+                </div>
+            </div>
             <input
-                class="rounded-md border-2"
+                id="email"
+                class="input__text"
                 bind:value={feedbackData.email}
                 name="email"
                 type="email"
-                placeholder={m.optional()}
+                autocomplete="email"
+                placeholder={m.optionalPlaceholder({ value: m.yourEmail() })}
                 data-testid="email"
             />
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-            <p class="font-bold">Feedback</p>
+        </div>
+        <div>
+            <label for="feedback">{m.feedback()} *</label>
             <textarea
+                id="feedback"
                 rows="3"
-                class="rounded-md border-2 p-2"
+                class="input__long_text"
                 bind:value={feedbackData.feedback}
                 name="feedback"
                 data-testid="feedback"
+                placeholder={m.yourFeedback()}
                 required
             ></textarea>
-        </label>
-        <button class="rounded-sm bg-emerald-500 p-1" data-testid="submit-feedback-button"
-            >{m.submitFeedback()}</button
-        >
+            {#if successfulSubmission}
+                <p class="text__success" data-testid="submission-success">
+                    {m.succesfulFeedbackSubmission()}
+                </p>
+            {/if}
+        </div>
+        <button data-testid="submit-feedback-button">{m.submitFeedback()}</button>
     </form>
 </div>
 <br />

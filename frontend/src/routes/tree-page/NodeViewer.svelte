@@ -14,27 +14,50 @@
         fillStateStructure,
         followIndex,
         initializeHistory,
+        type StateNode,
+        type StateRootNode,
         type TreeHistory
     } from './history.svelte';
+    import type { SideBar } from './Sidebar.svelte';
     import RootNodeViewAndEdit from './RootNodeViewAndEdit.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history = $bindable(),
         location,
+        /**
+         * Is set to true if this node is not present in `history.currentLocation`.
+         * In that case this component is just being used for mock displaying the new card to be created.
+         */
+        fakeNode = false,
         dragState = $bindable(),
+        sidebar = $bindable(),
         numPopupsOpen = $bindable(),
         editingPage
     }: {
         history: TreeHistory;
         location: number[];
+        fakeNode?: boolean;
         dragState: DragState;
+        sidebar: SideBar | null;
         numPopupsOpen: number;
         editingPage: boolean;
     } = $props();
 
-    let node = $derived(followIndex(history.currentStructure, location));
-    let isFirstChild = $derived(location[location.length - 1] === 0);
+    /** This will be null if `fakeNode` is set to true. */
+    let node: null | StateRootNode | StateNode = $derived.by(() => {
+        if (fakeNode) return null;
+
+        return followIndex(history.currentStructure, location);
+    });
+    let isFirstChild = $derived(
+        // Extra care here to detect if we are not the first child because of a fake node above here being inserted,
+        // but the fake node itself should still have it set to true.
+        location[location.length - 1] === 0 &&
+            (fakeNode ||
+                sidebar?.type !== 'NewCard' ||
+                JSON.stringify(location) !== JSON.stringify(sidebar?.location))
+    );
     let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
 
     export type DragState = null | DragStateDragging | DragStateDismissed;
@@ -105,7 +128,9 @@
 
         totalHeight = outermostDiv.getBoundingClientRect().height;
 
-        if (node.children.length === 0) return;
+        // It is possible that node.children.length === 0, but domChildren.children.length > 0.
+        // This happens when adding a new Card and a sidebar is open
+        if (domChildren.children.length === 0) return;
 
         let top = domChildren.getBoundingClientRect().top;
 
@@ -168,7 +193,7 @@
 <div
     class="relative flex"
     bind:this={outermostDiv}
-    class:mt-7={editingPage && ('label' in node || !isFirstChild)}
+    class:mt-7={editingPage && ((node !== null && 'label' in node) || !isFirstChild)}
 >
     <!--
         Render copy of self (but transparent and smaller) where the mouse currently is.
@@ -186,40 +211,51 @@
                     // TODO: Improve this in the separation of viewer and editor later.
                     const structure = fillStateStructure(history.currentStructure, false);
                     const parent = followIndex(structure, location.slice(0, -1));
-                    if ('revealed' in parent) {
+                    if (parent !== null && 'revealed' in parent) {
                         parent.revealed = true;
                     }
                     return initializeHistory(history.treeId, structure, history.currentCards);
                 })()}
                 {location}
                 dragState={null}
+                sidebar={null}
                 editingPage={false}
                 numPopupsOpen={0}
             />
         </div>
     {/if}
 
-    {#if editingPage && isFirstChild && 'cardId' in node}
+    {#if editingPage && isFirstChild && (node === null || 'cardId' in node)}
         <AddAndDrop
             {history}
             {location}
             bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
             lineLayout={{ type: 'over', lineOffset, svgWidth }}
+            bind:sidebar
             bind:numPopupsOpen
         />
     {/if}
 
-    {#if 'label' in node}
+    {#if node !== null && 'label' in node}
         <!-- Root Node -->
         <RootNodeViewAndEdit {history} index={location[0]} bind:numPopupsOpen {editingPage} />
     {:else}
         <!-- Standard Node -->
-        {#if editingPage}
-            <TreeEditButtons {history} index={location} bind:dragState bind:numPopupsOpen />
+        {#if editingPage && dragState === null}
+            <TreeEditButtons {history} {location} bind:dragState bind:sidebar bind:numPopupsOpen />
         {/if}
         <div class="flex flex-col">
             <div class="shrink-0" bind:this={cardViewerContainer}>
-                <CardViewer {history} index={location} {editingPage} />
+                <CardViewer
+                    {history}
+                    overwriteContent={fakeNode ||
+                    (sidebar?.type == 'EditCard' &&
+                        JSON.stringify(sidebar.location) === JSON.stringify(location))
+                        ? sidebar!.editingVersion
+                        : history.currentCards[node!.cardId]}
+                    {location}
+                    {editingPage}
+                />
             </div>
             {#if !editingPage}
                 <!--
@@ -233,13 +269,14 @@
                     location={nextSiblingIndex}
                     bind:dragState={dragStateChildrenGetSelf, dragStateChildrenSet}
                     lineLayout={{ type: 'under', lineHeight: totalHeight, lineOffset, svgWidth }}
+                    bind:sidebar
                     bind:numPopupsOpen
                 />
             {/if}
         </div>
     {/if}
 
-    {#if node.children.length !== 0}
+    {#if svgLines.length !== 0}
         <svg width={svgWidth} height={svgHeight} class="shrink-0">
             {#each svgLines as line (line)}
                 <line
@@ -254,24 +291,69 @@
 
     <!-- Here the html gets recursive as we render the 'node.children' -->
     <div bind:this={domChildren} class="flex flex-col">
-        {#each node.children as child_node, index (child_node)}
+        {#each node?.children ?? [] as child_node, index (child_node)}
+            {#if sidebar?.type === 'NewCard' && JSON.stringify( [...location, index] ) === JSON.stringify(sidebar.location)}
+                <!-- This is the new dummy card currently being created, above the real card -->
+                <NodeViewer
+                    fakeNode={true}
+                    bind:history
+                    location={[...location, index]}
+                    dragState={{ type: 'dismissed' }}
+                    bind:sidebar
+                    bind:numPopupsOpen
+                    {editingPage}
+                />
+                <!--
+                    We need to create a separate nodeviewer here for the real card,
+                    to configure that the sidebar is null.
+                    That prevents this nodeviewer from displaying the contents,
+                    because the location is the same for this real node and the fake node above here.
+                -->
+                <NodeViewer
+                    bind:history
+                    location={[...location, index]}
+                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                    bind:sidebar
+                    bind:numPopupsOpen
+                    {editingPage}
+                />
+            {:else}
+                <NodeViewer
+                    bind:history
+                    location={[...location, index]}
+                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                    bind:sidebar
+                    bind:numPopupsOpen
+                    {editingPage}
+                />
+            {/if}
+        {/each}
+
+        <!--
+            This gets used whenever this is the last child in a list of children,
+            but also whenever there are no children at all and this one is displayed.
+        -->
+        {#if sidebar?.type === 'NewCard' && node !== null && JSON.stringify( [...location, node.children.length] ) === JSON.stringify(sidebar.location)}
             <NodeViewer
+                fakeNode={true}
                 bind:history
-                location={[...location, index]}
-                bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                location={[...location, node.children.length]}
+                dragState={{ type: 'dismissed' }}
+                bind:sidebar
                 bind:numPopupsOpen
                 {editingPage}
             />
-        {/each}
+        {/if}
     </div>
 
-    {#if editingPage && node.children.length === 0}
+    {#if editingPage && svgLines.length === 0}
         <div class="flex h-9 items-center">
             <AddAndDrop
                 {history}
                 location={[...location, 0]}
                 bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                 lineLayout={{ type: 'right' }}
+                bind:sidebar
                 bind:numPopupsOpen
             />
         </div>

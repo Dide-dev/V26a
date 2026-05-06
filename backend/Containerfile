@@ -1,0 +1,37 @@
+# This program has been developed by students from the bachelor Computer Science at
+# Utrecht University within the Software Project course.
+# © Copyright Utrecht University (Department of Information and Computing Sciences
+
+# -- Setup / caching --
+FROM docker.io/library/rust:1.94 AS base
+
+WORKDIR /app
+
+# Cache dependencies
+RUN cargo init
+COPY Cargo.toml Cargo.lock ./
+RUN cargo build --release
+
+# Copy the rest of the code
+COPY src ./src
+COPY migrations ./migrations
+COPY .sqlx ./.sqlx
+
+# Ensure that main.rs is newer so that cargo recompiles it
+RUN touch src/main.rs
+
+# -- Builder --
+FROM base AS builder
+
+# Use queries from .sqlx/
+ENV SQLX_OFFLINE=true
+
+RUN cargo build --release
+
+# -- Runtime --
+FROM gcr.io/distroless/cc
+
+COPY --from=builder /app/target/release/ht-backend /
+COPY --from=builder /app/migrations ./migrations
+
+CMD ["./ht-backend"]

@@ -13,7 +13,7 @@
         type TreeMetadata,
         getFilteredList
     } from '$lib/backend/trees';
-    import { appLink, timeFormatString } from '$lib/index';
+    import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, showTreeCount } from '$lib/pagination';
 
@@ -115,9 +115,7 @@
                     bind:value={filterOptions.ownerId}
                 />
             </label>
-            <button class="m-1 cursor-pointer rounded-sm bg-emerald-500 p-1"
-                >{m.applyFilters()}</button
-            >
+            <button>{m.applyFilters()}</button>
         </form>
 
         <!-- Change the number of trees per page -->
