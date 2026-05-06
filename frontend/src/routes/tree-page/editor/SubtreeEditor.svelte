@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import NodeEditor from './NodeEditor.svelte';
+    import SubtreeEditor from './SubtreeEditor.svelte';
     import TreeEditButtons from './TreeEditButtons.svelte';
     import AddAndDrop from './AddAndDrop.svelte';
     import { onMount } from 'svelte';
@@ -18,7 +18,7 @@
     } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
     import RootNodeEditor from './RootNodeEditor.svelte';
-    import NodeViewer from '../viewer/NodeViewer.svelte';
+    import SubtreeViewer from '../SubtreeViewer.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -202,7 +202,7 @@
             class="transform:scale(0.7) pointer-events-none fixed z-20 opacity-70"
             style="left: {dragState.mouseX}px; top: {dragState.mouseY}px;"
         >
-            <NodeViewer node={node!} cards={history.currentCards} />
+            <SubtreeViewer node={node!} cards={history.currentCards} />
         </div>
     {/if}
 
@@ -264,7 +264,7 @@
         {#each node?.children ?? [] as child_node, index (child_node)}
             {#if sidebar?.type === 'NewCard' && JSON.stringify( [...location, index] ) === JSON.stringify(sidebar.location)}
                 <!-- This is the new dummy card currently being created, above the real card -->
-                <NodeEditor
+                <SubtreeEditor
                     fakeNode={true}
                     bind:history
                     location={[...location, index]}
@@ -278,7 +278,7 @@
                     That prevents this nodeviewer from displaying the contents,
                     because the location is the same for this real node and the fake node above here.
                 -->
-                <NodeEditor
+                <SubtreeEditor
                     bind:history
                     location={[...location, index]}
                     bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
@@ -286,7 +286,7 @@
                     bind:numPopupsOpen
                 />
             {:else}
-                <NodeEditor
+                <SubtreeEditor
                     bind:history
                     location={[...location, index]}
                     bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
@@ -301,7 +301,7 @@
             but also whenever there are no children at all and this one is displayed.
         -->
         {#if sidebar?.type === 'NewCard' && node !== null && JSON.stringify( [...location, node.children.length] ) === JSON.stringify(sidebar.location)}
-            <NodeEditor
+            <SubtreeEditor
                 fakeNode={true}
                 bind:history
                 location={[...location, node.children.length]}

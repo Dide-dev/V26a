@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import NodeViewer from './NodeViewer.svelte';
+    import SubtreeViewer from '../SubtreeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
     import { page } from '$app/state';
@@ -68,7 +68,7 @@
 
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
             {#each tree.structure.rootNodes as root (root)}
-                <NodeViewer node={root} cards={tree.cards} />
+                <SubtreeViewer node={root} cards={tree.cards} />
             {/each}
         </div>
     {/if}

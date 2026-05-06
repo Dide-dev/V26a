@@ -8,7 +8,7 @@
     import type { CardGetData, CardId } from '$lib/backend/cards';
     import type { Node, RootNode } from '$lib/backend/trees';
     import CardViewer from './CardViewer.svelte';
-    import NodeViewer from './NodeViewer.svelte';
+    import SubtreeViewer from './SubtreeViewer.svelte';
     import { onMount } from 'svelte';
 
     let {
@@ -113,8 +113,8 @@
         </div>
     {:else}
         <!-- Standard Node -->
-        <div class="mb-2">
-            <!-- TODO: figure out why browsers insert random vertical whitespace in this division -->
+        <!-- The 'flex' here prevents some weird vertical whitespace -->
+        <div class="mb-2 flex">
             <CardViewer bind:revealed {parentRevealed} card={cards[node.cardId]} />
         </div>
     {/if}
@@ -135,7 +135,7 @@
     <!-- Here the html gets recursive as we render the 'node.children' -->
     <div bind:this={domChildren} class="flex flex-col">
         {#each node.children as child_node (child_node)}
-            <NodeViewer node={child_node} {cards} parentRevealed={revealed} />
+            <SubtreeViewer node={child_node} {cards} parentRevealed={revealed} />
         {/each}
     </div>
 </div>

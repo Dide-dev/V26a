@@ -9,7 +9,7 @@
     import iconTrash from '$lib/assets/icons/trash.svg?raw';
     import iconMove from '$lib/assets/icons/move.svg?raw';
     import { m } from '$lib/paraglide/messages.js';
-    import type { DragState } from './NodeEditor.svelte';
+    import type { DragState } from './SubtreeEditor.svelte';
     import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
 

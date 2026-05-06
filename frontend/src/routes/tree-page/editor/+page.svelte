@@ -14,7 +14,7 @@
     import { getTreeWithCards, type TreeData } from '$lib/backend/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
-    import NodeEditor, { type DragState } from './NodeEditor.svelte';
+    import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
     import {
         type TreeHistory,
         undo,
@@ -111,7 +111,7 @@
             data: fetchedTree.data,
             history: initializeHistory(
                 fetchedTree.genData.id,
-                fillStateStructure(fetchedTree.structure, true),
+                fillStateStructure(fetchedTree.structure),
                 fetchedTree.cards
             ),
             numPopupsOpen: 0,
@@ -214,7 +214,7 @@
             >
                 <div class="flex grow flex-col">
                     {#each tree.history.currentStructure.rootNodes as root, location (root)}
-                        <NodeEditor
+                        <SubtreeEditor
                             bind:history={tree.history}
                             location={[location]}
                             bind:dragState

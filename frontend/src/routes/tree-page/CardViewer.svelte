@@ -18,7 +18,6 @@
     } = $props();
 
     function makeRevealed() {
-        // setRevealed(history, location, true);
         revealed = true;
     }
 </script>

@@ -80,14 +80,6 @@ function performActionLocal(history: TreeHistory, action: CardAction) {
     }
 }
 
-export function setRevealed(history: TreeHistory, index: number[], revealed: boolean) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
-    const node = followIndexNode(newStructure, index);
-    node.revealed = revealed;
-
-    commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: false });
-}
-
 export async function doMove(history: TreeHistory, nodeToMove: number[], newLocation: number[]) {
     const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
 
@@ -119,7 +111,6 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
     const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
     const parent = followIndex(newStructure, location.slice(0, -1))!;
     parent.children.splice(location[location.length - 1], 0, {
-        revealed: true,
         cardId,
         children: []
     });
@@ -346,7 +337,6 @@ function mapStructureCardIds(
 ): StateTreeStructure {
     const mapNode = (node: StateNode): StateNode => {
         return {
-            revealed: node.revealed,
             cardId: history.cardIdMapper.find(node.cardId),
             children: node.children.map(mapNode)
         };
@@ -477,7 +467,8 @@ function actionInverse(action: CardAction): CardAction {
 
 /**
  * Stateful variants of types of the same name in 'trees.ts'.
- * For now the only state tracked is the `revealed` property of Nodes, we could add more.
+ * This used to contain a `revealed` property of Nodes, but that has since been removed.
+ * Just in case some other state needs to be tracked in the future, this code is still here.
  *
  * Note that typescript will not complain if a `StateTreeStructure` is used where a `TreeStructure` is expected.
  * Please prevent sending unnecessary fields to the backend, by using the `StripStateStructure` function.
@@ -492,8 +483,6 @@ export type StateRootNode = {
 };
 /** See `StateTreeStructure`. */
 export type StateNode = {
-    revealed: boolean;
-
     cardId: CardId;
     children: StateNode[];
 };
@@ -518,13 +507,9 @@ export function stripStateStructure(statefulStructure: StateTreeStructure): Tree
  * Makes a deep copy and fills in all state from `StateTreeStructure`.
  * Fills the `revealed` field with the `allRevealed` argument everywhere.
  */
-export function fillStateStructure(
-    statelessStructure: TreeStructure,
-    allRevealed: boolean
-): StateTreeStructure {
+export function fillStateStructure(statelessStructure: TreeStructure): StateTreeStructure {
     function fillStateNode(statelessNode: Node): StateNode {
         return {
-            revealed: allRevealed,
             cardId: statelessNode.cardId,
             children: statelessNode.children.map(fillStateNode)
         };
