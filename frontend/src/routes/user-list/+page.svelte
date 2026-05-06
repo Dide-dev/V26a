@@ -5,9 +5,9 @@
 -->
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { type UserGetAllData, getAllUserData } from '$lib/backend/admin';
+    import { type AllUsersGetData, getAllUsersData } from '$lib/backend/admin';
     import { onMount } from 'svelte';
-    import iconEdit from '$lib/assets/iconEdit.svg?raw';
+    import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import { booleanToString } from '$lib/general';
 
@@ -15,10 +15,10 @@
         await loadUsers();
     });
 
-    let users: null | UserGetAllData[] = $state(null);
+    let users: null | AllUsersGetData[] = $state(null);
 
     async function loadUsers() {
-        users = await getAllUserData();
+        users = await getAllUsersData();
     }
 </script>
 

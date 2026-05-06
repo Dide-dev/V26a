@@ -1,4 +1,5 @@
 import { apiCallGet } from './index';
+import { type UserId } from './users';
 
 const prefix = 'admin/';
 
@@ -7,14 +8,29 @@ function apiCallGetUser(path: string) {
 }
 
 /** The data of the user that is returned when requesting the data of all users */
-export type UserGetAllData = {
+export type AllUsersGetData = {
     id: number;
     email: string;
     name: string;
     enabled: boolean;
 };
 
-/** Get the user's own data */
-export function getAllUserData(): Promise<UserGetAllData[]> {
+export type UserGetAllData = {
+    email: string;
+    name: string;
+    enabled: boolean;
+    nickname: string;
+    aboutMe: string;
+    emailVisible: boolean;
+    accountType: string;
+    language: string;
+};
+/** Get the data of all users */
+export function getAllUsersData(): Promise<AllUsersGetData[]> {
     return apiCallGetUser('all-user-data');
+}
+
+/** Get the data of a specific user */
+export function getUserAllData(userId: UserId): Promise<UserGetAllData> {
+    return apiCallGetUser(`users/${userId}`);
 }
