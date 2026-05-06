@@ -196,6 +196,17 @@
         changePasswordData.newPassword = '';
         repeatPassword = '';
     }
+
+    function handleCancel(e: Event) {
+        if (!formChanged) return;
+        e.preventDefault();
+        resetInputStates();
+        resetInputResponses();
+        changePasswordData.oldPassword = '';
+        changePasswordData.newPassword = '';
+        repeatPassword = '';
+        userDataPromise = getOwnUserData();
+    }
 </script>
 
 <div>
@@ -405,15 +416,7 @@
             </div>
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
                 <button data-testid="confirm-button">{m.confirmChanges()}</button>
-                <button
-                    onclick={(e) => {
-                        if (!formChanged) return;
-                        e.preventDefault();
-                        resetInputStates();
-                        resetInputResponses();
-                        userDataPromise = getOwnUserData();
-                    }}>{m.cancel()}</button
-                >
+                <button onclick={handleCancel}>{m.cancel()}</button>
             </div>
         </form>
     {/await}
