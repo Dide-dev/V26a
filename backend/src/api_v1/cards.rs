@@ -37,7 +37,6 @@ pub fn cards() -> Router<Config> {
     request_body = CardAddData,
     responses(
         (status = 200, description = "Card successfully added with returned id.", body = i32, content_type = "application/json"),
-        (status = 400, description = "Tree with given id does not exist."),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),

@@ -25,7 +25,6 @@ pub fn classrooms() -> Router<Config> {
     context_path = "/api/v1/classrooms",
     responses(
         (status = 200, description = "Succesfully added new classroom"),
-        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error."),
     ),

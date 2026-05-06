@@ -22,7 +22,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiError> {
     let allowed_letters: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().collect();
     let allowed_numbers: Vec<char> = "0123456789".chars().collect();
-    let is_letter_chance = 0.5;
+    let chance_character_is_letter = 0.5;
 
     let mut rng = StdRng::from_entropy();
     let mut number: String;
@@ -30,7 +30,7 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
     loop {
         number = (0..6)
             .map(|_| {
-                if rng.gen_bool(is_letter_chance) {
+                if rng.gen_bool(chance_character_is_letter) {
                     allowed_letters.choose(&mut rng).unwrap()
                 } else {
                     allowed_numbers.choose(&mut rng).unwrap()
@@ -85,4 +85,39 @@ pub async fn add_classroom(
     .id;
 
     Ok(classroom_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db::classrooms::{add_classroom, generate_random_code};
+    use crate::db::test::initialize_db;
+    use crate::db_structs::classrooms::ClassroomAddData;
+    use crate::get_connection_unwrap;
+    use sqlx::{PgPool, query};
+
+    #[sqlx::test]
+    async fn test_add_classroom(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let classroom_add_data = ClassroomAddData {
+            name: "Classroom".to_owned(),
+            description: String::new(),
+        };
+
+        let join_code = generate_random_code(get_connection_unwrap!(db))
+            .await
+            .unwrap();
+
+        let id = add_classroom(&db, &classroom_add_data, user_id, &join_code)
+            .await
+            .unwrap();
+
+        let found_classroom_data = query!("SELECT * FROM classrooms WHERE id = $1", id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        assert_eq!(found_classroom_data.name, classroom_add_data.name);
+        assert_eq!(found_classroom_data.join_code, join_code);
+    }
 }
