@@ -12,6 +12,7 @@
         href: string;
         text: string;
         target: string;
+        localized: boolean;
     };
 
     let {
@@ -22,14 +23,20 @@
 </script>
 
 {#snippet footerItem(link: FooterLink)}
-    <a class="footer-item m-0.5" href={appLink(link.href)} target={link.target}>
-        {link.text}
-    </a>
+    {#if link.localized}
+        <a class="footer-item m-0.5" href={appLink(link.href)} target={link.target}>
+            {link.text}
+        </a>
+    {:else}
+        <a class="footer-item m-0.5" rel="external" href={link.href} target={link.target}>
+            {link.text}
+        </a>
+    {/if}
 {/snippet}
 
 <footer class="w-100vw">
     <a href={appLink('/')} class="flex items-center">
-        <img class="aspect-square w-30 not-md:w-20" src={logo} alt="logo" />
+        <img class="aspect-square w-35 not-md:w-20" src={logo} alt="logo" />
     </a>
     <div class="flex flex-auto flex-col items-center justify-center">
         <div class="flex flex-col">

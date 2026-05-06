@@ -59,6 +59,13 @@
                 text: m.createTree(),
                 isThin: false
             });
+            if (userInfo.accountType == 'admin') {
+                result.push({
+                    href: '/user-list',
+                    text: m.userList(),
+                    isThin: false
+                });
+            }
         }
 
         return result;
@@ -82,11 +89,6 @@
         } else {
             result = [
                 {
-                    href: '/registration',
-                    text: m.register(),
-                    isThin: true
-                },
-                {
                     href: '/login',
                     text: m.login(),
                     isThin: true
@@ -98,19 +100,34 @@
     });
     const footerLinks: FooterLink[] = [
         {
-            href: '/colophon',
-            text: m.colophon(),
-            target: '_self'
+            href: '/privacy',
+            text: m.privacy(),
+            target: '_self',
+            localized: true
         },
         {
-            href: 'https://softwareprojecten.sites.uu.nl/',
-            text: m.otherProjects(),
-            target: '_blank'
+            href: '/colophon',
+            text: m.colophon(),
+            target: '_self',
+            localized: true
         },
         {
             href: '/feedback',
             text: 'Feedback',
-            target: '_self'
+            target: '_self',
+            localized: true
+        },
+        {
+            href: '/api-docs/',
+            text: 'API documentation',
+            target: '_blank',
+            localized: false
+        },
+        {
+            href: 'https://softwareprojecten.sites.uu.nl/',
+            text: m.otherProjects(),
+            target: '_blank',
+            localized: false
         }
     ];
 </script>

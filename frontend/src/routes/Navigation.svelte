@@ -52,7 +52,7 @@
         <button
             class={[
                 menu && 'mb-0.5',
-                'flex cursor-pointer justify-end hover:bg-tree-500 hover:text-white md:w-screen'
+                'flex justify-end hover:bg-tree-500 hover:text-white md:w-screen'
             ]}
             onclick={toggleMenu}
             aria-label="Toggle menu"
@@ -78,6 +78,7 @@
                         class="not-md:w-screen md:min-w-nav-extra-thin"
                         href={localizeHref(page.url.href, { locale })}
                         data-sveltekit-reload
+                        onclick={closeMenu}
                     >
                         {locale}
                     </a>
