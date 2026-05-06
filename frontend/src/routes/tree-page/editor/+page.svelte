@@ -14,7 +14,7 @@
     import { getTreeWithCards, type TreeData } from '$lib/backend/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
-    import NodeViewer, { type DragState } from '../NodeViewer.svelte';
+    import NodeEditor, { type DragState } from './NodeEditor.svelte';
     import {
         type TreeHistory,
         undo,
@@ -23,11 +23,11 @@
         fillStateStructure,
         canUndo,
         canRedo
-    } from '../history.svelte';
+    } from './history.svelte';
     import EditMetadata from './EditMetadata.svelte';
-    import type { SideBar } from '../Sidebar.svelte';
-    import SidebarComponent from '../Sidebar.svelte';
-    import RootNodeAddButton from '../RootNodeAddButton.svelte';
+    import type { SideBar } from './Sidebar.svelte';
+    import SidebarComponent from './Sidebar.svelte';
+    import RootNodeAddButton from './RootNodeAddButton.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -214,11 +214,10 @@
             >
                 <div class="flex grow flex-col">
                     {#each tree.history.currentStructure.rootNodes as root, location (root)}
-                        <NodeViewer
+                        <NodeEditor
                             bind:history={tree.history}
                             location={[location]}
                             bind:dragState
-                            editingPage={true}
                             bind:numPopupsOpen={tree.numPopupsOpen}
                             bind:sidebar={tree.sidebar}
                         />
