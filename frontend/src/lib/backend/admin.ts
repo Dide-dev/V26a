@@ -20,7 +20,7 @@ export type UserListResponse = {
     users: UserGetAllData[];
 };
 
-/** Get the data of all user's */
+/** Get the data of all users */
 export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
     const params: string = getPaginationParams(pageOptions);
     return apiCallGetAdmin(`all-user-data?${params}`);
