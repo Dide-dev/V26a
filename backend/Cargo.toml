@@ -40,4 +40,4 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipauto = "0.2.0"
 
 [dev-dependencies]
-axum-test = "19.1.1"
+axum-test = "20.0.0"
