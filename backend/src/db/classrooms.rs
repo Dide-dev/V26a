@@ -4,10 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use rand::prelude::*;
-use sqlx::{query, PgExecutor, PgConnection};
 use crate::db_structs::classrooms::ClassroomAddData;
 use crate::errors::ApiError;
+use rand::prelude::*;
+use sqlx::{PgConnection, PgExecutor, query};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -28,9 +28,15 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
     let mut number: String;
 
     loop {
-        number = String::from_iter((0..6).map(|_|
-            if rng.gen_bool(is_letter_chance) { allowed_letters.choose(&mut rng).unwrap() }
-            else { allowed_numbers.choose(&mut rng).unwrap() }));
+        number = (0..6)
+            .map(|_| {
+                if rng.gen_bool(is_letter_chance) {
+                    allowed_letters.choose(&mut rng).unwrap()
+                } else {
+                    allowed_numbers.choose(&mut rng).unwrap()
+                }
+            })
+            .collect::<String>();
 
         let query = query!("SELECT * FROM classrooms WHERE join_code = $1", number)
             .fetch_optional(&mut *db)
@@ -71,11 +77,12 @@ pub async fn add_classroom(
         "INSERT INTO classrooms (owner_id, name, join_code) VALUES ($1, $2, $3) RETURNING id",
         owner_id,
         classroom_add_data.name,
-        join_code)
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .id;
+        join_code
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .id;
 
     Ok(classroom_id)
 }

@@ -17,12 +17,12 @@ export type ClassroomId = number;
 export type ClassroomAddData = {
     name: string;
     description: string;
-}
+};
 
 export type ClassroomCreatedData = {
     id: ClassroomId;
     joinCode: string;
-}
+};
 
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomCreatedData> {

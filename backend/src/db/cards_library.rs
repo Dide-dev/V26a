@@ -181,7 +181,7 @@ mod tests {
 
         let owner_id = get_tree_owner(&db, tree_id).await.unwrap().unwrap();
         let title = "title".to_owned();
-        let tags = ["tag1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(&db, &owner_id, &title, &tags, &card_text)
@@ -198,7 +198,7 @@ mod tests {
 
         assert_eq!(found_card_data.owner_id, owner_id);
         assert_eq!(found_card_data.title, title);
-        assert_eq!(found_card_data.tags.unwrap(), tags);
+        assert_eq!(found_card_data.tags, tags);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
     }

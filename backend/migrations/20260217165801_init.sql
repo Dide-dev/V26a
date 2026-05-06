@@ -75,7 +75,7 @@ CREATE TABLE library_cards
     owner_id        INTEGER         NOT NULL,
     created_at      TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     title           VARCHAR(32)     NOT NULL,
-    tags            VARCHAR(32)[]   NOT NULL    DEFAULT [],
+    tags            VARCHAR(32)[]   NOT NULL,
     front           VARCHAR(1024)   NOT NULL,
     back            VARCHAR(5000)   NOT NULL
 );
