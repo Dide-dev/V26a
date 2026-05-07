@@ -529,6 +529,34 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_get_user_count(db: PgPool) {
+        assert_eq!(get_user_count(&db).await.unwrap(), 0);
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        let register_data2 = RegisterData {
+            email: "email2".to_owned(),
+            password: "password2".to_owned(),
+            name: "name2".to_owned(),
+            nickname: "nickname2".to_owned(),
+            about_me: "about_me2".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        initialize_user(&db, &register_data).await;
+
+        assert_eq!(get_user_count(&db).await.unwrap(), 1);
+        initialize_user(&db, &register_data2).await;
+        assert_eq!(get_user_count(&db).await.unwrap(), 2);
+    }
+
+    #[sqlx::test]
     async fn test_update_user(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
