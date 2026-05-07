@@ -50,7 +50,7 @@ pub fn trees() -> Router<Config> {
     request_body = TreeAddData,
     responses(
         (status = 200, description = "Tree successfully added with returned id.", body = i32, content_type = "application/json"),
-        (status = 400, description = "Tree structure contains cards, invalid ISBN provided, non-existent language provided or non-existent subject provided"),
+        (status = 400, description = "Tree structure contains cards, invalid ISBN provided or non-existent language or subject provided."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error.")
     ),
@@ -93,7 +93,7 @@ async fn add_new_tree(
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
     if !language_exists(&mut *transaction, &tree_add_data.tree_data.language_code).await? {
         return Err(ApiError::MissingLanguage(
-            tree_add_data.tree_data.language_code.clone(),
+            tree_add_data.tree_data.language_code,
         ));
     }
     if let Some(subject_id) = &tree_add_data.tree_data.subject_id
@@ -169,7 +169,7 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
     request_body = TreeUpdateStructureData,
     responses(
         (status = 200, description = "Tree structure successfully updated."),
-        (status = 400, description = "Tree with given id cannot be found, new structure is not valid, invalid ISBN provided, non-existent language provided or non-existent subject provided."),
+        (status = 400, description = "Tree with given id cannot be found or the new structure is not valid."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -190,15 +190,6 @@ fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains an invalid ISBN.
-///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains a non-existent language.
-///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains a non-existent subject.
-///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
 /// Returns [`MismatchedStructure`](ApiError::MismatchedStructure) if either of the following are the case:
@@ -359,7 +350,7 @@ async fn update_structure_if_valid(
     request_body = TreeUpdateData,
     responses(
         (status = 200, description = "Tree data updated successfully."),
-        (status = 400, description = "Tree with given id cannot be found."),
+        (status = 400, description = "Tree with given id cannot be found, invalid ISBN provided, non-existent language provided or non-existent subject provided."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -379,6 +370,15 @@ async fn update_structure_if_valid(
 /// Nothing.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains an invalid ISBN.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains a non-existent language.
+///
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains a non-existent subject.
+///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
