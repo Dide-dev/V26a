@@ -38,12 +38,10 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
             })
             .collect::<String>();
 
-        let query = query!("SELECT * FROM classrooms WHERE join_code = $1", number)
+        if query!("SELECT EXISTS(SELECT * FROM classrooms WHERE join_code = $1)", number)
             .fetch_optional(&mut *db)
             .await
-            .map_err(|_| ApiError::DatabaseException)?;
-
-        if query.is_none() {
+            .map_err(|_| ApiError::DatabaseException)? {
             break;
         }
     }
@@ -77,7 +75,7 @@ pub async fn add_classroom(
         "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
         owner_id,
         classroom_add_data.name,
-        classroom_add_data.description,
+        classroom_add_data.description.unwrap(),
         join_code
     )
     .fetch_one(db)
@@ -100,7 +98,7 @@ mod tests {
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
-            description: String::new(),
+            description: Option::from(String::new()),
         };
 
         let join_code = generate_random_code(get_connection_unwrap!(db))
@@ -117,7 +115,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(found_classroom_data.name, classroom_add_data.name);
-        assert_eq!(found_classroom_data.description, classroom_add_data.description);
+        assert_eq!(found_classroom_data.description, classroom_add_data.description.unwrap());
         assert_eq!(found_classroom_data.join_code, join_code);
     }
 }

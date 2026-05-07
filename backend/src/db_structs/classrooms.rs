@@ -11,13 +11,13 @@ use utoipa::ToSchema;
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomAddData {
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
 }
 
 /// The data that is returned to the user after creation of the classroom.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassroomCreatedData {
+pub struct ClassroomGeneratedData {
     pub id: i32,
     pub join_code: String,
 }
