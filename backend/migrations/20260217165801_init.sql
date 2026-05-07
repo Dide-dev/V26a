@@ -80,17 +80,6 @@ CREATE TABLE library_cards
     back            VARCHAR(5000)   NOT NULL
 );
 
-CREATE TABLE classrooms
-(
-    id                      SERIAL PRIMARY KEY,
-    owner_id                INTEGER             NOT NULL,
-    created_at              TIMESTAMPTZ         NOT NULL    DEFAULT CURRENT_TIMESTAMP,
-    name                    VARCHAR(32)         NOT NULL,
-    description             VARCHAR(256)        NOT NULL    DEFAULT '',
-    join_code               VARCHAR(6) UNIQUE   NOT NULL,
-    student_id_increment    INTEGER             NOT NULL    DEFAULT 1
-);
-
 CREATE TABLE feedback
 (
     id          SERIAL PRIMARY KEY,
