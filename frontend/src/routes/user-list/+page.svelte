@@ -10,8 +10,7 @@
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import { booleanToString } from '$lib/index';
-    import { type PaginationOptions } from '$lib/backend/trees';
-    import { calcTotalPages, showUserCount } from '$lib/pagination';
+    import { calcTotalPages, showUserCount, type PaginationOptions } from '$lib/pagination';
 
     let userListResponse: null | UserListResponse = $state(null);
     let users: null | UserGetAllData[] = $state(null);

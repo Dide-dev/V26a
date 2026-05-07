@@ -8,14 +8,13 @@
     import { m } from '$lib/paraglide/messages.js';
     import {
         type FilterOptions,
-        type PaginationOptions,
         type TreeListResponse,
         type TreeMetadata,
         getFilteredList
     } from '$lib/backend/trees';
     import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
-    import { calcTotalPages, showTreeCount } from '$lib/pagination';
+    import { calcTotalPages, showTreeCount, type PaginationOptions } from '$lib/pagination';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 

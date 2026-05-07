@@ -10,14 +10,13 @@
         getFilteredList,
         type TreeMetadata,
         type TreeListResponse,
-        type PaginationOptions,
         type FilterOptions
     } from '$lib/backend/trees';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
-    import { calcTotalPages, showTreeCount } from '$lib/pagination';
+    import { calcTotalPages, showTreeCount, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
     import { getUserInfo, type UserInfo } from '$lib/backend/users';
 
