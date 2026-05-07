@@ -15,7 +15,7 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// `db` - A connection to a Postgres database.
 ///
 /// # Returns
-/// A nonexisting join code.
+/// A unique join code.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
@@ -63,7 +63,7 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
 /// `join_code` - The unique code that students can join the classroom with.
 ///
 /// # Returns
-/// The unique join code for the classroom.
+/// The id of the classroom.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
@@ -73,18 +73,17 @@ pub async fn add_classroom(
     owner_id: i32,
     join_code: &String,
 ) -> Result<i32, ApiError> {
-    let classroom_id = query!(
-        "INSERT INTO classrooms (owner_id, name, join_code) VALUES ($1, $2, $3) RETURNING id",
+    query!(
+        "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
         owner_id,
         classroom_add_data.name,
+        classroom_add_data.description,
         join_code
     )
     .fetch_one(db)
     .await
     .map_err(|_| ApiError::DatabaseException)?
-    .id;
-
-    Ok(classroom_id)
+    .id
 }
 
 #[cfg(test)]
@@ -118,6 +117,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(found_classroom_data.name, classroom_add_data.name);
+        assert_eq!(found_classroom_data.description, classroom_add_data.description);
         assert_eq!(found_classroom_data.join_code, join_code);
     }
 }

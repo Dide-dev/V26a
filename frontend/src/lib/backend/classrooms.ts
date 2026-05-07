@@ -8,7 +8,7 @@ import { apiCallPost } from '$lib/backend/index';
 
 const prefix = '/classrooms';
 
-function apiCallPostCard(path: string, body: unknown) {
+function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
@@ -16,7 +16,7 @@ export type ClassroomId = number;
 
 export type ClassroomAddData = {
     name: string;
-    description: string;
+    description: string | null;
 };
 
 export type ClassroomCreatedData = {
@@ -26,5 +26,5 @@ export type ClassroomCreatedData = {
 
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomCreatedData> {
-    return apiCallPostCard('add', classroomAddData);
+    return apiCallPostClassroom('add', classroomAddData);
 }
