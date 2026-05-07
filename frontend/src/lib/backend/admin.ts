@@ -1,5 +1,5 @@
 import { apiCallGet } from './index';
-import { type PaginationOptions, getPaginationParams } from './trees';
+import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
 const prefix = 'admin/';
 

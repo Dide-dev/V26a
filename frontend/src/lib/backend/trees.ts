@@ -8,6 +8,7 @@ import type { CardGetData, CardId } from './cards';
 import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 import type { UserId } from './users';
+import type { PaginationOptions } from '$lib/pagination';
 
 const prefix = 'trees/';
 
@@ -122,11 +123,6 @@ export type TreeListResponse = {
     trees: TreeMetadata[];
 };
 
-export type PaginationOptions = {
-    page: Option<number>;
-    size: Option<number>;
-};
-
 export type FilterOptions = {
     ownerId: Option<number>;
     book: string[];
@@ -201,17 +197,6 @@ export function getPaginationAndFilterParams(
         }
     });
 
-    return String(params);
-}
-
-export function getPaginationParams(pageOptions: PaginationOptions): string {
-    const params = new URLSearchParams();
-
-    Object.entries(pageOptions).forEach(([key, value]) => {
-        if (value !== null) {
-            params.append(key, String(value));
-        }
-    });
     return String(params);
 }
 
