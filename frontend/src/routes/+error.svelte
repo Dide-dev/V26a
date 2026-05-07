@@ -17,4 +17,4 @@
     <p>{page.error?.message}</p>
 {/if}
 
-<img class="aspect-square w-120 not-md:w-75" src={seal} alt="An error occurred" />
+<img class="aspect-square w-120 not-md:w-75" src={seal} alt="An error occurred." />
