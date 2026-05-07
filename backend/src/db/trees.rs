@@ -12,7 +12,7 @@ use crate::{
     },
     errors::ApiError,
 };
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
+use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
 /// Check whether the given subject exists.
@@ -105,18 +105,12 @@ pub async fn language_exists(
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, ApiError> {
-    let mut results = query!("SELECT * FROM languages")
+    let results = query_as!(Language, "SELECT * FROM languages")
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(results
-        .drain(..)
-        .map(|r| Language {
-            code: r.code,
-            name: r.name,
-        })
-        .collect::<Vec<_>>())
+    Ok(results)
 }
 
 /// Parse an ISBN of either 10 or 13 digits, and return it as integer in the 13-digit
@@ -131,6 +125,15 @@ pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, Api
 /// # Errors
 /// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the given string is not a valid ISBN.
 pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
+    let check_digit_10 = |mut n: i64| -> i64 {
+        let mut s = 0;
+        for i in 0..9 {
+            let d = n % 10;
+            s += d * (i + 2);
+            n /= 10;
+        }
+        (11 - s % 11) % 11
+    };
     let check_digit_13 = |mut n: i64| -> i64 {
         let mut s = 0;
         n /= 10;
@@ -144,26 +147,24 @@ pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
 
     let no_dashes = isbn.chars().filter(|c| *c != '-').collect::<String>();
     if no_dashes.len() == 10 {
-        let mut s = 0;
-        for (i, d) in no_dashes[..9].chars().map(|c| c.to_digit(10)).enumerate() {
-            let d = d.ok_or(ApiError::InvalidIsbn)?;
-            s += d * (10 - u32::try_from(i).unwrap());
-        }
-        let check_digit = if no_dashes.as_bytes()[9] == b'X' {
+        let given_check_digit: i64 = if no_dashes.as_bytes()[9] == b'X' {
             10
         } else {
             (no_dashes.as_bytes()[9] as char)
                 .to_digit(10)
                 .ok_or(ApiError::InvalidIsbn)?
+                .into()
         };
-        if (11 - s % 11) % 11 != check_digit {
+        let num = no_dashes[..9]
+            .parse::<i64>()
+            .map_err(|_| ApiError::InvalidIsbn)?;
+        let computed_check_digit = check_digit_10(num);
+        if computed_check_digit != given_check_digit {
             return Err(ApiError::InvalidIsbn);
         }
-        // We can safely unwrap here since we have already verified each digit.
-        let non_check_number = no_dashes[..9].parse::<i64>().unwrap();
         #[allow(clippy::inconsistent_digit_grouping)]
-        let num = 978_0_000_00000_0_i64 + 10 * non_check_number;
-        Ok(num + check_digit_13(num))
+        let isbn13_base = 978_0_000_00000_0_i64 + 10 * num;
+        Ok(isbn13_base + check_digit_13(isbn13_base))
     } else if no_dashes.len() == 13 {
         let num = no_dashes
             .parse::<i64>()
