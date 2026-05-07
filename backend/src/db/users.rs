@@ -5,7 +5,8 @@
 */
 
 use crate::db_structs::users::{
-    AccountType, AllUsersGetData, RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData
+    AccountType, AllUsersGetData, RegisterData, UserGetAllData, UserGetData, UserLanguage,
+    UserUpdateData,
 };
 use crate::errors::ApiError;
 
@@ -100,10 +101,13 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<AllUsersGetData>, ApiError> {
-    query_as!(AllUsersGetData, "SELECT id, email, name, enabled FROM users",)
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)
+    query_as!(
+        AllUsersGetData,
+        "SELECT id, email, name, enabled FROM users",
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)
 }
 
 /// Query the data for the given user id in the given database.
@@ -120,7 +124,10 @@ pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<AllUsersGetDat
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_user_all_data(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetAllData, ApiError> {
+pub async fn get_user_all_data(
+    db: impl PgExecutor<'_>,
+    id: i32,
+) -> Result<UserGetAllData, ApiError> {
     let record = query!(
         "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language FROM users WHERE id = $1",
         id,
@@ -469,6 +476,35 @@ mod tests {
             nickname: register_data.nickname,
             about_me: register_data.about_me,
             email_visible: register_data.email_visible,
+            language: register_data.language,
+        };
+
+        assert_eq!(user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_user_all_data(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+        let user_data = get_user_all_data(&db, user_id).await.unwrap();
+
+        let expected_user_data = UserGetAllData {
+            email: register_data.email,
+            name: register_data.name,
+            enabled: true,
+            nickname: register_data.nickname,
+            about_me: register_data.about_me,
+            email_visible: register_data.email_visible,
+            account_type: AccountType::Author,
             language: register_data.language,
         };
 

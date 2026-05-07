@@ -6,18 +6,18 @@
 
 use axum::{
     Extension, Json, Router,
+    extract::Path,
     extract::Request,
     middleware::{self, Next},
     response::Response,
     routing::get,
-    extract::Path,
 };
 use sqlx::PgPool;
 
 use crate::{
     api_v1::session::Claims,
     config::Config,
-    db::users::{get_all_users, user_id_exists, get_user_all_data},
+    db::users::{get_all_users, get_user_all_data, user_id_exists},
     db_structs::users::{AccountType, AllUsersGetData, UserGetAllData},
     errors::ApiError,
 };

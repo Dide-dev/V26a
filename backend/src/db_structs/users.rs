@@ -74,7 +74,7 @@ pub struct UserGetAllData {
     pub about_me: String,
     pub email_visible: bool,
     pub account_type: AccountType,
-    pub language: UserLanguage
+    pub language: UserLanguage,
 }
 
 /// The body for a password change request that contains the old password, and the new password.
