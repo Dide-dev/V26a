@@ -12,22 +12,23 @@
 <script lang="ts">
     import iconAdd from '$lib/assets/icons/add.svg?raw';
     import type { CardGetData } from '$lib/backend/cards';
-    import { m } from '$lib/paraglide/messages';
-    import CardEditor from './CardEditor.svelte';
-    import { doAddCard, doMove, type TreeHistory } from './history.svelte';
+    import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './NodeViewer.svelte';
+    import type { SideBar } from './Sidebar.svelte';
 
     let {
         history,
         location,
         dragState = $bindable(),
         lineLayout,
+        sidebar = $bindable(),
         numPopupsOpen = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
+        sidebar: null | SideBar;
         numPopupsOpen: number;
     } = $props();
 
@@ -66,19 +67,21 @@
     let isHovered = $state(false);
     let highlight = $derived((dragState == null && isHovered) || dragState?.type === 'dragging');
 
-    let showAddCardPopup = $state(false);
-
     // Clicking for adding cards
-    function onclick() {
+    async function onclick() {
         if (dragState !== null) {
             return;
         }
-        showAddCardPopup = true;
-    }
-
-    async function finishAddCard(newCard: CardGetData) {
-        await doAddCard(history, location, newCard);
-        showAddCardPopup = false;
+        let editingVersion: CardGetData = { front: '', back: '' };
+        if (sidebar?.type === 'NewCard') {
+            // Don't forget what the user typed if the user clicks a different add card.
+            editingVersion = sidebar.editingVersion;
+        }
+        sidebar = {
+            type: 'NewCard',
+            location: location,
+            editingVersion
+        };
     }
 
     // This mouse event is for drag & drop
@@ -97,13 +100,14 @@
 
 {#snippet buttonArea()}
     <button
-        class="flex w-2xs cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed"
+        class="flex w-2xs items-center justify-center rounded-2xl border-2 border-dashed"
         style="height: {buttonHeight}px"
         class:bg-amber-200={isHovered && dragState?.type == 'dragging'}
         class:fill-gray-300={!highlight}
         class:fill-gray-800={highlight}
         class:border-gray-300={!highlight}
         class:border-gray-800={highlight}
+        class:cursor-pointer={highlight}
         {onclick}
         {onmouseup}
         onmouseenter={() => (isHovered = true)}
@@ -190,14 +194,4 @@
             </div>
         </div>
     </div>
-{/if}
-
-{#if showAddCardPopup}
-    <CardEditor
-        card={{ front: '', back: '' }}
-        confirmText={m.add()}
-        confirmCallback={finishAddCard}
-        cancelCallback={() => (showAddCardPopup = false)}
-        bind:numPopupsOpen
-    />
 {/if}

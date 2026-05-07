@@ -5,7 +5,8 @@
 -->
 
 <script lang="ts">
-    import { locales, getLocale } from '$lib/paraglide/runtime.js';
+    import { ParaglideMessage } from '@inlang/paraglide-js-svelte';
+    import { getLocale } from '$lib/paraglide/runtime.js';
     import { addUser, type RegisterData } from '$lib/backend/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
@@ -18,6 +19,7 @@
         checkSpecialCharacter
     } from '$lib/passwords';
 
+    // Page information
     let formData: RegisterData = $state({
         email: '',
         password: '',
@@ -28,11 +30,32 @@
         language: getLocale()
     });
     let repeatPassword = $state('');
-
+    let agreedToTOS = $state(false);
     let passwordMissingChar: boolean = $state(false);
     let passwordNotSame: boolean = $state(false);
     let usernameAlreadyExists: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
+    let formCompleted: boolean = $derived(
+        formData.email !== '' &&
+            formData.password !== '' &&
+            formData.name !== '' &&
+            repeatPassword !== '' &&
+            agreedToTOS
+    );
+
+    const minInputLengths = {
+        name: 2,
+        nickname: 2,
+        email: 0,
+        password: 8
+    };
+
+    const maxInputLengths = {
+        name: 128,
+        nickname: 128,
+        email: 256,
+        password: 72
+    };
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
@@ -68,102 +91,167 @@
             throw new Error('ERROR: Unexpected output from API.');
         }
     }
+
+    // Generate random example password
+    const examplePassword = genPassword(12);
+
+    function genPassword(length: number): string {
+        const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
+        const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numChars = '0123456789';
+        const specialChars = '?!@#$%&*()+=.,<>{}[]|_-';
+        const alphaChars = lowerChars + upperChars;
+        const allChars = lowerChars + upperChars + numChars + specialChars;
+
+        const randomIndex = Math.floor(Math.random() * alphaChars.length);
+        let password = alphaChars[randomIndex];
+
+        for (let i = 1; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * allChars.length);
+            password += allChars[randomIndex];
+        }
+
+        return password;
+    }
 </script>
 
-<div class="flex w-full justify-center">
-    <form class="flex w-md flex-col gap-2" onsubmit={handleSubmit}>
-        <label>
-            {m.email()}
+<div>
+    <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
+        <div>
+            <h1 class="page__title">{m.register()}</h1>
+        </div>
+        <div>
+            <label for="name">
+                {m.name()} *
+            </label>
             <input
-                class="rounded-md border-2"
-                bind:value={formData.email}
-                name="email"
-                type="email"
-                data-testid="email"
-                placeholder={m.emailPlaceholder()}
-                maxlength="256"
-                required
-            />
-        </label>
-        {#if emailAlreadyExists}
-            <p class="text-red-600" data-testid="error">{m.emailAlreadyExists()}</p>
-        {/if}
-        <label>
-            {m.name()}
-            <input
-                class="rounded-md border-2"
+                id="name"
+                class={[usernameAlreadyExists && 'error', 'input__text']}
                 bind:value={formData.name}
                 name="name"
                 type="text"
                 data-testid="name"
-                maxlength="128"
+                placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
+                minlength={minInputLengths.name}
+                maxlength={maxInputLengths.name}
+                autocomplete="name"
                 required
             />
-        </label>
-        {#if usernameAlreadyExists}
-            <p class="text-red-600" data-testid="error">{m.usernameAlreadyExists()}</p>
-        {/if}
-        <label>
-            {m.nickname()}
+            {#if usernameAlreadyExists}
+                <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
+            {/if}
+        </div>
+        <div>
+            <label for="nickname">
+                {m.nickname()}
+            </label>
             <input
-                class="rounded-md border-2"
+                id="nickname"
+                class="input__text"
                 bind:value={formData.nickname}
                 name="nickname"
                 type="text"
-                placeholder={m.optional()}
-                maxlength="128"
+                placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
+                minlength={minInputLengths.nickname}
+                maxlength={maxInputLengths.nickname}
             />
-        </label>
-        <label>
-            {m.password()}
+        </div>
+        <div>
+            <label for="email">
+                {m.email()} *
+            </label>
             <input
-                class="rounded-md border-2"
+                id="email"
+                class={[emailAlreadyExists && 'error', 'input__text']}
+                bind:value={formData.email}
+                name="email"
+                type="email"
+                data-testid="email"
+                placeholder={m.examplePlaceholderRequired({ value: m.emailPlaceholder() })}
+                minlength={minInputLengths.email}
+                maxlength={maxInputLengths.email}
+                autocomplete="email"
+                required
+            />
+            {#if emailAlreadyExists}
+                <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
+            {/if}
+        </div>
+        <div>
+            <label for="password">
+                {m.password()} *
+            </label>
+            <input
+                id="password"
+                class={[(passwordMissingChar || passwordNotSame) && 'error', 'input__text']}
                 bind:value={formData.password}
                 name="password"
                 type="password"
                 data-testid="password"
-                minlength="8"
-                maxlength="72"
+                placeholder={m.examplePlaceholderRequired({ value: examplePassword })}
+                minlength={minInputLengths.password}
+                maxlength={maxInputLengths.password}
                 required
             />
-        </label>
-        {#if passwordMissingChar}
-            <p class="text-red-600" data-testid="error">{m.missingCharacter()}</p>
-        {/if}
-        <label>
-            {m.repeatPassword()}
-            <input
-                class="rounded-md border-2"
-                bind:value={repeatPassword}
-                name="repeat password"
-                type="password"
-                data-testid="repeat password"
-                minlength="8"
-                maxlength="72"
-                required
-            />
-        </label>
-        {#if passwordNotSame}
-            <p class="text-red-600" data-testid="error">{m.passwordsNotTheSame()}</p>
-        {/if}
-        <label>
-            {m.language()}
-            <select class="rounded-md border-2" bind:value={formData.language}>
-                {#each locales as value (value)}
-                    <option {value}>{value}</option>
-                {/each}
-            </select>
-        </label>
-        <label>
-            <input
-                class="rounded-md border-2"
-                bind:checked={formData.emailVisible}
-                name="emailVisible"
-                type="checkbox"
-                maxlength="128"
-            />
-            {m.emailVisible()}
-        </label>
-        <button class="rounded-sm bg-emerald-500 p-1">{m.register()}</button>
+            {#if passwordMissingChar}
+                <p class="text__error" data-testid="error">{m.missingCharacter()}</p>
+            {/if}
+            {#if formData.password}
+                <input
+                    id="repeatPassword"
+                    class={[passwordNotSame && 'error', 'input__text']}
+                    bind:value={repeatPassword}
+                    name="repeat password"
+                    type="password"
+                    data-testid="repeatPassword"
+                    placeholder={m.requiredPlaceholder({ value: m.repeatPassword() })}
+                    minlength={minInputLengths.password}
+                    maxlength={maxInputLengths.password}
+                    required
+                />
+            {/if}
+            {#if passwordNotSame}
+                <p class="text__error" data-testid="error">{m.passwordsNotTheSame()}</p>
+            {/if}
+        </div>
+        <div>
+            <div class="checkbox__container">
+                <input
+                    id="emailVisible"
+                    class="input__checkbox"
+                    bind:checked={formData.emailVisible}
+                    name="emailVisible"
+                    type="checkbox"
+                />
+                <label for="emailVisible">
+                    {m.emailVisible()}
+                </label>
+                <div class="info">
+                    <sup>🛈</sup>
+                    <div class="info__content">{m.emailVisibleInfo()}</div>
+                </div>
+            </div>
+            <div class="checkbox__container">
+                <input
+                    id="tos"
+                    class="input__checkbox"
+                    bind:checked={agreedToTOS}
+                    name="tos"
+                    type="checkbox"
+                    data-testid="agreeToTOS"
+                    required
+                />
+                <label for="tos">
+                    <ParaglideMessage message={m.agreeToTOS} inputs={{}}>
+                        {#snippet link({ children, options })}
+                            <a class="text__link" target="_blank" href={options.to}>
+                                {@render children?.()}
+                            </a>
+                        {/snippet}
+                    </ParaglideMessage> *
+                </label>
+            </div>
+        </div>
+        <button>{m.register()}</button>
     </form>
 </div>

@@ -126,12 +126,10 @@
                         bind:value={treeData.assignmentText}
                     /></label
                 >
-                <label
-                    >{m.published()}<input
-                        type="checkbox"
-                        bind:checked={treeData.published}
-                    /></label
-                >
+                <div>
+                    <label for="published">{m.published()}</label>
+                    <input id="published" type="checkbox" bind:checked={treeData.published} />
+                </div>
             </div>
         </div>
         <button class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white" onclick={saveData}
