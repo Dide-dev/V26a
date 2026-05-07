@@ -19,12 +19,12 @@ export type ClassroomAddData = {
     description: string | null;
 };
 
-export type ClassroomCreatedData = {
+export type ClassroomGeneratedData = {
     id: ClassroomId;
     joinCode: string;
 };
 
 /** Add a classroom to the database */
-export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomCreatedData> {
+export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomGeneratedData> {
     return apiCallPostClassroom('add', classroomAddData);
 }

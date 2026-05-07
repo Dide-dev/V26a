@@ -4,9 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::classrooms::ClassroomAddData;
 use crate::errors::ApiError;
 use rand::prelude::*;
+use rand::rngs::SysRng;
 use sqlx::{PgConnection, PgExecutor, query};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
@@ -24,13 +24,13 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
     let allowed_numbers: Vec<char> = "0123456789".chars().collect();
     let chance_character_is_letter = 0.5;
 
-    let mut rng = StdRng::from_entropy();
+    let mut rng = StdRng::try_from_rng(&mut SysRng).unwrap();
     let mut number: String;
 
     loop {
         number = (0..6)
             .map(|_| {
-                if rng.gen_bool(chance_character_is_letter) {
+                if rng.random_bool(chance_character_is_letter) {
                     allowed_letters.choose(&mut rng).unwrap()
                 } else {
                     allowed_numbers.choose(&mut rng).unwrap()
@@ -38,10 +38,17 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
             })
             .collect::<String>();
 
-        if query!("SELECT EXISTS(SELECT * FROM classrooms WHERE join_code = $1)", number)
-            .fetch_optional(&mut *db)
-            .await
-            .map_err(|_| ApiError::DatabaseException)? {
+        let exists = query!(
+            "SELECT EXISTS(SELECT * FROM classrooms WHERE join_code = $1)",
+            number
+        )
+        .fetch_one(&mut *db)
+        .await
+        .map_err(|_| ApiError::DatabaseException)?
+        .exists
+        .unwrap();
+
+        if exists {
             break;
         }
     }
@@ -54,7 +61,9 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
-/// `classroom_add_data` - The data used to create the classroom, as [`ClassroomAddData`].
+/// `name` - The nickname for the classroom.
+///
+/// `description` - The description of the classroom.
 ///
 /// `owner_id` - The id of the user that creates the classroom and will be its owner.
 ///
@@ -67,21 +76,24 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_classroom(
     db: impl PgExecutor<'_>,
-    classroom_add_data: &ClassroomAddData,
+    name: &String,
+    description: &String,
     owner_id: i32,
     join_code: &String,
 ) -> Result<i32, ApiError> {
-    query!(
-        "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
+    let id: i32 = query!(
+        "INSERT INTO classrooms (owner_id, nickname, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
         owner_id,
-        classroom_add_data.name,
-        classroom_add_data.description.unwrap(),
+        name,
+        description,
         join_code
     )
     .fetch_one(db)
     .await
     .map_err(|_| ApiError::DatabaseException)?
-    .id
+    .id;
+
+    Ok(id)
 }
 
 #[cfg(test)]
@@ -105,17 +117,25 @@ mod tests {
             .await
             .unwrap();
 
-        let id = add_classroom(&db, &classroom_add_data, user_id, &join_code)
-            .await
-            .unwrap();
+        let description = classroom_add_data.description.unwrap_or_default();
+
+        let id = add_classroom(
+            &db,
+            &classroom_add_data.name,
+            &description,
+            user_id,
+            &join_code,
+        )
+        .await
+        .unwrap();
 
         let found_classroom_data = query!("SELECT * FROM classrooms WHERE id = $1", id)
             .fetch_one(&db)
             .await
             .unwrap();
 
-        assert_eq!(found_classroom_data.name, classroom_add_data.name);
-        assert_eq!(found_classroom_data.description, classroom_add_data.description.unwrap());
+        assert_eq!(found_classroom_data.nickname, classroom_add_data.name);
+        assert_eq!(found_classroom_data.description, description);
         assert_eq!(found_classroom_data.join_code, join_code);
     }
 }

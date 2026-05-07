@@ -6,7 +6,7 @@
 
 use crate::api_v1::session::Claims;
 use crate::db::classrooms::{add_classroom, generate_random_code};
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomCreatedData};
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 use crate::errors::ApiError;
 use crate::{Config, get_connection};
 
@@ -40,7 +40,7 @@ pub fn classrooms() -> Router<Config> {
 /// `classroom_add_data` - The data used to create the classroom, as [`ClassroomAddData`].
 ///
 /// # Returns
-/// The id assigned to the new classroom and the generated join code in a [`ClassroomCreatedData`].
+/// The id assigned to the new classroom and the generated join code in a [`ClassroomGeneratedData`].
 ///
 /// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user isn't logged in.
@@ -50,10 +50,17 @@ async fn add_new_classroom(
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Json(classroom_add_data): Json<ClassroomAddData>,
-) -> Result<Json<ClassroomCreatedData>, ApiError> {
+) -> Result<Json<ClassroomGeneratedData>, ApiError> {
     let join_code = generate_random_code(get_connection!(db)).await?;
 
-    let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
+    let id = add_classroom(
+        &db,
+        &classroom_add_data.name,
+        &classroom_add_data.description.unwrap_or(String::new()),
+        claims.sub,
+        &join_code,
+    )
+    .await?;
 
-    Ok(Json(ClassroomCreatedData { id, join_code }))
+    Ok(Json(ClassroomGeneratedData { id, join_code }))
 }
