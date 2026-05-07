@@ -55,11 +55,26 @@ pub struct UserUpdateData {
 /// Should only be used by admins
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct UserGetAllData {
+pub struct AllUsersGetData {
     pub id: i32,
     pub email: String,
     pub name: String,
     pub enabled: bool,
+}
+
+/// Data received when getting the data of a user from the database.
+/// Should only be used by admins
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserGetAllData {
+    pub email: String,
+    pub name: String,
+    pub enabled: bool,
+    pub nickname: String,
+    pub about_me: String,
+    pub email_visible: bool,
+    pub account_type: AccountType,
+    pub language: UserLanguage
 }
 
 /// The body for a password change request that contains the old password, and the new password.

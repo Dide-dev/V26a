@@ -5,7 +5,7 @@
 */
 
 use crate::db_structs::users::{
-    RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
+    AccountType, AllUsersGetData, RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData
 };
 use crate::errors::ApiError;
 
@@ -99,11 +99,46 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
-    query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
+pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<AllUsersGetData>, ApiError> {
+    query_as!(AllUsersGetData, "SELECT id, email, name, enabled FROM users",)
         .fetch_all(db)
         .await
         .map_err(|_| ApiError::DatabaseException)
+}
+
+/// Query the data for the given user id in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user.
+///
+/// # Returns
+/// A [`UserGetAllData`] object containing the user's data, minus their password.
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_all_data(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetAllData, ApiError> {
+    let record = query!(
+        "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language FROM users WHERE id = $1",
+        id,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+
+    Ok(UserGetAllData {
+        email: record.email,
+        name: record.name,
+        enabled: record.enabled,
+        nickname: record.nickname,
+        about_me: record.about_me,
+        email_visible: record.email_visible,
+        account_type: AccountType::from_str(record.account_type.as_str())?,
+        language: UserLanguage::from_str(record.language.as_str())?,
+    })
 }
 
 /// Updates a user in the database.
@@ -466,13 +501,13 @@ mod tests {
         let all_user_data = get_all_users(&db).await.unwrap();
 
         let expected_user_data = vec![
-            UserGetAllData {
+            AllUsersGetData {
                 id: 1,
                 email: register_data.email,
                 name: register_data.name,
                 enabled: true,
             },
-            UserGetAllData {
+            AllUsersGetData {
                 id: 2,
                 email: register_data2.email,
                 name: register_data2.name,
