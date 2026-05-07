@@ -217,7 +217,7 @@ pub async fn delete_user(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_queried_count_users_pagination(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
+pub async fn get_user_count(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
     let users_count: i64 = query_scalar!("SELECT COUNT(*) FROM users")
         .fetch_one(db)
         .await
@@ -241,7 +241,7 @@ pub async fn get_queried_count_users_pagination(db: impl PgExecutor<'_>) -> Resu
 /// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_queried_list_users_pagination(
+pub async fn get_user_list_by_page(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
 ) -> Result<Vec<UserGetAllData>, ApiError> {
@@ -506,7 +506,7 @@ mod tests {
 
         initialize_user(&db, &register_data).await;
         initialize_user(&db, &register_data2).await;
-        let all_user_data = get_queried_list_users_pagination(&db, &pagination_options)
+        let all_user_data = get_user_list_by_page(&db, &pagination_options)
             .await
             .unwrap();
 

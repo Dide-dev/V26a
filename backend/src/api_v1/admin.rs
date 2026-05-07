@@ -17,7 +17,7 @@ use sqlx::PgPool;
 use crate::{
     api_v1::session::Claims,
     config::Config,
-    db::users::{get_queried_count_users_pagination, get_queried_list_users_pagination},
+    db::users::{get_user_count, get_user_list_by_page},
     db_structs::pagination::OptionalPaginationOptions,
     db_structs::users::{AccountType, UserListResponse},
     errors::ApiError,
@@ -64,7 +64,6 @@ pub fn admin(config: Config) -> Router<Config> {
 /// Gets the data of all the users from the database.
 ///
 /// # Arguments
-///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
@@ -87,9 +86,9 @@ async fn get_all_user_data(
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
-    let users_count = get_queried_count_users_pagination(&mut *transaction).await?;
+    let users_count = get_user_count(&mut *transaction).await?;
 
-    let users = get_queried_list_users_pagination(&mut *transaction, &page).await?;
+    let users = get_user_list_by_page(&mut *transaction, &page).await?;
     transaction
         .commit()
         .await
