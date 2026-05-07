@@ -7,6 +7,7 @@
 <script lang="ts">
     import { appLink } from '$lib';
     import logo from '$lib/assets/logo.png';
+    import type { Tween } from 'svelte/motion';
 
     export type FooterLink = {
         href: string;
@@ -16,12 +17,15 @@
     };
 
     let {
-        links
+        links,
+        offset
     }: {
         links: FooterLink[];
+        offset: Tween<number>;
     } = $props();
 </script>
 
+<footer style="transform: translateY({offset.current}px);" class="w-100vw">
 {#snippet footerItem(link: FooterLink)}
     {#if link.localized}
         <a class="footer-item m-0.5" href={appLink(link.href)} target={link.target}>

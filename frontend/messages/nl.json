@@ -70,8 +70,8 @@
     "edit": "Bewerk",
     "add": "Voeg toe",
     "preview": "Voorbeeld",
-    "myTrees": "Mijn bos",
-    "trees": "Bos",
+    "myTrees": "Mijn bomen",
+    "trees": "Bomen",
     "credits": "Colofon",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
@@ -125,5 +125,7 @@
     "accountSettings": "Accountinstellingen",
     "feedback": "Feedback",
     "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik",
-    "pageNotFound": "Deze pagina kon niet worden gevonden"
+    "pageNotFound": "Deze pagina kon niet worden gevonden",
+    "account": "Account",
+    "adminControl": "Admin beheer"
 }

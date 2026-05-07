@@ -8,12 +8,14 @@
     import './layout.css';
     import favicon from '$lib/assets/favicon.svg';
     import { m } from '$lib/paraglide/messages.js';
-    import Navigation, { type NavLink } from './Navigation.svelte';
+    import Navigation from './Navigation.svelte';
+    import { NavLink } from '$lib/navigation';
     import Footer, { type FooterLink } from './Footer.svelte';
     import { getUserInfo } from '$lib/backend/users';
     import { afterNavigate } from '$app/navigation';
-    import { locales, localizeHref } from '$lib/paraglide/runtime.js';
+    import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime.js';
     import { page } from '$app/state';
+    import { Tween } from 'svelte/motion';
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
@@ -40,64 +42,128 @@
     }
 
     let leftLinks: NavLink[] = $derived.by(() => {
-        let result = [
-            {
-                href: '/',
-                text: m.home(),
-                isThin: false
-            },
-            {
-                href: '/all-trees',
-                text: m.allTrees(),
-                isThin: false
-            }
+        let result: NavLink[] = [
+            new NavLink({
+                defaultHref: '/',
+                text: m.home()
+            })
         ];
 
-        if (userInfo !== null) {
-            result.push({
-                href: '/tree-generator',
-                text: m.createTree(),
-                isThin: false
-            });
+        if (userInfo === null) {
+            result.push(
+                new NavLink({
+                    defaultHref: '/all-trees',
+                    text: m.allTrees()
+                })
+            );
+        } else {
+            result.push(
+                new NavLink({
+                    defaultHref: '/all-trees',
+                    text: m.trees(),
+                    children: [
+                        {
+                            href: '/all-trees',
+                            text: m.allTrees()
+                        },
+                        {
+                            href: '/my-trees',
+                            text: m.myTrees()
+                        },
+                        {
+                            href: '/tree-generator',
+                            text: m.createTree()
+                        }
+                    ]
+                })
+            );
             if (userInfo.accountType == 'admin') {
-                result.push({
-                    href: '/user-list',
-                    text: m.userList(),
-                    isThin: false
-                });
+                result.push(
+                    new NavLink({
+                        defaultHref: '/user-list',
+                        text: m.adminControl(),
+                        children: [
+                            {
+                                href: '/user-list',
+                                text: m.userList()
+                            }
+                        ]
+                    })
+                );
             }
         }
 
         return result;
     });
     let rightLinks: NavLink[] = $derived.by(() => {
-        let result = [];
+        let result: NavLink[] = [];
 
         if (userInfo !== null) {
             result = [
-                {
-                    href: '/profile',
-                    text: m.profile(),
-                    isThin: true
-                },
-                {
-                    href: '/my-trees',
-                    text: m.myTrees(),
-                    isThin: true
-                }
+                new NavLink({
+                    defaultHref: '/profile',
+                    text: m.account(),
+                    props: {
+                        width: 'th',
+                        localeSwitch: false
+                    },
+                    children: [
+                        {
+                            href: '/profile',
+                            text: m.profile()
+                        },
+                        {
+                            href: '/login',
+                            text: m.login()
+                        }
+                    ]
+                })
             ];
         } else {
             result = [
-                {
-                    href: '/login',
-                    text: m.login(),
-                    isThin: true
-                }
+                new NavLink({
+                    defaultHref: '/login',
+                    text: m.account(),
+                    props: {
+                        width: 'th',
+                        localeSwitch: false
+                    },
+                    children: [
+                        {
+                            href: '/login',
+                            text: m.login()
+                        },
+                        {
+                            href: '/registration',
+                            text: m.register()
+                        }
+                    ]
+                })
             ];
         }
 
+        result.push(
+            new NavLink({
+                defaultHref: page.url.href,
+                text: getLocale(),
+                props: {
+                    width: 'xt',
+                    localeSwitch: true
+                },
+                children: locales
+                    .filter((locale) => locale !== getLocale())
+                    .map((locale) => {
+                        return {
+                            href: localizeHref(page.url.href, { locale }),
+                            text: locale
+                        };
+                    })
+            })
+        );
+
         return result;
     });
+
     const footerLinks: FooterLink[] = [
         {
             href: '/privacy',
@@ -130,13 +196,15 @@
             localized: false
         }
     ];
+
+    let offset = $state(new Tween(0));
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<Navigation {leftLinks} {rightLinks}></Navigation>
+<Navigation {leftLinks} {rightLinks} bind:offset />
 
-<main class="flex-auto">
+<main style="transform: translateY({offset.current}px);" class="flex-auto">
     {@render children()}
 </main>
 
@@ -157,7 +225,7 @@
     </div>
 {/if}
 
-<Footer links={footerLinks}></Footer>
+<Footer links={footerLinks} {offset} />
 
 <!-- Necessary to have svelte-kit load in the pages of the other locales. -->
 <div class="hidden">

@@ -5,6 +5,7 @@
 */
 
 @import 'tailwindcss';
+@import '../lib/assets/katex/katex.css';
 
 @plugin 'flowbite/plugin';
 
@@ -12,8 +13,6 @@
 @custom-variant dark (&:where(.light, .light *));
 
 @source '../../node_modules/flowbite-svelte/dist';
-
-@import '../lib/assets/katex/katex.css';
 
 @theme {
     /* Custom colours */
@@ -42,20 +41,21 @@
 
     --color-neutral-350: oklch(0.78 0 0);
 
-    /* Spacing nav bar */
-    --spacing-nav-normal: calc(var(--spacing) * 40);
-    --spacing-nav-thin: calc(var(--spacing) * 24);
-    --spacing-nav-extra-thin: calc(var(--spacing) * 14);
-
     /* Text spacing */
     --spacing-text-normal: calc(var(--spacing) * 4);
     --spacing-text-small: calc(var(--spacing) * 2);
     --spacing-text-minor: calc(var(--spacing) * 1);
 
     /* Padding */
+    --spacing-padding-lg: calc(var(--spacing) * 6);
     --spacing-padding-normal: calc(var(--spacing) * 4);
     --spacing-padding-small: calc(var(--spacing) * 2);
     --spacing-padding-minor: calc(var(--spacing) * 1);
+
+    /* Spacing nav bar */
+    --spacing-nav-md: calc(var(--spacing) * 40);
+    --spacing-nav-th: calc(var(--spacing) * 28);
+    --spacing-nav-xt: calc(var(--spacing) * 14);
 }
 
 @layer base {
@@ -361,5 +361,30 @@
 
     ol {
         list-style-type: decimal;
+    }
+}
+
+@layer components {
+    /* Dropdown menus */
+    .dropdown__container {
+        display: flex;
+        flex-direction: column;
+
+        > .dropdown__parent {
+        }
+
+        > .dropdown__children {
+            * {
+                display: none;
+            }
+        }
+
+        &:hover {
+            > .dropdown__children {
+                * {
+                    display: flex;
+                }
+            }
+        }
     }
 }
