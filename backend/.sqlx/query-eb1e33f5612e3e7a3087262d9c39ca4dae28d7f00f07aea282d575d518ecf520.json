@@ -45,43 +45,43 @@
       },
       {
         "ordinal": 8,
-        "name": "language_code",
-        "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 9,
         "name": "description",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 10,
-        "name": "subject_id",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 11,
-        "name": "book_isbn",
-        "type_info": "Int8"
-      },
-      {
-        "ordinal": 12,
+        "ordinal": 9,
         "name": "book_chapter",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 13,
+        "ordinal": 10,
         "name": "book_exercise",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 14,
+        "ordinal": 11,
         "name": "assignment_text",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 15,
+        "ordinal": 12,
         "name": "structure",
         "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 13,
+        "name": "language_code",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "subject_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "book_isbn",
+        "type_info": "Int8"
       },
       {
         "ordinal": 16,
@@ -120,12 +120,12 @@
       false,
       false,
       false,
+      false,
+      false,
+      false,
+      false,
       true,
       true,
-      false,
-      false,
-      false,
-      false,
       null,
       null,
       null,
