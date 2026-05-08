@@ -45,6 +45,18 @@ pub struct Claims {
     pub account_type: AccountType,
 }
 
+/// User cookie info
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct InfoCookieData {
+    pub name: String,
+    pub nickname: String,
+    // Copy from `Claims`
+    pub sub: i32,
+    pub exp: i64,
+    pub account_type: AccountType,
+}
+
 async fn get_claims(parts: &mut Parts, state: &Config) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.
     let jar = CookieJar::from_request_parts(parts, state)

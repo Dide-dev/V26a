@@ -5,7 +5,7 @@
 */
 
 use crate::Config;
-use crate::api_v1::session::Claims;
+use crate::api_v1::session::{Claims, InfoCookieData};
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
@@ -18,6 +18,7 @@ use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
+use crate::db::users::get_user;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
@@ -92,11 +93,21 @@ async fn login(
         account_type: credentials.account_type,
     };
 
+    let user_data = get_user(&db, credentials.user_id).await?;
+
+    let user_info_cookie = InfoCookieData {
+        name: user_data.name,
+        nickname: user_data.nickname,
+        sub: claims.sub,
+        exp: claims.exp,
+        account_type: claims.account_type,
+    };
+
     // Create the authorization token.
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
-    let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
+    let user_info = serde_json::to_string(&user_info_cookie).map_err(|_| ApiError::SerdeException)?;
 
     // Age of a cookie (same for the two cookies)
     let time = time::Duration::new(config.session_duration, 0);
