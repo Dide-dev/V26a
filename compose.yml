@@ -97,3 +97,17 @@ services:
           action: rebuild
     depends_on:
       - backend
+
+  # Local SMTP relay server for testing
+  mailpit:
+    profiles: [ "dev" ]
+    image: docker.io/axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      - MP_SMTP_BIND_ADDR=0.0.0.0:25
+      - MP_SMTP_AUTH=${SMTP_USERNAME}:${SMTP_PASSWORD}
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+    ports:
+      - "25:25" # SMTP
+      - "8025:8025" # Web UI
+

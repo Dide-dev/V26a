@@ -16,6 +16,7 @@ mod tests;
 use crate::{api_v1::v1_api, config::Config};
 use axum::extract::DefaultBodyLimit;
 use axum::{Extension, Router};
+use lettre::{AsyncTransport, Message};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::services::ServeDir;
 use tracing::log::info;
@@ -47,6 +48,14 @@ async fn main() {
         );
     }
     let config = Config::load();
+
+    let test_message = Message::builder()
+        .from("BOOM! <noreply@localhost>".parse().unwrap())
+        .to("Test <boom@example.com>".parse().unwrap())
+        .subject("Test")
+        .body("Hello!".to_string())
+        .unwrap();
+    config.mailer.send(test_message).await.unwrap();
 
     // Set up logging.
     tracing_subscriber::registry()
