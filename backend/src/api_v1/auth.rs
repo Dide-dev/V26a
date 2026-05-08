@@ -107,8 +107,7 @@ async fn login(
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
-    let user_info =
-        serde_json::to_string(&user_info_cookie).map_err(|_| ApiError::SerdeException)?;
+    let user_info = serde_json::to_string(&user_info_cookie)?;
 
     // Age of a cookie (same for the two cookies)
     let time = time::Duration::new(config.session_duration, 0);

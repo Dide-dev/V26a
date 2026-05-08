@@ -100,7 +100,7 @@ async fn add_new_image(
     let filepath = format!("{upload_directory}/{filename}");
 
     // Add the image metadata to the database in transaction.
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
     add_image(&mut *transaction, &filename, &hash, claims.sub).await?;
 
     // Write the image to the directory.
@@ -109,10 +109,7 @@ async fn add_new_image(
         .map_err(|_| ApiError::FileWriteException)?;
 
     // Finalize transaction.
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     // Return where the image can be found
     Ok(format!("/uploads/{filename}"))
