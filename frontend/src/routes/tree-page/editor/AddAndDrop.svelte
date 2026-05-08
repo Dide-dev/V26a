@@ -15,6 +15,7 @@
     import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './SubtreeEditor.svelte';
     import type { SideBar } from './Sidebar.svelte';
+    import { lineOffset, svgWidth } from '../lineConstants';
 
     let {
         history,
@@ -39,18 +40,10 @@
     export type LayoutUnder = {
         type: 'under';
         lineHeight: number;
-
-        // These correspond to private variables or constants in the NodeViewer.svelte.
-        svgWidth: number;
-        lineOffset: number;
     };
     /** Used when this component is above a node. */
     export type LayoutOver = {
         type: 'over';
-
-        // These correspond to private variables or constants in the NodeViewer.svelte.
-        svgWidth: number;
-        lineOffset: number;
     };
 
     /**
@@ -132,23 +125,23 @@
             <svg
                 class="absolute -z-10 stroke-gray-300"
                 class:stroke-gray-800={highlight}
-                style:left="{-lineLayout.svgWidth - 2}px"
+                style:left="{-svgWidth - 2}px"
                 style:top="{-lineLayout.lineHeight + buttonHeight}px"
-                width={lineLayout.svgWidth + layoutUnderOffsetRight}
+                width={svgWidth + layoutUnderOffsetRight}
                 height={lineLayout.lineHeight}
             >
                 <line
-                    x1={lineLayout.svgWidth / 2}
-                    y1={lineLayout.lineOffset}
-                    x2={lineLayout.svgWidth / 2}
+                    x1={svgWidth / 2}
+                    y1={lineOffset}
+                    x2={svgWidth / 2}
                     y2={lineLayout.lineHeight - buttonHeight / 2}
                     stroke-width="2"
                     stroke-dasharray="5,5"
                 />
                 <line
-                    x1={lineLayout.svgWidth / 2}
+                    x1={svgWidth / 2}
                     y1={lineLayout.lineHeight - buttonHeight / 2}
-                    x2={lineLayout.svgWidth + layoutUnderOffsetRight}
+                    x2={svgWidth + layoutUnderOffsetRight}
                     y2={lineLayout.lineHeight - buttonHeight / 2}
                     stroke-width="2"
                     stroke-dasharray="5,5"
@@ -165,23 +158,23 @@
             <svg
                 class="absolute -z-10 stroke-gray-300"
                 class:stroke-gray-800={highlight}
-                style:left="{-lineLayout.svgWidth - 2}px"
+                style:left="{-svgWidth - 2}px"
                 style:top="0px"
-                width={lineLayout.svgWidth + layoutUnderOffsetRight}
-                height={buttonHeight + lineLayout.lineOffset}
+                width={svgWidth + layoutUnderOffsetRight}
+                height={buttonHeight + lineOffset}
             >
                 <line
-                    x1={lineLayout.svgWidth / 2}
-                    y1={buttonHeight + lineLayout.lineOffset}
-                    x2={lineLayout.svgWidth / 2}
+                    x1={svgWidth / 2}
+                    y1={buttonHeight + lineOffset}
+                    x2={svgWidth / 2}
                     y2={buttonHeight / 2}
                     stroke-width="2"
                     stroke-dasharray="5,5"
                 />
                 <line
-                    x1={lineLayout.svgWidth / 2}
+                    x1={svgWidth / 2}
                     y1={buttonHeight / 2}
-                    x2={lineLayout.svgWidth + layoutUnderOffsetRight}
+                    x2={svgWidth + layoutUnderOffsetRight}
                     y2={buttonHeight / 2}
                     stroke-width="2"
                     stroke-dasharray="5,5"

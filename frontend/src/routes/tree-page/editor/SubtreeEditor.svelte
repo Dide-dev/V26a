@@ -8,7 +8,6 @@
     import SubtreeEditor from './SubtreeEditor.svelte';
     import TreeEditButtons from './TreeEditButtons.svelte';
     import AddAndDrop from './AddAndDrop.svelte';
-    import { onMount } from 'svelte';
     import CardViewer from './CardViewer.svelte';
     import {
         followIndex,
@@ -19,6 +18,7 @@
     import type { SideBar } from './Sidebar.svelte';
     import RootNodeEditor from './RootNodeEditor.svelte';
     import SubtreeViewer from '../SubtreeViewer.svelte';
+    import LineDrawer from '../LineDrawer.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -54,6 +54,25 @@
                 JSON.stringify(location) !== JSON.stringify(sidebar?.location))
     );
     let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
+
+    /** All HTML children, inclusive possibly any fake nodes. */
+    type Child = {
+        index: number;
+        isFake: boolean;
+    };
+    let children = $derived.by(() => {
+        if (node === null) return [];
+        let iterator = node.children.keys().map((index) => ({ index, isFake: false }));
+        let list: Child[] = [...iterator];
+        if (
+            sidebar?.type === 'NewCard' &&
+            JSON.stringify(sidebar.location.slice(0, -1)) == JSON.stringify(location)
+        ) {
+            let lastIndex = sidebar.location[sidebar.location.length - 1];
+            list.splice(lastIndex, 0, { index: lastIndex, isFake: true });
+        }
+        return list;
+    });
 
     export type DragState = null | DragStateDragging | DragStateDismissed;
     export type DragStateDragging = {
@@ -95,101 +114,18 @@
         return iAmBeingDragged ? { type: 'dismissed' } : dragState;
     }
 
-    /** Width of the standard generating svg. Also defines how far apart the nodes are displayed. */
-    const svgWidth = 50;
-    let svgHeight = $state(0);
-    let totalHeight = $state(0);
-
-    /** Y-offset from the top of the nodecards, used for the horizontal lines connecting the nodes. */
-    const lineOffset = 15;
-
-    /** Stroke width to set the thickness of the lines connecting the nodes. Also used to calculate the svgHeight */
-    const strokeWidth = 4;
-
-    let domChildren: Element;
-    let outermostDiv: Element;
-    let cardViewerContainer: Element | null = $state(null);
-    let svgLines: SvgLine[] = $state([]);
-    type SvgLine = {
-        x1: number;
-        y1: number;
-        x2: number;
-        y2: number;
-    };
-
-    function redrawLines() {
-        svgLines = [];
-        svgHeight = 0;
-
-        totalHeight = outermostDiv.getBoundingClientRect().height;
-
-        // It is possible that node.children.length === 0, but domChildren.children.length > 0.
-        // This happens when adding a new Card and a sidebar is open
-        if (domChildren.children.length === 0) return;
-
-        let top = domChildren.getBoundingClientRect().top;
-
-        // Vertical line from lineOffset to last child
-        {
-            let lastChildBounding =
-                domChildren.children[domChildren.children.length - 1].getBoundingClientRect();
-            let childTop = lastChildBounding.top;
-            svgLines.push({
-                x1: svgWidth / 2,
-                y1: lineOffset,
-                x2: svgWidth / 2,
-                y2: childTop - top + lineOffset
-            });
-            svgHeight = strokeWidth + childTop - top + lineOffset;
-        }
-
-        // Right horizontal line from vertical line to child
-        for (let child of domChildren.children) {
-            let childBounding = child.getBoundingClientRect();
-            let childTop = childBounding.top;
-
-            svgLines.push({
-                x1: svgWidth / 2,
-                y1: childTop + lineOffset - top,
-                x2: svgWidth,
-                y2: childTop + lineOffset - top
-            });
-        }
-
-        // Left horizontal line from parent to vertical line
-        svgLines.push({
-            x1: 0,
-            y1: lineOffset,
-            x2: svgWidth / 2,
-            y2: lineOffset
-        });
-    }
-
-    onMount(() => {
-        redrawLines();
-
-        let observer = new MutationObserver(redrawLines);
-        observer.observe(domChildren, { subtree: true, childList: true, characterData: true });
-        if (cardViewerContainer !== null) {
-            observer.observe(cardViewerContainer, {
-                subtree: true,
-                childList: true,
-                characterData: true
-            });
-        }
-        return () => observer.disconnect();
-    });
+    /**
+     * Is used only when this is not a RootNode,
+     * for giving to the AddAndDrop so it knows where to draw.
+     */
+    let heightOfOwnCard = $state(0);
 </script>
 
 <!--
     Padding on the top is to make room for a AddAndDrop button above here,
     only if this is a root node or I am not the first child.
 -->
-<div
-    class="relative flex"
-    bind:this={outermostDiv}
-    class:mt-7={(node !== null && 'label' in node) || !isFirstChild}
->
+<div class="relative flex" class:mt-7={(node !== null && 'label' in node) || !isFirstChild}>
     <!--
         Render copy of self (but transparent and smaller) where the mouse currently is.
         We check again for the `dragState.type`, because otherwise typescript doesn't know
@@ -209,7 +145,7 @@
             {history}
             {location}
             bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-            lineLayout={{ type: 'over', lineOffset, svgWidth }}
+            lineLayout={{ type: 'over' }}
             bind:sidebar
         />
     {/if}
@@ -222,8 +158,8 @@
         {#if dragState === null}
             <TreeEditButtons {history} {location} bind:dragState bind:sidebar />
         {/if}
-        <div class="flex flex-col">
-            <div class="shrink-0" bind:this={cardViewerContainer}>
+        <div class="flex flex-col" bind:clientHeight={heightOfOwnCard}>
+            <div class="shrink-0">
                 <CardViewer
                     card={fakeNode ||
                     (sidebar?.type == 'EditCard' &&
@@ -236,75 +172,17 @@
                 {history}
                 location={nextSiblingIndex}
                 bind:dragState={dragStateChildrenGetSelf, dragStateChildrenSet}
-                lineLayout={{ type: 'under', lineHeight: totalHeight, lineOffset, svgWidth }}
+                lineLayout={{
+                    type: 'under',
+                    lineHeight: heightOfOwnCard
+                }}
                 bind:sidebar
             />
         </div>
     {/if}
 
-    {#if svgLines.length !== 0}
-        <svg width={svgWidth} height={svgHeight} class="shrink-0">
-            {#each svgLines as line (line)}
-                <line
-                    {...line}
-                    class="stroke-yellow-900"
-                    stroke-linecap="round"
-                    stroke-width={strokeWidth}
-                />
-            {/each}
-        </svg>
-    {/if}
-
-    <!-- Here the html gets recursive as we render the 'node.children' -->
-    <div bind:this={domChildren} class="flex flex-col">
-        {#each node?.children ?? [] as child_node, index (child_node)}
-            {#if sidebar?.type === 'NewCard' && JSON.stringify( [...location, index] ) === JSON.stringify(sidebar.location)}
-                <!-- This is the new dummy card currently being created, above the real card -->
-                <SubtreeEditor
-                    fakeNode={true}
-                    bind:history
-                    location={[...location, index]}
-                    dragState={{ type: 'dismissed' }}
-                    bind:sidebar
-                />
-                <!--
-                    We need to create a separate nodeviewer here for the real card,
-                    to configure that the sidebar is null.
-                    That prevents this nodeviewer from displaying the contents,
-                    because the location is the same for this real node and the fake node above here.
-                -->
-                <SubtreeEditor
-                    bind:history
-                    location={[...location, index]}
-                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-                    bind:sidebar
-                />
-            {:else}
-                <SubtreeEditor
-                    bind:history
-                    location={[...location, index]}
-                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-                    bind:sidebar
-                />
-            {/if}
-        {/each}
-
-        <!--
-            This gets used whenever this is the last child in a list of children,
-            but also whenever there are no children at all and this one is displayed.
-        -->
-        {#if sidebar?.type === 'NewCard' && node !== null && JSON.stringify( [...location, node.children.length] ) === JSON.stringify(sidebar.location)}
-            <SubtreeEditor
-                fakeNode={true}
-                bind:history
-                location={[...location, node.children.length]}
-                dragState={{ type: 'dismissed' }}
-                bind:sidebar
-            />
-        {/if}
-    </div>
-
-    {#if svgLines.length === 0}
+    <!-- This is *before* the LineDrawer, because the LineDrawer will always have an svg with some fixed width. -->
+    {#if children.length === 0}
         <div class="flex h-9 items-center">
             <AddAndDrop
                 {history}
@@ -315,4 +193,27 @@
             />
         </div>
     {/if}
+
+    <LineDrawer>
+        <!-- Here the html gets recursive as we render the 'node.children' -->
+        {#each children as child (child)}
+            {#if child.isFake}
+                <!-- This is the new dummy card currently being created -->
+                <SubtreeEditor
+                    fakeNode={true}
+                    bind:history
+                    location={[...location, child.index]}
+                    dragState={{ type: 'dismissed' }}
+                    bind:sidebar
+                />
+            {:else}
+                <SubtreeEditor
+                    bind:history
+                    location={[...location, child.index]}
+                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                    bind:sidebar
+                />
+            {/if}
+        {/each}
+    </LineDrawer>
 </div>
