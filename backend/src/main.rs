@@ -25,7 +25,7 @@ use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_governor::GovernorLayer;
 use tower_governor::governor::GovernorConfigBuilder;
-use tower_governor::key_extractor::GlobalKeyExtractor;
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -109,33 +109,55 @@ async fn backend(config: Config) -> Router {
         .await
         .expect("failed to run database migrations.");
 
-    // Extract governor config.
-    let governor_conf = Arc::new(
+    // Extract governor config (per second).
+    let governor_conf_second = Arc::new(
         GovernorConfigBuilder::default()
             .per_second(config.rate_limit_per_second)
-            .burst_size(config.rate_limit_burst_size)
-            .key_extractor(GlobalKeyExtractor)
+            .burst_size(config.rate_limit_burst_size_second)
+            .key_extractor(SmartIpKeyExtractor)
             .finish()
             .unwrap(),
     );
 
-    // Create governor layer.
-    let governor_layer = ServiceBuilder::new()
+    // Extract governor config (per minute).
+    // Divided by 60 to get the per-second refill rate.
+    // Values below 60 req/min will clamp to 1 req/sec
+    let governor_conf_minute = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second((config.rate_limit_per_minute / 60).max(1))
+            .burst_size(config.rate_limit_burst_size_minute)
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
+    // Create governor layer (second)
+    let governor_layer_second = ServiceBuilder::new()
         .map_response(map_response_error)
-        .layer(GovernorLayer::new(governor_conf.clone()));
+        .layer(GovernorLayer::new(governor_conf_second.clone()));
+
+    // Create governor layer (minute)
+    let governor_layer_minute = ServiceBuilder::new()
+        .map_response(map_response_error)
+        .layer(GovernorLayer::new(governor_conf_minute.clone()));
 
     // Cleanup to prevent high memory usage.
-    let governor_limiter = governor_conf.limiter().clone();
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-            governor_limiter.retain_recent();
-        }
-    });
+    for limiter in [
+        governor_conf_second.limiter().clone(),
+        governor_conf_minute.limiter().clone(),
+    ] {
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                limiter.retain_recent();
+            }
+        });
+    }
 
     Router::new()
         .nest("/v1", v1_api(config.clone()))
-        .layer(governor_layer)
+        .layer(governor_layer_second)
+        .layer(governor_layer_minute)
         .layer(Extension(db))
         .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)
