@@ -7,6 +7,7 @@
 use crate::Config;
 use crate::api_v1::session::{Claims, InfoCookieData};
 use crate::db::auth::get_user_credentials_by_email;
+use crate::db::users::get_user;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -18,7 +19,6 @@ use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
-use crate::db::users::get_user;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
@@ -107,7 +107,8 @@ async fn login(
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
-    let user_info = serde_json::to_string(&user_info_cookie).map_err(|_| ApiError::SerdeException)?;
+    let user_info =
+        serde_json::to_string(&user_info_cookie).map_err(|_| ApiError::SerdeException)?;
 
     // Age of a cookie (same for the two cookies)
     let time = time::Duration::new(config.session_duration, 0);

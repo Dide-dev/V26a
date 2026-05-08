@@ -319,12 +319,13 @@ async fn test_check_user_info_cookie_data(db: PgPool) {
     let server = setup(db);
     let email = "KoekieMonster@sesamstraat.nl".to_owned();
     register(&server, email.clone()).await;
-    let response =  server
+    let response = server
         .post("/auth/login")
         .json(&LoginRequestBody {
             email,
             password: "a$$word".to_string(),
-        }).await;
+        })
+        .await;
     let cookies = response.cookies();
     let user_info_cookie = cookies.get("user_info");
     assert!(user_info_cookie.is_some());
