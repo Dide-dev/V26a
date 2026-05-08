@@ -221,7 +221,7 @@ async fn get_cards_from_library(
     Extension(db): Extension<PgPool>,
     Query(filters): Query<CardFilters>,
 ) -> Result<Json<Vec<LibraryCardGetData>>, ApiError> {
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     let cards_count = get_queried_cards_count(&mut *transaction, &filters).await?;
     if cards_count == 0 {
@@ -230,10 +230,7 @@ async fn get_cards_from_library(
 
     let cards = get_queried_cards_list(&mut *transaction, &filters).await?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     Ok(Json(cards))
 }
