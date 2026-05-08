@@ -58,6 +58,7 @@ services:
       - RUST_LOG=${RUST_LOG}
       - JWT_SECRET=${JWT_SECRET}
       - SESSION_EXPIRATION_SECONDS=${SESSION_EXPIRATION_SECONDS}
+      - SMTP_URL=${SMTP_URL}
     depends_on:
       db:
         condition: service_healthy

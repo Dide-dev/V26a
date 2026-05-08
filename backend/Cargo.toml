@@ -38,6 +38,7 @@ uuid = { version = "1.23.0", features = ["v4"] }
 utoipa = { version = "5.4.0", features = ["chrono"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipauto = "0.2.0"
+lettre = { version = "0.11.21", features = ["tokio1-native-tls"] }
 
 [dev-dependencies]
 axum-test = "20.0.0"
