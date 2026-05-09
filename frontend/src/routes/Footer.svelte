@@ -153,7 +153,9 @@
 <!-- Render the copyright notice. -->
 {#snippet copyright()}
     <div class="m-2 flex flex-col items-end justify-end">
-        {@render footerLink(copyrightLink)}
+        <div>
+            {@render footerLink(copyrightLink)}
+        </div>
     </div>
 {/snippet}
 
@@ -168,5 +170,10 @@
             margin-top: 2rem;
             background-color: var(--color-brown);
         }
+    }
+    /* Unused selector to load in theme variables. */
+    :global(.load-footer-spacing) {
+        padding: var(--spacing-footer-xl) var(--spacing-footer-lg) var(--spacing-footer-md)
+            var(--spacing-footer-th);
     }
 </style>
