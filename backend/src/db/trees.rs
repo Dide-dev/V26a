@@ -30,8 +30,7 @@ use std::collections::{HashMap, HashSet};
 pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
     query!("SELECT EXISTS (SELECT 1 FROM subjects WHERE id = $1)", id)
         .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .exists
         .ok_or(ApiError::DatabaseException)
 }
@@ -48,10 +47,7 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_subjects(db: impl PgExecutor<'_>) -> Result<HashMap<i32, Subject>, ApiError> {
-    let mut results = query!("SELECT * FROM subjects")
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let mut results = query!("SELECT * FROM subjects").fetch_all(db).await?;
 
     Ok(results
         .drain(..)
@@ -88,8 +84,7 @@ pub async fn language_exists(
         language_code
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .exists
     .ok_or(ApiError::DatabaseException)
 }
@@ -107,8 +102,7 @@ pub async fn language_exists(
 pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, ApiError> {
     let results = query_as!(Language, "SELECT * FROM languages")
         .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     Ok(results)
 }
@@ -217,8 +211,7 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<b
         tree_data.book_edition,
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(result.exists.unwrap_or(false))
 }
@@ -247,8 +240,7 @@ pub async fn add_tags(
         tags
     )
     .execute(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     // This needs to be queried separately because the previous query doesn't insert all of the tags
     // if there are duplicates.
@@ -257,8 +249,7 @@ pub async fn add_tags(
         tags
     )
     .fetch_all(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     query!(
         "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
@@ -266,8 +257,7 @@ pub async fn add_tags(
         &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
     )
     .execute(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -295,8 +285,7 @@ pub async fn add_tree(
     tree_add_data: &TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)
-        .map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)?;
     let tree_data = &tree_add_data.tree_data;
 
     add_book(&mut *db, tree_data).await?;
@@ -318,8 +307,7 @@ pub async fn add_tree(
         tree_structure,
     )
     .fetch_one(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .id;
 
     add_tags(db, tree_id, &tree_data.tags).await?;
@@ -342,8 +330,7 @@ pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), Ap
     // This is because of the `ON DELETE CASCADE` in the foreign key of the 'cards' table.
     query!("DELETE FROM trees WHERE id=$1", tree_id)
         .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     Ok(())
 }
@@ -368,8 +355,7 @@ pub async fn update_tree_structure(
     tree_id: i32,
     new_tree_structure: &TreeStructure,
 ) -> Result<(), ApiError> {
-    let new_tree_structure =
-        serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;
+    let new_tree_structure = serde_json::to_value(new_tree_structure)?;
 
     query!(
         "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
@@ -377,8 +363,7 @@ pub async fn update_tree_structure(
         new_tree_structure,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -424,14 +409,12 @@ pub async fn update_tree_data(
         new_tree_data.published,
     )
     .execute(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     // Delete the old tags and add the new ones.
     query!("DELETE FROM tree_tags WHERE tree_id = $1", tree_id)
         .execute(&mut *db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
     add_tags(db, tree_id, &new_tree_data.tags).await?;
 
     Ok(())
@@ -463,15 +446,13 @@ pub async fn db_get_tree_all_data(
         tree_id,
     )
     .fetch_optional(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let Some(field) = field else {
         return Ok(None);
     };
 
-    let tree_structure =
-        serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::from_value(field.structure)?;
 
     let tree_metadata = TreeMetadata {
         data: TreeData {
@@ -524,8 +505,7 @@ pub async fn get_tree_owner(
 ) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .map(|r| r.owner_id);
 
     Ok(owner)
@@ -561,8 +541,7 @@ pub async fn get_all_trees_by_owner(
         owner_id
     )
     .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let trees_metadata = records
         .into_iter()
@@ -640,8 +619,7 @@ pub async fn is_structure_valid(
         i64::from(db_card_limit),
     )
     .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .iter()
     .map(|n| n.id)
     .collect::<HashSet<_>>();
@@ -678,8 +656,7 @@ pub async fn is_structure_valid(
 /// let trees_count: i64 = query
 ///         .build_query_scalar()
 ///         .fetch_one(db)
-///         .await
-///         .map_err(|_| ApiError::DatabaseException)?;
+///         .await?;
 /// ```
 ///
 /// # Returns
@@ -767,11 +744,7 @@ pub async fn get_queried_count(
 
     apply_tree_filters(&mut query, filters, user_id)?;
 
-    let trees_count: i64 = query
-        .build_query_scalar()
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let trees_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
     Ok(trees_count)
 }
@@ -823,11 +796,7 @@ pub async fn get_queried_list(
         // Page is 1-based
         .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
 
-    let rows = query
-        .build()
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let rows = query.build().fetch_all(db).await?;
 
     let trees = rows
         .iter()

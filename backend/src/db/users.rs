@@ -47,8 +47,7 @@ pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result
         user_data.language.to_string(),
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .id;
 
     Ok(user_id)
@@ -74,8 +73,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
         id,
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(UserGetData {
         email: record.email,
@@ -100,10 +98,11 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
-    query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)
+    Ok(
+        query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
+            .fetch_all(db)
+            .await?,
+    )
 }
 
 /// Updates a user in the database.
@@ -136,8 +135,7 @@ pub async fn update_user(
         id,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -171,8 +169,7 @@ pub async fn update_password(
         user_id,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -199,8 +196,7 @@ pub async fn delete_user(
     if delete_owned_trees {
         query!("DELETE FROM trees WHERE owner_id = $1", user_id,)
             .execute(&mut *db)
-            .await
-            .map_err(|_| ApiError::DatabaseException)?;
+            .await?;
     }
 
     // Make all fields of the user empty (soft delete) and disable the account making logging in impossible.
@@ -219,8 +215,7 @@ pub async fn delete_user(
         user_id,
     )
     .execute(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -241,11 +236,10 @@ pub async fn get_user_by_email(
     db: impl PgExecutor<'_>,
     email: &str,
 ) -> Result<Option<i32>, ApiError> {
-    query!("SELECT id FROM users WHERE email = $1", email,)
+    Ok(query!("SELECT id FROM users WHERE email = $1", email,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)
-        .map(|o| o.map(|r| r.id))
+        .await?
+        .map(|r| r.id))
 }
 
 /// Checks if a user with a given username exists in the given database.
@@ -264,11 +258,10 @@ pub async fn get_user_by_name(
     db: impl PgExecutor<'_>,
     name: &str,
 ) -> Result<Option<i32>, ApiError> {
-    query!("SELECT id FROM users WHERE name = $1", name,)
+    Ok(query!("SELECT id FROM users WHERE name = $1", name,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)
-        .map(|o| o.map(|r| r.id))
+        .await?
+        .map(|r| r.id))
 }
 
 /// Checks if a user with a given id exists in the given database.
@@ -286,8 +279,7 @@ pub async fn get_user_by_name(
 pub async fn user_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
     query!("SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)", id,)
         .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .exists
         .ok_or(ApiError::DatabaseException)
 }
