@@ -100,6 +100,7 @@
     "allTrees": "Tree list",
     "colophon": "Colophon",
     "otherProjects": "Other projects",
+    "apiDocs": "API documentation",
     "uploadImage": "Upload image",
     "requiredPlaceholder": "{value} (required)",
     "optionalPlaceholder": "{value} (optional)",
@@ -127,5 +128,6 @@
     "usernameAlreadyExists": "An account with this username already exists",
     "pageNotFound": "This page could not be found",
     "account": "Account",
-    "adminControl": "Admin"
+    "adminControl": "Admin",
+    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences"
 }

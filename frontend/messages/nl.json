@@ -100,6 +100,7 @@
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
     "otherProjects": "Andere projecten",
+    "apiDocs": "API documentatie",
     "uploadImage": "Upload afbeelding",
     "requiredPlaceholder": "{value} (vereist)",
     "optionalPlaceholder": "{value} (optioneel)",
@@ -127,5 +128,6 @@
     "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik",
     "pageNotFound": "Deze pagina kon niet worden gevonden",
     "account": "Account",
-    "adminControl": "Admin beheer"
+    "adminControl": "Admin beheer",
+    "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica"
 }
