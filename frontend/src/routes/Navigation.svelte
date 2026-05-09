@@ -31,6 +31,7 @@
     import { linear } from 'svelte/easing';
     import { Tween } from 'svelte/motion';
     import { onMount } from 'svelte';
+    import Underline from '$lib/Underline.svelte';
 
     let {
         leftLinks,
@@ -213,17 +214,23 @@
 <!-- Top-level nav-bar item in a large window. -->
 {#snippet navbarItemLargeWindow(link: NavLink)}
     <a
-        class="overflow-hidden font-bold"
         style="min-width: var(--spacing-nav-{link.props.width});
-                   max-width: var(--spacing-nav-{link.props.width});"
+               max-width: var(--spacing-nav-{link.props.width});"
         href={appLink(link.defaultHref)}
         onmouseenter={() => {
             if (link.children.length > 0) {
                 navHover = true;
             }
         }}
+        onclick={closeMenu}
     >
-        {link.text}
+        <Underline --color-underline="var(--color-white)">
+            <p
+                class="m-[var(--spacing-padding-small)_var(--spacing-padding-normal)] overflow-hidden font-bold"
+            >
+                {link.text}
+            </p>
+        </Underline>
     </a>
 {/snippet}
 
@@ -239,17 +246,19 @@
                 translateY({(openDropdownIndex ?? i) < i
                 ? dropdownDropStates[openDropdownIndex ?? i].at(-1)?.current
                 : 0}px);"
-            class={[
-                'relative z-10 flex flex-auto flex-row',
-                'bg-tree-625 hover:bg-tree-450',
-                '*:p-[var(--spacing-padding-small)_var(--spacing-padding-normal)]'
-            ]}
+            class={['relative z-10 flex flex-auto flex-row', 'bg-tree-625 hover:bg-tree-450']}
         >
             {#if link.children.length > 0}
                 {@render navbarDropdownButton(link, i)}
             {:else}
-                <a class="flex-auto font-bold" href={appLink(link.defaultHref)} onclick={closeMenu}>
-                    {link.text}
+                <a class="flex-auto" href={appLink(link.defaultHref)} onclick={closeMenu}>
+                    <Underline --color-underline="var(--color-white)">
+                        <p
+                            class="m-[var(--spacing-padding-small)_var(--spacing-padding-normal)] font-bold"
+                        >
+                            {link.text}
+                        </p>
+                    </Underline>
                 </a>
             {/if}
         </div>
@@ -262,7 +271,7 @@
 <!-- A button to open and close the drop-down with children. Only used in a small window. -->
 {#snippet navbarDropdownButton(link: NavLink, i: number)}
     <button
-        class="flex flex-auto cursor-pointer flex-row justify-between font-bold"
+        class="flex flex-auto cursor-pointer flex-row justify-between p-[var(--spacing-padding-small)_var(--spacing-padding-normal)] font-bold"
         onclick={() => toggleDropdown(i)}
     >
         <span>
@@ -303,7 +312,7 @@
             onclick={closeMenu}
             data-sveltekit-reload
         >
-            {link.text}
+            {@render underlineText(link.text)}
         </a>
     {:else}
         <a
@@ -311,7 +320,7 @@
             href={appLink(link.href)}
             onclick={closeMenu}
         >
-            {link.text}
+            {@render underlineText(link.text)}
         </a>
     {/if}
 {/snippet}
@@ -337,7 +346,7 @@
             onclick={closeMenu}
             data-sveltekit-reload
         >
-            {link.text}
+            {@render underlineText(link.text)}
         </a>
     {:else}
         <a
@@ -347,10 +356,19 @@
             href={appLink(link.href)}
             onclick={closeMenu}
         >
-            {link.text}
+            {@render underlineText(link.text)}
         </a>
     {/if}
 {/snippet}
+
+{#snippet underlineText(text: string)}
+
+    <Underline --color-underline="var(--color-black)">
+        <p>
+            {text}
+        </p>
+    </Underline>
+    {/snippet}
 
 <style>
     @layer components {
@@ -364,7 +382,6 @@
                 .nav__bar > * {
                     /* Layout */
                     min-width: var(--spacing-nav-normal);
-                    padding: var(--spacing-padding-small) var(--spacing-padding-normal);
                     text-align: center;
 
                     /* Formatting */
@@ -442,9 +459,12 @@
             /* Layout */
             display: flex;
             position: relative;
-            padding: var(--spacing-padding-small);
-            @media (width < 48rem) {
-                padding: var(--spacing-padding-small) var(--spacing-padding-lg);
+
+            p {
+                margin: var(--spacing-padding-small);
+                @media (width < 48rem) {
+                    margin: var(--spacing-padding-small) var(--spacing-padding-lg);
+                }
             }
 
             /* Formatting */
