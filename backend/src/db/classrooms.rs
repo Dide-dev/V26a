@@ -48,7 +48,7 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
         .exists
         .unwrap();
 
-        if exists {
+        if !exists {
             break;
         }
     }

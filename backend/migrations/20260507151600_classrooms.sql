@@ -13,5 +13,6 @@ CREATE TABLE classrooms
     description             VARCHAR(256)        NOT NULL    DEFAULT '',
     joinable                BOOLEAN             NOT NULL    DEFAULT TRUE,
     join_code               VARCHAR(6) UNIQUE   NOT NULL,
-    student_id_increment    INTEGER             NOT NULL    DEFAULT 1
+    student_id_increment    INTEGER             NOT NULL    DEFAULT 1,
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
