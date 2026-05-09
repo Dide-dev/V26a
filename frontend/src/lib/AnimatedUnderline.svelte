@@ -8,6 +8,8 @@
     @component
     Render an animated underline effect below the children.
 
+    Wrapper object automatically grows to fill its container.
+
     ## Params
     - `--color-underline` - The color to render the underline. Default color is black.
 -->
@@ -20,25 +22,29 @@
 </div>
 
 <style>
-    /* Underline formatting. */
     .animated_underline {
+        /* Must be global to affect the rendered children. */
         > :global(*) {
             position: relative;
 
+            /* The underline */
             &::after {
                 content: '';
+                /* Layout */
                 position: absolute;
                 left: 0;
                 bottom: 0;
                 width: 0;
                 height: calc(var(--spacing) * 0.5);
+                /* Default color is var(--color-black). */
                 background-color: var(--color-underline);
-
+                /* Animation */
                 transition: width 0.3s ease-out;
             }
         }
-
+        /* Must be global to affect the rendered children. */
         &:hover > :global(*::after) {
+            /* Grow to full width. */
             width: 100%;
         }
     }

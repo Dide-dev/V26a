@@ -20,8 +20,10 @@
       its children.
 
     ## Params
-    - `leftLinks: NavLink[]` - The links to align to the left on larger screens.
+    - `leftLinks: NavLink[]`  - The links to align to the left on larger screens.
     - `rightLinks: NavLink[]` - The links to align to the right on larger screens.
+    - `offset: Tween<number>` - Bindable parameter which contains the current offset at which the
+                                nav-bar is rendered. Use it to offset the rest of the page accordingly.
 -->
 
 <script lang="ts">
@@ -31,7 +33,7 @@
     import { linear } from 'svelte/easing';
     import { Tween } from 'svelte/motion';
     import { onMount } from 'svelte';
-    import Underline from '$lib/Underline.svelte';
+    import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
 
     let {
         leftLinks,
@@ -42,6 +44,10 @@
         leftLinks: NavLink[];
         /** The links that are aligned to the right on larger screens. */
         rightLinks: NavLink[];
+        /**
+         * The offset at which the nav-bar is rendered.
+         * Used outside this component to match up rendering offset.
+         */
         offset: Tween<number>;
     } = $props();
 
@@ -77,6 +83,11 @@
                 easing: linear
             })
     );
+    /**
+     * The animation states used for each child-link of each top-level link in a drop-down
+     * to animate drop-down. Only used in a smaller window. When setting the `target` value
+     * on any index, that child-link will move down over a short duration.
+     */
     let dropdownDropStates = (() =>
         leftLinks.concat(rightLinks).map((link) =>
             Array.from(
@@ -131,6 +142,7 @@
         }
     }
 
+    // Upon loading the page, reset the animation states to their default states.
     onMount(() => {
         resetAnimationStates();
     });
@@ -224,13 +236,13 @@
         }}
         onclick={closeMenu}
     >
-        <Underline --color-underline="var(--color-white)">
+        <AnimatedUnderline --color-underline="var(--color-white)">
             <p
                 class="m-[var(--spacing-padding-small)_var(--spacing-padding-normal)] overflow-hidden font-bold"
             >
                 {link.text}
             </p>
-        </Underline>
+        </AnimatedUnderline>
     </a>
 {/snippet}
 
@@ -246,19 +258,19 @@
                 translateY({(openDropdownIndex ?? i) < i
                 ? dropdownDropStates[openDropdownIndex ?? i].at(-1)?.current
                 : 0}px);"
-            class={['relative z-10 flex flex-auto flex-row', 'bg-tree-625 hover:bg-tree-450']}
+            class="relative z-10 flex flex-auto flex-row bg-tree-625 hover:bg-tree-450"
         >
             {#if link.children.length > 0}
                 {@render navbarDropdownButton(link, i)}
             {:else}
                 <a class="flex-auto" href={appLink(link.defaultHref)} onclick={closeMenu}>
-                    <Underline --color-underline="var(--color-white)">
+                    <AnimatedUnderline --color-underline="var(--color-white)">
                         <p
                             class="m-[var(--spacing-padding-small)_var(--spacing-padding-normal)] font-bold"
                         >
                             {link.text}
                         </p>
-                    </Underline>
+                    </AnimatedUnderline>
                 </a>
             {/if}
         </div>
@@ -271,7 +283,11 @@
 <!-- A button to open and close the drop-down with children. Only used in a small window. -->
 {#snippet navbarDropdownButton(link: NavLink, i: number)}
     <button
-        class="flex flex-auto cursor-pointer flex-row justify-between p-[var(--spacing-padding-small)_var(--spacing-padding-normal)] font-bold"
+        class={[
+            'flex flex-auto cursor-pointer flex-row justify-between',
+            'p-[var(--spacing-padding-small)_var(--spacing-padding-normal)]',
+            'font-bold'
+        ]}
         onclick={() => toggleDropdown(i)}
     >
         <span>
@@ -361,14 +377,14 @@
     {/if}
 {/snippet}
 
+<!-- Render text with an animated underline effect. -->
 {#snippet underlineText(text: string)}
-
-    <Underline --color-underline="var(--color-black)">
+    <AnimatedUnderline --color-underline="var(--color-black)">
         <p>
             {text}
         </p>
-    </Underline>
-    {/snippet}
+    </AnimatedUnderline>
+{/snippet}
 
 <style>
     @layer components {

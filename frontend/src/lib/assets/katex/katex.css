@@ -396,7 +396,7 @@
 
 .katex .mfrac .frac-line,
 .katex .overline .overline-line,
-.katex .animated_underline .underline-line,
+.katex .underline .underline-line,
 .katex .hline,
 .katex .hdashline,
 .katex .rule {
@@ -452,7 +452,7 @@
 }
 
 .katex .overline .overline-line,
-.katex .animated_underline .underline-line,
+.katex .underline .underline-line,
 .katex .hline {
     display: inline-block;
     width: 100%;

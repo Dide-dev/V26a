@@ -27,7 +27,7 @@
     import type { Tween } from 'svelte/motion';
     import { MediaQuery } from 'svelte/reactivity';
     import { FooterLink } from '$lib/footer';
-    import Underline from '$lib/Underline.svelte';
+    import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
 
     let {
         links,
@@ -137,7 +137,7 @@
 
 <!-- Render a single footer link. -->
 {#snippet footerLink(link: FooterLink)}
-    <Underline --color-underline="var(--color-black)">
+    <AnimatedUnderline --color-underline="var(--color-black)">
         {#if link.localized}
             <a href={appLink(link.href)} target={link.target}>
                 {link.text}
@@ -147,7 +147,7 @@
                 {link.text}
             </a>
         {/if}
-    </Underline>
+    </AnimatedUnderline>
 {/snippet}
 
 <!-- Render the copyright notice. -->
