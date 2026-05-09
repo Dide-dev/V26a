@@ -463,17 +463,17 @@ async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    let (data, gen_data, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
+    let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if !data.published {
+    if !metadata.data.published {
         // If the tree is not published, only the author is allowed access
         let Some(claims) = claims else {
             return Err(ApiError::MissingAuthentication);
         };
 
-        if claims.sub != gen_data.owner_id {
+        if claims.sub != metadata.gen_data.owner_id {
             return Err(ApiError::NoPermission);
         }
     }
@@ -481,8 +481,7 @@ async fn get_tree_with_cards(
     let tree_cards = get_tree_cards(&db, tree_id).await?;
 
     Ok(Json(TreeWithCards {
-        data,
-        gen_data,
+        metadata,
         structure,
         cards: tree_cards,
     }))

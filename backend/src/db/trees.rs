@@ -7,8 +7,8 @@
 use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
-        Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeMetadata,
-        TreeStructure,
+        Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeLinkedData,
+        TreeMetadata, TreeStructure,
     },
     errors::ApiError,
 };
@@ -452,12 +452,14 @@ pub async fn update_tree_data(
 pub async fn db_get_tree_all_data(
     db: &mut PgConnection,
     tree_id: i32,
-) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
+) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
-        "SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
-        WHERE id = $1",
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id
+        WHERE trees.id = $1"#,
         tree_id,
     )
     .fetch_optional(&mut *db)
@@ -471,32 +473,37 @@ pub async fn db_get_tree_all_data(
     let tree_structure =
         serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
 
-    let tree_data = TreeData {
-        title: field.title,
-        description: field.description,
-        tags: field.tags.unwrap_or(Vec::new()),
-        language_code: field.language_code,
-        subject_id: field.subject_id,
-        book_name: field.book_name.unwrap(),
-        book_edition: field.book_edition.unwrap(),
-        book_author: field.book_author.unwrap(),
-        book_isbn: field.book_isbn.map(|n| n.to_string()),
-        book_chapter: field.book_chapter,
-        book_exercise: field.book_exercise,
-        assignment_text: field.assignment_text,
-        published: field.published,
+    let tree_metadata = TreeMetadata {
+        data: TreeData {
+            title: field.title,
+            description: field.description,
+            tags: field.tags.unwrap_or(Vec::new()),
+            language_code: field.language_code,
+            subject_id: field.subject_id,
+            book_name: field.book_name.unwrap(),
+            book_edition: field.book_edition.unwrap(),
+            book_author: field.book_author.unwrap(),
+            book_isbn: field.book_isbn.map(|n| n.to_string()),
+            book_chapter: field.book_chapter,
+            book_exercise: field.book_exercise,
+            assignment_text: field.assignment_text,
+            published: field.published,
+        },
+        gen_data: TreeGeneratedData {
+            id: field.id,
+            owner_id: field.owner_id,
+            created_at: field.created_at,
+            last_modified: field.last_modified,
+            times_visited: field.times_visited,
+            last_visited: field.last_visited,
+        },
+        linked_data: TreeLinkedData {
+            owner_name: field.owner_name,
+            subject_name: field.subject_name,
+        },
     };
 
-    let tree_gen_data = TreeGeneratedData {
-        id: field.id,
-        owner_id: field.owner_id,
-        created_at: field.created_at,
-        last_modified: field.last_modified,
-        times_visited: field.times_visited,
-        last_visited: field.last_visited,
-    };
-
-    Ok(Some((tree_data, tree_gen_data, tree_structure)))
+    Ok(Some((tree_metadata, tree_structure)))
 }
 
 /// Get the id of the owner of the tree.
@@ -542,11 +549,15 @@ pub async fn get_all_trees_by_owner(
     db: impl PgExecutor<'_>,
     owner_id: i32,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
+    // Note that here sqlx incorrectly infers the subject_name output column to be non-nullable,
+    // so we need to manually override this with `AS "subject_name?"`.
     let records = query!(
-        "SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees 
         LEFT JOIN books ON trees.book_isbn = books.isbn 
-        WHERE owner_id = $1", 
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id
+        WHERE owner_id = $1"#, 
         owner_id
     )
     .fetch_all(db)
@@ -578,6 +589,10 @@ pub async fn get_all_trees_by_owner(
                 last_modified: t.last_modified,
                 times_visited: t.times_visited,
                 last_visited: t.last_visited,
+            },
+            linked_data: TreeLinkedData {
+                owner_name: t.owner_name,
+                subject_name: t.subject_name,
             },
         })
         .collect::<Vec<TreeMetadata>>();
@@ -715,13 +730,13 @@ fn apply_tree_filters<'a>(
     }
     if let Some(created_after) = created_after {
         separated
-            .push("(created_at >= ")
+            .push("(trees.created_at >= ")
             .push_bind_unseparated(created_after)
             .push_unseparated(")");
     }
     if let Some(created_before) = created_before {
         separated
-            .push("(created_at <= ")
+            .push("(trees.created_at <= ")
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
     }
@@ -786,17 +801,21 @@ pub async fn get_queried_list(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("
-        SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+    let mut query = QueryBuilder::<Postgres>::new(
+        r#"
+        SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
         FROM trees
-        LEFT JOIN books ON trees.book_isbn = books.isbn"
+        LEFT JOIN books ON books.isbn = trees.book_isbn
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id
+        "#,
     );
 
     apply_tree_filters(&mut query, filters, user_id)?;
     query
         .push(
             // newest first
-            " ORDER BY created_at DESC \
+            " ORDER BY trees.created_at DESC \
               LIMIT ",
         )
         .push_bind(i64::from(page.get_size()))
@@ -1016,11 +1035,11 @@ mod tests {
             .unwrap();
 
         // Verify the data was updated
-        let (found_tree_data, _, _) = db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
+        let (found_tree_metadata, _) = db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(found_tree_data, new_tree_data);
+        assert_eq!(found_tree_metadata.data, new_tree_data);
     }
 
     #[sqlx::test]
@@ -1043,15 +1062,15 @@ mod tests {
             initialize_tree_with_data(get_connection_unwrap!(db), user_id, &tree_data, &structure)
                 .await;
 
-        let (found_tree_data, found_tree_gen_data, found_tree_structure) =
+        let (found_tree_metadata, found_tree_structure) =
             db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
                 .await
                 .unwrap()
                 .unwrap();
 
-        assert_eq!(tree_data, found_tree_data);
-        assert_eq!(tree_id, found_tree_gen_data.id);
-        assert_eq!(user_id, found_tree_gen_data.owner_id);
+        assert_eq!(tree_data, found_tree_metadata.data);
+        assert_eq!(tree_id, found_tree_metadata.gen_data.id);
+        assert_eq!(user_id, found_tree_metadata.gen_data.owner_id);
         assert_eq!(structure, found_tree_structure);
     }
 
@@ -1152,7 +1171,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_isbn = ANY($3)) AND (created_at >= $4) AND (created_at <= $5)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_isbn = ANY($3)) AND (trees.created_at >= $4) AND (trees.created_at <= $5)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -1164,7 +1183,7 @@ mod tests {
         apply_tree_filters(&mut partial_filters_query, &partial_filters, None).unwrap();
         assert_eq!(
             partial_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (created_at >= $2)"
+            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (trees.created_at >= $2)"
         );
 
         let mut show_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");

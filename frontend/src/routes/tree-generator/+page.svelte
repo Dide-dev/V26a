@@ -138,7 +138,7 @@
             return;
         }
 
-        treeData.bookIsbn = isbn;
+        treeData.bookIsbn = isbn === '' ? null : isbn;
         const treeId = await addTree(treeData);
         await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }

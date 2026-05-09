@@ -16,8 +16,7 @@ use utoipa::{PartialSchema, ToSchema};
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeWithCards {
-    pub data: TreeData,
-    pub gen_data: TreeGeneratedData,
+    pub metadata: TreeMetadata,
     pub structure: TreeStructure,
     /// The `card_id` with the corresponding card.
     pub cards: BTreeMap<i32, CardGetData>,
@@ -27,29 +26,34 @@ pub struct TreeWithCards {
 impl PartialSchema for TreeWithCards {
     fn schema() -> RefOr<Schema> {
         ObjectBuilder::new()
-            .property("data", TreeData::schema())
-            .property("genData", TreeGeneratedData::schema())
+            .property("metadata", TreeMetadata::schema())
             .property("structure", TreeStructure::schema())
             .property("cards", BTreeMap::<i32, CardGetData>::schema())
             .examples(Some(serde_json::json!({
-                "data": {
-                  "title": "string",
-                  "description": "string",
-                  "bookName": "string",
-                  "bookEdition": "string",
-                  "bookIsbn": "string",
-                  "bookChapter": "string",
-                  "bookExercise": "string",
-                  "assignmentText": "string",
-                  "published": true
-                },
-                "genData": {
-                  "id": 7,
-                  "ownerId": 2,
-                  "createdAt": "2026-04-12T16:31:32.855032Z",
-                  "lastModified": "2026-04-12T16:31:32.855032Z",
-                  "timesVisited": 0,
-                  "lastVisited": null
+                "metadata": {
+                    "data": {
+                      "title": "string",
+                      "description": "string",
+                      "bookName": "string",
+                      "bookEdition": "string",
+                      "bookIsbn": "string",
+                      "bookChapter": "string",
+                      "bookExercise": "string",
+                      "assignmentText": "string",
+                      "published": true
+                    },
+                    "genData": {
+                      "id": 7,
+                      "ownerId": 2,
+                      "createdAt": "2026-04-12T16:31:32.855032Z",
+                      "lastModified": "2026-04-12T16:31:32.855032Z",
+                      "timesVisited": 0,
+                      "lastVisited": null
+                    },
+                    "linkedData": {
+                      "ownerName": "string",
+                      "subjectName": "string",
+                    },
                 },
                 "structure": {
                   "rootNodes": [
@@ -167,20 +171,36 @@ impl Node {
     }
 }
 
+/// The tree data that is not stored in the main trees table in the database, and is also not
+/// specified during creation or updates.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeLinkedData {
+    pub owner_name: String,
+    #[sqlx(rename = "subject_name?")]
+    pub subject_name: Option<String>,
+}
+
 /// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeMetadata {
     pub data: TreeData,
     pub gen_data: TreeGeneratedData,
+    pub linked_data: TreeLinkedData,
 }
 
 impl TreeMetadata {
     pub fn from_pg_row(row: &PgRow) -> Result<Self, Error> {
         let data = TreeData::from_row(row)?;
         let gen_data = TreeGeneratedData::from_row(row)?;
+        let linked_data = TreeLinkedData::from_row(row)?;
 
-        Ok(TreeMetadata { data, gen_data })
+        Ok(TreeMetadata {
+            data,
+            gen_data,
+            linked_data,
+        })
     }
 }
 

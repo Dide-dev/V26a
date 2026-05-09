@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT trees.*, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        WHERE id = $1",
+  "query": "SELECT trees.*, users.name AS owner_name, subjects.name AS \"subject_name?\", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags\n        FROM trees \n        LEFT JOIN books ON trees.book_isbn = books.isbn \n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        WHERE owner_id = $1",
   "describe": {
     "columns": [
       {
@@ -85,21 +85,36 @@
       },
       {
         "ordinal": 16,
-        "name": "book_name",
-        "type_info": "Varchar"
+        "name": "owner_name",
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        }
       },
       {
         "ordinal": 17,
-        "name": "book_author",
+        "name": "subject_name?",
         "type_info": "Varchar"
       },
       {
         "ordinal": 18,
-        "name": "book_edition",
+        "name": "book_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 19,
+        "name": "book_author",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 20,
+        "name": "book_edition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 21,
         "name": "tags",
         "type_info": "VarcharArray"
       }
@@ -126,11 +141,13 @@
       false,
       true,
       true,
+      false,
+      false,
       null,
       null,
       null,
       null
     ]
   },
-  "hash": "00bf5b02004f09f5eeb28869a2b5f22a8d89a5912cfacc6191099e5a60189f68"
+  "hash": "f27cac1b4ab7b8a36378c4be70948f5ee28672e85da5e4bcde6225c2c1b75f0e"
 }

@@ -60,8 +60,8 @@ async fn test_new_empty_tree(db: PgPool) {
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_add_data.tree_data);
-    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.metadata.data, tree_add_data.tree_data);
+    assert_eq!(full_tree.metadata.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
 
@@ -144,8 +144,8 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_add_data.tree_data);
-    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.metadata.data, tree_add_data.tree_data);
+    assert_eq!(full_tree.metadata.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
 
@@ -661,7 +661,7 @@ async fn test_update_and_get_tree(db: PgPool) {
     response.assert_status_ok();
     let tree_with_cards_valid: TreeWithCards = response.json();
     assert_eq!(tree_with_cards_valid.structure, structure_valid);
-    assert_eq!(tree_with_cards_valid.data, tree_data);
+    assert_eq!(tree_with_cards_valid.metadata.data, tree_data);
     assert!(
         tree_with_cards_valid
             .cards
@@ -754,7 +754,7 @@ async fn test_update_metadata(db: PgPool) {
         .await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, new_tree_data);
+    assert_eq!(full_tree.metadata.data, new_tree_data);
 }
 
 #[sqlx::test]

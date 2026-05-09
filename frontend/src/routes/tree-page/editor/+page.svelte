@@ -108,9 +108,9 @@
 
         const fetchedTree = await getTreeWithCards(id);
         tree = {
-            data: fetchedTree.data,
+            data: fetchedTree.metadata.data,
             history: initializeHistory(
-                fetchedTree.genData.id,
+                fetchedTree.metadata.genData.id,
                 fillStateStructure(fetchedTree.structure, true),
                 fetchedTree.cards
             ),

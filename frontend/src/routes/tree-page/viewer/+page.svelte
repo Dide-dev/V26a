@@ -42,9 +42,9 @@
 
         const fetchedTree = await getTreeWithCards(id);
         tree = [
-            fetchedTree.data,
+            fetchedTree.metadata.data,
             initializeHistory(
-                fetchedTree.genData.id,
+                fetchedTree.metadata.genData.id,
                 fillStateStructure(fetchedTree.structure, false),
                 fetchedTree.cards
             )
@@ -52,7 +52,7 @@
 
         loading = false;
 
-        const isOwner = tree && userInfo && fetchedTree.genData.ownerId === userInfo.sub;
+        const isOwner = tree && userInfo && fetchedTree.metadata.genData.ownerId === userInfo.sub;
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {

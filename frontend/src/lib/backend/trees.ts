@@ -27,8 +27,7 @@ export type TreeId = number;
 
 /** All data of the tree, together with its cards. */
 export type TreeWithCards = {
-    data: TreeData;
-    genData: TreeGeneratedData;
+    metadata: TreeMetadata;
     structure: TreeStructure;
     cards: Record<CardId, CardGetData>;
 };
@@ -77,9 +76,15 @@ export type TreeGeneratedData = {
     lastVisited: Option<Date>;
 };
 
+export type TreeLinkedData = {
+    ownerName: Option<string>;
+    subjectName: Option<string>;
+};
+
 export type TreeMetadata = {
     data: TreeData;
     genData: TreeGeneratedData;
+    linkedData: TreeLinkedData;
 };
 
 export type TreeAddData = {
