@@ -192,7 +192,7 @@ mod tests {
 
         assert_eq!(found_card_data.owner_id, owner_id);
         assert_eq!(found_card_data.title, title);
-        assert_eq!(found_card_data.tags, tags);
+        assert_eq!(found_card_data.tags, Some(tags));
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
     }

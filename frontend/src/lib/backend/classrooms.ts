@@ -5,6 +5,7 @@
 */
 
 import { apiCallPost } from '$lib/backend/index';
+import type { Option } from '$lib/backend/types';
 
 const prefix = '/classrooms';
 

@@ -113,7 +113,7 @@ mod tests {
             .await
             .unwrap();
 
-        let description = classroom_add_data.description.unwrap_or_default();
+        let description = classroom_add_data.description.clone().unwrap_or_default();
 
         let id = add_classroom(
             &db,
@@ -132,7 +132,7 @@ mod tests {
 
         let found_classroom_add_data = ClassroomAddData {
             name: found_classroom_data.nickname,
-            description: found_classroom_data.description,
+            description: Some(found_classroom_data.description),
         };
 
         assert_eq!(found_classroom_add_data, classroom_add_data);
