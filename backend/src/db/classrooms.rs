@@ -43,8 +43,7 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
             number
         )
         .fetch_one(&mut *db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .exists
         .unwrap();
 
@@ -89,8 +88,7 @@ pub async fn add_classroom(
         join_code
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .id;
 
     Ok(id)
