@@ -99,6 +99,12 @@
                     })
             )
         ))();
+    /** Most recently recorded scroll position on window. */
+    let lastScrollPosition = $state(0);
+    /** Margin between nav-bar and the top of the screen in pixels. When 0, nav-bar is fully visible. */
+    let topScrollMargin = $state(0);
+    /** Maximum margin between nav-bar and the top of the screen in pixels. */
+    const maxScrollMargin = -140;
 
     /** Toggle whether the menu is opened. Only used in a smaller window. */
     function toggleMenu() {
@@ -142,22 +148,27 @@
         }
     }
 
-    // Upon loading the page, reset the animation states to their default states.
+    // Upon loading the page, reset the animation states to their default states,
+    // and load the current scroll position.
     onMount(() => {
         resetAnimationStates();
+        lastScrollPosition = window.scrollY;
     });
 </script>
 
 <nav
-    class="w-100vw mb-6 text-neutral-100 not-md:justify-end"
+    class={['w-100vw sticky z-100 mb-6 text-neutral-100 not-md:justify-end']}
+    style:top={navHover ? '0px' : `${topScrollMargin}px`}
     onmouseleave={() => {
         navHover = false;
+        topScrollMargin = 0;
     }}
 >
     <!-- The top-level links, including the children in case of a smaller window. -->
     <div class={[navHover && 'link-hovered', 'nav__bar flex not-md:flex-col']}>
         {#if !windowIsLarge.current}
             {@render hamburgerMenuButton()}
+            <div class={['h-0 bg-white', menu && 'h-0.5']}></div>
         {/if}
         {#if menu || windowIsLarge.current}
             {#each leftLinks as link, i (link)}
@@ -176,10 +187,14 @@
         <!-- Calculate the dropdown column width to match the top-level link widths. -->
         <div
             class="nav__dropdown"
-            style:grid-template-columns={leftLinks.reduce((acc: string, curr: NavLink) => {
-                return acc + `var(--spacing-nav-${curr.props.width}) `;
-            }, '') +
+            style:grid-template-columns={'' +
+                // The width of each of the left links.
+                leftLinks.reduce((acc: string, curr: NavLink) => {
+                    return acc + `var(--spacing-nav-${curr.props.width}) `;
+                }, '') +
+                // Spacing between the left and right links.
                 'auto ' +
+                // The width of each of the right links.
                 rightLinks.reduce((acc: string, curr: NavLink) => {
                     return acc + `var(--spacing-nav-${curr.props.width}) `;
                 }, '')}
@@ -198,11 +213,22 @@
     {/if}
 </nav>
 
+<svelte:window
+    onscroll={() => {
+        // Calculate the new margin between the nav-bar and top of the screen,
+        // by clamping between 0 and `maxScrollMargin`.
+        topScrollMargin = Math.min(
+            0,
+            Math.max(maxScrollMargin, topScrollMargin + lastScrollPosition - window.scrollY)
+        );
+        lastScrollPosition = window.scrollY;
+    }}
+/>
+
 <!-- Toggle button to open the nav-menu. Only used in a smaller window. -->
 {#snippet hamburgerMenuButton()}
     <button
         class={[
-            menu && 'mb-0.5',
             'flex justify-end font-bold md:w-screen',
             'bg-tree-625 hover:bg-tree-500 hover:text-white',
             'p-[var(--spacing-padding-small)_var(--spacing-padding-normal)]'
