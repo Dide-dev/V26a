@@ -11,7 +11,7 @@ use crate::{
     },
     errors::ApiError,
 };
-use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
+use sqlx::{PgExecutor, PgPool, Postgres, QueryBuilder, query};
 use std::collections::HashSet;
 
 /// Add a new tree to the database.
@@ -231,10 +231,7 @@ pub async fn db_get_tree_all_data(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_tree_owner(
-    db: impl PgExecutor<'_>,
-    tree_id: i32,
-) -> Result<Option<i32>, ApiError> {
+pub async fn get_tree_owner(db: &PgPool, tree_id: &i32) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await
@@ -242,6 +239,68 @@ pub async fn get_tree_owner(
         .map(|r| r.owner_id);
 
     Ok(owner)
+}
+
+/// Check whether a user is a co-author of a tree.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree of which the owner is queried.
+///
+/// `co_author_id` - The id of the given co-author.
+///
+/// # Returns
+/// A boolean, indicating whether the given co-author is indeed the co-author of the given tree.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn is_co_author_of_tree(
+    db: &PgPool,
+    tree_id: &i32,
+    co_author_id: &i32,
+) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM co_authors WHERE tree_id = $1 AND user_id = $2)",
+        tree_id,
+        co_author_id
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?
+    .exists
+    .ok_or(ApiError::DatabaseException)
+}
+
+/// Add a co-author to a tree.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree to which a co-author should be added.
+///
+/// `co_author_id` - The id of the person that should be added as co-author.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_co_author(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    co_author_id: i32,
+) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO co_authors (tree_id, user_id)
+        VALUES ($1, $2)",
+        tree_id,
+        co_author_id
+    )
+    .execute(db)
+    .await
+    .map_err(|_| ApiError::DatabaseException)?;
+    Ok(())
 }
 
 // TODO: unit tests
@@ -672,7 +731,7 @@ mod tests {
     async fn test_get_tree_owner(db: PgPool) {
         let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
-        let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
+        let found_owner_id = get_tree_owner(&db, &tree_id).await.unwrap();
         assert_eq!(found_owner_id, Some(user_id));
     }
 

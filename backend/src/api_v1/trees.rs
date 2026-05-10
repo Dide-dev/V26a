@@ -7,9 +7,10 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count, get_queried_list,
-    get_tree_owner, is_structure_valid,
+    add_co_author, add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_queried_count,
+    get_queried_list, get_tree_owner, is_co_author_of_tree, is_structure_valid,
 };
+use crate::db::users::user_id_exists;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
     TreeAddData, TreeFilters, TreeListResponse, TreeMetadata, TreeRemoveCardData, TreeStructure,
@@ -23,7 +24,7 @@ use axum::extract::Path;
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
-use sqlx::{PgConnection, PgExecutor, PgPool};
+use sqlx::{PgConnection, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<Config> {
@@ -36,6 +37,7 @@ pub fn trees() -> Router<Config> {
         .route("/get-list", get(get_list))
         .route("/update-data", post(update_tree_data))
         .route("/get-mine-all", get(get_all_owned_trees))
+        .route("/{tree_id}/authorize/{user_id}", post(authorize_co_author))
 }
 
 #[utoipa::path(
@@ -480,16 +482,18 @@ async fn get_all_owned_trees(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn verify_tree_permissions(
-    db: impl PgExecutor<'_>,
+    db: &PgPool,
     tree_id: i32,
     claims: Claims,
 ) -> Result<(), ApiError> {
     // Check whether the tree exists.
-    let owner_id = get_tree_owner(db, tree_id)
+    let owner_id = get_tree_owner(db, &tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if claims.account_type == AccountType::Admin || claims.sub == owner_id {
+    let is_co_author = is_co_author_of_tree(db, &tree_id, &claims.sub).await?;
+
+    if claims.account_type == AccountType::Admin || claims.sub == owner_id || is_co_author {
         Ok(())
     } else {
         Err(ApiError::NoPermission)
@@ -566,4 +570,65 @@ pub async fn get_list(
     };
 
     Ok(Json(list))
+}
+
+#[utoipa::path(
+    post,
+    path = "{tree_id}/authorize/{user_id}",
+    context_path = "/api/v1/users/trees",
+    responses(
+        (status = 200, description = "Co-author successfully added to the tree."),
+        (status = 400, description = "Tree or user with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("tree_id" = i32, Path),
+        ("user_id" = i32, Path),
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Add a user to a tree to make them a co-author.
+///
+/// Only the owner of the given tree or an admin can add a user to be co-author of the tree.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_id` - The id of the tree for which a co-author will be added.
+///
+/// `user_id` - The user to become co-author.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn authorize_co_author(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path((tree_id, user_id)): Path<(i32, i32)>,
+) -> Result<(), ApiError> {
+    if !user_id_exists(&db, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+
+    // A user can only add a co-author to their own tree, unless they are an admin.
+    if claims.sub
+        != get_tree_owner(&db, &tree_id)
+            .await?
+            .ok_or(ApiError::MissingTree(tree_id))?
+        && claims.account_type != AccountType::Admin
+    {
+        return Err(ApiError::NoPermission);
+    }
+
+    add_co_author(&db, tree_id, user_id).await?;
+
+    Ok(())
 }

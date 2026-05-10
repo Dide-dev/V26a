@@ -217,3 +217,8 @@ export function getFilteredList(
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
 }
+
+/** Add user as co-author to a tree. */
+export function addCoAuthor(treeId: TreeId, userId: UserId) {
+    return apiCallPostTree(`${treeId}/authorize/${userId}`, null);
+}
