@@ -115,9 +115,12 @@
 
 <!-- Image linking to the home-page. -->
 {#snippet footerImage(src: string)}
-    <a href={appLink('/')} class="flex items-center">
-        <img class="aspect-square w-footer-md not-md:w-footer-th" {src} alt="logo" />
-    </a>
+    <div class="flex flex-row">
+        <a href={appLink('/')} class="flex items-center">
+            <img class="aspect-square w-footer-md not-md:w-footer-th" {src} alt="logo" />
+        </a>
+        {@render fillerDiv()}
+    </div>
 {/snippet}
 
 <!-- Footer links divided over columns. -->
