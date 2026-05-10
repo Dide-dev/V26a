@@ -192,14 +192,15 @@
         })
     ];
 
-    let offset = $state(new Tween(0));
+    let offsets: Tween<number>[] = $state([]);
+    let offset = $derived(offsets.reduce((acc, curr) => acc + curr.current, 0));
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<Navigation {leftLinks} {rightLinks} bind:offset />
+<Navigation {leftLinks} {rightLinks} bind:offsets />
 
-<main style="transform: translateY({offset.current}px);" class="flex-auto">
+<main style="transform: translateY({offset}px);" class="flex-auto">
     {@render children()}
 </main>
 

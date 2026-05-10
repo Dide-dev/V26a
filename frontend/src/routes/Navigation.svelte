@@ -6,7 +6,7 @@
 
 <!--
     @component
-    Render a navigation-bar with the provided links.
+    Render a semi-sticky navigation-bar with the provided links.
 
     ## Reactivity
     The nav-bar renders differently depending on screen size:
@@ -22,15 +22,16 @@
     ## Params
     - `leftLinks: NavLink[]`  - The links to align to the left on larger screens.
     - `rightLinks: NavLink[]` - The links to align to the right on larger screens.
-    - `offset: Tween<number>` - Bindable parameter which contains the current offset at which the
-                                nav-bar is rendered. Use it to offset the rest of the page accordingly.
+    - `offsets: Tween<number>[]` - Bindable parameter which contains the current offset each
+                                   top-level link om the nav-bar requires. Use it to offset the rest
+                                   of the page accordingly, by taking its sum.
 -->
 
 <script lang="ts">
     import { appLink } from '$lib';
     import { MediaQuery } from 'svelte/reactivity';
     import { type NavChildLink, NavLink } from '$lib/navigation';
-    import { linear } from 'svelte/easing';
+    import { cubicOut } from 'svelte/easing';
     import { Tween } from 'svelte/motion';
     import { onMount } from 'svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
@@ -38,30 +39,25 @@
     let {
         leftLinks,
         rightLinks,
-        offset = $bindable()
+        offsets = $bindable()
     }: {
         /** The links that are aligned to the left on larger screens. */
         leftLinks: NavLink[];
         /** The links that are aligned to the right on larger screens. */
         rightLinks: NavLink[];
         /**
-         * The offset at which the nav-bar is rendered.
-         * Used outside this component to match up rendering offset.
+         * The offsets required by each top-level link.
+         * Its sum is ysed outside this component to match up rendering offset.
          */
-        offset: Tween<number>;
+        offsets: Tween<number>[];
     } = $props();
 
     /** The highest number of children of any top-level link. */
     let maxChildren: number = $derived(
         Math.max(...leftLinks.concat(rightLinks).map((link) => link.children.length))
     );
-    /** Whether the menu is opened on smaller devices. */
+    /** Whether the hamburger-menu or dropdown is opened. */
     let menu = $state(false);
-    /**
-     * Whether the nav-bar is being hovered.
-     * Only activates when a nav-bar item with children is hovered on larger devices.
-     */
-    let navHover = $state(false);
     // 48rem === 768px
     /** Query whether the window is large or small. 'true' if large, and 'false' if not. */
     const windowIsLarge = new MediaQuery('min-width: 48rem');
@@ -70,6 +66,11 @@
      * Is `null` if no drop-down is open.
      */
     let openDropdownIndex: number | null = $state(null);
+    /** The settings used for transitioning between animation states. */
+    let animationFlow = {
+        duration: 200,
+        easing: cubicOut
+    };
     /**
      * The animation states used for each top-level link with a drop-down. Only used in a smaller window.
      * When setting the `target` value on any index, that drop-down icon will change over a short duration.
@@ -77,36 +78,34 @@
     let dropdownRotationStates = Array.from(
         // Lazy evaluation of `leftLinks` and `rightLinks`.
         { length: (() => leftLinks.length + rightLinks.length)() },
-        () =>
-            new Tween(45, {
-                duration: 200,
-                easing: linear
-            })
+        () => new Tween(45, animationFlow)
     );
     /**
      * The animation states used for each child-link of each top-level link in a drop-down
      * to animate drop-down. Only used in a smaller window. When setting the `target` value
-     * on any index, that child-link will move down over a short duration.
+     * on any index, that child-link will move down or up over a short duration.
      */
-    let dropdownDropStates = (() =>
-        leftLinks.concat(rightLinks).map((link) =>
-            Array.from(
-                { length: link.children.length },
-                () =>
-                    new Tween(0, {
-                        duration: 200,
-                        easing: linear
-                    })
-            )
-        ))();
+    let dropdownDropStates = $state(
+        // Lazy evaluation of `leftLinks` and `rightLinks`.
+        (() =>
+            leftLinks
+                .concat(rightLinks)
+                .map((link) =>
+                    Array.from({ length: link.children.length }, () => new Tween(0, animationFlow))
+                ))()
+    );
     /** Most recently recorded scroll position on window. */
     let lastScrollPosition = $state(0);
     /** Margin between nav-bar and the top of the screen in pixels. When 0, nav-bar is fully visible. */
     let topScrollMargin = $state(0);
+    /** Height of a single row in the nav-bar in pixels. */
+    const navRowHeight = 40;
+    /** Default scroll distance in browser in pixels.*/
+    const defaultScrollDistance = 100;
     /** Maximum margin between nav-bar and the top of the screen in pixels. */
-    const maxScrollMargin = -140;
+    const maxScrollMargin = navRowHeight + defaultScrollDistance;
 
-    /** Toggle whether the menu is opened. Only used in a smaller window. */
+    /** Toggle whether the menu is opened. */
     function toggleMenu() {
         if (menu) {
             closeMenu();
@@ -115,57 +114,83 @@
 
         menu = true;
     }
-    /** Close the menu and navigation drop-down. Used in both smaller and larger windows. */
+    /** Close the menu or navigation drop-down. */
     function closeMenu() {
         menu = false;
-        navHover = false;
+        topScrollMargin = 0;
         openDropdownIndex = null;
         resetAnimationStates();
     }
     /** Reset the rotation for each drop-down to display a plus. Only used in a smaller window. */
     function resetAnimationStates() {
         dropdownRotationStates.forEach((tween) => (tween.target = 45));
-        dropdownDropStates.forEach((x) => x.forEach((tween, i) => (tween.target = ++i * -32)));
-        offset = new Tween(0);
+        dropdownDropStates = dropdownDropStates.map(
+            (arr) => (arr = arr.map((_, i) => new Tween(++i * -navRowHeight, animationFlow)))
+        );
+        console.log(dropdownDropStates);
+        offsets = offsets.map(() => new Tween(0, animationFlow));
+        console.log(offsets);
     }
     /** Toggle whether a top-level's drop-down is open. Only used in a smaller window. */
-    function toggleDropdown(index: number) {
-        // Play the animation returning to a plus on the drop-down that gets closed, if any.
+    async function toggleDropdown(index: number) {
+        // Play the closing animations on the drop-down that gets closed, if any.
         if (openDropdownIndex !== null) {
-            dropdownRotationStates[openDropdownIndex].target += 45;
-            dropdownDropStates[openDropdownIndex].forEach((tween, i) => (tween.target = ++i * -32));
+            // We don't await, because we want the rest of the function to continue running.
+            closeDropdown(openDropdownIndex);
         }
         if (openDropdownIndex === index) {
             // The already open drop-down gets toggled, thus all drop-downs are closed.
             openDropdownIndex = null;
-            offset = new Tween(0);
         } else {
             // Open a previously closed drop-down.
             openDropdownIndex = index;
             dropdownRotationStates[index].target -= 45;
             dropdownDropStates[index].forEach((tween) => (tween.target = 0));
-            offset = dropdownDropStates[openDropdownIndex].at(-1) ?? new Tween(0);
+            // Only restart animation fully, if previously finished.
+            if (offsets[index].current === 0) {
+                offsets[index] = new Tween(
+                    dropdownDropStates[index].length * -navRowHeight,
+                    animationFlow
+                );
+            }
+            offsets[index].target = 0;
         }
+    }
+    /** Play the animations to close the dropdown of a top-level link. Only used in smaller windows. */
+    async function closeDropdown(index: number) {
+        // Return from cross to plus.
+        dropdownRotationStates[index].target += 45;
+        // Move up all child-links.
+        dropdownDropStates[index].forEach((tween, i) => (tween.target = ++i * -navRowHeight));
+        // Animate decreasing offset.
+        await offsets[index].set(dropdownDropStates[index].length * -navRowHeight);
+        // Re-align offset once children are no longer rendered (and thus don't take up space).
+        offsets[index] = new Tween(0, animationFlow);
+    }
+    /** Calculate the offset up until the given index */
+    function offsetAtIndex(index: number) {
+        return offsets.slice(0, index).reduce((acc, curr) => acc + curr.current, 0);
     }
 
     // Upon loading the page, reset the animation states to their default states,
     // and load the current scroll position.
     onMount(() => {
+        offsets = leftLinks.concat(rightLinks).map(() => new Tween(0, animationFlow));
         resetAnimationStates();
         lastScrollPosition = window.scrollY;
     });
 </script>
 
 <nav
-    class={['w-100vw sticky z-100 mb-6 text-neutral-100 not-md:justify-end']}
-    style:top={navHover ? '0px' : `${topScrollMargin}px`}
+    class={['sticky z-100 mb-6 text-neutral-100 not-md:justify-end']}
+    style:top={menu ? '0px' : `${topScrollMargin}px`}
     onmouseleave={() => {
-        navHover = false;
-        topScrollMargin = 0;
+        if (!windowIsLarge.current) return;
+        closeMenu();
     }}
 >
     <!-- The top-level links, including the children in case of a smaller window. -->
-    <div class={[navHover && 'link-hovered', 'nav__bar flex not-md:flex-col']}>
+    <div class={[menu && 'link-hovered', 'nav__bar flex not-md:flex-col']}>
         {#if !windowIsLarge.current}
             {@render hamburgerMenuButton()}
             <div class={['h-0 bg-white', menu && 'h-0.5']}></div>
@@ -216,10 +241,10 @@
 <svelte:window
     onscroll={() => {
         // Calculate the new margin between the nav-bar and top of the screen,
-        // by clamping between 0 and `maxScrollMargin`.
+        // by clamping between 0 and `-maxScrollMargin`.
         topScrollMargin = Math.min(
             0,
-            Math.max(maxScrollMargin, topScrollMargin + lastScrollPosition - window.scrollY)
+            Math.max(-maxScrollMargin, topScrollMargin + lastScrollPosition - window.scrollY)
         );
         lastScrollPosition = window.scrollY;
     }}
@@ -257,7 +282,7 @@
         href={appLink(link.defaultHref)}
         onmouseenter={() => {
             if (link.children.length > 0) {
-                navHover = true;
+                menu = true;
             }
         }}
         onclick={closeMenu}
@@ -281,10 +306,8 @@
     <div class="flex-auto flex-col">
         <div
             style="transform:
-                translateY({(openDropdownIndex ?? i) < i
-                ? dropdownDropStates[openDropdownIndex ?? i].at(-1)?.current
-                : 0}px);"
-            class="relative z-10 flex flex-auto flex-row bg-tree-625 hover:bg-tree-450"
+                translateY({offsetAtIndex(i)}px);"
+            class="z-10 flex flex-auto flex-row bg-tree-625 hover:bg-tree-450"
         >
             {#if link.children.length > 0}
                 {@render navbarDropdownButton(link, i)}
@@ -300,7 +323,8 @@
                 </a>
             {/if}
         </div>
-        {#if link.children.length > 0 && openDropdownIndex === i}
+        <!-- Only render children if any exist and the drop-down is open. -->
+        {#if link.children.length > 0 && dropdownDropStates[i][0].current > -navRowHeight}
             {@render navChildrenSmallWindow(link, i)}
         {/if}
     </div>
@@ -381,8 +405,8 @@
     -->
     {#if localeSwitch}
         <a
-            style="transform: translateY({dropdownDropStates[parentIndex][i]
-                .current}px); z-index: {9 - i};"
+            style="transform: translateY({dropdownDropStates[parentIndex][i].current +
+                offsetAtIndex(parentIndex)}px); z-index: {9 - i};"
             class={['nav-child']}
             href={link.href}
             onclick={closeMenu}
@@ -392,8 +416,8 @@
         </a>
     {:else}
         <a
-            style="transform: translateY({dropdownDropStates[parentIndex][i]
-                .current}px); z-index: {9 - i};"
+            style="transform: translateY({dropdownDropStates[parentIndex][i].current +
+                offsetAtIndex(parentIndex)}px); z-index: {9 - i};"
             class={['nav-child']}
             href={appLink(link.href)}
             onclick={closeMenu}

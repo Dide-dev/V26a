@@ -18,13 +18,12 @@
 
     # Params
     - `links: FooterLink[]` - The links to render in the footer.
-    - `offset: Tween<number>` - A `Tween` object with the current offset from the nav-bar.
+    - `offset: number` - The current offset from the nav-bar.
 -->
 <script lang="ts">
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
     import logo from '$lib/assets/logo.png';
-    import type { Tween } from 'svelte/motion';
     import { MediaQuery } from 'svelte/reactivity';
     import { FooterLink } from '$lib/footer';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
@@ -36,7 +35,7 @@
         /** The links to render in the footer. */
         links: FooterLink[];
         /** The current offset to render at. */
-        offset: Tween<number>;
+        offset: number;
     } = $props();
 
     // 48rem === 768px
@@ -81,7 +80,7 @@
     );
 </script>
 
-<footer style="transform: translateY({offset.current}px);" class="w-100vw">
+<footer style="transform: translateY({offset}px);" class="w-100vw">
     {#if !windowIsSmall.current}
         <div
             class="grid grid-flow-col grid-rows-1"
