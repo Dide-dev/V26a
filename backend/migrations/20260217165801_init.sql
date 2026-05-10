@@ -74,8 +74,8 @@ CREATE TABLE library_cards
     id              SERIAL PRIMARY KEY,
     owner_id        INTEGER         NOT NULL,
     created_at      TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
-    title           VARCHAR(32)     NOT NULL,
-    tags            VARCHAR(32)[]   NOT NULL,
+    title           VARCHAR(1024)   NOT NULL,
+    tags            VARCHAR(32)[],
     front           VARCHAR(1024)   NOT NULL,
     back            VARCHAR(5000)   NOT NULL
 );

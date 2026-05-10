@@ -16,7 +16,7 @@ async fn test_new_classroom(db: PgPool) {
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
-        description: Option::from(String::new()),
+        description: None,
     };
 
     let response = server
@@ -44,7 +44,7 @@ async fn test_new_classroom_forbidden(db: PgPool) {
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
-        description: Option::from(String::new()),
+        description: None,
     };
 
     let response = server

@@ -43,7 +43,7 @@ pub fn classrooms() -> Router<Config> {
 /// The id assigned to the new classroom and the generated join code in a [`ClassroomGeneratedData`].
 ///
 /// # Errors
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user isn't logged in.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_classroom(

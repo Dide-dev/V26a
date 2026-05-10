@@ -48,11 +48,9 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
         .unwrap();
 
         if !exists {
-            break;
+            return Ok(number);
         }
     }
-
-    Ok(number)
 }
 
 /// Adds a classroom to the database.
@@ -75,10 +73,10 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_classroom(
     db: impl PgExecutor<'_>,
-    name: &String,
-    description: &String,
+    name: &str,
+    description: &str,
     owner_id: i32,
-    join_code: &String,
+    join_code: &str,
 ) -> Result<i32, ApiError> {
     let id: i32 = query!(
         "INSERT INTO classrooms (owner_id, nickname, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
@@ -108,7 +106,7 @@ mod tests {
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
-            description: Option::from(String::new()),
+            description: Some("This is a test classroom".to_owned()),
         };
 
         let join_code = generate_random_code(get_connection_unwrap!(db))
@@ -132,8 +130,12 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(found_classroom_data.nickname, classroom_add_data.name);
-        assert_eq!(found_classroom_data.description, description);
+        let found_classroom_add_data = ClassroomAddData {
+            name: found_classroom_data.nickname,
+            description: found_classroom_data.description,
+        };
+
+        assert_eq!(found_classroom_add_data, classroom_add_data);
         assert_eq!(found_classroom_data.join_code, join_code);
     }
 }

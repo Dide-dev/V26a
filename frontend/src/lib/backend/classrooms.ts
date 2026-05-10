@@ -16,7 +16,7 @@ export type ClassroomId = number;
 
 export type ClassroomAddData = {
     name: string;
-    description: string | null;
+    description: Option<string>;
 };
 
 export type ClassroomGeneratedData = {
