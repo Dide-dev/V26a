@@ -31,8 +31,7 @@ pub async fn add_card(db: impl PgExecutor<'_>, card_data: &CardAddData) -> Resul
         card_data.back,
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .id;
 
     Ok(card_id)
@@ -56,8 +55,7 @@ pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), Ap
     // We only return the id to handle the case where the card does not exist with fetch_optional().
     query!("DELETE FROM cards WHERE id = $1 RETURNING id", card_id,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .ok_or(ApiError::MissingCard(card_id))?;
 
     Ok(())
@@ -89,8 +87,7 @@ pub async fn update_card(
         card_data.new_back,
     )
     .fetch_optional(&mut *db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .ok_or(ApiError::MissingCard(card_data.card_id))?;
 
     // Also update the `last_modified` field in the tree the card belongs to.
@@ -100,8 +97,7 @@ pub async fn update_card(
         card_data.card_id,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -129,8 +125,7 @@ pub async fn get_tree_cards(
         tree_id
     )
     .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(cards
         .into_iter()
@@ -169,8 +164,7 @@ pub async fn get_card_text(db: impl PgExecutor<'_>, card_id: i32) -> Result<Card
         card_id
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .ok_or(ApiError::MissingCard(card_id))?;
 
     Ok(card)
@@ -195,8 +189,7 @@ pub async fn get_tree_of_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<i
     // check whether the card with `card_id` exists in the database.
     let tree_id = query!("SELECT tree_id FROM cards where id=$1", card_id,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .ok_or(ApiError::MissingCard(card_id))?
         .tree_id;
 

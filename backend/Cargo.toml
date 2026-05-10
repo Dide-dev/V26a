@@ -41,4 +41,4 @@ utoipauto = "0.2.0"
 rand = "0.10.1"
 
 [dev-dependencies]
-axum-test = "19.1.1"
+axum-test = "20.0.0"

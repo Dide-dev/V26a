@@ -21,10 +21,7 @@ pub mod users;
 #[macro_export]
 macro_rules! get_connection {
     ( $pool:expr ) => {
-        &mut *($pool
-            .acquire()
-            .await
-            .map_err(|_| ApiError::DatabaseException)?)
+        &mut *($pool.acquire().await?)
     };
 }
 
