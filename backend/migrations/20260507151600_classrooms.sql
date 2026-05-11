@@ -14,5 +14,6 @@ CREATE TABLE classrooms
     joinable                BOOLEAN             NOT NULL    DEFAULT TRUE,
     join_code               VARCHAR(6) UNIQUE   NOT NULL,
     student_id_increment    INTEGER             NOT NULL    DEFAULT 1,
+    --^ counter for the student id within the classroom, to allow IDs to stay low for the student
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
