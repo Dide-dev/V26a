@@ -13,12 +13,17 @@ mod db_structs;
 mod errors;
 mod tests;
 
+use crate::api_v1::auth::auth;
+use crate::api_v1::feedback::feedback;
+use crate::api_v1::images::images;
+use crate::api_v1::users::add_new_user;
 use crate::errors::ApiError;
 use crate::{api_v1::v1_api, config::Config};
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
+use axum::routing::post;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
@@ -131,6 +136,25 @@ async fn backend(config: Config) -> Router {
             .unwrap(),
     );
 
+    // Extract strict gover config per second
+    let governor_conf_second_strict = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(config.rate_limit_per_second_strict)
+            .burst_size(config.rate_limit_burst_size_second_strict)
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
+    let governor_conf_minute_strict = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second((config.rate_limit_per_minute_strict / 60).max(1))
+            .burst_size(config.rate_limit_burst_size_minute_strict)
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
     // Create governor layer (second)
     let governor_layer_second = ServiceBuilder::new()
         .map_response(map_response_error)
@@ -141,10 +165,33 @@ async fn backend(config: Config) -> Router {
         .map_response(map_response_error)
         .layer(GovernorLayer::new(governor_conf_minute.clone()));
 
+    // Create strict governor layers
+    // These layers are applied on the following endpoints: login, feedback, add images, add user.
+    let governor_layer_second_strict = ServiceBuilder::new()
+        .map_response(map_response_error)
+        .layer(GovernorLayer::new(governor_conf_second_strict.clone()));
+
+    let governor_layer_minute_strict = ServiceBuilder::new()
+        .map_response(map_response_error)
+        .layer(GovernorLayer::new(governor_conf_minute_strict.clone()));
+
+    // Clone layers
+
+    // Apply the strict layers directly on specific endpoints/routes.
+    let strict_endpoints = Router::new()
+        .route("/api/v1/users/add", post(add_new_user))
+        .nest("/api/v1/auth", auth())
+        .nest("/api/v1/feedback", feedback())
+        .nest("/api/v1/images", images())
+        .layer(governor_layer_second_strict)
+        .layer(governor_layer_minute_strict);
+
     // Cleanup to prevent high memory usage.
     for limiter in [
         governor_conf_second.limiter().clone(),
         governor_conf_minute.limiter().clone(),
+        governor_conf_second_strict.limiter().clone(),
+        governor_conf_minute_strict.limiter().clone(),
     ] {
         tokio::spawn(async move {
             loop {
@@ -155,9 +202,13 @@ async fn backend(config: Config) -> Router {
     }
 
     Router::new()
-        .nest("/v1", v1_api(config.clone()))
-        .layer(governor_layer_second)
-        .layer(governor_layer_minute)
+        .merge(strict_endpoints)
+        .nest(
+            "/v1",
+            v1_api(config.clone())
+                .layer(governor_layer_second)
+                .layer(governor_layer_minute),
+        )
         .layer(Extension(db))
         .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)

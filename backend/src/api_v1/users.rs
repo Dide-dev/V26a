@@ -72,7 +72,7 @@ pub enum UserResponse {
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
-async fn add_new_user(
+pub async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
