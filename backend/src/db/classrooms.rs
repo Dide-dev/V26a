@@ -81,7 +81,7 @@ pub async fn add_classroom(
     join_code: &str,
 ) -> Result<i32, ApiError> {
     let id: i32 = query!(
-        "INSERT INTO classrooms (owner_id, nickname, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
+        "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
         owner_id,
         name,
         description,
@@ -133,7 +133,7 @@ mod tests {
             .unwrap();
 
         let found_classroom_add_data = ClassroomAddData {
-            name: found_classroom_data.nickname,
+            name: found_classroom_data.name,
             description: Some(found_classroom_data.description),
         };
 
