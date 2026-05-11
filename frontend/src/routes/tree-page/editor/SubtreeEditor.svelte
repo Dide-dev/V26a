@@ -9,16 +9,12 @@
     import TreeEditButtons from './TreeEditButtons.svelte';
     import AddAndDrop from './AddAndDrop.svelte';
     import CardViewer from './CardViewer.svelte';
-    import {
-        followIndex,
-        type StateNode,
-        type StateRootNode,
-        type TreeHistory
-    } from './history.svelte';
+    import { followIndex, type TreeHistory } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
     import RootNodeEditor from './RootNodeEditor.svelte';
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
+    import type { Node, RootNode } from '$lib/backend/trees';
 
     let {
         history = $bindable(),
@@ -39,7 +35,7 @@
     } = $props();
 
     /** This will be null if `fakeNode` is set to true. */
-    let node: null | StateRootNode | StateNode = $derived.by(() => {
+    let node: null | RootNode | Node = $derived.by(() => {
         if (fakeNode) return null;
 
         return followIndex(history.currentStructure, location);

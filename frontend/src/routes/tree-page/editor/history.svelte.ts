@@ -10,7 +10,8 @@ import {
     type Node,
     type TreeId,
     removeCardFromTree,
-    updateTreeStructure
+    updateTreeStructure,
+    type RootNode
 } from '$lib/backend/trees';
 
 export type TreeHistory = {
@@ -18,11 +19,11 @@ export type TreeHistory = {
     treeId: TreeId;
 
     // The cardId's in these two properties may not exist anymore!
-    listBack: [StateTreeStructure, CardAction][];
-    listForward: [StateTreeStructure, CardAction][];
+    listBack: [TreeStructure, CardAction][];
+    listForward: [TreeStructure, CardAction][];
 
     // The cardId's in these two properties must always exist in the database
-    currentStructure: StateTreeStructure;
+    currentStructure: TreeStructure;
     currentCards: Record<CardId, CardGetData>;
 
     cardIdMapper: CardIdMapper;
@@ -30,7 +31,7 @@ export type TreeHistory = {
 
 export function initializeHistory(
     treeId: TreeId,
-    structure: StateTreeStructure,
+    structure: TreeStructure,
     cards: Record<CardId, CardGetData>
 ): TreeHistory {
     return {
@@ -44,11 +45,7 @@ export function initializeHistory(
 }
 
 /** Performs action and structure update, and records it. */
-function commitActionLocal(
-    history: TreeHistory,
-    newStructure: StateTreeStructure,
-    action: CardAction
-) {
+function commitActionLocal(history: TreeHistory, newStructure: TreeStructure, action: CardAction) {
     history.listForward = [];
     history.listBack.push([history.currentStructure, action]);
     history.currentStructure = newStructure;
@@ -81,7 +78,7 @@ function performActionLocal(history: TreeHistory, action: CardAction) {
 }
 
 export async function doMove(history: TreeHistory, nodeToMove: number[], newLocation: number[]) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
 
     const node = followIndexNode(newStructure, nodeToMove);
 
@@ -95,7 +92,7 @@ export async function doMove(history: TreeHistory, nodeToMove: number[], newLoca
 
     await updateTreeStructure({
         id: history.treeId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
@@ -108,7 +105,7 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
         back: card.back
     });
 
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const parent = followIndex(newStructure, location.slice(0, -1))!;
     parent.children.splice(location[location.length - 1], 0, {
         cardId,
@@ -117,7 +114,7 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
 
     await updateTreeStructure({
         id: history.treeId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     const action: CardActionAdd = {
@@ -132,7 +129,7 @@ export async function doEditCard(history: TreeHistory, cardId: CardId, newCard: 
     const oldCard = history.currentCards[cardId];
 
     await updateCard({ cardId, newBack: newCard.back, newFront: newCard.front });
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const action: CardActionUpdate = {
         type: 'cardUpdate',
         cardId,
@@ -144,7 +141,7 @@ export async function doEditCard(history: TreeHistory, cardId: CardId, newCard: 
 }
 
 export async function doDeleteCard(history: TreeHistory, index: number[]) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const card = followIndexNode(newStructure, index);
 
     // Perform actual structural removal locally here
@@ -155,7 +152,7 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
     await removeCardFromTree({
         treeId: history.treeId,
         cardId: card.cardId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     // Only now that the backend has accepted, commit locally
@@ -168,7 +165,7 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
 }
 
 export async function doRootNodeMove(history: TreeHistory, index: number, newIndex: number) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const rootnode = newStructure.rootNodes[index];
 
     newStructure.rootNodes.splice(index, 1);
@@ -176,26 +173,26 @@ export async function doRootNodeMove(history: TreeHistory, index: number, newInd
 
     await updateTreeStructure({
         id: history.treeId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
 
 export async function doRootNodeEdit(history: TreeHistory, index: number, newLabel: string) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     newStructure.rootNodes[index].label = newLabel;
 
     await updateTreeStructure({
         id: history.treeId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
 
 export async function doRootNodeDelete(history: TreeHistory, index: number) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
 
     // This should NEVER happen, but just in case a sanity check
     if (newStructure.rootNodes[index].children.length !== 0) {
@@ -206,20 +203,20 @@ export async function doRootNodeDelete(history: TreeHistory, index: number) {
 
     await updateTreeStructure({
         id: history.treeId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
 
 export async function doRootNodeAdd(history: TreeHistory, index: number, label: string) {
-    const newStructure: StateTreeStructure = $state.snapshot(history.currentStructure);
+    const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
 
     newStructure.rootNodes.splice(index, 0, { label, children: [] });
 
     await updateTreeStructure({
         id: history.treeId,
-        newStructure: stripStateStructure(newStructure)
+        newStructure
     });
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
@@ -239,9 +236,9 @@ export function canRedo(history: TreeHistory): boolean {
  */
 async function performActionToBackend(
     history: TreeHistory,
-    newStructure: StateTreeStructure,
+    newStructure: TreeStructure,
     action: CardAction
-): Promise<[StateTreeStructure, CardAction]> {
+): Promise<[TreeStructure, CardAction]> {
     action = mapActionCardId(history, action);
     newStructure = mapStructureCardIds(history, newStructure);
 
@@ -250,7 +247,7 @@ async function performActionToBackend(
             if (action.sendStructureToBackend) {
                 await updateTreeStructure({
                     id: history.treeId,
-                    newStructure: stripStateStructure(newStructure)
+                    newStructure
                 });
             }
             break;
@@ -269,7 +266,7 @@ async function performActionToBackend(
 
             await updateTreeStructure({
                 id: history.treeId,
-                newStructure: stripStateStructure(newStructure)
+                newStructure
             });
             // If the above api call fails the database and local state will both be consistent,
             // there will just be an unused card in the database.
@@ -280,7 +277,7 @@ async function performActionToBackend(
             await removeCardFromTree({
                 treeId: history.treeId,
                 cardId: action.oldCardId,
-                newStructure: stripStateStructure(newStructure)
+                newStructure
             });
             break;
         }
@@ -331,11 +328,8 @@ export async function redo(history: TreeHistory) {
 }
 
 /** Maps every CardId according to history.#cardIdMapper, by creating a deep copy. */
-function mapStructureCardIds(
-    history: TreeHistory,
-    structure: StateTreeStructure
-): StateTreeStructure {
-    const mapNode = (node: StateNode): StateNode => {
+function mapStructureCardIds(history: TreeHistory, structure: TreeStructure): TreeStructure {
+    const mapNode = (node: Node): Node => {
         return {
             cardId: history.cardIdMapper.find(node.cardId),
             children: node.children.map(mapNode)
@@ -466,71 +460,11 @@ function actionInverse(action: CardAction): CardAction {
 }
 
 /**
- * Stateful variants of types of the same name in 'trees.ts'.
- * This used to contain a `revealed` property of Nodes, but that has since been removed.
- * Just in case some other state needs to be tracked in the future, this code is still here.
- *
- * Note that typescript will not complain if a `StateTreeStructure` is used where a `TreeStructure` is expected.
- * Please prevent sending unnecessary fields to the backend, by using the `StripStateStructure` function.
- */
-export type StateTreeStructure = {
-    rootNodes: StateRootNode[];
-};
-/** See `StateTreeStructure`. */
-export type StateRootNode = {
-    label: string;
-    children: StateNode[];
-};
-/** See `StateTreeStructure`. */
-export type StateNode = {
-    cardId: CardId;
-    children: StateNode[];
-};
-
-/** Makes a deep copy and removes all the state from the `StateTreeStructure`. */
-export function stripStateStructure(statefulStructure: StateTreeStructure): TreeStructure {
-    function fillStateNode(statelessNode: StateNode): Node {
-        return {
-            cardId: statelessNode.cardId,
-            children: statelessNode.children.map(fillStateNode)
-        };
-    }
-
-    return {
-        rootNodes: statefulStructure.rootNodes.map((rootNode) => ({
-            label: rootNode.label,
-            children: rootNode.children.map(fillStateNode)
-        }))
-    };
-}
-/**
- * Makes a deep copy and fills in all state from `StateTreeStructure`.
- */
-export function fillStateStructure(statelessStructure: TreeStructure): StateTreeStructure {
-    function fillStateNode(statelessNode: Node): StateNode {
-        return {
-            cardId: statelessNode.cardId,
-            children: statelessNode.children.map(fillStateNode)
-        };
-    }
-
-    return {
-        rootNodes: statelessStructure.rootNodes.map((rootNode) => ({
-            label: rootNode.label,
-            children: rootNode.children.map(fillStateNode)
-        }))
-    };
-}
-
-/**
  * Returns reference to a RootNode or Node, found by following index array in the given tree.
  * Could also return null if the index array is invalid.
  */
-export function followIndex(
-    treeStructure: StateTreeStructure,
-    index: number[]
-): StateRootNode | StateNode | null {
-    let node: StateRootNode | StateNode | null = treeStructure.rootNodes[index[0]];
+export function followIndex(treeStructure: TreeStructure, index: number[]): RootNode | Node | null {
+    let node: RootNode | Node | null = treeStructure.rootNodes[index[0]];
     for (let i = 1; i < index.length; i++) {
         node = node.children[index[i]];
 
@@ -544,7 +478,7 @@ export function followIndex(
  * Returns reference to a Node, found by following index array in the given tree.
  * Will assert that the index refers to a Node, not a RootNode.
  */
-export function followIndexNode(treeStructure: StateTreeStructure, index: number[]): StateNode {
+export function followIndexNode(treeStructure: TreeStructure, index: number[]): Node {
     const node = followIndex(treeStructure, index);
     if (node === null || !('cardId' in node)) {
         // This should NEVER happen, but we have to check for typescript

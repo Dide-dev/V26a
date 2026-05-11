@@ -20,7 +20,6 @@
         undo,
         redo,
         initializeHistory,
-        fillStateStructure,
         canUndo,
         canRedo
     } from './history.svelte';
@@ -106,7 +105,7 @@
             data: fetchedTree.data,
             history: initializeHistory(
                 fetchedTree.genData.id,
-                fillStateStructure(fetchedTree.structure),
+                fetchedTree.structure,
                 fetchedTree.cards
             ),
             sidebar: null,
