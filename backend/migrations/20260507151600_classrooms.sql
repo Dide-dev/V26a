@@ -9,7 +9,7 @@ CREATE TABLE classrooms
     id                      SERIAL PRIMARY KEY,
     owner_id                INTEGER             NOT NULL,
     created_at              TIMESTAMPTZ         NOT NULL    DEFAULT CURRENT_TIMESTAMP,
-    nickname                VARCHAR(32)         NOT NULL,
+    name                    VARCHAR(32)         NOT NULL, -- name is not UNIQUE by design
     description             VARCHAR(256)        NOT NULL    DEFAULT '',
     joinable                BOOLEAN             NOT NULL    DEFAULT TRUE,
     join_code               VARCHAR(6) UNIQUE   NOT NULL,
