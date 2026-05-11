@@ -13,7 +13,7 @@ pub mod session;
 pub mod trees;
 pub mod users;
 
-use crate::Config;
+use crate::ArcState;
 use crate::api_v1::{
     admin::admin, cards::cards, feedback::feedback, images::images, trees::trees, users::users,
 };
@@ -21,9 +21,9 @@ use auth::auth;
 use axum::Router;
 
 /// Creates an `Axum` [`Router`] for the v1 API, combining all of its endpoint categories.
-pub fn v1_api(config: Config) -> Router<Config> {
+pub fn v1_api(state: ArcState) -> Router<ArcState> {
     Router::new()
-        .nest("/admin", admin(config))
+        .nest("/admin", admin(state))
         .nest("/auth", auth())
         .nest("/trees", trees())
         .nest("/cards", cards())

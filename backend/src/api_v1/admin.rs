@@ -15,8 +15,8 @@ use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 use crate::{
+    ArcState,
     api_v1::session::Claims,
-    config::Config,
     db::users::{get_user_count, get_user_list_by_page},
     db_structs::pagination::OptionalPaginationOptions,
     db_structs::users::{AccountType, UserListResponse},
@@ -39,10 +39,10 @@ async fn check_if_admin(
 }
 
 /// Creates an `Axum` [`Router`] for the user category.
-pub fn admin(config: Config) -> Router<Config> {
+pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
-        .route_layer(middleware::from_fn_with_state(config, check_if_admin))
+        .route_layer(middleware::from_fn_with_state(state, check_if_admin))
 }
 
 #[utoipa::path(
