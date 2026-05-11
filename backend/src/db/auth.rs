@@ -32,8 +32,7 @@ pub async fn get_user_credentials_by_email(
         email
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let Some(credentials) = credentials else {
         return Ok(None);
@@ -69,8 +68,7 @@ pub async fn get_user_credentials_by_id(
         id
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let Some(credentials) = credentials else {
         return Ok(None);

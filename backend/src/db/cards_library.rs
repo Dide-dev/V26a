@@ -44,8 +44,7 @@ pub async fn cards_library_add(
         card_text.back
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .id;
 
     Ok(library_card_id)
@@ -71,11 +70,7 @@ pub async fn get_queried_cards_count(
 
     apply_card_filters(&mut query, filters);
 
-    let card_count: i64 = query
-        .build_query_scalar()
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let card_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
     Ok(card_count)
 }
@@ -112,8 +107,7 @@ pub async fn get_queried_cards_list(
     let library_cards = query
         .build_query_as::<LibraryCardGetData>()
         .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     Ok(library_cards)
 }

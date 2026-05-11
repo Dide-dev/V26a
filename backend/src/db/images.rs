@@ -66,8 +66,7 @@ pub async fn check_image_existence(
         hash
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(file_name.map(|r| r.filename))
 }

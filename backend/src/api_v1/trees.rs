@@ -183,7 +183,7 @@ async fn update_tree_structure(
     // Verify the tree's existence and the user's permissions.
     verify_tree_permissions(&db, tree_update_data.id, claims).await?;
 
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     update_structure_if_valid(
         &mut transaction,
@@ -192,10 +192,7 @@ async fn update_tree_structure(
     )
     .await?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     Ok(())
 }
@@ -255,7 +252,7 @@ async fn remove_card_from_tree(
     // Verify the tree's existence and the user's permissions.
     verify_tree_permissions(&db, tree_card_removal_data.tree_id, claims).await?;
 
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     // First, we remove the card from the database, within the transaction.
     remove_card(&mut *transaction, tree_card_removal_data.card_id).await?;
@@ -269,10 +266,7 @@ async fn remove_card_from_tree(
     )
     .await?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     Ok(())
 }
@@ -547,7 +541,7 @@ pub async fn get_list(
 
     let optional_user_id = claims.map(|c| c.sub);
 
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     let trees_count = get_queried_count(&mut *transaction, &filters, optional_user_id).await?;
     if trees_count == 0 {
@@ -559,10 +553,7 @@ pub async fn get_list(
 
     let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     let list = TreeListResponse {
         total_trees: i32::try_from(trees_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
