@@ -587,8 +587,9 @@ mod tests {
 
         let user_id = initialize_user(&db, &register_data).await;
         let new_password = "P@ssword";
+        let cost = 4;
 
-        update_password(&db, user_id, new_password, 4)
+        update_password(&db, user_id, new_password, cost)
             .await
             .unwrap();
 
@@ -598,9 +599,28 @@ mod tests {
             .unwrap()
             .password_hash;
 
-        let password_valid = bcrypt::verify(new_password, password_in_db.as_str())
-            .map_err(|_| ApiError::HashException)
+        assert!(password_in_db.starts_with(&format!("$2b${cost:02}$")));
+
+        let password_valid = bcrypt::verify(new_password, password_in_db.as_str()).unwrap();
+
+        assert!(password_valid);
+
+        let new_password = "P@ssword!!!!";
+        let cost = 10;
+
+        update_password(&db, user_id, new_password, cost)
+            .await
             .unwrap();
+
+        let password_in_db = get_user_credentials_by_id(&db, user_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .password_hash;
+
+        assert!(password_in_db.starts_with(&format!("$2b${cost:02}$")));
+
+        let password_valid = bcrypt::verify(new_password, password_in_db.as_str()).unwrap();
 
         assert!(password_valid);
     }
