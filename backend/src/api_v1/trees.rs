@@ -17,7 +17,7 @@ use crate::db_structs::trees::{
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
-use crate::{Config, db};
+use crate::{ArcState, db};
 
 use axum::extract::Path;
 use axum::routing::{delete, get, post};
@@ -26,7 +26,7 @@ use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgExecutor, PgPool};
 
 /// Creates an `Axum` [`Router`] for the trees category.
-pub fn trees() -> Router<Config> {
+pub fn trees() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_tree))
         .route("/remove/{tree_id}", delete(remove_tree))
