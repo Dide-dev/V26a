@@ -35,8 +35,7 @@ pub async fn add_tree(
     tree_add_data: &TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)
-        .map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)?;
     let tree_data = &tree_add_data.tree_data;
 
     let tree_id = query!(
@@ -56,8 +55,7 @@ pub async fn add_tree(
         tree_structure,
     )
         .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .id;
 
     Ok(tree_id)
@@ -78,8 +76,7 @@ pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), Ap
     // This is because of the `ON DELETE CASCADE` in the foreign key of the 'cards' table.
     query!("DELETE FROM trees WHERE id=$1", tree_id)
         .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     Ok(())
 }
@@ -104,8 +101,7 @@ pub async fn update_tree_structure(
     tree_id: i32,
     new_tree_structure: &TreeStructure,
 ) -> Result<(), ApiError> {
-    let new_tree_structure =
-        serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;
+    let new_tree_structure = serde_json::to_value(new_tree_structure)?;
 
     query!(
         "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
@@ -113,8 +109,7 @@ pub async fn update_tree_structure(
         new_tree_structure,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -156,8 +151,7 @@ pub async fn update_tree_data(
         new_tree_data.published,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -185,15 +179,13 @@ pub async fn db_get_tree_all_data(
         tree_id,
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let Some(field) = field else {
         return Ok(None);
     };
 
-    let tree_structure =
-        serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::from_value(field.structure)?;
 
     let tree_data = TreeData {
         title: field.title,
@@ -237,8 +229,7 @@ pub async fn get_tree_owner(
 ) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .map(|r| r.owner_id);
 
     Ok(owner)
@@ -264,8 +255,7 @@ pub async fn get_all_trees_by_owner(
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
         .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     let trees_metadata = records
         .into_iter()
@@ -335,8 +325,7 @@ pub async fn is_structure_valid(
         i64::from(db_card_limit),
     )
     .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .iter()
     .map(|n| n.id)
     .collect::<HashSet<_>>();
@@ -373,8 +362,7 @@ pub async fn is_structure_valid(
 /// let trees_count: i64 = query
 ///         .build_query_scalar()
 ///         .fetch_one(db)
-///         .await
-///         .map_err(|_| ApiError::DatabaseException)?;
+///         .await?;
 /// ```
 ///
 /// # To future developers:
@@ -450,11 +438,7 @@ pub async fn get_queried_count(
 
     apply_tree_filters(&mut query, filters, user_id);
 
-    let trees_count: i64 = query
-        .build_query_scalar()
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let trees_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
     Ok(trees_count)
 }
@@ -502,11 +486,7 @@ pub async fn get_queried_list(
         // Page is 1-based
         .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
 
-    let rows = query
-        .build()
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let rows = query.build().fetch_all(db).await?;
 
     let trees = rows
         .iter()

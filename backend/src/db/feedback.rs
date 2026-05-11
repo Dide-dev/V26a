@@ -31,8 +31,7 @@ pub async fn add_feedback(
         feedback_data.feedback,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }

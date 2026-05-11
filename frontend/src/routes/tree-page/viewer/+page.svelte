@@ -61,27 +61,29 @@
     });
 </script>
 
-{#if loading}
-    <p class="text-green-800">{m.loadingTree()}</p>
-{:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree[0].title}</h1>
-    <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree[0].description}
-    </p>
+<div class="flex h-full w-full flex-col items-start overflow-hidden">
+    {#if loading}
+        <p class="text-green-800">{m.loadingTree()}</p>
+    {:else if tree}
+        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree[0].title}</h1>
+        <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
+            {tree[0].description}
+        </p>
 
-    <div class="mt-1 mr-1 ml-1 flex grow flex-col overflow-auto">
-        {#each tree[1].currentStructure.rootNodes as root, index (root)}
-            <NodeViewer
-                bind:history={tree[1]}
-                location={[index]}
-                editingPage={false}
-                dragState={null}
-                sidebar={null}
-                numPopupsOpen={0}
-            />
-        {/each}
-    </div>
-{/if}
+        <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
+            {#each tree[1].currentStructure.rootNodes as root, index (root)}
+                <NodeViewer
+                    bind:history={tree[1]}
+                    location={[index]}
+                    editingPage={false}
+                    dragState={null}
+                    sidebar={null}
+                    numPopupsOpen={0}
+                />
+            {/each}
+        </div>
+    {/if}
+</div>
 
 {#if userAllowedToEdit}
     <button

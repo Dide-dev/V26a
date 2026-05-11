@@ -87,6 +87,22 @@ pub enum ApiError {
     TokenCreationException,
 }
 
+impl From<sqlx::Error> for ApiError {
+    /// Convert `SQLx` errors to our own [`ApiError`], so that ? can be used on `SQLx` results.
+    fn from(_: sqlx::Error) -> Self {
+        // Logging for db errors can be implemented here
+        ApiError::DatabaseException
+    }
+}
+
+impl From<serde_json::Error> for ApiError {
+    /// Convert `serde` errors to our own [`ApiError`], so that ? can be used on `serde` results.
+    fn from(_: serde_json::Error) -> Self {
+        // Logging for serde errors can be implemented here
+        ApiError::SerdeException
+    }
+}
+
 // Define how errors should be converted to messages.
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

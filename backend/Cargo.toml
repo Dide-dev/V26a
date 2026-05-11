@@ -42,4 +42,4 @@ utoipauto = "0.2.0"
 tower = "0.5.3"
 
 [dev-dependencies]
-axum-test = "19.1.1"
+axum-test = "20.0.0"
