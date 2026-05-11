@@ -76,7 +76,7 @@ async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
 
@@ -92,10 +92,7 @@ async fn add_new_user(
 
     let user_id = add_user(&mut transaction, &user_data).await?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     Ok(Json(UserResponse::Success { user_id }))
 }
@@ -311,7 +308,7 @@ async fn delete_user_data(
     Path(user_id): Path<i32>,
     Query(delete): Query<DeleteOwnedTrees>,
 ) -> Result<CookieJar, ApiError> {
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     if !user_id_exists(&mut *transaction, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
@@ -330,10 +327,7 @@ async fn delete_user_data(
             .remove(Cookie::from("user_info"));
     }
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     Ok(jar)
 }

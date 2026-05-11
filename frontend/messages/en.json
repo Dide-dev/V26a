@@ -124,5 +124,6 @@
     "general": "General",
     "accountSettings": "Account settings",
     "feedback": "Feedback",
-    "usernameAlreadyExists": "An account with this username already exists"
+    "usernameAlreadyExists": "An account with this username already exists",
+    "pageNotFound": "This page could not be found"
 }
