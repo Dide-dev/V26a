@@ -207,7 +207,7 @@
                             bind:sidebar={tree.sidebar}
                         />
                     {/each}
-                    <RootNodeAddButton history={tree.history} />
+                    <RootNodeAddButton history={tree.history} enabled={dragState === null} />
                 </div>
                 <div
                     class="shrink-0"
