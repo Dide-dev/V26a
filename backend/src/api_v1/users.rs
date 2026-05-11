@@ -17,7 +17,7 @@ use crate::db_structs::users::{
 };
 use crate::errors::ApiError;
 
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
@@ -74,6 +74,7 @@ pub enum UserResponse {
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
+    State(config): State<Config>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     let mut transaction = db.begin().await?;
@@ -90,7 +91,7 @@ async fn add_new_user(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    let user_id = add_user(&mut transaction, &user_data).await?;
+    let user_id = add_user(&mut transaction, &user_data, config.bcrypt_cost).await?;
 
     transaction.commit().await?;
 
@@ -240,6 +241,7 @@ pub struct ChangePasswordResponse {
 async fn change_password(
     claims: Claims,
     Extension(db): Extension<PgPool>,
+    State(config): State<Config>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
     let credentials = get_user_credentials_by_id(&db, claims.sub)
@@ -256,7 +258,13 @@ async fn change_password(
         return Ok(Json(ChangePasswordResponse { succeeded: false }));
     }
 
-    update_password(&db, claims.sub, &password_change_request.new_password).await?;
+    update_password(
+        &db,
+        claims.sub,
+        &password_change_request.new_password,
+        config.bcrypt_cost,
+    )
+    .await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
