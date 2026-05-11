@@ -3,8 +3,8 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
 use crate::errors::ApiError;
+use chrono::Utc;
 use rand::prelude::*;
 use rand::rngs::SysRng;
 use sqlx::{PgConnection, PgExecutor, query};
@@ -20,22 +20,24 @@ use sqlx::{PgConnection, PgExecutor, query};
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiError> {
-    let allowed_letters: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().collect();
-    let allowed_numbers: Vec<char> = "0123456789".chars().collect();
-    let chance_character_is_letter = 0.5;
+    let allowed_characters: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".chars().collect();
 
-    let mut rng = StdRng::try_from_rng(&mut SysRng).unwrap();
+    let mut rng = StdRng::try_from_rng(&mut SysRng).unwrap_or_else(|_| {
+        StdRng::from_seed({
+            let unix = Utc::now().timestamp_millis().to_be_bytes();
+            let mut array: [u8; 32] = [42; 32];
+            for chunk in array.chunks_mut(unix.len()) {
+                let len = chunk.len().min(unix.len());
+                chunk[..len].copy_from_slice(&unix[..len]);
+            }
+            array
+        })
+    });
     let mut number: String;
 
     loop {
         number = (0..6)
-            .map(|_| {
-                if rng.random_bool(chance_character_is_letter) {
-                    allowed_letters.choose(&mut rng).unwrap()
-                } else {
-                    allowed_numbers.choose(&mut rng).unwrap()
-                }
-            })
+            .map(|_| allowed_characters.choose(&mut rng).unwrap())
             .collect::<String>();
 
         let exists = query!(
