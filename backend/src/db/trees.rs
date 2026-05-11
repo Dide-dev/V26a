@@ -46,21 +46,26 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_subjects(db: impl PgExecutor<'_>) -> Result<HashMap<i32, Subject>, ApiError> {
+pub async fn get_subjects(
+    db: impl PgExecutor<'_>,
+) -> Result<HashMap<String, Vec<Subject>>, ApiError> {
     let mut results = query!("SELECT * FROM subjects").fetch_all(db).await?;
 
-    Ok(results
-        .drain(..)
-        .map(|r| {
-            (
-                r.id,
-                Subject {
-                    language_code: r.language_code,
-                    name: r.name,
-                },
-            )
-        })
-        .collect::<HashMap<_, _>>())
+    let mut map: HashMap<String, Vec<Subject>> = HashMap::new();
+    for subject in results.drain(..) {
+        let subject = Subject {
+            id: subject.id,
+            language_code: subject.language_code,
+            name: subject.name,
+        };
+        if let Some(ref mut vec) = map.get_mut(&subject.language_code) {
+            vec.push(subject);
+        } else {
+            map.insert(subject.language_code.clone(), vec![subject]);
+        }
+    }
+
+    Ok(map)
 }
 
 /// Check whether the given language exists.

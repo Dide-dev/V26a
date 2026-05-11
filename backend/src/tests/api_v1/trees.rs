@@ -775,6 +775,6 @@ async fn test_get_subjects(db: PgPool) {
     let response = server.get("/trees/get-all-subjects").await;
     response.assert_status_ok();
 
-    let subjects: HashMap<i32, Subject> = response.json();
+    let subjects: HashMap<String, Vec<Subject>> = response.json();
     assert_ne!(subjects.len(), 0);
 }

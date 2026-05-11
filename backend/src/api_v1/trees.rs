@@ -663,6 +663,6 @@ pub async fn get_all_languages(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_subjects(
     Extension(db): Extension<PgPool>,
-) -> Result<Json<HashMap<i32, Subject>>, ApiError> {
+) -> Result<Json<HashMap<String, Vec<Subject>>>, ApiError> {
     Ok(Json(get_subjects(&db).await?))
 }

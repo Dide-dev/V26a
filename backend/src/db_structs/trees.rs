@@ -216,6 +216,7 @@ pub struct Language {
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Subject {
+    pub id: i32,
     pub language_code: String,
     pub name: String,
 }

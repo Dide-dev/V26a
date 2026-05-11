@@ -243,6 +243,6 @@ export function getAllLanguages(): Promise<Language[]> {
 }
 
 /** Get the list of all subjects. */
-export function getAllSubjects(): Promise<Record<number, Subject>> {
+export function getAllSubjects(): Promise<Record<string, Subject[]>> {
     return apiCallGetTree('get-all-subjects');
 }
