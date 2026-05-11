@@ -32,6 +32,8 @@ fn setup(db: PgPool) -> TestServer {
 
     let mut config = crate::Config::load();
     config.upload_dir = temp_dir.path().to_string_lossy().to_string();
+    // Set a low bcrypt cost to speed up password hashing during testing.
+    config.bcrypt_cost = 4;
 
     let router = crate::api_v1::v1_api(config.clone())
         .layer(Extension(db))
