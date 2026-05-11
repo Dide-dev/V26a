@@ -53,14 +53,7 @@ async fn add_new_classroom(
 ) -> Result<Json<ClassroomGeneratedData>, ApiError> {
     let join_code = generate_random_code(get_connection!(db)).await?;
 
-    let id = add_classroom(
-        &db,
-        &classroom_add_data.name,
-        &classroom_add_data.description.unwrap_or(String::new()),
-        claims.sub,
-        &join_code,
-    )
-    .await?;
+    let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
 
     Ok(Json(ClassroomGeneratedData { id, join_code }))
 }

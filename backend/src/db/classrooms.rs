@@ -3,6 +3,7 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+use crate::db_structs::classrooms::ClassroomAddData;
 use crate::errors::ApiError;
 use chrono::Utc;
 use rand::prelude::*;
@@ -75,16 +76,15 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_classroom(
     db: impl PgExecutor<'_>,
-    name: &str,
-    description: &str,
+    classroom_add_data: &ClassroomAddData,
     owner_id: i32,
     join_code: &str,
 ) -> Result<i32, ApiError> {
     let id: i32 = query!(
         "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
         owner_id,
-        name,
-        description,
+        classroom_add_data.name,
+        classroom_add_data.description,
         join_code
     )
     .fetch_one(db)
@@ -108,24 +108,16 @@ mod tests {
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
-            description: Some("This is a test classroom".to_owned()),
+            description: "This is a test classroom".to_owned(),
         };
 
         let join_code = generate_random_code(get_connection_unwrap!(db))
             .await
             .unwrap();
 
-        let description = classroom_add_data.description.clone().unwrap_or_default();
-
-        let id = add_classroom(
-            &db,
-            &classroom_add_data.name,
-            &description,
-            user_id,
-            &join_code,
-        )
-        .await
-        .unwrap();
+        let id = add_classroom(&db, &classroom_add_data, user_id, &join_code)
+            .await
+            .unwrap();
 
         let found_classroom_data = query!("SELECT * FROM classrooms WHERE id = $1", id)
             .fetch_one(&db)
@@ -134,7 +126,7 @@ mod tests {
 
         let found_classroom_add_data = ClassroomAddData {
             name: found_classroom_data.name,
-            description: Some(found_classroom_data.description),
+            description: found_classroom_data.description,
         };
 
         assert_eq!(found_classroom_add_data, classroom_add_data);

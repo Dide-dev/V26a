@@ -11,7 +11,8 @@ use utoipa::ToSchema;
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomAddData {
     pub name: String,
-    pub description: Option<String>,
+    #[serde(default)]
+    pub description: String,
 }
 
 /// The data that is returned to the user after creation of the classroom.
