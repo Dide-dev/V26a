@@ -8,6 +8,7 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::api_v1::session::Keys;
+use bcrypt::DEFAULT_COST;
 use std::env;
 
 /// For more details, see the '.env.example' file in the root of this repository.
@@ -50,9 +51,11 @@ impl Config {
             .expect("Environment variable RUST_LOG must be correctly configured");
 
         let bcrypt_cost = env::var("BCRYPT_COST")
-            .unwrap_or("12".to_owned())
-            .parse()
-            .expect("Failed to parse environment variable BCRYPT_COST");
+            .map(|s| {
+                s.parse()
+                    .expect("Failed to parse environment variable BCRYPT_COST")
+            })
+            .unwrap_or(DEFAULT_COST);
         let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
