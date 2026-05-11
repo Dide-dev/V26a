@@ -74,7 +74,7 @@
     }
 </script>
 
-<!-- The row of buttons above the . -->
+<!-- The row of buttons positioned above the rootnode. -->
 <div class="absolute -top-6 left-1 flex h-7 border border-fuchsia-600 bg-fuchsia-300">
     <button class="cursor-pointer" title={m.editRootnodeLabel()} onclick={editClick}>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->

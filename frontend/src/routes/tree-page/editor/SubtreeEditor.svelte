@@ -20,7 +20,6 @@
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
 
-    /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history = $bindable(),
         location,
@@ -127,6 +126,9 @@
 -->
 <div class="relative flex" class:mt-7={(node !== null && 'label' in node) || !isFirstChild}>
     <!--
+        The following if statement and everything contained within,
+        is for the dragging of a subtree.
+
         Render copy of self (but transparent and smaller) where the mouse currently is.
         We check again for the `dragState.type`, because otherwise typescript doesn't know
         that `dragState.mouseX` and `dragState.mouseY` exists.
@@ -181,8 +183,30 @@
         </div>
     {/if}
 
-    <!-- This is *before* the LineDrawer, because the LineDrawer will always have an svg with some fixed width. -->
-    {#if children.length === 0}
+    {#if children.length > 0}
+        <LineDrawer>
+            <!-- Here the html gets recursive as we render the 'node.children' -->
+            {#each children as child (child)}
+                {#if child.isFake}
+                    <!-- This is the new dummy card currently being created -->
+                    <SubtreeEditor
+                        fakeNode={true}
+                        bind:history
+                        location={[...location, child.index]}
+                        dragState={{ type: 'dismissed' }}
+                        bind:sidebar
+                    />
+                {:else}
+                    <SubtreeEditor
+                        bind:history
+                        location={[...location, child.index]}
+                        bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
+                        bind:sidebar
+                    />
+                {/if}
+            {/each}
+        </LineDrawer>
+    {:else}
         <div class="flex h-9 items-center">
             <AddAndDrop
                 {history}
@@ -193,27 +217,4 @@
             />
         </div>
     {/if}
-
-    <LineDrawer>
-        <!-- Here the html gets recursive as we render the 'node.children' -->
-        {#each children as child (child)}
-            {#if child.isFake}
-                <!-- This is the new dummy card currently being created -->
-                <SubtreeEditor
-                    fakeNode={true}
-                    bind:history
-                    location={[...location, child.index]}
-                    dragState={{ type: 'dismissed' }}
-                    bind:sidebar
-                />
-            {:else}
-                <SubtreeEditor
-                    bind:history
-                    location={[...location, child.index]}
-                    bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
-                    bind:sidebar
-                />
-            {/if}
-        {/each}
-    </LineDrawer>
 </div>

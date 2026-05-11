@@ -505,7 +505,6 @@ export function stripStateStructure(statefulStructure: StateTreeStructure): Tree
 }
 /**
  * Makes a deep copy and fills in all state from `StateTreeStructure`.
- * Fills the `revealed` field with the `allRevealed` argument everywhere.
  */
 export function fillStateStructure(statelessStructure: TreeStructure): StateTreeStructure {
     function fillStateNode(statelessNode: Node): StateNode {
