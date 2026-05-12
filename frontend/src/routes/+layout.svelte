@@ -82,7 +82,7 @@
                 result.push(
                     new NavLink({
                         defaultHref: '/user-list',
-                        text: m.adminControl(),
+                        text: m.admin(),
                         children: [
                             {
                                 href: '/user-list',

@@ -84,7 +84,10 @@
     {#if !windowIsSmall.current}
         <div
             class="grid grid-flow-col grid-rows-1"
-            style:grid-template-columns={`var(--spacing-footer-${linkCols.length <= 2 ? 'xl' : 'md'})
+            style:grid-template-columns={'' +
+                // Comment below makes sure the theme variables are loaded.
+                // Can be --spacing-footer-xl or --spacing-footer-md.
+                `var(--spacing-footer-${linkCols.length <= 2 ? 'xl' : 'md'})
                 auto
                 repeat(${linkCols.length}, var(--spacing-footer-lg))
                 auto
@@ -172,10 +175,5 @@
             margin-top: 2rem;
             background-color: var(--color-brown);
         }
-    }
-    /* Unused selector to load in theme variables. */
-    :global(.load-footer-spacing) {
-        padding: var(--spacing-footer-xl) var(--spacing-footer-lg) var(--spacing-footer-md)
-            var(--spacing-footer-th);
     }
 </style>

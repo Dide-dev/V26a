@@ -128,6 +128,6 @@
     "usernameAlreadyExists": "An account with this username already exists",
     "pageNotFound": "This page could not be found",
     "account": "Account",
-    "adminControl": "Admin",
+    "amin": "Admin",
     "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences"
 }

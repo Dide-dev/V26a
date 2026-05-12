@@ -128,6 +128,6 @@
     "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik",
     "pageNotFound": "Deze pagina kon niet worden gevonden",
     "account": "Account",
-    "adminControl": "Admin beheer",
+    "admin": "Beheer",
     "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica"
 }

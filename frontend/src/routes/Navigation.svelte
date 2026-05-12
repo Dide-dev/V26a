@@ -214,6 +214,8 @@
             class="nav__dropdown"
             style:grid-template-columns={'' +
                 // The width of each of the left links.
+                // Comment below makes sure the theme variables are loaded.
+                // Can be --spacing-nav-md, --spacing-nav-th or --spacing-nav-xt
                 leftLinks.reduce((acc: string, curr: NavLink) => {
                     return acc + `var(--spacing-nav-${curr.props.width}) `;
                 }, '') +
@@ -549,9 +551,5 @@
                 background-color: var(--color-tree-200);
             }
         }
-    }
-    /* Unused selector to load in theme variables. */
-    :global(.load-nav-spacing) {
-        padding: var(--spacing-nav-md) var(--spacing-nav-th) var(--spacing-nav-xt);
     }
 </style>
