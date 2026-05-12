@@ -13,6 +13,7 @@ mod db_structs;
 mod errors;
 mod tests;
 
+use crate::api_v1::governor_conf_minute;
 use crate::errors::ApiError;
 use crate::{api_v1::v1_api, config::Config};
 use axum::extract::DefaultBodyLimit;
@@ -21,12 +22,8 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
-use std::sync::Arc;
-use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_governor::GovernorLayer;
-use tower_governor::governor::GovernorConfigBuilder;
-use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -110,24 +107,19 @@ async fn backend(config: Config) -> Router {
         .await
         .expect("failed to run database migrations.");
 
-    // Extract governor config (per minute).
-    // Using miliseconds to compute req/min.
-    let governor_conf_minute = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_millis(60_000 / config.rate_limit_per_minute))
-            .burst_size(config.rate_limit_burst_size_minute)
-            .key_extractor(SmartIpKeyExtractor)
-            .finish()
-            .unwrap(),
+    // Extract ratelimiter config (per minute)
+    let governor_conf = governor_conf_minute(
+        config.rate_limit_per_minute,
+        config.rate_limit_burst_size_minute,
     );
 
     // Create governor layer (minute)
-    let governor_layer_minute = ServiceBuilder::new()
+    let governor_layer = ServiceBuilder::new()
         .map_response(map_response_error)
-        .layer(GovernorLayer::new(governor_conf_minute.clone()));
+        .layer(GovernorLayer::new(governor_conf.clone()));
 
     // Cleanup to prevent high memory usage.
-    let governor_limiter = governor_conf_minute.limiter().clone();
+    let governor_limiter = governor_conf.limiter().clone();
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(60)).await;
@@ -137,7 +129,7 @@ async fn backend(config: Config) -> Router {
 
     Router::new()
         .nest("/v1", v1_api(config.clone()))
-        .layer(governor_layer_minute)
+        .layer(governor_layer)
         .layer(Extension(db))
         .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .with_state(config)

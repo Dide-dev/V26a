@@ -5,33 +5,20 @@
 */
 
 use crate::Config;
+use crate::api_v1::governor_conf_minute;
 use crate::db::feedback::add_feedback;
 use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
-use std::sync::Arc;
-use std::time::Duration;
 use tower_governor::GovernorLayer;
-use tower_governor::governor::GovernorConfigBuilder;
-use tower_governor::key_extractor::SmartIpKeyExtractor;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
 pub fn feedback() -> Router<Config> {
-    // Ratelimiter for endpoint feedback
-    let feedback_ratelimiter = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_millis(60_000 / 5))
-            .burst_size(10)
-            .key_extractor(SmartIpKeyExtractor)
-            .finish()
-            .unwrap(),
-    );
-
     Router::new().route(
         "/provide",
-        post(provide_feedback).layer(GovernorLayer::new(feedback_ratelimiter)),
+        post(provide_feedback).layer(GovernorLayer::new(governor_conf_minute(5, 10))),
     )
 }
 

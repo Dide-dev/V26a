@@ -6,7 +6,9 @@
 
 use crate::Config;
 
+use crate::api_v1::governor_conf_minute;
 use crate::api_v1::session::Claims;
+
 use crate::db::images::{add_image, check_image_existence};
 
 use crate::errors::ApiError;
@@ -18,28 +20,14 @@ use infer;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use std::fmt::Write;
-use std::sync::Arc;
-use std::time::Duration;
 use tower_governor::GovernorLayer;
-use tower_governor::governor::GovernorConfigBuilder;
-use tower_governor::key_extractor::SmartIpKeyExtractor;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<Config> {
-    // Ratelimiter for endpoint add images
-    let add_image_ratelimiter = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_millis(60_000 / 10))
-            .burst_size(20)
-            .key_extractor(SmartIpKeyExtractor)
-            .finish()
-            .unwrap(),
-    );
-
     Router::new().route(
         "/add",
-        post(add_new_image).layer(GovernorLayer::new(add_image_ratelimiter)),
+        post(add_new_image).layer(GovernorLayer::new(governor_conf_minute(10, 20))),
     )
 }
 

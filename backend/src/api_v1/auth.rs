@@ -5,6 +5,7 @@
 */
 
 use crate::Config;
+use crate::api_v1::governor_conf_minute;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db_structs::auth::LoginRequestBody;
@@ -17,28 +18,14 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::sync::Arc;
-use std::time::Duration;
 use tower_governor::GovernorLayer;
-use tower_governor::governor::GovernorConfigBuilder;
-use tower_governor::key_extractor::SmartIpKeyExtractor;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
-    //ratelimiter for login
-    let login_ratelimiter = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_millis(60_000 / 15))
-            .burst_size(30)
-            .key_extractor(SmartIpKeyExtractor)
-            .finish()
-            .unwrap(),
-    );
-
     Router::new().route(
         "/login",
-        post(login).layer(GovernorLayer::new(login_ratelimiter)),
+        post(login).layer(GovernorLayer::new(governor_conf_minute(15, 30))),
     )
 }
 

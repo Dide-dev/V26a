@@ -5,6 +5,7 @@
 */
 
 use crate::Config;
+use crate::api_v1::governor_conf_minute;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
@@ -24,28 +25,16 @@ use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::sync::Arc;
-use std::time::Duration;
 use tower_governor::GovernorLayer;
-use tower_governor::governor::GovernorConfigBuilder;
-use tower_governor::key_extractor::SmartIpKeyExtractor;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<Config> {
-    // Ratelimiter for endpoint add-user.
-    let add_user_ratelimiter = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_millis(60_000 / 5))
-            .burst_size(20)
-            .key_extractor(SmartIpKeyExtractor)
-            .finish()
-            .unwrap(),
-    );
-
     Router::new()
-        .route("/add", post(add_new_user))
-        .layer(GovernorLayer::new(add_user_ratelimiter))
+        .route(
+            "/add",
+            post(add_new_user).layer(GovernorLayer::new(governor_conf_minute(5, 20))),
+        )
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
