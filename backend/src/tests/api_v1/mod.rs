@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+mod admin;
 mod cards;
 mod feedback;
 mod images;
