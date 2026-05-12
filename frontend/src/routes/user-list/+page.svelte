@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { type UserGetAllData, getAllUserData, type UserListResponse } from '$lib/backend/admin';
+    import { getAllUserData, type UserListResponse } from '$lib/backend/admin';
     import { onMount } from 'svelte';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
@@ -13,7 +13,6 @@
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
 
     let userListResponse: null | UserListResponse = $state(null);
-    let users: null | UserGetAllData[] = $state(null);
 
     let pageSizeString = $state('10');
     let pageSizeNumber = $derived(Number(pageSizeString));
@@ -30,7 +29,6 @@
 
     async function loadUsers() {
         userListResponse = await getAllUserData(paginationOptions);
-        users = userListResponse.users;
     }
 
     let prevPageExists = $derived(thisPage > 1);
@@ -70,7 +68,7 @@
     </div>
 </div>
 
-{#if users === null}
+{#if userListResponse?.users === null}
     <p>{m.loading()}</p>
 {:else}
     <div class="100vw flex flex-col items-center justify-center overflow-auto">
@@ -86,7 +84,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each users as user (user.id)}
+                {#each userListResponse?.users as user (user.id)}
                     <tr>
                         <td class="pr-4 wrap-anywhere">{user.id}</td>
                         <td class="pr-4 wrap-anywhere">{user.email}</td>

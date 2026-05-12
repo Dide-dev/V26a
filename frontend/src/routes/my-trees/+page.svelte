@@ -6,12 +6,7 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import {
-        getFilteredList,
-        type TreeMetadata,
-        type TreeListResponse,
-        type FilterOptions
-    } from '$lib/backend/trees';
+    import { getFilteredList, type TreeListResponse, type FilterOptions } from '$lib/backend/trees';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
@@ -22,8 +17,7 @@
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
-    let treeListResponse: TreeListResponse | null = $state(null);
-    let trees: null | TreeMetadata[] = $state(null);
+    let treeListResponse: TreeListResponse = $state({ totalTrees: 0, trees: [] });
 
     let pageSizeString = $state('10');
     let pageSizeNumber = $derived(Number(pageSizeString));
@@ -50,7 +44,6 @@
     async function loadTrees() {
         if (userInfo != null) {
             treeListResponse = await getFilteredList(paginationOptions, filterOptions);
-            trees = treeListResponse.trees;
         }
     }
 
@@ -91,9 +84,9 @@
     </div>
 </div>
 
-{#if trees === null}
+{#if treeListResponse.trees === null}
     <p>{m.loading()}</p>
-{:else if trees.length === 0}
+{:else if treeListResponse.trees.length === 0}
     <div class="text-center">
         <p class="flex justify-center text-2xl">{m.noMyTreesFound()}</p>
         <button class="m-2 rounded-sm bg-emerald-500 p-1"
@@ -113,7 +106,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each trees as tree (tree.genData.id)}
+                {#each treeListResponse.trees as tree (tree.genData.id)}
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
@@ -137,7 +130,7 @@
                             </a>
                         </td>
                         <td class="min-w-2 hover:fill-blue-800">
-                            <RemoveButton thisTree={tree} bind:allTrees={trees} />
+                            <RemoveButton thisTree={tree} bind:allTrees={treeListResponse.trees} />
                         </td>
                     </tr>
                 {/each}
