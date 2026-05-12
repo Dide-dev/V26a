@@ -9,7 +9,7 @@
     import iconTrash from '$lib/assets/icons/trash.svg?raw';
     import iconMove from '$lib/assets/icons/move.svg?raw';
     import { m } from '$lib/paraglide/messages.js';
-    import type { DragState } from './NodeViewer.svelte';
+    import type { DragState } from './SubtreeEditor.svelte';
     import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
 
@@ -18,14 +18,12 @@
         history,
         location,
         dragState = $bindable(),
-        sidebar = $bindable(),
-        numPopupsOpen = $bindable()
+        sidebar = $bindable()
     }: {
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
         sidebar: null | SideBar;
-        numPopupsOpen: number;
     } = $props();
 
     async function removeButtonClick() {
