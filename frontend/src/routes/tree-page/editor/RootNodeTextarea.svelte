@@ -10,12 +10,10 @@
 
     let {
         text = $bindable(),
-        numPopupsOpen = $bindable(),
         editDoneCallback,
         editCancelCallback
     }: {
         text: string;
-        numPopupsOpen: number;
         editDoneCallback: () => void;
         editCancelCallback: () => void;
     } = $props();
@@ -30,18 +28,20 @@
         }
     }
     function editKeydown(event: KeyboardEvent) {
+        // Prevent ctrl+z from undoing last full tree action,
+        // instead only undoing anything in this textarea.
+        event.stopPropagation();
+
+        // We don't want newlines in the rootnodes.
+        // Instead we will just save it for the user
         if (event.key === 'Enter') {
             event.preventDefault();
-            event.stopPropagation();
             editFinish();
         }
     }
 
     onMount(() => {
-        numPopupsOpen += 1;
         textareaElement.focus();
-
-        return () => (numPopupsOpen -= 1);
     });
 </script>
 
