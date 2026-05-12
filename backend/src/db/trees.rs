@@ -49,15 +49,10 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 pub async fn get_subjects(
     db: impl PgExecutor<'_>,
 ) -> Result<HashMap<String, Vec<Subject>>, ApiError> {
-    let mut results = query!("SELECT * FROM subjects").fetch_all(db).await?;
+    let mut results = query_as!(Subject, "SELECT * FROM subjects").fetch_all(db).await?;
 
     let mut map: HashMap<String, Vec<Subject>> = HashMap::new();
     for subject in results.drain(..) {
-        let subject = Subject {
-            id: subject.id,
-            language_code: subject.language_code,
-            name: subject.name,
-        };
         if let Some(ref mut vec) = map.get_mut(&subject.language_code) {
             vec.push(subject);
         } else {
