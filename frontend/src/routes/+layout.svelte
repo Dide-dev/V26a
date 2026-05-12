@@ -200,7 +200,7 @@
 
 <Navigation {leftLinks} {rightLinks} bind:offsets />
 
-<main style="transform: translateY({offset}px);" class="flex-auto">
+<main style="margin-top: {offset}px;" class="flex-auto">
     {@render children()}
 </main>
 
@@ -221,7 +221,7 @@
     </div>
 {/if}
 
-<Footer links={footerLinks} {offset} />
+<Footer links={footerLinks} />
 
 <!-- Necessary to have svelte-kit load in the pages of the other locales. -->
 <div class="hidden">

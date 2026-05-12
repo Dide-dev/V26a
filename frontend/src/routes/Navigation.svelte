@@ -309,7 +309,7 @@
         <div
             style="transform:
                 translateY({offsetAtIndex(i)}px);"
-            class="z-10 flex flex-auto flex-row bg-tree-625 hover:bg-tree-450"
+            class="relative z-10 flex flex-auto flex-row bg-tree-625 hover:bg-tree-450"
         >
             {#if link.children.length > 0}
                 {@render navbarDropdownButton(link, i)}

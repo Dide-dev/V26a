@@ -18,7 +18,6 @@
 
     # Params
     - `links: FooterLink[]` - The links to render in the footer.
-    - `offset: number` - The current offset from the nav-bar.
 -->
 <script lang="ts">
     import { appLink } from '$lib';
@@ -29,13 +28,10 @@
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
 
     let {
-        links,
-        offset
+        links
     }: {
         /** The links to render in the footer. */
         links: FooterLink[];
-        /** The current offset to render at. */
-        offset: number;
     } = $props();
 
     // 48rem === 768px
@@ -80,7 +76,7 @@
     );
 </script>
 
-<footer style="transform: translateY({offset}px);" class="w-100vw">
+<footer class="w-100vw">
     {#if !windowIsSmall.current}
         <div
             class="grid grid-flow-col grid-rows-1"
