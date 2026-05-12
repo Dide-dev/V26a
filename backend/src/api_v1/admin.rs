@@ -62,7 +62,6 @@ pub fn admin(config: Config) -> Router<Config> {
 /// Gets the data of all the users from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
 ///
 /// # Returns
 /// the data form all users as [`Vec<AllUsersGetData>`].
@@ -100,7 +99,6 @@ async fn get_all_user_data(
 /// Gets the data of one user from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
 ///
 /// # Returns
 /// The data form of a user as [`UserGetAllData`].
