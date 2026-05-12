@@ -14,6 +14,7 @@
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
     import { getUserInfo } from '$lib/backend/users';
+    import { goto } from '$app/navigation';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
@@ -23,27 +24,28 @@
     let pageSizeNumber = $derived(Number(pageSizeString));
     let thisPage = $state(1);
 
-    let userInfo = $state(getUserInfo());
-
-    let filterOptions: FilterOptions = $derived({
-        ownerId: userInfo?.sub ?? 0,
-        book: [],
-        createdAfter: null,
-        createdBefore: null,
-        showOwnPrivate: true
-    });
-    let paginationOptions: PaginationOptions = $derived({
-        page: thisPage,
-        size: pageSizeNumber
-    });
-
     onMount(async () => {
         await loadTrees();
     });
 
     async function loadTrees() {
-        if (userInfo != null) {
+        let userInfo = getUserInfo();
+
+        let filterOptions: FilterOptions = {
+            ownerId: userInfo?.sub ?? 0,
+            book: [],
+            createdAfter: null,
+            createdBefore: null,
+            showOwnPrivate: true
+        };
+        let paginationOptions: PaginationOptions = {
+            page: thisPage,
+            size: pageSizeNumber
+        };
+        if (userInfo !== null) {
             treeListResponse = await getFilteredList(paginationOptions, filterOptions);
+        } else {
+            await goto(appLink('/login'));
         }
     }
 
