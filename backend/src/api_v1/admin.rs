@@ -97,13 +97,13 @@ async fn get_all_user_data(
         ("user_id" = i32, Path),
     )
 )]
-/// Gets the data of one users from the database.
+/// Gets the data of one user from the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
 /// # Returns
-/// the data form of a user as [`UserGetAllData`].
+/// The data form of a user as [`UserGetAllData`].
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
