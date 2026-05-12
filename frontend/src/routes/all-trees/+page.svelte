@@ -14,7 +14,7 @@
     } from '$lib/backend/trees';
     import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
-    import { calcTotalPages, showTreeCount, type PaginationOptions } from '$lib/pagination';
+    import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
@@ -38,9 +38,11 @@
     let trees: null | TreeMetadata[] = $state(null);
 
     let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived(
-        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
-    );
+    let nextPageExists = $derived.by(() => {
+        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        const total = (treeListResponse as TreeListResponse | null)?.totalTrees ?? 0;
+        return thisPage < calcTotalPages(total, pageSizeNumber);
+    });
 
     onMount(async () => {
         await loadTrees();
@@ -177,7 +179,7 @@
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
+            {thisPage}/{calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}

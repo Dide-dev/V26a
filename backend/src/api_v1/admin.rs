@@ -85,14 +85,11 @@ async fn get_all_user_data(
 ) -> Result<Json<UserListResponse>, ApiError> {
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
     let users_count = get_user_count(&mut *transaction).await?;
 
     let users = get_user_list_by_page(&mut *transaction, &page).await?;
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     let list = UserListResponse {
         total_users: i32::try_from(users_count).map_err(|_| ApiError::DatabaseMemoryCap)?,

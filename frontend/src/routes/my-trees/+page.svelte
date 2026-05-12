@@ -16,13 +16,13 @@
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
-    import { calcTotalPages, showTreeCount, type PaginationOptions } from '$lib/pagination';
+    import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
-    import { getUserInfo, type UserInfo } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/backend/users';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
-    let treeListResponse: null | TreeListResponse = $state(null);
+    let treeListResponse: TreeListResponse | null = $state(null);
     let trees: null | TreeMetadata[] = $state(null);
 
     let pageSizeString = $state('10');
@@ -32,7 +32,7 @@
     let userInfo = $state(getUserInfo());
 
     let filterOptions: FilterOptions = $derived({
-        ownerId: getUserId(userInfo),
+        ownerId: userInfo?.sub ?? 0,
         book: [],
         createdAfter: null,
         createdBefore: null,
@@ -55,17 +55,12 @@
     }
 
     let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived(
-        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
-    );
+    let nextPageExists = $derived.by(() => {
+        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        const total = (treeListResponse as TreeListResponse | null)?.totalTrees ?? 0;
+        return thisPage < calcTotalPages(total, pageSizeNumber);
+    });
 
-    function getUserId(userInfo: UserInfo | null): number {
-        if (userInfo == null) {
-            return 0;
-        } else {
-            return userInfo.sub;
-        }
-    }
     function prevPage() {
         thisPage -= 1;
         loadTrees();
@@ -155,7 +150,7 @@
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
+            {thisPage}/{calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}

@@ -10,7 +10,7 @@
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import { booleanToString } from '$lib/index';
-    import { calcTotalPages, showUserCount, type PaginationOptions } from '$lib/pagination';
+    import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
 
     let userListResponse: null | UserListResponse = $state(null);
     let users: null | UserGetAllData[] = $state(null);
@@ -31,12 +31,14 @@
     async function loadUsers() {
         userListResponse = await getAllUserData(paginationOptions);
         users = userListResponse.users;
-        console.log(userListResponse);
     }
+
     let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived(
-        thisPage < calcTotalPages(showUserCount(userListResponse), pageSizeNumber)
-    );
+    let nextPageExists = $derived.by(() => {
+        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        const total = (userListResponse as UserListResponse | null)?.totalUsers ?? 0;
+        return thisPage < calcTotalPages(total, pageSizeNumber);
+    });
 
     function prevPage() {
         thisPage -= 1;
@@ -107,7 +109,7 @@
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showUserCount(userListResponse), pageSizeNumber)}
+            {thisPage}/{calcTotalPages(userListResponse?.totalUsers ?? 0, pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}
