@@ -81,7 +81,7 @@ pub mod test {
     /// # Returns
     /// The `user_id` associated with the newly added user.
     pub async fn initialize_user(db: impl PgExecutor<'_>, register_data: &RegisterData) -> i32 {
-        let password_hash = bcrypt::hash(register_data.password.clone(), 6).unwrap();
+        let password_hash = bcrypt::hash(register_data.password.clone(), 4).unwrap();
 
         query!(
             "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
