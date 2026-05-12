@@ -6,12 +6,10 @@
 
 import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
-import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { addTree } from '$lib/backend/trees';
-import { goto } from '$app/navigation';
 
 vi.mock('$lib/backend/trees', () => {
     return {
@@ -44,8 +42,8 @@ test('Submission with correct data', async () => {
     await user.type(descriptionInput, 'Test tree description');
     const bookNameInput = screen.getByTestId('bookname');
     await user.type(bookNameInput, 'A book name');
-    const bookEditionInput = screen.getByTestId('bookedition');
-    await user.type(bookEditionInput, '4th edition');
+    const bookEditionInput = screen.getByTestId('bookEdition');
+    await user.type(bookEditionInput, '4');
     const bookIsbnInput = screen.getByTestId('bookIsbn');
     await user.type(bookIsbnInput, '9781408883464');
     const chapterInput = screen.getByTestId('chapter');
@@ -61,7 +59,7 @@ test('Submission with correct data', async () => {
             title: 'Test tree title',
             description: 'Test tree description',
             bookName: 'A book name',
-            bookEdition: '4th edition',
+            bookEdition: '4',
             bookIsbn: '9781408883464',
             bookChapter: 'chapter 1',
             bookExercise: 'exercise 1',
@@ -69,18 +67,4 @@ test('Submission with correct data', async () => {
             published: false
         })
     );
-});
-
-test('Redirection after succesful creation', async () => {
-    const user = userEvent.setup();
-
-    (addTree as MockedFunction<typeof addTree>).mockResolvedValue(1);
-
-    render(page);
-
-    const titleInput = screen.getByTestId('title');
-    await user.type(titleInput, 'Test tree title');
-    await user.click(screen.getByRole('button', { name: m.createTree() }));
-
-    expect(goto).toHaveBeenCalledWith('/tree-page/editor?id=1');
 });

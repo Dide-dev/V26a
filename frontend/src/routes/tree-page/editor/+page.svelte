@@ -151,89 +151,96 @@
     }
 </script>
 
-{#if loading}
-    <p class="text-green-800">{m.loadingTree()}</p>
-{:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
-    <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree.data.description}
-    </p>
+<div class="flex h-full w-full flex-col items-start">
+    {#if loading}
+        <p class="text-green-800">{m.loadingTree()}</p>
+    {:else if tree}
+        <h1 class="ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+        <p class="ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
+            {tree.data.description}
+        </p>
 
-    <div class="m-2 flex gap-2">
-        <EditMetadata
-            bind:numPopupsOpen={tree.numPopupsOpen}
-            treeId={tree.history.treeId}
-            bind:prevTreeData={tree.data}
-        />
-        <button
-            class={[
-                'rounded-sm bg-emerald-500 p-1',
-                canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
-                !canUndo(tree.history) && 'stroke-gray-500'
-            ]}
-            onclick={undoButtonClick}
-            title={m.undo()}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconUndo}
-        </button>
-        <button
-            class={[
-                'rounded-sm bg-emerald-500 p-1',
-                canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
-                !canRedo(tree.history) && 'stroke-gray-500'
-            ]}
-            onclick={redoButtonClick}
-            title={m.redo()}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconRedo}
-        </button>
-        <a
-            class="rounded-sm bg-emerald-500 p-1 *:inline"
-            href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
-            target="_blank"
-        >
-            {m.viewTree()}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconExternalLink}
-        </a>
-    </div>
+        <div class="m-2 flex gap-2">
+            <EditMetadata
+                bind:numPopupsOpen={tree.numPopupsOpen}
+                treeId={tree.history.treeId}
+                bind:prevTreeData={tree.data}
+            />
+            <button
+                class={[
+                    'rounded-sm bg-emerald-500 p-1',
+                    canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
+                    !canUndo(tree.history) && 'stroke-gray-500'
+                ]}
+                onclick={undoButtonClick}
+                title={m.undo()}
+            >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html iconUndo}
+            </button>
+            <button
+                class={[
+                    'rounded-sm bg-emerald-500 p-1',
+                    canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
+                    !canRedo(tree.history) && 'stroke-gray-500'
+                ]}
+                onclick={redoButtonClick}
+                title={m.redo()}
+            >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html iconRedo}
+            </button>
+            <a
+                class="rounded-sm bg-emerald-500 p-1 *:inline"
+                href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
+                target="_blank"
+            >
+                {m.viewTree()}
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html iconExternalLink}
+            </a>
+        </div>
 
-    <div class="relative">
-        <!--
+        <div class="relative w-full">
+            <!--
             The padding on the bottom is to make the scrollbar not intersect with some buttons.
         -->
-        <div
-            bind:this={scrollArea}
-            class="m-1 flex overflow-auto pb-7"
-            style:min-height={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlHeight}px`}
-        >
-            <div class="flex grow flex-col">
-                {#each tree.history.currentStructure.rootNodes as root, location (root)}
-                    <NodeViewer
-                        bind:history={tree.history}
-                        location={[location]}
-                        bind:dragState
-                        editingPage={true}
-                        bind:numPopupsOpen={tree.numPopupsOpen}
-                        bind:sidebar={tree.sidebar}
-                    />
-                {/each}
-                <RootNodeAddButton history={tree.history} bind:numPopupsOpen={tree.numPopupsOpen} />
-            </div>
             <div
-                class="shrink-0"
-                style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
-            ></div>
+                bind:this={scrollArea}
+                class="m-1 flex overflow-x-auto pb-7"
+                style:min-height={tree.sidebar === null
+                    ? ''
+                    : `${tree.sidebarElement!.htmlHeight}px`}
+            >
+                <div class="flex grow flex-col">
+                    {#each tree.history.currentStructure.rootNodes as root, location (root)}
+                        <NodeViewer
+                            bind:history={tree.history}
+                            location={[location]}
+                            bind:dragState
+                            editingPage={true}
+                            bind:numPopupsOpen={tree.numPopupsOpen}
+                            bind:sidebar={tree.sidebar}
+                        />
+                    {/each}
+                    <RootNodeAddButton
+                        history={tree.history}
+                        bind:numPopupsOpen={tree.numPopupsOpen}
+                    />
+                </div>
+                <div
+                    class="shrink-0"
+                    style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
+                ></div>
+            </div>
+            <SidebarComponent
+                bind:this={tree.sidebarElement}
+                bind:sidebar={tree.sidebar}
+                history={tree.history}
+            />
         </div>
-        <SidebarComponent
-            bind:this={tree.sidebarElement}
-            bind:sidebar={tree.sidebar}
-            history={tree.history}
-        />
-    </div>
-{/if}
+    {/if}
+</div>
 
 <!--
     We need to listen on the entire body to detect if drag & drop did not find target.
