@@ -257,8 +257,7 @@ pub async fn is_co_author_of_tree(
         co_author_id
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .exists
     .ok_or(ApiError::DatabaseException)
 }
@@ -289,8 +288,7 @@ pub async fn add_co_author(
         co_author_id
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
     Ok(())
 }
 
@@ -1083,5 +1081,70 @@ mod tests {
             .map(|d| d.gen_data.id)
             .collect::<Vec<_>>();
         assert_eq!(book_tree_id_list, vec![book_tree_id]);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_exists(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let co_author_id = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "co_author@email.com",
+            "password_hash",
+            "co_author"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        add_co_author(&db, tree_id, co_author_id).await.unwrap();
+
+        let result = is_co_author_of_tree(&db, &tree_id, &co_author_id)
+            .await
+            .unwrap();
+
+        assert!(result);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_not_exists(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let other_user = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "other_user@email.com",
+            "password_hash",
+            "other_user"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        let result = is_co_author_of_tree(&db, &tree_id, &other_user)
+            .await
+            .unwrap();
+
+        assert!(!result);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_duplicate_insert(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let co_author_id = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "co_author@email.com",
+            "password_hash",
+            "co_author"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        add_co_author(&db, tree_id, co_author_id).await.unwrap();
+
+        let result = add_co_author(&db, tree_id, co_author_id).await;
+
+        assert!(result.is_err());
     }
 }
