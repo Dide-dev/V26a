@@ -24,12 +24,28 @@ use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::sync::Arc;
+use std::time::Duration;
+use tower_governor::GovernorLayer;
+use tower_governor::governor::GovernorConfigBuilder;
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<Config> {
+    // Ratelimiter for endpoint add-user.
+    let add_user_ratelimiter = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_millis(60_000 / 5))
+            .burst_size(20)
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
     Router::new()
         .route("/add", post(add_new_user))
+        .layer(GovernorLayer::new(add_user_ratelimiter))
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
@@ -56,6 +72,7 @@ pub enum UserResponse {
         (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 429, description = "Ratelimit exceeded"),
         (status = 500, description = "Internal server error."),
     )
 )]
@@ -70,9 +87,10 @@ pub enum UserResponse {
 /// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException) or
+/// May return a [`HashException`](ApiError::HashException)
+/// May return a [`RateLimitExceeded`](ApiError::RateLimitExceeded) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_new_user(
+async fn add_new_user(
     Extension(db): Extension<PgPool>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {

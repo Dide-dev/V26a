@@ -17,11 +17,29 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::sync::Arc;
+use std::time::Duration;
+use tower_governor::GovernorLayer;
+use tower_governor::governor::GovernorConfigBuilder;
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
-    Router::new().route("/login", post(login))
+    //ratelimiter for login
+    let login_ratelimiter = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_millis(60_000 / 15))
+            .burst_size(30)
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
+    Router::new().route(
+        "/login",
+        post(login).layer(GovernorLayer::new(login_ratelimiter)),
+    )
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -41,6 +59,8 @@ pub struct LoginResponse {
 /// # Error
 /// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
 ///
+/// Returns a [`RateLimitExceeded`](ApiError::RateLimitExceeded) if the rate limit is exceeded.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 #[utoipa::path(
     post,
@@ -49,6 +69,7 @@ pub struct LoginResponse {
     request_body = LoginRequestBody,
     responses(
         (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
+        (status = 429, description = "Ratelimit exceeded"),
         (status = 500, description = "Internal server error."),
     ),
     params(
@@ -67,7 +88,7 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException),[`RateLimitExceeded`](ApiError::RateLimitExceeded), [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,

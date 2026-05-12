@@ -27,17 +27,9 @@ pub struct Config {
     pub upload_dir: String,
     pub max_upload_size: usize,
 
-    /// Ratelimiter config (second)
-    pub rate_limit_per_second: u64,
-    pub rate_limit_burst_size_second: u32,
-    pub rate_limit_per_second_strict: u64,
-    pub rate_limit_burst_size_second_strict: u32,
-
     /// Ratelimiter config (minute)
     pub rate_limit_per_minute: u64,
     pub rate_limit_burst_size_minute: u32,
-    pub rate_limit_per_minute_strict: u64,
-    pub rate_limit_burst_size_minute_strict: u32,
 }
 
 impl Config {
@@ -68,45 +60,15 @@ impl Config {
                 .as_bytes(),
         );
 
-        let rate_limit_per_second = env::var("RATE_LIMIT_PER_SECOND")
-            .unwrap_or("5".to_string())
-            .parse::<u64>()
-            .expect("Failed to parse RATE_LIMIT_PER_SECOND");
-
-        let rate_limit_burst_size_second = env::var("RATE_LIMIT_BURST_SIZE_SECOND")
-            .unwrap_or("10".to_string())
-            .parse::<u32>()
-            .expect("Failed to parse RATE_LIMIT_BURST_SIZE_SECOND");
-
-        let rate_limit_per_second_strict = env::var("RATE_LIMIT_PER_SECOND")
-            .unwrap_or("1".to_string())
-            .parse::<u64>()
-            .expect("Failed to parse RATE_LIMIT_PER_SECOND_STRICT");
-
-        let rate_limit_burst_size_second_strict = env::var("RATE_LIMIT_BURST_SIZE_SECOND")
-            .unwrap_or("3".to_string())
-            .parse::<u32>()
-            .expect("Failed to parse RATE_LIMIT_BURST_SIZE_SECOND_STRICT");
-
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
-            .unwrap_or("60".to_string())
+            .unwrap_or("30".to_string())
             .parse::<u64>()
             .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
 
         let rate_limit_burst_size_minute = env::var("RATE_LIMIT_BURST_SIZE_MINUTE")
-            .unwrap_or("20".to_string())
+            .unwrap_or("40".to_string())
             .parse::<u32>()
             .expect("Failed to parse RATE_LIMIT_BURST_SIZE_MINUTE");
-
-        let rate_limit_per_minute_strict = env::var("RATE_LIMIT_PER_MINUTE")
-            .unwrap_or("30".to_string())
-            .parse::<u64>()
-            .expect("Failed to parse RATE_LIMIT_PER_MINUTE_STRICT");
-
-        let rate_limit_burst_size_minute_strict = env::var("RATE_LIMIT_BURST_SIZE_MINUTE")
-            .unwrap_or("10".to_string())
-            .parse::<u32>()
-            .expect("Failed to parse RATE_LIMIT_BURST_SIZE_MINUTE_STRICT");
 
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
@@ -124,14 +86,8 @@ impl Config {
             jwt_keys,
             upload_dir,
             max_upload_size,
-            rate_limit_per_second,
-            rate_limit_burst_size_second,
-            rate_limit_per_second_strict,
-            rate_limit_burst_size_second_strict,
             rate_limit_per_minute,
             rate_limit_burst_size_minute,
-            rate_limit_per_minute_strict,
-            rate_limit_burst_size_minute_strict,
         }
     }
 }

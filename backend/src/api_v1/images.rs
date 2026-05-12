@@ -18,11 +18,29 @@ use infer;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use std::fmt::Write;
+use std::sync::Arc;
+use std::time::Duration;
+use tower_governor::GovernorLayer;
+use tower_governor::governor::GovernorConfigBuilder;
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<Config> {
-    Router::new().route("/add", post(add_new_image))
+    // Ratelimiter for endpoint add images
+    let add_image_ratelimiter = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_millis(60_000 / 10))
+            .burst_size(20)
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
+    Router::new().route(
+        "/add",
+        post(add_new_image).layer(GovernorLayer::new(add_image_ratelimiter)),
+    )
 }
 
 #[utoipa::path(
@@ -42,6 +60,7 @@ pub fn images() -> Router<Config> {
         (status = 200, description = "Image successfully added"),
         (status = 400, description = ApiError::NoImageBodyProvidedException.to_string()),
         (status = 400, description = ApiError::InvalidImageType.to_string()),
+        (status = 429, description = "Ratelimit exceeded"),
         (status = 500, description = ApiError::CreateDirException.to_string()),
         (status = 500, description = ApiError::FileWriteException.to_string()),
         (status = 500, description = "Internal server error.")
@@ -66,6 +85,8 @@ pub fn images() -> Router<Config> {
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
 ///
 /// May return a [`InvalidImageType`](ApiError::InvalidImageType) if the uploaded image is not of a image/ MIME-type.
+///
+/// May return a [`RateLimitExceeded`](ApiError::RateLimitExceeded) if the rate limit is exceeded.
 ///
 /// May return a [`FileWriteException`](ApiError::FileWriteException) if the uploaded image cannot be written to the uploads directory.
 ///
