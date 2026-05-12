@@ -19,6 +19,7 @@ use axum::Extension;
 use axum_test::TestServer;
 use sqlx::PgPool;
 use tempfile::tempdir;
+use std::net::SocketAddr;
 
 /// Sets up an API test server with the given mock database.
 ///
@@ -36,7 +37,7 @@ fn setup(db: PgPool) -> TestServer {
     let router = crate::api_v1::v1_api(config.clone())
         .layer(Extension(db))
         .with_state(config);
-    TestServer::builder().save_cookies().build(router)
+    TestServer::builder().save_cookies().build(router.into_make_service_with_connect_info::<SocketAddr>())
 }
 
 /// Creates an account with the given [`TestServer`]

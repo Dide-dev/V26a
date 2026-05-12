@@ -23,7 +23,6 @@ use axum::response::Response;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceBuilder;
-use tower_governor::GovernorLayer;
 use tower_http::services::ServeDir;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -107,25 +106,10 @@ async fn backend(config: Config) -> Router {
         .await
         .expect("failed to run database migrations.");
 
-    // Extract ratelimiter config (per minute)
-    let governor_conf = governor_conf_minute(
-        config.rate_limit_per_minute,
-        config.rate_limit_burst_size_minute,
-    );
-
-    // Create governor layer (minute)
+    // Extract ratelimiter config (per minute) &  create governor layer (minute)   
     let governor_layer = ServiceBuilder::new()
         .map_response(map_response_error)
-        .layer(GovernorLayer::new(governor_conf.clone()));
-
-    // Cleanup to prevent high memory usage.
-    let governor_limiter = governor_conf.limiter().clone();
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-            governor_limiter.retain_recent();
-        }
-    });
+        .layer(governor_conf_minute(config.rate_limit_per_minute, config.rate_limit_burst_size_minute));
 
     Router::new()
         .nest("/v1", v1_api(config.clone()))

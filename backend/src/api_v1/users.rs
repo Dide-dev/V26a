@@ -25,7 +25,6 @@ use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use tower_governor::GovernorLayer;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
@@ -33,7 +32,7 @@ pub fn users() -> Router<Config> {
     Router::new()
         .route(
             "/add",
-            post(add_new_user).layer(GovernorLayer::new(governor_conf_minute(5, 20))),
+            post(add_new_user).layer(governor_conf_minute(5, 20)),
         )
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))

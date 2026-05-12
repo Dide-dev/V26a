@@ -20,14 +20,13 @@ use infer;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use std::fmt::Write;
-use tower_governor::GovernorLayer;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<Config> {
     Router::new().route(
         "/add",
-        post(add_new_image).layer(GovernorLayer::new(governor_conf_minute(10, 20))),
+        post(add_new_image).layer(governor_conf_minute(10, 20)),
     )
 }
 

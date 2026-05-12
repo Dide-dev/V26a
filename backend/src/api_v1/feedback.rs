@@ -12,13 +12,12 @@ use crate::errors::ApiError;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
-use tower_governor::GovernorLayer;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
 pub fn feedback() -> Router<Config> {
     Router::new().route(
         "/provide",
-        post(provide_feedback).layer(GovernorLayer::new(governor_conf_minute(5, 10))),
+        post(provide_feedback).layer(governor_conf_minute(5, 10)),
     )
 }
 

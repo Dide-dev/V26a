@@ -17,9 +17,10 @@ use governor::clock::QuantaInstant;
 use governor::middleware::NoOpMiddleware;
 use std::sync::Arc;
 use std::time::Duration;
-use tower_governor::governor::GovernorConfig;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::key_extractor::SmartIpKeyExtractor;
+use tower_governor::GovernorLayer;
+use axum::body::Body;
 
 use crate::Config;
 use crate::api_v1::{
@@ -42,16 +43,14 @@ pub fn v1_api(config: Config) -> Router<Config> {
 
 // Compute governor config (per minute).
 // Using miliseconds to compute req/min.
-pub fn governor_conf_minute(
-    refresh_rate: u64,
-    burst_size: u32,
-) -> Arc<GovernorConfig<SmartIpKeyExtractor, NoOpMiddleware<QuantaInstant>>> {
-    Arc::new(
+pub fn governor_conf_minute(refresh_rate: u64, burst_size: u32,) -> GovernorLayer<SmartIpKeyExtractor, NoOpMiddleware<QuantaInstant>, Body> {
+    let config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_millis(60_000 / refresh_rate))
             .burst_size(burst_size)
             .key_extractor(SmartIpKeyExtractor)
             .finish()
             .unwrap(),
-    )
+    );
+    GovernorLayer::new(config)
 }

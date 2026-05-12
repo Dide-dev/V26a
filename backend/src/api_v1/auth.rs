@@ -18,14 +18,13 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use tower_governor::GovernorLayer;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
     Router::new().route(
         "/login",
-        post(login).layer(GovernorLayer::new(governor_conf_minute(15, 30))),
+        post(login).layer(governor_conf_minute(15, 30)),
     )
 }
 
