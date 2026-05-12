@@ -21,14 +21,10 @@
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
         history,
-        index,
-        numPopupsOpen = $bindable(),
-        editingPage
+        index
     }: {
         history: TreeHistory;
         index: number;
-        numPopupsOpen: number;
-        editingPage: boolean;
     } = $props();
 
     /**
@@ -78,38 +74,37 @@
     }
 </script>
 
-{#if editingPage}
-    <div class="absolute -top-6 left-1 flex h-7 border border-fuchsia-600 bg-fuchsia-300">
-        <button class="cursor-pointer" title={m.editRootnodeLabel()} onclick={editClick}>
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconEdit}
-        </button>
-        <button
-            class={[canMoveDown && 'cursor-pointer text-black!', !canMoveDown && 'text-gray-500!']}
-            title={m.moveDown()}
-            onclick={moveDownClick}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconArrowDown}
-        </button>
-        <button
-            class={[canMoveUp && 'cursor-pointer text-black!', !canMoveUp && 'text-gray-500']}
-            title={m.moveUp()}
-            onclick={moveUpClick}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconArrowUp}
-        </button>
-        <button
-            class={[canDelete && 'cursor-pointer text-black!', !canDelete && 'text-gray-500!']}
-            title={canDelete ? m.deleteRootnode() : m.deleteRootnodeBlocked()}
-            onclick={deleteClick}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconTrash}
-        </button>
-    </div>
-{/if}
+<!-- The row of buttons positioned above the rootnode. -->
+<div class="absolute -top-6 left-1 flex h-7 border border-fuchsia-600 bg-fuchsia-300">
+    <button class="cursor-pointer" title={m.editRootnodeLabel()} onclick={editClick}>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconEdit}
+    </button>
+    <button
+        class={[canMoveDown && 'cursor-pointer text-black!', !canMoveDown && 'text-gray-500!']}
+        title={m.moveDown()}
+        onclick={moveDownClick}
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconArrowDown}
+    </button>
+    <button
+        class={[canMoveUp && 'cursor-pointer text-black!', !canMoveUp && 'text-gray-500']}
+        title={m.moveUp()}
+        onclick={moveUpClick}
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconArrowUp}
+    </button>
+    <button
+        class={[canDelete && 'cursor-pointer text-black!', !canDelete && 'text-gray-500!']}
+        title={canDelete ? m.deleteRootnode() : m.deleteRootnodeBlocked()}
+        onclick={deleteClick}
+    >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconTrash}
+    </button>
+</div>
 
 {#if inlineEditing === null}
     <div class="mb-5 h-fit w-32 shrink-0 cursor-default wrap-anywhere">
@@ -118,7 +113,6 @@
 {:else}
     <RootNodeTextarea
         bind:text={inlineEditing}
-        bind:numPopupsOpen
         editDoneCallback={editFinish}
         editCancelCallback={editCancel}
     />
