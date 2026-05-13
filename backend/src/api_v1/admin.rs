@@ -9,15 +9,22 @@ use axum::{
     extract::Request,
     middleware::{self, Next},
     response::Response,
-    routing::get,
+    routing::{get, post},
 };
 use sqlx::PgPool;
 
+use crate::db_structs::users::{
+    AdminUpdateData
+};
+
+use axum::extract::{Path};
+
 use crate::{
     api_v1::session::Claims,
+    api_v1::users::{UserResponse},
     config::Config,
-    db::users::get_all_users,
-    db_structs::users::{AccountType, UserGetAllData},
+    db::users::{get_all_users, user_id_exists, get_user_by_name, admin_update_user},
+    db_structs::users::{AccountType, AllUsersGetData},
     errors::ApiError,
 };
 
@@ -40,6 +47,7 @@ async fn check_if_admin(
 pub fn admin(config: Config) -> Router<Config> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
+        .route("/users/{user_id)/update-data", post(update_user_data))
         .route_layer(middleware::from_fn_with_state(config, check_if_admin))
 }
 
@@ -48,7 +56,7 @@ pub fn admin(config: Config) -> Router<Config> {
     path = "/all-user-data",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = Vec<UserGetAllData>),
+        (status = 200, description = "Successfully retrieved data.", body = Vec<AllUsersGetData>),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -64,7 +72,7 @@ pub fn admin(config: Config) -> Router<Config> {
 /// `claims` - The session cookie of the user.
 ///
 /// # Returns
-/// the data form all users as [`Vec<UserGetAllData>`].
+/// the data form all users as [`Vec<AllUsersGetData>`].
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
@@ -76,6 +84,64 @@ pub fn admin(config: Config) -> Router<Config> {
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_user_data(
     Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<UserGetAllData>>, ApiError> {
+) -> Result<Json<Vec<AllUsersGetData>>, ApiError> {
     get_all_users(&db).await.map(Json)
+}
+
+#[utoipa::path(
+    post,
+    path = "/users/{user_id)/update-data",
+    context_path = "/api/v1/admin",
+    request_body = AdminUpdateData,
+    responses(
+        (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
+    )
+)]
+/// Update a user's data in the database..
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `user_id` - The user for whom to update their data.
+///
+/// `new_data` - The new data of the user, as [`AdminUpdateData`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the given user's data, or to update one of the specified fields.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn update_user_data(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(user_id): Path<i32>,
+    Json(new_data): Json<AdminUpdateData>,
+) -> Result<Json<UserResponse>, ApiError> {
+    if !user_id_exists(&db, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+
+    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+
+    if let Some(id) = found_user_id && id != claims.sub
+    {
+        return Ok(Json(UserResponse::UsernameAlreadyUsed));
+    }
+
+    admin_update_user(&db, user_id, &new_data).await?;
+
+    Ok(Json(UserResponse::Success { user_id }))
 }

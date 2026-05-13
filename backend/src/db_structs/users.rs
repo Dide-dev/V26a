@@ -51,11 +51,24 @@ pub struct UserUpdateData {
     pub enabled: Option<bool>,
 }
 
+/// Data needed for an admin to update a user in the database.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminUpdateData {
+    pub name: String,
+    pub nickname: String,
+    pub about_me: String,
+    pub email_visible: bool,
+    pub language: UserLanguage,
+    pub account_type: AccountType,
+    pub enabled: bool,
+}
+
 /// Data received when getting all user data from the database.
 /// Should only be used by admins
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct UserGetAllData {
+pub struct AllUsersGetData {
     pub id: i32,
     pub email: String,
     pub name: String,

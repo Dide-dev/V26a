@@ -5,10 +5,9 @@
 */
 
 use crate::db_structs::users::{
-    RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
+    AllUsersGetData, RegisterData, UserGetData, UserLanguage, UserUpdateData, AdminUpdateData,
 };
 use crate::errors::ApiError;
-
 use bcrypt::hash;
 use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::str::FromStr;
@@ -94,18 +93,19 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// # Returns
-/// A [`Vec<UserGetAllData>`] object containing the data of all the users, minus their password.
+/// A [`Vec<AllUsersGetData>`] object containing the data of all the users, minus their password.
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
-    Ok(
-        query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
-            .fetch_all(db)
-            .await?,
+pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<AllUsersGetData>, ApiError> {
+    Ok(query_as!(
+        AllUsersGetData,
+        "SELECT id, email, name, enabled FROM users",
     )
+    .fetch_all(db)
+    .await?)
 }
 
 /// Updates a user in the database.
@@ -134,6 +134,40 @@ pub async fn update_user(
         new_data.email_visible,
         new_data.language.to_string(),
         new_data.account_type.map(|t| t.to_string()),
+        new_data.enabled,
+        id,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+/// Updates a user in the database.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `new_data` - The new data to be assigned as [`AdminUpdateData`], including the id of the user to be updated.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn admin_update_user(
+    db: impl PgExecutor<'_>,
+    id: i32,
+    new_data: &AdminUpdateData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = $6, enabled = $7 WHERE id = $8",
+        new_data.name,
+        new_data.nickname,
+        new_data.about_me,
+        new_data.email_visible,
+        new_data.language.to_string(),
+        new_data.account_type.to_string(),
         new_data.enabled,
         id,
     )
@@ -462,13 +496,13 @@ mod tests {
         let all_user_data = get_all_users(&db).await.unwrap();
 
         let expected_user_data = vec![
-            UserGetAllData {
+            AllUsersGetData {
                 id: 1,
                 email: register_data.email,
                 name: register_data.name,
                 enabled: true,
             },
-            UserGetAllData {
+            AllUsersGetData {
                 id: 2,
                 email: register_data2.email,
                 name: register_data2.name,
