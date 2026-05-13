@@ -23,7 +23,7 @@
     - `leftLinks: NavLink[]`  - The links to align to the left on larger screens.
     - `rightLinks: NavLink[]` - The links to align to the right on larger screens.
     - `offsets: Tween<number>[]` - Bindable parameter which contains the current offset each
-                                   top-level link om the nav-bar requires. Use it to offset the rest
+                                   top-level link on the nav-bar requires. Use it to offset the rest
                                    of the page accordingly, by taking its sum.
 -->
 
@@ -47,7 +47,7 @@
         rightLinks: NavLink[];
         /**
          * The offsets required by each top-level link.
-         * Its sum is ysed outside this component to match up rendering offset.
+         * Its sum is used outside this component to match up rendering offset.
          */
         offsets: Tween<number>[];
     } = $props();
@@ -58,7 +58,6 @@
     );
     /** Whether the hamburger-menu or dropdown is opened. */
     let menu = $state(false);
-    // 48rem === 768px
     /** Query whether the window is large or small. 'true' if large, and 'false' if not. */
     const windowIsLarge = new MediaQuery('min-width: 48rem');
     /**
@@ -127,9 +126,7 @@
         dropdownDropStates = dropdownDropStates.map(
             (arr) => (arr = arr.map((_, i) => new Tween(++i * -navRowHeight, animationFlow)))
         );
-        console.log(dropdownDropStates);
         offsets = offsets.map(() => new Tween(0, animationFlow));
-        console.log(offsets);
     }
     /** Toggle whether a top-level's drop-down is open. Only used in a smaller window. */
     async function toggleDropdown(index: number) {
@@ -282,12 +279,12 @@
         style="min-width: var(--spacing-nav-{link.props.width});
                max-width: var(--spacing-nav-{link.props.width});"
         href={appLink(link.defaultHref)}
-        onmouseenter={() => {
+        onclick={closeMenu}
+        onpointerenter={() => {
             if (link.children.length > 0) {
                 menu = true;
             }
         }}
-        onclick={closeMenu}
     >
         <AnimatedUnderline --color-underline="var(--color-white)">
             <p

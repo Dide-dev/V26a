@@ -1,4 +1,4 @@
-/** Data used to render a link in the footer */
+/** Data used to render a link in the footer. */
 export class FooterLink {
     /** Href linked by the link. */
     href: string;

@@ -16,7 +16,7 @@
     - **Smaller windows (< 48rem):** The links are placed above the the logo and copyright notice.
       The links are placed in either 1 or 2 columns, and their length is uncapped.
 
-    # Params
+    ## Params
     - `links: FooterLink[]` - The links to render in the footer.
 -->
 <script lang="ts">
@@ -34,7 +34,6 @@
         links: FooterLink[];
     } = $props();
 
-    // 48rem === 768px
     /** Query whether the window is large or small. 'true' if small, and 'false' if not. */
     const windowIsSmall = new MediaQuery('not (min-width: 48rem)');
     /**
@@ -57,7 +56,7 @@
         // Split links evenly over columns.
         let start: number,
             end = 0;
-        for (let i = 0; i < numberOfColumns; i += 1) {
+        for (let i = 0; i < numberOfColumns; i++) {
             start = end;
             end += Math.ceil((links.length - end) / (numberOfColumns - i));
             result.push(links.slice(start, end));

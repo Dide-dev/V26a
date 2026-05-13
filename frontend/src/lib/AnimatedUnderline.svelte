@@ -11,7 +11,7 @@
     Wrapper object automatically grows to fill its container.
 
     ## Params
-    - `--color-underline` - The color to render the underline. Default color is black.
+    - `--color-underline` - The color to render the underline with. Default color is black.
 -->
 <script lang="ts">
     let { children } = $props();
