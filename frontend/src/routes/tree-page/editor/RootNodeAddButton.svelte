@@ -16,10 +16,14 @@
 
     let {
         history,
-        numPopupsOpen = $bindable()
+        /**
+         * When the user is dragging cards, this component should not light up on hover,
+         * as dropping it does not do anything here.
+         */
+        enabled
     }: {
         history: TreeHistory;
-        numPopupsOpen: number;
+        enabled: boolean;
     } = $props();
 
     /**
@@ -50,7 +54,8 @@
         class={[
             'flex w-32 cursor-pointer items-center justify-center border-2 border-dashed',
             'border-gray-300  fill-gray-300',
-            'hover:border-gray-800 hover:fill-gray-800'
+            enabled && 'hover:border-gray-800 hover:fill-gray-800',
+            !enabled && '*:invisible'
         ]}
         {onclick}
     >
@@ -58,5 +63,5 @@
         {@html iconAdd}
     </button>
 {:else}
-    <RootNodeTextarea bind:text bind:numPopupsOpen {editDoneCallback} {editCancelCallback} />
+    <RootNodeTextarea bind:text {editDoneCallback} {editCancelCallback} />
 {/if}

@@ -14,7 +14,7 @@ use crate::db_structs::cards::{
     CardAddData, CardFilters, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
 };
 use crate::errors::ApiError;
-use crate::{Config, get_connection};
+use crate::{ArcState, get_connection};
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
@@ -22,7 +22,7 @@ use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the cards category.
-pub fn cards() -> Router<Config> {
+pub fn cards() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_card))
         .route("/update", post(update_existing_card))
