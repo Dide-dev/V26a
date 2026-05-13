@@ -47,7 +47,7 @@ async fn check_if_admin(
 pub fn admin(config: Config) -> Router<Config> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
-        .route("/users/{user_id)/update-data", post(update_user_data))
+        .route("/users/{user_id}/update-data", post(update_user_data))
         .route_layer(middleware::from_fn_with_state(config, check_if_admin))
 }
 
@@ -90,7 +90,7 @@ async fn get_all_user_data(
 
 #[utoipa::path(
     post,
-    path = "/users/{user_id)/update-data",
+    path = "/users/{user_id}/update-data",
     context_path = "/api/v1/admin",
     request_body = AdminUpdateData,
     responses(

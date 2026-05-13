@@ -161,7 +161,7 @@ pub async fn admin_update_user(
     new_data: &AdminUpdateData,
 ) -> Result<(), ApiError> {
     query!(
-        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = $6, enabled = $7 WHERE id = $8",
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = $6, enabled = $7, email = $8 WHERE id = $9",
         new_data.name,
         new_data.nickname,
         new_data.about_me,
@@ -169,6 +169,7 @@ pub async fn admin_update_user(
         new_data.language.to_string(),
         new_data.account_type.to_string(),
         new_data.enabled,
+        new_data.email,
         id,
     )
     .execute(db)
