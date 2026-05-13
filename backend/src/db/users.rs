@@ -4,13 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
     RegisterData, UserGetAllData, UserGetData, UserLanguage, UserUpdateData,
 };
 use crate::errors::ApiError;
 
 use bcrypt::hash;
-use sqlx::{PgConnection, PgExecutor, query, query_as};
+use sqlx::{PgConnection, PgExecutor, query, query_as, query_scalar};
 use std::str::FromStr;
 
 /// Add a new user to the database, returning its assigned id.
@@ -86,26 +87,6 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
         email_visible: record.email_visible,
         language: UserLanguage::from_str(record.language.as_str())?,
     })
-}
-
-/// Query the user data of all users for the given database.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
-///
-/// # Returns
-/// A [`Vec<UserGetAllData>`] object containing the data of all the users, minus their password.
-///
-/// # Errors
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_users(db: impl PgExecutor<'_>) -> Result<Vec<UserGetAllData>, ApiError> {
-    Ok(
-        query_as!(UserGetAllData, "SELECT id, email, name, enabled FROM users",)
-            .fetch_all(db)
-            .await?,
-    )
 }
 
 /// Updates a user in the database.
@@ -222,6 +203,64 @@ pub async fn delete_user(
     .await?;
 
     Ok(())
+}
+
+/// Get the amount of users in the databse.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// # Returns
+/// The amount of users in the database,
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_count(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
+    let users_count: i64 = query_scalar!("SELECT COUNT(*) FROM users")
+        .fetch_one(db)
+        .await?
+        .ok_or(ApiError::DatabaseException)?;
+
+    Ok(users_count)
+}
+
+/// Get the list of all users at a given page.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// # Returns
+/// A list with the users at the requested page,
+///
+/// # Errors
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_list_by_page(
+    db: impl PgExecutor<'_>,
+    page: &PaginationOptions,
+) -> Result<Vec<UserGetAllData>, ApiError> {
+    let limit = i64::from(page.get_size());
+    let offset = i64::from((page.get_page() - 1) * page.get_size());
+
+    let users = query_as!(
+        UserGetAllData,
+        "SELECT id, email, name, enabled FROM users
+         ORDER BY id
+         LIMIT $1 OFFSET $2",
+        limit,
+        offset
+    )
+    .fetch_all(db)
+    .await?;
+
+    if users.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    Ok(users)
 }
 
 /// Checks if a user with a given e-mail exists in the given database.
@@ -456,10 +495,13 @@ mod tests {
             email_visible: true,
             language: UserLanguage::En,
         };
+        let pagination_options = PaginationOptions::new(1, 5, 1000, 500).unwrap();
 
         initialize_user(&db, &register_data).await;
         initialize_user(&db, &register_data2).await;
-        let all_user_data = get_all_users(&db).await.unwrap();
+        let all_user_data = get_user_list_by_page(&db, &pagination_options)
+            .await
+            .unwrap();
 
         let expected_user_data = vec![
             UserGetAllData {
@@ -477,6 +519,34 @@ mod tests {
         ];
 
         assert_eq!(all_user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_user_count(db: PgPool) {
+        assert_eq!(get_user_count(&db).await.unwrap(), 0);
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        let register_data2 = RegisterData {
+            email: "email2".to_owned(),
+            password: "password2".to_owned(),
+            name: "name2".to_owned(),
+            nickname: "nickname2".to_owned(),
+            about_me: "about_me2".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+        initialize_user(&db, &register_data).await;
+
+        assert_eq!(get_user_count(&db).await.unwrap(), 1);
+        initialize_user(&db, &register_data2).await;
+        assert_eq!(get_user_count(&db).await.unwrap(), 2);
     }
 
     #[sqlx::test]
