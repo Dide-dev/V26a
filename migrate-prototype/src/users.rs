@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
-use std::io::Write;
 use std::str::FromStr;
 
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::{MySqlExecutor, PgExecutor, QueryBuilder, query_as};
+use sqlx::{MySqlExecutor, PgPool, QueryBuilder, query_as};
 
 use crate::recover_string;
 
@@ -78,7 +77,7 @@ impl Display for AccountType {
     }
 }
 
-pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: impl PgExecutor<'_>) {
+pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPool) {
     let users = 
         query_as!(User, 
             "SELECT user_id, created_at, email, pwd_hash, naam, pseudoniem, persoonsbeschrijving, emailvermelding, language 
@@ -123,22 +122,17 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: impl P
         language: UserLanguage::from_str(&user.language.clone().unwrap_or_default()).unwrap()
     }).collect::<Vec<_>>();
 
-    let file_name = "new_users2.txt";
-    let _file = std::fs::File::create(file_name);
+    // Update the next value of the serial id.
+    let next_id = new_users.last().unwrap().id + 1;
 
-    // let mut data_file = std::fs::OpenOptions::new()
-    //         .append(true)
-    //         .open(file_name)
-    //         .expect("Failed to open data file");
-    //     data_file
-    //         .write_all(
-    //             format!(
-    //                 "{new_users:#?}"
-    //             )
-    //             .as_bytes(),
-    //         )
-    //         .expect("Failed to write to data file");
+    let mut query_builder = QueryBuilder::new(format!(
+        "ALTER SEQUENCE users_id_seq RESTART WITH {next_id}"
+    ));
+    let postgres_query = query_builder.build();
 
+    postgres_query.execute(postgres_db).await.unwrap();
+
+    // Add the users to the new database.
     let mut query_builder = QueryBuilder::new("INSERT INTO users (id, email, password_hash, name, nickname, about_me, created_at, email_visible, account_type, language) ");
     query_builder.push_values(new_users, |mut b, user| 
             {

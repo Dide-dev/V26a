@@ -1,12 +1,8 @@
-use std::io::Write;
-
-use html_to_markdown_rs::{
-    ConversionOptions, ConversionOptionsBuilder, PreprocessingOptions, convert,
-};
+use html_to_markdown_rs::convert;
 
 use reqwest::Client;
 use sqlx::{
-    MySqlExecutor, PgExecutor, PgPool, QueryBuilder, query_as,
+    MySqlExecutor, PgPool, QueryBuilder, query_as,
     types::chrono::{DateTime, NaiveDate, Utc},
 };
 
@@ -77,8 +73,7 @@ pub struct Tree {
 
 pub async fn migrate_trees(
     mysql_db: impl MySqlExecutor<'_>,
-    postgres_db: impl PgExecutor<'_>,
-    // postgres_db: PgPool,
+    postgres_db: &PgPool,
     client: &Client,
 ) {
     let bomen = query_as!(
@@ -188,17 +183,17 @@ pub async fn migrate_trees(
         });
     }
 
-    // let file_name = "new_trees.txt";
-    // let _file = std::fs::File::create(file_name);
+    // Update the next value of the serial id.
+    let next_id = new_trees.last().unwrap().id + 1;
 
-    // let mut data_file = std::fs::OpenOptions::new()
-    //     .append(true)
-    //     .open(file_name)
-    //     .expect("Failed to open data file");
-    // data_file
-    //     .write_all(format!("{new_trees:#?}").as_bytes())
-    //     .expect("Failed to write to data file");
+    let mut query_builder = QueryBuilder::new(format!(
+        "ALTER SEQUENCE trees_id_seq RESTART WITH {next_id}"
+    ));
+    let postgres_query = query_builder.build();
 
+    postgres_query.execute(postgres_db).await.unwrap();
+
+    // Add the trees to the new database.
     let mut query_builder = QueryBuilder::new(
         "INSERT INTO trees (id, owner_id, created_at, last_modified, published, times_visited, last_visited, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure) ",
     );
@@ -224,19 +219,6 @@ pub async fn migrate_trees(
     let postgres_query = query_builder.build();
 
     postgres_query.execute(postgres_db).await.unwrap();
-
-    // for tree in new_trees {
-    //     let mut query_builder = QueryBuilder::new("UPDATE trees SET structure = ");
-
-    //     query_builder
-    //         .push_bind(serde_json::to_value(tree.tree_structure).unwrap())
-    //         .push(" WHERE id = ")
-    //         .push_bind(tree.id);
-
-    //     let postgres_query = query_builder.build();
-
-    //     postgres_query.execute(&postgres_db).await.unwrap();
-    // }
 }
 
 /// Parse the tree structure as stored in the prototype database to the new type used in the database

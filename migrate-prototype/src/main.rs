@@ -10,7 +10,7 @@ use sqlx::{mysql::MySqlPoolOptions, postgres::PgPoolOptions};
 
 use crate::{hints::migrate_hints, trees::migrate_trees, users::migrate_users};
 
-use std::env;
+// use std::env;
 
 /// The body for a login request that contains the email address and password.
 #[derive(Deserialize, Serialize)]
@@ -85,6 +85,7 @@ fn recover_string(old_str: &str) -> String {
         .replace("Ã—", "×")
         .replace(r"\\", r"\")
         .replace("&#39;", "'")
+        .replace("&#34;", "\"")
         .replace("â€“", "–")
         .replace("â€œ", "“")
         .replace("â€", "”")

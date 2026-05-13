@@ -1,8 +1,6 @@
-use std::io::Write;
-
 use html_to_markdown_rs::convert;
 use reqwest::Client;
-use sqlx::{MySqlExecutor, PgExecutor, QueryBuilder, query_as};
+use sqlx::{MySqlExecutor, PgPool, QueryBuilder, query_as};
 
 use crate::{insert_img_in_db, recover_string, replace_picture_link};
 
@@ -25,7 +23,7 @@ pub struct CardData {
 
 pub async fn migrate_hints(
     mysql_db: impl MySqlExecutor<'_>,
-    postgres_db: impl PgExecutor<'_>,
+    postgres_db: &PgPool,
     client: &Client,
 ) {
     let hints = query_as!(Hint, "SELECT * FROM `hints`")
@@ -86,17 +84,17 @@ pub async fn migrate_hints(
         });
     }
 
-    // let file_name = "new_hints_md.txt";
-    // let _file = std::fs::File::create(file_name);
+    // Update the next value of the serial id.
+    let next_id = new_hints.last().unwrap().id + 1;
 
-    // let mut data_file = std::fs::OpenOptions::new()
-    //     .append(true)
-    //     .open(file_name)
-    //     .expect("Failed to open data file");
-    // data_file
-    //     .write_all(format!("{new_hints:#?}").as_bytes())
-    //     .expect("Failed to write to data file");
+    let mut query_builder = QueryBuilder::new(format!(
+        "ALTER SEQUENCE cards_id_seq RESTART WITH {next_id}"
+    ));
+    let postgres_query = query_builder.build();
 
+    postgres_query.execute(postgres_db).await.unwrap();
+
+    // Add the hints to the new database.
     let mut query_builder = QueryBuilder::new("INSERT INTO cards (id, tree_id, front, back) ");
     query_builder.push_values(new_hints, |mut b, hint| {
         b.push_bind(hint.id)
