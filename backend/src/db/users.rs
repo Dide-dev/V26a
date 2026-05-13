@@ -28,11 +28,14 @@ use std::str::FromStr;
 /// May return a [`HashException`](ApiError::HashException) instead.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn add_user(db: &mut PgConnection, user_data: &RegisterData) -> Result<i32, ApiError> {
+pub async fn add_user(
+    db: &mut PgConnection,
+    user_data: &RegisterData,
+    cost: u32,
+) -> Result<i32, ApiError> {
     // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
     // Put a limit on password length.
-    let hashed_password =
-        hash(&user_data.password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
+    let hashed_password = hash(&user_data.password, cost).map_err(|_| ApiError::HashException)?;
 
     // Insert user into database.
     let user_id = query!(
@@ -139,10 +142,11 @@ pub async fn update_password(
     db: impl PgExecutor<'_>,
     user_id: i32,
     new_password: &str,
+    cost: u32,
 ) -> Result<(), ApiError> {
     // Hash the password using bcrypt. Anything beyond 72 bytes will be truncated.
     // Put a limit on password length.
-    let hashed_password = hash(new_password, DEFAULT_COST).map_err(|_| ApiError::HashException)?;
+    let hashed_password = hash(new_password, cost).map_err(|_| ApiError::HashException)?;
 
     query!(
         "UPDATE users SET password_hash = $1 WHERE id = $2",
@@ -653,8 +657,11 @@ mod tests {
 
         let user_id = initialize_user(&db, &register_data).await;
         let new_password = "P@ssword";
+        let cost = 4;
 
-        update_password(&db, user_id, new_password).await.unwrap();
+        update_password(&db, user_id, new_password, cost)
+            .await
+            .unwrap();
 
         let password_in_db = get_user_credentials_by_id(&db, user_id)
             .await
@@ -662,9 +669,28 @@ mod tests {
             .unwrap()
             .password_hash;
 
-        let password_valid = bcrypt::verify(new_password, password_in_db.as_str())
-            .map_err(|_| ApiError::HashException)
+        assert!(password_in_db.starts_with(&format!("$2b${cost:02}$")));
+
+        let password_valid = bcrypt::verify(new_password, password_in_db.as_str()).unwrap();
+
+        assert!(password_valid);
+
+        let new_password = "P@ssword!!!!";
+        let cost = 10;
+
+        update_password(&db, user_id, new_password, cost)
+            .await
             .unwrap();
+
+        let password_in_db = get_user_credentials_by_id(&db, user_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .password_hash;
+
+        assert!(password_in_db.starts_with(&format!("$2b${cost:02}$")));
+
+        let password_valid = bcrypt::verify(new_password, password_in_db.as_str()).unwrap();
 
         assert!(password_valid);
     }
