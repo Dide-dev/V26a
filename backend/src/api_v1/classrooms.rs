@@ -8,14 +8,14 @@ use crate::api_v1::session::Claims;
 use crate::db::classrooms::{add_classroom, generate_random_code};
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 use crate::errors::ApiError;
-use crate::{Config, get_connection};
+use crate::{ArcState, get_connection};
 
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
-pub fn classrooms() -> Router<Config> {
+pub fn classrooms() -> Router<ArcState> {
     Router::new().route("/add", post(add_new_classroom))
 }
 
