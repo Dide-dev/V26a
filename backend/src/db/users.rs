@@ -5,7 +5,7 @@
 */
 
 use crate::db_structs::users::{
-    AllUsersGetData, RegisterData, UserGetData, UserLanguage, UserUpdateData, AdminUpdateData,
+    AdminUpdateData, AllUsersGetData, RegisterData, UserGetData, UserLanguage, UserUpdateData,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -394,6 +394,38 @@ mod tests {
 
         // Assert user does exist after adding to the database.
         let found_user_id = get_user_by_email(&db, &email).await.unwrap();
+        assert_eq!(found_user_id, Some(user_id));
+    }
+
+    #[sqlx::test]
+    async fn test_admin_update_user(db: PgPool) {
+        let register_data = RegisterData {
+            email: "hoi@gmail.com".to_owned(),
+            password: "password".to_owned(),
+            name: "Not John Smith".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        };
+
+        let update_data = AdminUpdateData {
+            email: "JohnSmith@gmail.com".to_owned(),
+            name: "John Smith".to_owned(),
+            enabled: true,
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            account_type: AccountType::Admin,
+            language: UserLanguage::Nl,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+
+        let _result = admin_update_user(&db, user_id, &update_data).await;
+
+        let found_user_id = get_user_by_name(&db, "John Smith").await.unwrap();
+        // Checks whether the users name changed from "Not John Smith" to "John Smith" by checking of the id's are the same.
         assert_eq!(found_user_id, Some(user_id));
     }
 

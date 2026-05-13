@@ -13,17 +13,15 @@ use axum::{
 };
 use sqlx::PgPool;
 
-use crate::db_structs::users::{
-    AdminUpdateData
-};
+use crate::db_structs::users::AdminUpdateData;
 
-use axum::extract::{Path};
+use axum::extract::Path;
 
 use crate::{
     api_v1::session::Claims,
-    api_v1::users::{UserResponse},
+    api_v1::users::UserResponse,
     config::Config,
-    db::users::{get_all_users, user_id_exists, get_user_by_name, admin_update_user},
+    db::users::{admin_update_user, get_all_users, get_user_by_name, user_id_exists},
     db_structs::users::{AccountType, AllUsersGetData},
     errors::ApiError,
 };
@@ -136,7 +134,8 @@ async fn update_user_data(
 
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
-    if let Some(id) = found_user_id && id != claims.sub
+    if let Some(id) = found_user_id
+        && id != claims.sub
     {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
