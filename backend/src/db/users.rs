@@ -10,7 +10,7 @@ use crate::db_structs::users::{
 };
 use crate::errors::ApiError;
 
-use bcrypt::{DEFAULT_COST, hash};
+use bcrypt::hash;
 use sqlx::{PgConnection, PgExecutor, query, query_as, query_scalar};
 use std::str::FromStr;
 
