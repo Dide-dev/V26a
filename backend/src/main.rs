@@ -106,10 +106,13 @@ async fn backend(config: Config) -> Router {
         .await
         .expect("failed to run database migrations.");
 
-    // Extract ratelimiter config (per minute) &  create governor layer (minute)   
+    // Extract ratelimiter config (per minute) &  create governor layer (minute)
     let governor_layer = ServiceBuilder::new()
         .map_response(map_response_error)
-        .layer(governor_conf_minute(config.rate_limit_per_minute, config.rate_limit_burst_size_minute));
+        .layer(governor_conf_minute(
+            config.rate_limit_per_minute,
+            config.rate_limit_burst_size_minute,
+        ));
 
     Router::new()
         .nest("/v1", v1_api(config.clone()))

@@ -22,10 +22,7 @@ use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
-    Router::new().route(
-        "/login",
-        post(login).layer(governor_conf_minute(15, 30)),
-    )
+    Router::new().route("/login", post(login).layer(governor_conf_minute(15, 30)))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
