@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, email, name, enabled FROM users",
+  "query": "SELECT id, email, name, enabled FROM users\n         ORDER BY id\n         LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,10 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
     },
     "nullable": [
       false,
@@ -44,5 +47,5 @@
       false
     ]
   },
-  "hash": "a4f1902a5d8d28e7d46f0f0f9418ec7b4725a4eff0b7dbfe1c7f74166cb7f72a"
+  "hash": "c432cc66cd4883d25acf6fc94ff3dd708aa501d5fd61bbc597a59c33342a34cb"
 }

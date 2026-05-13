@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
 
 use crate::api_v1::governor_conf_minute;
 use crate::api_v1::session::Claims;
@@ -23,7 +23,7 @@ use std::fmt::Write;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
-pub fn images() -> Router<Config> {
+pub fn images() -> Router<ArcState> {
     Router::new().route(
         "/add",
         post(add_new_image).layer(governor_conf_minute(10, 20)),
@@ -80,11 +80,11 @@ pub fn images() -> Router<Config> {
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(
     claims: Claims,
-    State(config): State<Config>,
+    State(state): State<ArcState>,
     Extension(db): Extension<PgPool>,
     body: Bytes,
 ) -> Result<String, ApiError> {
-    let upload_directory = &config.upload_dir;
+    let upload_directory = &state.config.upload_dir;
 
     // First check whether the directory exists, creates it if not.
     ensure_directory_existence(upload_directory).await?;
