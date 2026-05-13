@@ -7,6 +7,7 @@
 #![cfg(test)]
 
 mod cards;
+mod classrooms;
 mod feedback;
 mod images;
 mod trees;

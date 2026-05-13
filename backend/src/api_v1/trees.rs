@@ -120,7 +120,7 @@ async fn remove_tree(
 ) -> Result<(), ApiError> {
     verify_tree_permissions(&db, tree_id, claims).await?;
 
-    crate::db::trees::remove_tree(&db, tree_id).await
+    db::trees::remove_tree(&db, tree_id).await
 }
 
 /// Check whether a tree structure contains no cards.

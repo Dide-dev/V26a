@@ -7,6 +7,7 @@
 pub mod admin;
 pub mod auth;
 pub mod cards;
+pub mod classrooms;
 pub mod feedback;
 pub mod images;
 pub mod session;
@@ -15,7 +16,8 @@ pub mod users;
 
 use crate::ArcState;
 use crate::api_v1::{
-    admin::admin, cards::cards, feedback::feedback, images::images, trees::trees, users::users,
+    admin::admin, cards::cards, classrooms::classrooms, feedback::feedback, images::images,
+    trees::trees, users::users,
 };
 use auth::auth;
 use axum::Router;
@@ -25,9 +27,10 @@ pub fn v1_api(state: ArcState) -> Router<ArcState> {
     Router::new()
         .nest("/admin", admin(state))
         .nest("/auth", auth())
-        .nest("/trees", trees())
         .nest("/cards", cards())
-        .nest("/users", users())
-        .nest("/images", images())
+        .nest("/classrooms", classrooms())
         .nest("/feedback", feedback())
+        .nest("/images", images())
+        .nest("/trees", trees())
+        .nest("/users", users())
 }
