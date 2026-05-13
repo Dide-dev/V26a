@@ -50,12 +50,10 @@ impl Config {
         let log_level = tracing_subscriber::EnvFilter::try_from_env("RUST_LOG")
             .expect("Environment variable RUST_LOG must be correctly configured");
 
-        let bcrypt_cost = env::var("BCRYPT_COST")
-            .map(|s| {
-                s.parse()
-                    .expect("Failed to parse environment variable BCRYPT_COST")
-            })
-            .unwrap_or(DEFAULT_COST);
+        let bcrypt_cost = env::var("BCRYPT_COST").map_or(DEFAULT_COST, |s| {
+            s.parse()
+                .expect("Failed to parse environment variable BCRYPT_COST")
+        });
         let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
