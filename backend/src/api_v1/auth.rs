@@ -18,6 +18,7 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Duration;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
@@ -100,7 +101,6 @@ async fn login(
         name: user_data.name,
         nickname: user_data.nickname,
         sub: claims.sub,
-        exp: claims.exp,
         account_type: claims.account_type,
     };
 
@@ -111,7 +111,7 @@ async fn login(
     let user_info = serde_json::to_string(&user_info_cookie)?;
 
     // Age of a cookie (same for the two cookies)
-    let time = time::Duration::new(config.session_duration, 0);
+    let time = Duration::seconds(config.session_duration);
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.

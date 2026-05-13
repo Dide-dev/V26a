@@ -25,6 +25,7 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Duration;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
@@ -209,11 +210,10 @@ async fn update_user_data(
         name: new_data.name,
         nickname: new_data.nickname,
         sub: claims.sub,
-        exp: claims.exp,
         account_type: new_data.account_type.unwrap_or(claims.account_type),
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
-    let time = time::Duration::new(new_user_info_cookie.exp - Utc::now().timestamp(), 0);
+    let time = Duration::seconds(claims.exp - Utc::now().timestamp());
     let user_cookie = Cookie::build(("user_info", new_user_info))
         .path("/")
         .secure(true)

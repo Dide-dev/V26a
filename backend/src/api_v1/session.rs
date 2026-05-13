@@ -51,9 +51,7 @@ pub struct Claims {
 pub struct InfoCookieData {
     pub name: String,
     pub nickname: String,
-    // Copy from `Claims`
     pub sub: i32,
-    pub exp: i64,
     pub account_type: AccountType,
 }
 
