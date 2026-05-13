@@ -62,14 +62,6 @@ pub struct UserGetAllData {
     pub enabled: bool,
 }
 
-/// Data received to put into the `user_info` cookie.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct UserGetNameData {
-    pub name: String,
-    pub nickname: String,
-}
-
 /// The body for a password change request that contains the old password, and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

@@ -172,7 +172,7 @@ async fn get_own_user_data(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
-    jar: CookieJar,
+    mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
@@ -199,20 +199,17 @@ async fn update_user_data(
     if let Some(id) = found_user_id
         && id != claims.sub
     {
-        return Ok((
-                      jar,
-                      Json(UserResponse::UsernameAlreadyUsed)),
-        );
+        return Ok((jar, Json(UserResponse::UsernameAlreadyUsed)));
     }
 
     update_user(&db, user_id, &new_data).await?;
-    //let user_info_cookie_data = serde_json::from_str(jar.get("info_user").unwrap().value());
+
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
         sub: claims.sub,
         exp: claims.exp,
-        account_type: if new_data.account_type.is_some() { new_data.account_type.unwrap() } else { claims.account_type },
+        account_type: new_data.account_type.unwrap_or(claims.account_type),
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
     let time = time::Duration::new(new_user_info_cookie.exp - Utc::now().timestamp(), 0);
@@ -220,13 +217,11 @@ async fn update_user_data(
         .path("/")
         .secure(true)
         .max_age(time)
-        .http_only(true);
-    let cookie_jar = jar.remove("info_user").add(user_cookie);
+        .http_only(false);
+    // `add` automatically replaces the cookie values, `remove` sets the cookie to an empty value and the maxAge to 0.
+    jar = jar.add(user_cookie);
 
-    Ok((
-        cookie_jar,
-        Json(UserResponse::Success { user_id }),
-    ))
+    Ok((jar, Json(UserResponse::Success { user_id })))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.

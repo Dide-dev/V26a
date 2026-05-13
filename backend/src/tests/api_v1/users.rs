@@ -313,28 +313,3 @@ async fn test_delete_nonexistent_user(db: PgPool) {
 
     response.assert_status_bad_request();
 }
-
-#[sqlx::test]
-async fn test_check_user_info_cookie_data(db: PgPool) {
-    let server = setup(db);
-    let email = "KoekieMonster@sesamstraat.nl".to_owned();
-    register(&server, email.clone()).await;
-    let response = server
-        .post("/auth/login")
-        .json(&LoginRequestBody {
-            email,
-            password: "a$$word".to_string(),
-        })
-        .await;
-    let cookies = response.cookies();
-    let user_info_cookie = cookies.get("user_info");
-    assert!(user_info_cookie.is_some());
-    let data = user_info_cookie.unwrap().value();
-
-    // Fields have left out data as that is time-sensitive
-    assert!(data.starts_with("%7B%22name%22%3A%22John%20Test%20")); // In URL-decoded: {"name":"John Test
-    assert!(data.contains("%2C%22nickname%22%3A%22")); // ,"nickname":"
-    assert!(data.contains("%2C%22sub%22%3A")); // ,"sub":
-    assert!(data.contains("%2C%22exp%22%3A")); // ,"exp":
-    assert!(data.ends_with("%2C%22accountType%22%3A%22author%22%7D")); // ,"accountType":"author"}
-}
