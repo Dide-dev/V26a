@@ -40,7 +40,7 @@ pub async fn add_card(db: impl PgExecutor<'_>, card_data: &CardAddData) -> Resul
 /// Remove a card from the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `card_id` - The id of the card which should be removed.
 ///

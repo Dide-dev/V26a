@@ -76,6 +76,15 @@ pub struct AllUsersGetData {
     pub enabled: bool,
 }
 
+/// The data returned when requesting a list of users.
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserListResponse {
+    /// The total amount of users that are visible in the query.
+    pub total_users: i32,
+    pub users: Vec<UserGetAllData>,
+}
+
 /// The body for a password change request that contains the old password, and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

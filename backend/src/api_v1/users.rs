@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
@@ -27,7 +27,7 @@ use sqlx::PgPool;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
-pub fn users() -> Router<Config> {
+pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_user))
         .route("/me", get(get_own_user_data))
@@ -74,7 +74,7 @@ pub enum UserResponse {
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
-    State(config): State<Config>,
+    State(state): State<ArcState>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     let mut transaction = db.begin().await?;
@@ -91,7 +91,7 @@ async fn add_new_user(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    let user_id = add_user(&mut transaction, &user_data, config.bcrypt_cost).await?;
+    let user_id = add_user(&mut transaction, &user_data, state.config.bcrypt_cost).await?;
 
     transaction.commit().await?;
 
@@ -224,7 +224,7 @@ pub struct ChangePasswordResponse {
 async fn change_password(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    State(config): State<Config>,
+    State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
     let credentials = get_user_credentials_by_id(&db, claims.sub)
@@ -245,7 +245,7 @@ async fn change_password(
         &db,
         claims.sub,
         &password_change_request.new_password,
-        config.bcrypt_cost,
+        state.config.bcrypt_cost,
     )
     .await?;
 

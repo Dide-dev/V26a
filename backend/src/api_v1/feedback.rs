@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
 use crate::db::feedback::add_feedback;
 use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
@@ -13,7 +13,7 @@ use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
-pub fn feedback() -> Router<Config> {
+pub fn feedback() -> Router<ArcState> {
     Router::new().route("/provide", post(provide_feedback))
 }
 

@@ -6,10 +6,11 @@ import {
     type UsernameInvalid,
     type ChangePasswordResponse
 } from './users';
+import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
 const prefix = 'admin/';
 
-function apiCallGetUser(path: string) {
+function apiCallGetAdmin(path: string) {
     return apiCallGet(prefix + path);
 }
 
@@ -41,9 +42,15 @@ export type AdminChangePasswordData = {
     newPassword: string;
 };
 
-/** Get the user's own data */
-export function getAllUserData(): Promise<AllUsersGetData[]> {
-    return apiCallGetUser('all-user-data');
+export type UserListResponse = {
+    totalUsers: number;
+    users: AllUsersGetData[];
+};
+
+/** Get the data of all users */
+export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetAdmin(`all-user-data?${params}`);
 }
 
 /** Update the data of a user */
