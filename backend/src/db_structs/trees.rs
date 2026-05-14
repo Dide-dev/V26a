@@ -369,7 +369,7 @@ impl PartialSchema for TreeAddData {
 impl ToSchema for TreeAddData {}
 
 /// The data returned when requesting a list of trees.
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeListResponse {
     /// The total amount of trees that are visible in the query.

@@ -7,18 +7,17 @@
 use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_all_trees_by_owner, get_languages, get_queried_count,
-    get_queried_list, get_subjects, get_tree_owner, is_structure_valid, language_exists,
-    subject_exists,
+    add_tree, db_get_tree_all_data, get_languages, get_queried_count, get_queried_list,
+    get_subjects, get_tree_owner, is_structure_valid, language_exists, subject_exists,
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::trees::{
-    Language, Subject, TreeAddData, TreeFilters, TreeListResponse, TreeMetadata,
-    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Subject, TreeAddData, TreeFilters, TreeListResponse, TreeRemoveCardData,
+    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
-use crate::{Config, db, get_connection};
+use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
 use axum::routing::{delete, get, post};
@@ -29,7 +28,7 @@ use sqlx::{PgConnection, PgExecutor, PgPool};
 use std::collections::HashMap;
 
 /// Creates an `Axum` [`Router`] for the trees category.
-pub fn trees() -> Router<Config> {
+pub fn trees() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_tree))
         .route("/remove/{tree_id}", delete(remove_tree))
@@ -38,7 +37,6 @@ pub fn trees() -> Router<Config> {
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
         .route("/get-list", get(get_list))
         .route("/update-data", post(update_tree_data))
-        .route("/get-mine-all", get(get_all_owned_trees))
         .route("/get-all-languages", get(get_all_languages))
         .route("/get-all-subjects", get(get_all_subjects))
 }
@@ -148,7 +146,7 @@ async fn remove_tree(
 ) -> Result<(), ApiError> {
     verify_tree_permissions(&db, tree_id, claims).await?;
 
-    crate::db::trees::remove_tree(&db, tree_id).await
+    db::trees::remove_tree(&db, tree_id).await
 }
 
 /// Check whether a tree structure contains no cards.
@@ -473,38 +471,6 @@ async fn get_tree_with_cards(
         structure,
         cards: tree_cards,
     }))
-}
-
-#[utoipa::path(
-    get,
-    path = "/get-mine-all",
-    context_path = "/api/v1/trees",
-    responses(
-        (status = 200, description = "Successfully retrieved all owned trees.", body = Vec<TreeMetadata>),
-        (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 500, description = "Internal server error."),
-    ),
-    params(
-        ("session" = Claims, Cookie),
-    )
-)]
-/// Request metadata of all trees from the user.
-///
-/// # Arguments
-/// `claims` - The session cookie of the user.
-///
-/// # Returns
-/// A list containing the metadata of all trees owned by the user, as [`Vec<TreeMetadata>`].
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-async fn get_all_owned_trees(
-    claims: Claims,
-    Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<TreeMetadata>>, ApiError> {
-    let trees_metadata = get_all_trees_by_owner(&db, claims.sub).await?;
-
-    Ok(Json(trees_metadata))
 }
 
 /// Checks whether the tree exists and if it is owned by the user,

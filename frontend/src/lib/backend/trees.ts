@@ -8,6 +8,7 @@ import type { CardGetData, CardId } from './cards';
 import { apiCallPost, apiCallGet, apiCallDelete } from './index';
 import type { Option } from './types';
 import type { UserId } from './users';
+import type { PaginationOptions } from '$lib/pagination';
 
 const prefix = 'trees/';
 
@@ -141,11 +142,6 @@ export type TreeListResponse = {
     trees: TreeMetadata[];
 };
 
-export type PaginationOptions = {
-    page: Option<number>;
-    size: Option<number>;
-};
-
 export type FilterOptions = {
     ownerId: Option<number>;
     book: string[];
@@ -189,11 +185,6 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
 /** Update the metadata of a specific tree. */
 export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
     return apiCallPostTree('update-data', newTreeData);
-}
-
-/** Request all trees owned by the logged-in user. */
-export function getUsersOwnTrees(): Promise<TreeMetadata[]> {
-    return apiCallGetTree(`get-mine-all`);
 }
 
 export function isNullOrEmpty(value: unknown): boolean {

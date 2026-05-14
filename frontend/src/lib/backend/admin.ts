@@ -1,8 +1,9 @@
 import { apiCallGet } from './index';
+import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
 const prefix = 'admin/';
 
-function apiCallGetUser(path: string) {
+function apiCallGetAdmin(path: string) {
     return apiCallGet(prefix + path);
 }
 
@@ -14,7 +15,13 @@ export type UserGetAllData = {
     enabled: boolean;
 };
 
-/** Get the user's own data */
-export function getAllUserData(): Promise<UserGetAllData[]> {
-    return apiCallGetUser('all-user-data');
+export type UserListResponse = {
+    totalUsers: number;
+    users: UserGetAllData[];
+};
+
+/** Get the data of all users */
+export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetAdmin(`all-user-data?${params}`);
 }
