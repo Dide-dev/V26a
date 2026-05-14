@@ -19,7 +19,7 @@ use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
 use axum_test::TestServer;
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
 
 /// Sets up an API test server with the given mock database.
@@ -73,6 +73,31 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
+    user_id
+}
+
+/// Creates an admin account with the given [`TestServer`]
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// `db` - A [`PgConnection`] to the database used to make the [`TestServer`]
+///
+/// `email` - The new admin's email address.
+///
+/// # Returns
+/// An i32 representing the id of the admin created.
+async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email: String) -> i32 {
+    let user_id = register(test_server, email).await;
+
+    query!(
+        r"UPDATE users SET account_type='admin' WHERE id = $1",
+        user_id
+    )
+    .execute(db)
+    .await
+    .unwrap();
+
     user_id
 }
 

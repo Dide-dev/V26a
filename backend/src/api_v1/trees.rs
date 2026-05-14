@@ -403,9 +403,7 @@ async fn get_tree_with_cards(
             return Err(ApiError::MissingAuthentication);
         };
 
-        if claims.sub != gen_data.owner_id {
-            return Err(ApiError::NoPermission);
-        }
+        verify_tree_permissions(&db, tree_id, claims).await?;
     }
 
     let tree_cards = get_tree_cards(&db, tree_id).await?;
