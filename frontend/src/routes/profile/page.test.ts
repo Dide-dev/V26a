@@ -101,7 +101,7 @@ test('Submission with full data', async () => {
         accountType: null,
         enabled: null
     };
-    expect(updateUser).toHaveBeenCalledWith(userInfo.sub, expectedUpdateData);
+    expect(updateUser).toHaveBeenCalledWith(expectedUpdateData);
 });
 
 test('New password without upper case letter shows error', async () => {

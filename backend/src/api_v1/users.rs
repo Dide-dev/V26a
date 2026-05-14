@@ -31,7 +31,7 @@ pub fn users() -> Router<Config> {
     Router::new()
         .route("/add", post(add_new_user))
         .route("/me", get(get_own_user_data))
-        .route("/update/{user_id}", post(update_user_data))
+        .route("/update", post(update_user_data))
         .route("/change-password", post(change_password))
         .route("/{user_id}/delete", delete(delete_user_data))
 }
@@ -133,7 +133,7 @@ async fn get_own_user_data(
 
 #[utoipa::path(
     post,
-    path = "/update/{user_id}",
+    path = "/update",
     context_path = "/api/v1/users",
     request_body = UserUpdateData,
     responses(
@@ -145,18 +145,12 @@ async fn get_own_user_data(
     ),
     params(
         ("session" = Claims, Cookie),
-        ("user_id" = i32, Path),
     )
 )]
-/// Update a user's data in the database.
-///
-/// A normal user can only update their own data, only an admin can change other user's data.
-/// Certain fields can only be updated by admins in general, namely `account_type` and `enabled`.
+/// Update a user's own data in the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
-///
-/// `user_id` - The user for whom to update their data.
 ///
 /// `new_data` - The new data of the user, as [`UserUpdateData`]. The `account_type` and `enabled`
 /// fields are only updated if passed, and if the user has permission to do so.
@@ -174,23 +168,10 @@ async fn get_own_user_data(
 async fn update_user_data(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    // A user can only update another user's data if they are an administrator.
-    if claims.sub != user_id && claims.account_type != AccountType::Admin {
-        return Err(ApiError::NoPermission);
-    }
-
-    // The account type and enabled flag can only be changed by an admin.
-    if (new_data.account_type.is_some() || new_data.enabled.is_some())
-        && claims.account_type != AccountType::Admin
-    {
-        return Err(ApiError::NoPermission);
-    }
-
-    if !user_id_exists(&db, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
+    if !user_id_exists(&db, claims.sub).await? {
+        return Err(ApiError::MissingUser(claims.sub));
     }
 
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
@@ -201,9 +182,11 @@ async fn update_user_data(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    update_user(&db, user_id, &new_data).await?;
+    update_user(&db, claims.sub, &new_data).await?;
 
-    Ok(Json(UserResponse::Success { user_id }))
+    Ok(Json(UserResponse::Success {
+        user_id: claims.sub,
+    }))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.

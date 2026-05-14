@@ -119,7 +119,7 @@
         usernameAlreadyExists = false;
         resetInputStates();
 
-        const result = await updateUser(userInfo.sub, {
+        const result = await updateUser({
             name: userData.name,
             nickname: userData.nickname,
             aboutMe: userData.aboutMe,
