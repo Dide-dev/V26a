@@ -82,7 +82,7 @@ pub struct AllUsersGetData {
 pub struct UserListResponse {
     /// The total amount of users that are visible in the query.
     pub total_users: i32,
-    pub users: Vec<UserGetAllData>,
+    pub users: Vec<AllUsersGetData>,
 }
 
 /// The body for a password change request that contains the old password, and the new password.
