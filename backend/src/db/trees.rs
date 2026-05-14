@@ -49,19 +49,15 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 pub async fn get_subjects(
     db: impl PgExecutor<'_>,
 ) -> Result<HashMap<String, Vec<Subject>>, ApiError> {
-    let mut results = query_as!(Subject, "SELECT * FROM subjects")
+    let results = query_as!(Subject, "SELECT * FROM subjects")
         .fetch_all(db)
         .await?;
-
     let mut map: HashMap<String, Vec<Subject>> = HashMap::new();
-    for subject in results.drain(..) {
-        if let Some(ref mut vec) = map.get_mut(&subject.language_code) {
-            vec.push(subject);
-        } else {
-            map.insert(subject.language_code.clone(), vec![subject]);
-        }
+    for subject in results {
+        map.entry(subject.language_code.clone())
+            .and_modify(|vec| vec.push(subject.clone()))
+            .or_insert(vec![subject]);
     }
-
     Ok(map)
 }
 
@@ -189,6 +185,9 @@ pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<bool, ApiError> {
+    // We pass a TreeData to this function because that's the only struct
+    // that contains book info. If this does not contain a book, there's
+    // nothing to do and we can return.
     if tree_data.book_isbn.is_none() {
         return Ok(false);
     }
@@ -215,7 +214,7 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<b
     .fetch_one(db)
     .await?;
 
-    Ok(result.exists.unwrap_or(false))
+    result.exists.ok_or(ApiError::DatabaseException)
 }
 
 /// Add a list of tags for a given tree in the database.
