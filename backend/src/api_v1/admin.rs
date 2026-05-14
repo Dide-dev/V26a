@@ -18,10 +18,12 @@ use axum::extract::{Path, State};
 
 use crate::{
     api_v1::session::Claims,
-    api_v1::users::{UserResponse, ChangePasswordResponse},
+    api_v1::users::{ChangePasswordResponse, UserResponse},
     config::Config,
-    db::users::{admin_update_user, get_all_users, get_user_by_name, user_id_exists, update_password},
-    db_structs::users::{AccountType, AllUsersGetData, AdminPasswordChangeRequestBody},
+    db::users::{
+        admin_update_user, get_all_users, get_user_by_name, update_password, user_id_exists,
+    },
+    db_structs::users::{AccountType, AdminPasswordChangeRequestBody, AllUsersGetData},
     errors::ApiError,
 };
 
@@ -178,14 +180,7 @@ async fn change_password(
     Path(user_id): Path<i32>,
     Json(new_password): Json<AdminPasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
-
-    update_password(
-        &db,
-        user_id,
-        &new_password.new_password,
-        config.bcrypt_cost,
-    )
-    .await?;
+    update_password(&db, user_id, &new_password.new_password, config.bcrypt_cost).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
