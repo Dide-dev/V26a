@@ -83,6 +83,12 @@ pub struct PasswordChangeRequestBody {
     pub old_password: String,
     pub new_password: String,
 }
+/// The body for a password change request that contains the new password.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminPasswordChangeRequestBody {
+    pub new_password: String,
+}
 
 /// Optional query parameter that makes it possible to delete trees of the user too.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]

@@ -3,7 +3,8 @@ import {
     type UserId,
     type UserSuccess,
     type UserEmailInvalid,
-    type UsernameInvalid
+    type UsernameInvalid,
+    type ChangePasswordResponse
 } from './users';
 
 const prefix = 'admin/';
@@ -35,6 +36,10 @@ export type UserAllData = {
     accountType: string;
     language: string;
 };
+/** The data needed to change a user's password */
+export type AdminChangePasswordData = {
+    newPassword: string;
+};
 
 /** Get the user's own data */
 export function getAllUserData(): Promise<AllUsersGetData[]> {
@@ -47,4 +52,12 @@ export function updateUserData(
     newData: UserAllData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser(`users/${userId}/update-data`, newData);
+}
+
+/** Change a user's password */
+export function adminChangePassword(
+    userId: UserId,
+    changePasswordData: AdminChangePasswordData
+): Promise<ChangePasswordResponse> {
+    return apiCallPostUser(`users/${userId}/update-password`, changePasswordData);
 }

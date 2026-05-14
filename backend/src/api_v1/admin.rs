@@ -14,15 +14,14 @@ use axum::{
 use sqlx::PgPool;
 
 use crate::db_structs::users::AdminUpdateData;
-
-use axum::extract::Path;
+use axum::extract::{Path, State};
 
 use crate::{
     api_v1::session::Claims,
-    api_v1::users::UserResponse,
+    api_v1::users::{UserResponse, ChangePasswordResponse},
     config::Config,
-    db::users::{admin_update_user, get_all_users, get_user_by_name, user_id_exists},
-    db_structs::users::{AccountType, AllUsersGetData},
+    db::users::{admin_update_user, get_all_users, get_user_by_name, user_id_exists, update_password},
+    db_structs::users::{AccountType, AllUsersGetData, AdminPasswordChangeRequestBody},
     errors::ApiError,
 };
 
@@ -46,6 +45,7 @@ pub fn admin(config: Config) -> Router<Config> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
         .route("/users/{user_id}/update-data", post(update_user_data))
+        .route("/users/{user_id}/update-password", post(change_password))
         .route_layer(middleware::from_fn_with_state(config, check_if_admin))
 }
 
@@ -143,4 +143,49 @@ async fn update_user_data(
     admin_update_user(&db, user_id, &new_data).await?;
 
     Ok(Json(UserResponse::Success { user_id }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/users/{user_id}/update-password",
+    context_path = "/api/v1/admin",
+    request_body = AdminPasswordChangeRequestBody,
+    responses(
+        (status = 200, description = "Password changing attempt has been finalized.", body = ChangePasswordResponse),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
+    )
+)]
+/// Changes a password in the database.
+///
+/// # Arguments
+/// `user_id` - The user for whom to update their password.
+///
+/// `new_password` - A struct containing the new password.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`HashException`](ApiError::HashException) or
+/// [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn change_password(
+    Extension(db): Extension<PgPool>,
+    State(config): State<Config>,
+    Path(user_id): Path<i32>,
+    Json(new_password): Json<AdminPasswordChangeRequestBody>,
+) -> Result<Json<ChangePasswordResponse>, ApiError> {
+
+    update_password(
+        &db,
+        user_id,
+        &new_password.new_password,
+        config.bcrypt_cost,
+    )
+    .await?;
+
+    Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
