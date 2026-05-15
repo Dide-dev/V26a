@@ -5,7 +5,7 @@
 */
 
 import { apiCallPost, apiCallGet } from './index';
-import type { PaginationOptions } from './trees';
+import type { PaginationOptions } from '$lib/pagination';
 
 const prefix = 'feedback/';
 
