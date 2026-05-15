@@ -4,9 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::feedback::FeedbackData;
+use crate::db_structs::feedback::{FeedbackData, FeedbackGetData};
+use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
-use sqlx::{PgExecutor, query};
+use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
 
 /// Add feedback to the database.
 ///
@@ -34,6 +35,69 @@ pub async fn add_feedback(
     .await?;
 
     Ok(())
+}
+
+/// Get feedback from the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// # Returns
+/// A list with the feedback.
+///
+/// # Errors
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_feedback(
+    db: impl PgExecutor<'_>,
+    page: &PaginationOptions,
+) -> Result<Vec<FeedbackGetData>, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new(
+        "SELECT id AS feedback_id, email, feedback, created_at
+        FROM feedback
+        ORDER BY created_at DESC \
+        LIMIT ",
+    );
+
+    query
+        .push_bind(i64::from(page.get_size()))
+        .push(" OFFSET ")
+        // Page is 1-based
+        .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
+
+    let feedback = query
+        .build_query_as::<FeedbackGetData>()
+        .fetch_all(db)
+        .await?;
+
+    // User requested a page that yields no results. This should only occur if the user requests a
+    // page that is too high, as get_queried_count should be used to confirm results exist.
+    if feedback.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    Ok(feedback)
+}
+
+/// Get the amount of feedback.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// # Returns
+/// The amount of feedback.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_feedback_count(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM feedback");
+
+    let feedback_count: i64 = query.build_query_scalar().fetch_one(db).await?;
+
+    Ok(feedback_count)
 }
 
 #[cfg(test)]
@@ -65,5 +129,30 @@ mod tests {
         };
 
         assert_eq!(found_feedback_data, feedback_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_feedback(db: PgPool) {
+        initialize_db(get_connection_unwrap!(db)).await;
+
+        let feedback_data = FeedbackData {
+            email: "test@test.nl".to_owned(),
+            feedback: "feedback".to_owned(),
+        };
+
+        add_feedback(&db, &feedback_data).await.unwrap();
+
+        let page = PaginationOptions::new(1, 50, 1000, 500).unwrap();
+        let feedback_count = get_feedback_count(&db).await.unwrap();
+        assert_eq!(feedback_count, 1);
+
+        let found_feedback_data = get_all_feedback(&db, &page).await.unwrap();
+
+        assert!(found_feedback_data.len() == 1);
+
+        let found_feedback = &found_feedback_data[0];
+
+        assert_eq!(found_feedback.email, feedback_data.email);
+        assert_eq!(found_feedback.feedback, feedback_data.feedback);
     }
 }
