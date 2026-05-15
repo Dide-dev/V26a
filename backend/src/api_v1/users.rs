@@ -170,10 +170,6 @@ async fn update_user_data(
     Extension(db): Extension<PgPool>,
     Json(new_data): Json<UserUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    if !user_id_exists(&db, claims.sub).await? {
-        return Err(ApiError::MissingUser(claims.sub));
-    }
-
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
     if let Some(id) = found_user_id
