@@ -1,10 +1,15 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT email, name, nickname, about_me, email_visible, language FROM users WHERE id = $1",
+  "query": "SELECT id, email, name, enabled FROM users\n         ORDER BY id\n         LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
         "name": "email",
         "type_info": {
           "Custom": {
@@ -14,7 +19,7 @@
         }
       },
       {
-        "ordinal": 1,
+        "ordinal": 2,
         "name": "name",
         "type_info": {
           "Custom": {
@@ -24,39 +29,23 @@
         }
       },
       {
-        "ordinal": 2,
-        "name": "nickname",
-        "type_info": "Varchar"
-      },
-      {
         "ordinal": 3,
-        "name": "about_me",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 4,
-        "name": "email_visible",
+        "name": "enabled",
         "type_info": "Bool"
-      },
-      {
-        "ordinal": 5,
-        "name": "language",
-        "type_info": "Bpchar"
       }
     ],
     "parameters": {
       "Left": [
-        "Int4"
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
       false,
       false,
       false,
-      false,
-      false,
       false
     ]
   },
-  "hash": "8b0cae04e6a8d5934649355cb80f0ab22aa92a38ab07bdc37b696f9dbca95a69"
+  "hash": "c432cc66cd4883d25acf6fc94ff3dd708aa501d5fd61bbc597a59c33342a34cb"
 }

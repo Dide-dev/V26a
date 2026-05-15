@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0.8.8", features = ["multipart"] }
+axum = { version = "0.8.8", features = ["multipart", "macros"] }
 axum-extra = { version = "0.12.5", features = [
     "typed-header",
     "cookie",
@@ -38,6 +38,7 @@ uuid = { version = "1.23.0", features = ["v4"] }
 utoipa = { version = "5.4.0", features = ["chrono"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipauto = "0.2.0"
+rand = "0.10.1"
 
 [dev-dependencies]
 axum-test = "20.0.0"

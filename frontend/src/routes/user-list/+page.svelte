@@ -5,27 +5,73 @@
 -->
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { type UserGetAllData, getAllUserData } from '$lib/backend/admin';
+    import { getAllUserData, type UserListResponse } from '$lib/backend/admin';
     import { onMount } from 'svelte';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
-    import { booleanToString } from '$lib/general';
+    import { booleanToString } from '$lib/index';
+    import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
+
+    let userListResponse: null | UserListResponse = $state(null);
+
+    let pageSizeString = $state('10');
+    let pageSizeNumber = $derived(Number(pageSizeString));
+    let thisPage = $state(1);
+
+    let paginationOptions: PaginationOptions = $derived({
+        page: thisPage,
+        size: pageSizeNumber
+    });
 
     onMount(async () => {
         await loadUsers();
     });
 
-    let users: null | UserGetAllData[] = $state(null);
-
     async function loadUsers() {
-        users = await getAllUserData();
+        userListResponse = await getAllUserData(paginationOptions);
+    }
+
+    let prevPageExists = $derived(thisPage > 1);
+    let nextPageExists = $derived.by(() => {
+        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        const total = (userListResponse as UserListResponse | null)?.totalUsers ?? 0;
+        return thisPage < calcTotalPages(total, pageSizeNumber);
+    });
+
+    function prevPage() {
+        thisPage -= 1;
+        loadUsers();
+    }
+
+    function nextPage() {
+        thisPage += 1;
+        loadUsers();
     }
 </script>
 
-{#if users === null}
+<div class="flex w-full justify-center">
+    <div class="flex-col">
+        <!-- Change the number of users per page -->
+        <label>
+            {m.numberOfUsers()}
+            <select
+                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
+                bind:value={pageSizeString}
+                onchange={loadUsers}
+            >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+    </div>
+</div>
+
+{#if userListResponse?.users === null}
     <p>{m.loading()}</p>
 {:else}
-    <div class="100vw flex justify-center">
+    <div class="100vw flex flex-col items-center justify-center overflow-auto">
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>
@@ -38,7 +84,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each users as user (user.id)}
+                {#each userListResponse?.users as user (user.id)}
                     <tr>
                         <td class="pr-4 wrap-anywhere">{user.id}</td>
                         <td class="pr-4 wrap-anywhere">{user.email}</td>
@@ -54,5 +100,20 @@
                 {/each}
             </tbody>
         </table>
+        <div>
+            <button
+                onclick={prevPage}
+                disabled={!prevPageExists}
+                class="mx-5"
+                class:cursor-pointer={prevPageExists}>Prev</button
+            >
+            {thisPage}/{calcTotalPages(userListResponse?.totalUsers ?? 0, pageSizeNumber)}
+            <button
+                onclick={nextPage}
+                disabled={!nextPageExists}
+                class="mx-5"
+                class:cursor-pointer={nextPageExists}>Next</button
+            >
+        </div>
     </div>
 {/if}

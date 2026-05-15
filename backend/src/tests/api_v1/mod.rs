@@ -7,11 +7,13 @@
 #![cfg(test)]
 
 mod cards;
+mod classrooms;
 mod feedback;
 mod images;
 mod trees;
 mod users;
 
+use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
@@ -35,9 +37,10 @@ fn setup(db: PgPool) -> TestServer {
     // Set a low bcrypt cost to speed up password hashing during testing.
     config.bcrypt_cost = 4;
 
-    let router = crate::api_v1::v1_api(config.clone())
+    let state = ArcState::new(config);
+    let router = crate::api_v1::v1_api(state.clone())
         .layer(Extension(db))
-        .with_state(config);
+        .with_state(state);
     TestServer::builder().save_cookies().build(router)
 }
 

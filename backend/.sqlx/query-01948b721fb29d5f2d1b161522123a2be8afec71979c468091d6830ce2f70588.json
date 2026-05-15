@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH insertion AS (\n            INSERT INTO books (isbn, title, author, edition)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT DO NOTHING\n            RETURNING FALSE AS exists\n        )\n        SELECT * FROM insertion\n        UNION\n        SELECT TRUE AS exists FROM books WHERE isbn = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "01948b721fb29d5f2d1b161522123a2be8afec71979c468091d6830ce2f70588"
+}

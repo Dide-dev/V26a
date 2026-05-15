@@ -6,15 +6,10 @@
 <script lang="ts">
     import { Datepicker } from 'flowbite-svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import {
-        type FilterOptions,
-        type PaginationOptions,
-        type TreeListResponse,
-        type TreeMetadata,
-        getFilteredList
-    } from '$lib/backend/trees';
+    import { type FilterOptions, type TreeListResponse, getFilteredList } from '$lib/backend/trees';
     import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
+    import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
@@ -35,12 +30,13 @@
     });
 
     let treeListResponse: null | TreeListResponse = $state(null);
-    let trees: null | TreeMetadata[] = $state(null);
 
     let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived(
-        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
-    );
+    let nextPageExists = $derived.by(() => {
+        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        const total = (treeListResponse as TreeListResponse | null)?.totalTrees ?? 0;
+        return thisPage < calcTotalPages(total, pageSizeNumber);
+    });
 
     onMount(async () => {
         await loadTrees();
@@ -48,7 +44,6 @@
 
     async function loadTrees() {
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
-        trees = treeListResponse.trees;
     }
 
     function prevPage() {
@@ -59,18 +54,6 @@
     function nextPage() {
         thisPage += 1;
         loadTrees();
-    }
-
-    function calcTotalPages(totalTrees: number, pageSize: number): number {
-        return Math.ceil(totalTrees / pageSize);
-    }
-
-    function showTreeCount(treeListResponse: TreeListResponse | null): number {
-        if (treeListResponse == null) {
-            return 0;
-        } else {
-            return treeListResponse.totalTrees;
-        }
     }
 
     function showBookName(bookName: string | null): string {
@@ -146,9 +129,9 @@
     </div>
 </div>
 
-{#if trees === null}
+{#if treeListResponse?.trees === null}
     <p>{m.loading()}</p>
-{:else if trees.length === 0}
+{:else if treeListResponse?.trees.length === 0}
     <div class="text-center">
         <p class="flex justify-center text-2xl">{m.noAllTreesFound()}</p>
     </div>
@@ -164,7 +147,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each trees as tree (tree.genData.id)}
+                {#each treeListResponse?.trees as tree (tree.genData.id)}
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
@@ -189,7 +172,7 @@
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
+            {thisPage}/{calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}
