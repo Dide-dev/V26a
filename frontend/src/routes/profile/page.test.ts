@@ -97,9 +97,7 @@ test('Submission with full data', async () => {
         nickname: 'Johnny',
         aboutMe: 'Some interesting backstory',
         emailVisible: false,
-        language: 'en',
-        accountType: null,
-        enabled: null
+        language: 'en'
     };
     expect(updateUser).toHaveBeenCalledWith(expectedUpdateData);
 });

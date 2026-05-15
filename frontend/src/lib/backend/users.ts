@@ -5,7 +5,6 @@
 */
 
 import { apiCallPost, apiCallGet, apiCallDelete } from './index';
-import type { Option } from './types';
 
 const prefix = 'users/';
 
@@ -74,8 +73,6 @@ export type UserUpdateData = {
     aboutMe: string;
     emailVisible: boolean;
     language: string;
-    accountType: Option<AccountType>;
-    enabled: Option<boolean>;
 };
 
 /** The data in the cookie */

@@ -107,14 +107,12 @@ pub async fn update_user(
 ) -> Result<(), ApiError> {
     // COALESCE is used here to update account_type and enabled only if they are not None.
     query!(
-        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = COALESCE($6, account_type), enabled = COALESCE($7, enabled) WHERE id = $8",
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5 WHERE id = $6",
         new_data.name,
         new_data.nickname,
         new_data.about_me,
         new_data.email_visible,
         new_data.language.to_string(),
-        new_data.account_type.map(|t| t.to_string()),
-        new_data.enabled,
         id,
     )
     .execute(db)
@@ -626,8 +624,6 @@ mod tests {
             about_me: String::new(),
             email_visible: false,
             language: UserLanguage::Nl,
-            account_type: None,
-            enabled: None,
         };
         update_user(&db, user_id, &new_user_data).await.unwrap();
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
@@ -640,16 +636,8 @@ mod tests {
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
             language: all_found_user_data.language.parse().unwrap(),
-            // These need to be checked separately as they are both None in new_user_data.
-            account_type: new_user_data.account_type,
-            enabled: new_user_data.enabled,
         };
         assert_eq!(found_update_data, new_user_data);
-        assert_eq!(
-            all_found_user_data.account_type,
-            AccountType::Author.to_string()
-        );
-        assert!(all_found_user_data.enabled);
 
         // Test updating the account type and enabled flag
         let new_user_data = UserUpdateData {
@@ -658,8 +646,6 @@ mod tests {
             about_me: "Nothing interesting".to_owned(),
             email_visible: true,
             language: UserLanguage::En,
-            account_type: Some(AccountType::Admin),
-            enabled: Some(false),
         };
         update_user(&db, user_id, &new_user_data).await.unwrap();
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
@@ -672,8 +658,6 @@ mod tests {
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
             language: all_found_user_data.language.parse().unwrap(),
-            account_type: Some(AccountType::from_str(&all_found_user_data.account_type).unwrap()),
-            enabled: Some(all_found_user_data.enabled),
         };
         assert_eq!(found_update_data, new_user_data);
     }

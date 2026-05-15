@@ -45,10 +45,6 @@ pub struct UserUpdateData {
     pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
-    /// This field may only be updated by admins.
-    pub account_type: Option<AccountType>,
-    /// This field may only be updated by admins.
-    pub enabled: Option<bool>,
 }
 
 /// Data needed for an admin to update a user in the database.

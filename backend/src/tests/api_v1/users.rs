@@ -71,8 +71,6 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
-        account_type: None,
-        enabled: None,
     };
 
     let response = server.post("/users/update").json(&update_data).await;
