@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM languages WHERE code = $1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2adc477975e7cf0b866f3e7feb2e98f4716b2e28994c26239efda56639c806f5"
+}
