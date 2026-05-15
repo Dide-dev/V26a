@@ -76,7 +76,7 @@ pub fn admin(state: ArcState) -> Router<ArcState> {
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
-/// the data form all users and the amount of pages as [`UserListResponse`].
+/// The data from all users and the amount of pages as [`UserListResponse`].
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
@@ -135,10 +135,12 @@ async fn get_all_user_data(
 /// `new_data` - The new data of the user, as [`AdminUpdateData`].
 ///
 /// # Returns
-/// Nothing.
+/// A response as [`UserResponse`], which can be of the form `Success { user_id: i32 }`, `EmailAlreadyUsed` or `UsernameAlreadyUsed`.
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) when there is no session.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the given user's data, or to update one of the specified fields.
@@ -174,6 +176,8 @@ async fn update_user_data(
     request_body = AdminPasswordChangeRequestBody,
     responses(
         (status = 200, description = "Password changing attempt has been finalized.", body = ChangePasswordResponse),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
@@ -189,9 +193,14 @@ async fn update_user_data(
 /// `new_password` - A struct containing the new password.
 ///
 /// # Returns
-/// Nothing.
+/// A response as [`ChangePasswordResponse`], which has a variable succeeded of the type bool.
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) when there is no session.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the given user's data, or to update one of the specified fields.
+///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
