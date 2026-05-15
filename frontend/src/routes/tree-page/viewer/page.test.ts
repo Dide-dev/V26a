@@ -8,6 +8,8 @@ import type {
     Node,
     TreeData,
     TreeGeneratedData,
+    TreeLinkedData,
+    TreeMetadata,
     TreeStructure,
     TreeWithCards
 } from '$lib/backend/trees';
@@ -32,7 +34,11 @@ function createTree(): TreeWithCards {
     const treeData: TreeData = {
         title: 'Test Tree',
         description: 'Test Tree Description',
+        languageCode: 'en',
+        tags: [],
+        subjectId: 1,
         bookName: 'Test book name',
+        bookAuthor: 'Test author',
         bookEdition: 'Test edition',
         bookIsbn: '12345679',
         bookChapter: 'Test chapter 4',
@@ -61,9 +67,19 @@ function createTree(): TreeWithCards {
         lastVisited: new Date('December 17, 1995 15:09:11')
     };
 
-    const treeWithCards: TreeWithCards = {
+    const treeLinkedData: TreeLinkedData = {
+        ownerName: 'Test owner name',
+        subjectName: 'Test subject name'
+    };
+
+    const treeMetadata: TreeMetadata = {
         data: treeData,
         genData: treeGeneratedData,
+        linkedData: treeLinkedData
+    };
+
+    const treeWithCards: TreeWithCards = {
+        metadata: treeMetadata,
         structure: treeStructure,
         cards: cards
     };
@@ -86,9 +102,9 @@ test('Page successfully loads tree', async () => {
     page.url.searchParams.set('id', '4');
     render(PageComponent);
 
-    await screen.findByText(tree.data.title);
+    await screen.findByText(tree.metadata.data.title);
 
-    const description = tree.data.description as string;
+    const description = tree.metadata.data.description as string;
     screen.getByText(description);
 
     screen.getByText(tree.cards[1].front);

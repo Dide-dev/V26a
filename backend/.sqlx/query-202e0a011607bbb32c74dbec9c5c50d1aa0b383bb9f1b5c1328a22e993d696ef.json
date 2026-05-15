@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = COALESCE($6, account_type), enabled = COALESCE($7, enabled) WHERE id = $8",
+  "query": "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5, account_type = COALESCE($6, account_type), enabled = COALESCE($7, enabled) WHERE id = $8",
   "describe": {
     "columns": [],
     "parameters": {
@@ -22,5 +22,5 @@
     },
     "nullable": []
   },
-  "hash": "e82d4710313cd2cb7bee7bab3bb792f83c854930d6a0dde4ca1f3cf5ceb62e10"
+  "hash": "202e0a011607bbb32c74dbec9c5c50d1aa0b383bb9f1b5c1328a22e993d696ef"
 }
