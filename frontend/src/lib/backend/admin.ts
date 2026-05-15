@@ -6,10 +6,11 @@
 
 import { apiCallGet } from './index';
 import { type UserId } from './users';
+import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
 const prefix = 'admin/';
 
-function apiCallGetUser(path: string) {
+function apiCallGetAdmin(path: string) {
     return apiCallGet(prefix + path);
 }
 
@@ -31,12 +32,19 @@ export type UserGetAllData = {
     accountType: string;
     language: string;
 };
+
+export type UserListResponse = {
+    totalUsers: number;
+    users: AllUsersGetData[];
+};
+
 /** Get the data of all users */
-export function getAllUsersData(): Promise<AllUsersGetData[]> {
-    return apiCallGetUser('all-user-data');
+export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetAdmin(`all-user-data?${params}`);
 }
 
 /** Get the data of a specific user */
 export function getUserAllData(userId: UserId): Promise<UserGetAllData> {
-    return apiCallGetUser(`users/${userId}`);
+    return apiCallGetAdmin(`users/${userId}`);
 }
