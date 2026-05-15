@@ -28,7 +28,11 @@
     let treeData: TreeData = $state({
         title: '',
         description: '',
+        languageCode: 'nl',
+        tags: [],
+        subjectId: 1,
         bookName: '',
+        bookAuthor: '',
         bookEdition: '',
         bookIsbn: '',
         bookChapter: '',
@@ -134,7 +138,7 @@
             return;
         }
 
-        treeData.bookIsbn = isbn;
+        treeData.bookIsbn = isbn === '' ? null : isbn;
         const treeId = await addTree(treeData);
         await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }

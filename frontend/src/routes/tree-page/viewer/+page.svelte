@@ -38,7 +38,7 @@
 
         tree = await getTreeWithCards(id);
 
-        const isOwner = tree.genData.ownerId === userInfo?.sub;
+        const isOwner = tree.metadata.genData.ownerId === userInfo?.sub;
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {
@@ -55,15 +55,15 @@
             <button
                 data-testid="edit-button"
                 class="fixed top-16 right-4 z-50 m-2 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2 shadow"
-                onclick={() => goto(appLink(`/tree-page/editor?id=${tree!.genData.id}`))}
+                onclick={() => goto(appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`))}
             >
                 {m.edit()}
             </button>
         {/if}
 
-        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.metadata.data.title}</h1>
         <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-            {tree.data.description}
+            {tree.metadata.data.description}
         </p>
 
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">

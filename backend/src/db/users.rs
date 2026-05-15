@@ -39,7 +39,7 @@ pub async fn add_user(
 
     // Insert user into database.
     let user_id = query!(
-        "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language)
+        "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language_code)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id",
         user_data.email,
@@ -73,7 +73,7 @@ pub async fn add_user(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, ApiError> {
     let record = query!(
-        "SELECT email, name, nickname, about_me, email_visible, language FROM users WHERE id = $1",
+        "SELECT email, name, nickname, about_me, email_visible, language_code FROM users WHERE id = $1",
         id,
     )
     .fetch_one(db)
@@ -85,7 +85,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
         nickname: record.nickname,
         about_me: record.about_me,
         email_visible: record.email_visible,
-        language: UserLanguage::from_str(record.language.as_str())?,
+        language: UserLanguage::from_str(record.language_code.as_str())?,
     })
 }
 
@@ -108,7 +108,7 @@ pub async fn update_user(
 ) -> Result<(), ApiError> {
     // COALESCE is used here to update account_type and enabled only if they are not None.
     query!(
-        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language = $5, account_type = COALESCE($6, account_type), enabled = COALESCE($7, enabled) WHERE id = $8",
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5, account_type = COALESCE($6, account_type), enabled = COALESCE($7, enabled) WHERE id = $8",
         new_data.name,
         new_data.nickname,
         new_data.about_me,
@@ -363,7 +363,7 @@ mod tests {
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
-            language: all_found_user_data.language.parse().unwrap(),
+            language: all_found_user_data.language_code.parse().unwrap(),
         };
         assert_eq!(found_register_data, register_data);
 
@@ -573,7 +573,7 @@ mod tests {
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
-            language: all_found_user_data.language.parse().unwrap(),
+            language: all_found_user_data.language_code.parse().unwrap(),
             // These need to be checked separately as they are both None in new_user_data.
             account_type: new_user_data.account_type,
             enabled: new_user_data.enabled,
@@ -605,7 +605,7 @@ mod tests {
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
-            language: all_found_user_data.language.parse().unwrap(),
+            language: all_found_user_data.language_code.parse().unwrap(),
             account_type: Some(AccountType::from_str(&all_found_user_data.account_type).unwrap()),
             enabled: Some(all_found_user_data.enabled),
         };
@@ -725,7 +725,7 @@ mod tests {
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
-            language: all_found_user_data.language.parse().unwrap(),
+            language: all_found_user_data.language_code.parse().unwrap(),
         };
 
         let expected_user_data = RegisterData {

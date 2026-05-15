@@ -15,21 +15,25 @@
     let visible = $state(false);
 
     let treeData: TreeData = $state({
-        title: prevTreeData.title ?? '',
-        description: prevTreeData.description ?? '',
-        bookName: prevTreeData.bookName ?? '',
-        bookEdition: prevTreeData.bookEdition ?? '',
+        title: prevTreeData.title,
+        languageCode: prevTreeData.languageCode,
+        description: prevTreeData.description,
+        tags: prevTreeData.tags,
+        subjectId: prevTreeData.subjectId,
+        bookName: prevTreeData.bookName,
+        bookEdition: prevTreeData.bookEdition,
         bookIsbn: prevTreeData.bookIsbn ?? '',
-        bookChapter: prevTreeData.bookChapter ?? '',
-        bookExercise: prevTreeData.bookExercise ?? '',
-        assignmentText: prevTreeData.assignmentText ?? '',
-        published: prevTreeData.published ?? false
+        bookAuthor: prevTreeData.bookAuthor,
+        bookChapter: prevTreeData.bookChapter,
+        bookExercise: prevTreeData.bookExercise,
+        assignmentText: prevTreeData.assignmentText,
+        published: prevTreeData.published
     });
 
     async function saveData() {
         await updateTreeMetaData({
             id: treeId,
-            newData: { ...treeData }
+            newData: { ...treeData, bookIsbn: treeData.bookIsbn === '' ? null : treeData.bookIsbn }
         });
         visible = false;
         prevTreeData = { ...treeData };
