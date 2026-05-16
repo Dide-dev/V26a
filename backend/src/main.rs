@@ -65,7 +65,7 @@ async fn main() {
 
     // Start background task for email verification code expiry
     let state_clone = state.clone();
-    let _ = task::spawn(async move { state_cleaner::task_handler(state_clone).await }).await;
+    task::spawn(async move { state_cleaner::task_handler(state_clone).await });
 
     // Build our application with a route.
     let app = Router::new()
