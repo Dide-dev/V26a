@@ -76,7 +76,7 @@ pub enum UserResponse {
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException),
-/// [`DatabaseException`](ApiError::DatabaseException), 
+/// [`DatabaseException`](ApiError::DatabaseException),
 /// [`EmailParseError`](ApiError::EmailParseError),
 /// [`SmtpError`](ApiError::SmtpError) or
 /// [`LettreError`](ApiError::LettreError) instead.
@@ -218,6 +218,7 @@ async fn get_own_user_data(
 async fn update_user_data(
     claims: Claims,
     Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
     Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
@@ -237,11 +238,15 @@ async fn update_user_data(
         return Err(ApiError::MissingUser(user_id));
     }
 
-    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+    // This lock should not be released until the user is updated.
+    let pending_accounts = state.pending_accounts.lock().await;
 
-    if let Some(id) = found_user_id
-        && id != claims.sub
-    {
+    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+    let found_pending_username = pending_accounts
+        .values()
+        .any(|r| r.register_data.name.to_lowercase() == new_data.name.to_lowercase());
+
+    if found_user_id.is_some_and(|id| id != claims.sub) || found_pending_username {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
