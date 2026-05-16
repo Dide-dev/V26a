@@ -5,10 +5,10 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::session::{Claims, InfoCookieData};
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::users::get_user;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
 use axum::extract::State;
 use axum::routing::post;

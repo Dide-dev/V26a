@@ -6,8 +6,8 @@
 
 #![cfg(test)]
 
-use crate::api_v1::session::InfoCookieData;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, UserLanguage, UserUpdateData};
 use crate::tests::api_v1::{register, setup};
 use percent_encoding::percent_decode_str;

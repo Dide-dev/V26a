@@ -5,12 +5,12 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::session::{Claims, InfoCookieData};
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
 };
+use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
     UserUpdateData,
