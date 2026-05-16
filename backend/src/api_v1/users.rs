@@ -25,6 +25,7 @@ use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::{Duration, Utc};
 use lettre::message::Mailbox;
+use lettre::message::header::ContentType;
 use lettre::{Address, AsyncTransport, Message};
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
@@ -131,16 +132,16 @@ async fn add_new_user(
         "{}/api/v1/users/verify?code={}",
         state.config.base_url, verification_code
     );
-    // TODO: localization
-    let body = format!(
-        "Hello {},\n\nThank you for signing up to BOOM!\nBefore you can use your account, please verify using the following link:\n{}\n\nIf you do not recognize this request, please ignore this e-mail.\n\nBOOM!\n{}",
-        user_data.nickname, verification_link, state.config.base_url,
-    );
     let message = Message::builder()
         .from("BOOM! <noreply@localhost>".parse()?)
-        .to(Mailbox::new(Some(user_data.nickname), parsed_email))
-        .subject("BOOM! Account verification") // TODO: localization
-        .body(body)?;
+        .to(Mailbox::new(Some(user_data.nickname.clone()), parsed_email))
+        .subject(user_data.language.to_verification_message_title())
+        .header(ContentType::TEXT_PLAIN)
+        .body(user_data.language.to_verification_message_body(
+            &user_data.nickname,
+            &verification_link,
+            &state.config.base_url,
+        ))?;
     state.config.mailer.send(message).await?;
 
     Ok(Json(UserResponse::Pending))
