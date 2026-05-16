@@ -284,7 +284,10 @@
             menu = true;
         }}
     >
-        <AnimatedUnderline --color-underline="var(--color-white)">
+        <AnimatedUnderline
+            --color-underline="var(--color-white)"
+            --weight-underline="calc(var(--spacing) / 2)"
+        >
             <p
                 class="m-[var(--spacing-padding-small)_var(--spacing-padding-normal)] overflow-hidden font-bold"
             >
@@ -310,7 +313,10 @@
                 {@render navbarDropdownButton(link, i)}
             {:else}
                 <a class="flex-auto" href={appLink(link.defaultHref)} onclick={closeMenu}>
-                    <AnimatedUnderline --color-underline="var(--color-white)">
+                    <AnimatedUnderline
+                        --color-underline="var(--color-white)"
+                        --weight-underline="calc(var(--spacing) / 2)"
+                    >
                         <p
                             class="m-[var(--spacing-padding-small)_var(--spacing-padding-normal)] font-bold"
                         >
@@ -426,7 +432,10 @@
 
 <!-- Render text with an animated underline effect. -->
 {#snippet underlineText(text: string)}
-    <AnimatedUnderline --color-underline="var(--color-black)">
+    <AnimatedUnderline
+        --color-underline="var(--color-black)"
+        --weight-underline="calc(var(--spacing) * 0.4)"
+    >
         <p>
             {text}
         </p>

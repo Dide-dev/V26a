@@ -137,7 +137,10 @@
 
 <!-- Render a single footer link. -->
 {#snippet footerLink(link: FooterLink)}
-    <AnimatedUnderline --color-underline="var(--color-black)">
+    <AnimatedUnderline
+        --color-underline="var(--color-black)"
+        --weight-underline="calc(var(--spacing) / 3)"
+    >
         {#if link.localized}
             <a href={appLink(link.href)} target={link.target}>
                 {link.text}

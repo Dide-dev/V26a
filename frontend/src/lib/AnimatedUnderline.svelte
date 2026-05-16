@@ -12,6 +12,8 @@
 
     ## Params
     - `--color-underline` - The color to render the underline with. Default color is black.
+    - `--weight-underline` - Height to render the the underline with. Must be provided.
+                             Example value might be `calc(var(--spacing) / 3)`.
 -->
 <script lang="ts">
     let { children } = $props();
@@ -35,7 +37,7 @@
                 left: 0;
                 bottom: 0;
                 width: 0;
-                height: calc(var(--spacing) * 0.5);
+                height: var(--weight-underline);
                 /* Default color is var(--color-black). */
                 background-color: var(--color-underline);
                 /* Animation */
