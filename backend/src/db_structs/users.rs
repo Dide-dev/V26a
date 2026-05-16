@@ -25,6 +25,7 @@ pub struct RegisterData {
 
 /// User data to store before an account is verified.
 /// Stores their registration data and when the verification link should expire.
+#[derive(Debug)]
 pub struct PendingRegisterData {
     pub register_data: RegisterData,
     pub expires: i64,

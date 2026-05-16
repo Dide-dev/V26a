@@ -8,8 +8,8 @@ use crate::ArcState;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    delete_user, get_user, get_user_by_email, get_user_by_name, update_password, update_user,
-    user_id_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
+    update_user, user_id_exists,
 };
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingRegisterData, RegisterData,
@@ -17,6 +17,7 @@ use crate::db_structs::users::{
 };
 use crate::errors::ApiError;
 
+use crate::api_v1::users::UserResponse::InvalidVerification;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -34,6 +35,7 @@ use utoipa::ToSchema;
 pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_user))
+        .route("/verify", get(verify))
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
@@ -47,6 +49,8 @@ pub enum UserResponse {
     Success { user_id: i32 },
     /// Return body signalling the user data has been stored, but is pending verification.
     Pending,
+    /// Return body signalling that the user tried to verify with a code that is invalid or expired.
+    InvalidVerification,
     /// Return body signalling the user could not be added/updated, as the e-mail was already in use.
     EmailAlreadyUsed,
     /// Return body signalling the user could not be added/updated, as the username was already in use.
@@ -140,6 +144,69 @@ async fn add_new_user(
     state.config.mailer.send(message).await?;
 
     Ok(Json(UserResponse::Pending))
+}
+
+#[derive(serde::Deserialize, ToSchema)]
+pub struct VerificationCode {
+    code: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/verify",
+    context_path = "/api/v1/users",
+    request_body = RegisterData,
+    responses(
+        (status = 200, description = "Successfully verified user, or verification expired.", body = UserResponse, content_type = "application/json"),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("code" = VerificationCode, Query),
+    )
+)]
+/// Verify a user who is pending registration
+///
+/// # Arguments
+/// `code` - The verification code, given as a [`VerificationCode`] through a query.
+///
+/// # Returns
+/// [`Success`](UserResponse::Success) with the id assigned to the new user.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn verify(
+    Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
+    Query(code): Query<VerificationCode>,
+) -> Result<Json<UserResponse>, ApiError> {
+    let code = code.code;
+    let mut pending_accounts = state.pending_accounts.lock().await;
+
+    let Some(pending_registration) = pending_accounts
+        .get(&code)
+        // If the registration has expired, consider it not found.
+        .filter(|p| Utc::now().timestamp() < p.expires)
+    else {
+        return Ok(Json(InvalidVerification));
+    };
+
+    let mut tx = db.begin().await?;
+    let user_id = add_user(
+        &mut tx,
+        &pending_registration.register_data,
+        state.config.bcrypt_cost,
+    )
+    .await?;
+
+    if pending_accounts.remove(&code).is_none() {
+        // Somehow, the program failed to find the verification code in state.
+        // Do not commit the transaction and fail.
+        tx.rollback().await?;
+        Ok(Json(InvalidVerification))
+    } else {
+        tx.commit().await?;
+        Ok(Json(UserResponse::Success { user_id }))
+    }
 }
 
 #[utoipa::path(
