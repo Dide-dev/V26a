@@ -281,9 +281,7 @@
         href={appLink(link.defaultHref)}
         onclick={closeMenu}
         onpointerenter={() => {
-            if (link.children.length > 0) {
-                menu = true;
-            }
+            menu = true;
         }}
     >
         <AnimatedUnderline --color-underline="var(--color-white)">
