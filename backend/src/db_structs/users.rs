@@ -11,7 +11,7 @@ use std::str::FromStr;
 use utoipa::ToSchema;
 
 /// Data needed to add a user to the database.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterData {
     pub email: String,
@@ -21,6 +21,13 @@ pub struct RegisterData {
     pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
+}
+
+/// User data to store before an account is verified.
+/// Stores their registration data and when the verification link should expire.
+pub struct PendingRegisterData {
+    pub register_data: RegisterData,
+    pub expires: i64,
 }
 
 /// Data received when getting user data from the database.
@@ -87,7 +94,7 @@ pub struct DeleteOwnedTrees {
 }
 
 /// The possible values of the `language` field of a user.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum UserLanguage {
     Nl,

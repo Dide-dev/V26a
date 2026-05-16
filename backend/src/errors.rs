@@ -15,6 +15,8 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
+    /// An error to be returned when `lettre` fails to parse an e-mail.
+    EmailParseError,
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
     /// An error to return when an invalid isbn is attempted to be put in the database.
@@ -81,8 +83,12 @@ pub enum ApiError {
     InvalidDataFound,
     /// An error to be returned by `add_image` if adding the image to the database fails.
     ImageAddFail,
+    /// An exception to return when lettre fails on something unexpected.
+    LettreException,
     /// An exception to return when serde fails on something unexpected.
     SerdeException,
+    /// An exception to be returned when lettre fails to send an e-mail.
+    SmtpError,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
     TokenCreationException,
 }
@@ -103,6 +109,30 @@ impl From<serde_json::Error> for ApiError {
     }
 }
 
+impl From<lettre::address::AddressError> for ApiError {
+    /// Convert `lettre` address errors to our own [`ApiError`], so that ? can be used on `lettre` address results.
+    fn from(error: lettre::address::AddressError) -> Self {
+        tracing::error!("lettre address error: {}", error);
+        ApiError::EmailParseError
+    }
+}
+
+impl From<lettre::transport::smtp::Error> for ApiError {
+    /// Convert `lettre` smtp errors to our own [`ApiError`], so that ? can be used on `lettre` smtp results.
+    fn from(error: lettre::transport::smtp::Error) -> Self {
+        tracing::error!("lettre smtp error: {}", error);
+        ApiError::SmtpError
+    }
+}
+
+impl From<lettre::error::Error> for ApiError {
+    /// Convert `lettre`'s generic errors to our own [`ApiError`], so that ? can be used on generic `lettre` results.
+    fn from(error: lettre::error::Error) -> Self {
+        tracing::error!("lettre generic error: {}", error);
+        ApiError::LettreException
+    }
+}
+
 // Define how errors should be converted to messages.
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -110,6 +140,7 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
+            ApiError::EmailParseError => write!(f, "Could not parse email."),
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
             }
@@ -182,8 +213,14 @@ impl Display for ApiError {
                 )
             }
             ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
+            ApiError::LettreException => {
+                write!(f, "An unexpected error occurred while constructing an e-mail.")
+            }
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
+            }
+            ApiError::SmtpError => {
+                write!(f, "An unexpected error occurred while sending an e-mail.")
             }
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
@@ -196,7 +233,8 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::InvalidImageType
+            ApiError::EmailParseError
+            | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
@@ -223,7 +261,9 @@ impl ApiError {
             | ApiError::HashException
             | ApiError::ImageAddFail
             | ApiError::InvalidDataFound
+            | ApiError::LettreException
             | ApiError::SerdeException
+            | ApiError::SmtpError
             | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

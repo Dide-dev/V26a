@@ -8,8 +8,8 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::api_v1::session::Keys;
-use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use bcrypt::DEFAULT_COST;
+use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env;
 
 /// For more details, see the '.env.example' file in the root of this repository.
@@ -17,6 +17,7 @@ use std::env;
 pub struct Config {
     pub listening_ip: String,
     pub listening_port: u16,
+    pub base_url: String,
     pub database_url: String,
 
     pub log_level: tracing_subscriber::EnvFilter,
@@ -26,6 +27,8 @@ pub struct Config {
     pub bcrypt_cost: u32,
     /// This duration is in _seconds_.
     pub session_duration: i64,
+    /// This duration is in _seconds_.
+    pub verification_timer: i64,
     pub jwt_keys: Keys,
 
     /// Upload images directory
@@ -47,6 +50,8 @@ impl Config {
             .unwrap_or("3000".to_owned())
             .parse()
             .expect("Failed to parse environment variable LISTENING_PORT");
+        let base_url = env::var("BASE_URL")
+            .expect("Environment variable BASE_URL must be set");
         let database_url =
             env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set");
 
@@ -61,6 +66,10 @@ impl Config {
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
             .expect("Failed to parse environment variable SESSION_EXPIRATION_SECONDS");
+        let verification_timer = env::var("VERIFICATION_TIMER_SECONDS")
+            .expect("Environment variable VERIFICATION_TIMER_SECONDS must be set")
+            .parse()
+            .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
         let jwt_keys = Keys::new(
             env::var("JWT_SECRET")
                 .expect("Environment variable JWT_SECRET must be set")
@@ -82,10 +91,12 @@ impl Config {
         Self {
             listening_ip,
             listening_port,
+            base_url,
             database_url,
             log_level,
             bcrypt_cost,
             session_duration,
+            verification_timer,
             jwt_keys,
             upload_dir,
             max_upload_size,

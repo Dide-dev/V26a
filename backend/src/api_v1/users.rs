@@ -8,12 +8,12 @@ use crate::ArcState;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
-    update_user, user_id_exists,
+    delete_user, get_user, get_user_by_email, get_user_by_name, update_password, update_user,
+    user_id_exists,
 };
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
-    UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingRegisterData, RegisterData,
+    UserGetData, UserUpdateData,
 };
 use crate::errors::ApiError;
 
@@ -22,6 +22,10 @@ use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
+use chrono::{Duration, Utc};
+use lettre::message::Mailbox;
+use lettre::{Address, AsyncTransport, Message};
+use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -39,63 +43,103 @@ pub fn users() -> Router<ArcState> {
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type")]
 pub enum UserResponse {
-    /// Return body signaling the user has been successfully added/updated with the contained `user_id`.
+    /// Return body signalling the user has been successfully added/updated with the contained `user_id`.
     Success { user_id: i32 },
-    /// Return body signaling the user could not be added/updated, as the e-mail was already in use.
+    /// Return body signalling the user data has been stored, but is pending verification.
+    Pending,
+    /// Return body signalling the user could not be added/updated, as the e-mail was already in use.
     EmailAlreadyUsed,
-    /// Return body signaling the user could not be added/updated, as the username was already in use.
+    /// Return body signalling the user could not be added/updated, as the username was already in use.
     UsernameAlreadyUsed,
 }
 
 #[utoipa::path(
     post,
-    path = "/add-new-user",
+    path = "/add",
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
-        (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
-        (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 200, description = "Awaiting verification, email already used, or username already used."),
+        (status = 400, description = ApiError::EmailParseError.to_string()),
         (status = 500, description = "Internal server error."),
     )
 )]
-/// Add a user to the database.
+/// Register a user, after which the account needs to be verified.
 ///
 /// # Arguments
 /// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
 /// # Returns
-/// [`Success`](UserResponse::Success) with the id assigned to the new user
+/// [`Pending`](UserResponse::Pending) if the registration was successful and is now pending verification.
 /// if the email has not yet been used, or [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) otherwise.
 /// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException) or
-/// [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`HashException`](ApiError::HashException),
+/// [`DatabaseException`](ApiError::DatabaseException), 
+/// [`EmailParseError`](ApiError::EmailParseError),
+/// [`SmtpError`](ApiError::SmtpError) or
+/// [`LettreError`](ApiError::LettreError) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let mut transaction = db.begin().await?;
+    let parsed_email: Address = user_data.email.parse()?;
 
-    let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
+    let verification_code = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
 
-    if found_user_id.is_some() {
-        return Ok(Json(UserResponse::EmailAlreadyUsed));
+    {
+        let mut pending_accounts = state.pending_accounts.lock().await;
+
+        let found_user_id = get_user_by_email(&db, &user_data.email).await?;
+        let found_pending_email = pending_accounts
+            .values()
+            .any(|r| r.register_data.email.to_lowercase() == user_data.email.to_lowercase());
+
+        if found_user_id.is_some() || found_pending_email {
+            return Ok(Json(UserResponse::EmailAlreadyUsed));
+        }
+
+        let found_user_id = get_user_by_name(&db, &user_data.name).await?;
+        let found_pending_username = pending_accounts
+            .values()
+            .any(|r| r.register_data.name.to_lowercase() == user_data.name.to_lowercase());
+
+        if found_user_id.is_some() || found_pending_username {
+            return Ok(Json(UserResponse::UsernameAlreadyUsed));
+        }
+
+        let expires = Utc::now() + Duration::seconds(state.config.verification_timer);
+        let pending_data = PendingRegisterData {
+            register_data: user_data.clone(),
+            expires: expires.timestamp(),
+        };
+        pending_accounts.insert(verification_code.clone(), pending_data);
+
+        // Release the lock, then send an email
     }
 
-    let found_user_id = get_user_by_name(&mut *transaction, &user_data.name).await?;
+    let verification_link = format!(
+        "{}/api/v1/users/verify?code={}",
+        state.config.base_url, verification_code
+    );
+    // TODO: localization
+    let body = format!(
+        "Hello {},\n\nThank you for signing up to BOOM!\nBefore you can use your account, please verify using the following link:\n{}\n\nIf you do not recognize this request, please ignore this e-mail.\n\nBOOM!\n{}",
+        user_data.nickname, verification_link, state.config.base_url,
+    );
+    let message = Message::builder()
+        .from("BOOM! <noreply@localhost>".parse()?)
+        .to(Mailbox::new(Some(user_data.nickname), parsed_email))
+        .subject("BOOM! Account verification") // TODO: localization
+        .body(body)?;
+    state.config.mailer.send(message).await?;
 
-    if found_user_id.is_some() {
-        return Ok(Json(UserResponse::UsernameAlreadyUsed));
-    }
-
-    let user_id = add_user(&mut transaction, &user_data, state.config.bcrypt_cost).await?;
-
-    transaction.commit().await?;
-
-    Ok(Json(UserResponse::Success { user_id }))
+    Ok(Json(UserResponse::Pending))
 }
 
 #[utoipa::path(
