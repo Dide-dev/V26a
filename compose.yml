@@ -100,7 +100,7 @@ services:
     depends_on:
       - backend
 
-  # Local SMTP relay server for testing
+  # Local SMTP server for testing
   mailpit:
     profiles: [ "dev" ]
     image: docker.io/axllent/mailpit:latest
