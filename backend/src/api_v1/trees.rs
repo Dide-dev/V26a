@@ -6,24 +6,26 @@
 
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_queried_count, get_queried_list, get_tree_owner,
-    is_structure_valid,
+    add_tree, db_get_tree_all_data, get_languages, get_queried_count, get_queried_list,
+    get_subjects, get_tree_owner, is_structure_valid, language_exists, subject_exists,
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    TreeAddData, TreeFilters, TreeListResponse, TreeRemoveCardData, TreeStructure, TreeUpdateData,
-    TreeUpdateStructureData, TreeWithCards,
+    Language, Subject, TreeAddData, TreeFilters, TreeListResponse, TreeRemoveCardData,
+    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
-use crate::{ArcState, db};
+use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgExecutor, PgPool};
+
+use std::collections::HashMap;
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
@@ -35,6 +37,8 @@ pub fn trees() -> Router<ArcState> {
         .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
         .route("/get-list", get(get_list))
         .route("/update-data", post(update_tree_data))
+        .route("/get-all-languages", get(get_all_languages))
+        .route("/get-all-subjects", get(get_all_subjects))
 }
 
 #[utoipa::path(
@@ -44,7 +48,7 @@ pub fn trees() -> Router<ArcState> {
     request_body = TreeAddData,
     responses(
         (status = 200, description = "Tree successfully added with returned id.", body = i32, content_type = "application/json"),
-        (status = 400, description = ApiError::NonEmptyStructure.to_string()),
+        (status = 400, description = "Tree structure contains cards, invalid ISBN provided or non-existent language or subject provided."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error.")
     ),
@@ -63,7 +67,16 @@ pub fn trees() -> Router<ArcState> {
 /// The id assigned to the new tree.
 ///
 /// # Errors
-/// Return a [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains an invalid ISBN.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains a non-existent language.
+///
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains a non-existent subject.
+///
+/// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
 /// [`TreeAddData`] contains cards.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -75,7 +88,20 @@ async fn add_new_tree(
     if !is_tree_structure_empty(&tree_add_data.tree_structure) {
         return Err(ApiError::NonEmptyStructure);
     }
-    let id = add_tree(&db, &tree_add_data, claims.sub).await?;
+    let mut transaction = db.begin().await?;
+    if !language_exists(&mut *transaction, &tree_add_data.tree_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(
+            tree_add_data.tree_data.language_code,
+        ));
+    }
+    if let Some(subject_id) = &tree_add_data.tree_data.subject_id
+        && !subject_exists(&mut *transaction, *subject_id).await?
+    {
+        return Err(ApiError::MissingSubject(*subject_id));
+    }
+    let id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
+
+    transaction.commit().await?;
 
     let json_id = Json(id);
     Ok(json_id)
@@ -313,7 +339,7 @@ async fn update_structure_if_valid(
     request_body = TreeUpdateData,
     responses(
         (status = 200, description = "Tree data updated successfully."),
-        (status = 400, description = "Tree with given id cannot be found."),
+        (status = 400, description = "Tree with given id cannot be found, invalid ISBN provided, non-existent language provided or non-existent subject provided."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -333,6 +359,15 @@ async fn update_structure_if_valid(
 /// Nothing.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains an invalid ISBN.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains a non-existent language.
+///
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// [`TreeAddData`] contains a non-existent subject.
+///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
@@ -344,10 +379,31 @@ async fn update_tree_data(
     Extension(db): Extension<PgPool>,
     Json(tree_update_data): Json<TreeUpdateData>,
 ) -> Result<(), ApiError> {
-    // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(&db, tree_update_data.id, claims).await?;
+    let mut transaction = db.begin().await?;
 
-    db::trees::update_tree_data(&db, tree_update_data.id, tree_update_data.new_data).await?;
+    // Verify the tree's existence and the user's permissions.
+    verify_tree_permissions(&mut *transaction, tree_update_data.id, claims).await?;
+
+    if !language_exists(&mut *transaction, &tree_update_data.new_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(
+            tree_update_data.new_data.language_code.clone(),
+        ));
+    }
+    if let Some(subject_id) = &tree_update_data.new_data.subject_id
+        && !subject_exists(&mut *transaction, *subject_id).await?
+    {
+        return Err(ApiError::MissingSubject(*subject_id));
+    }
+
+    db::trees::update_tree_data(
+        &mut transaction,
+        tree_update_data.id,
+        tree_update_data.new_data,
+    )
+    .await?;
+
+    transaction.commit().await?;
+
     Ok(())
 }
 
@@ -393,17 +449,17 @@ async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    let (data, gen_data, structure) = db_get_tree_all_data(&db, tree_id)
+    let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if !data.published {
+    if !metadata.data.published {
         // If the tree is not published, only the author is allowed access
         let Some(claims) = claims else {
             return Err(ApiError::MissingAuthentication);
         };
 
-        if claims.sub != gen_data.owner_id {
+        if claims.sub != metadata.gen_data.owner_id {
             return Err(ApiError::NoPermission);
         }
     }
@@ -411,8 +467,7 @@ async fn get_tree_with_cards(
     let tree_cards = get_tree_cards(&db, tree_id).await?;
 
     Ok(Json(TreeWithCards {
-        data,
-        gen_data,
+        metadata,
         structure,
         cards: tree_cards,
     }))
@@ -478,6 +533,8 @@ pub async fn verify_tree_permissions(
 /// `claims` - The session cookie of the user, as an [`Option`]. Only necessary if the query filter
 /// `showOwnPrivate` is set to `true`.
 ///
+/// `db` - A reference to the database connection to use for the query.
+///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// `filters` - The requested filters to apply to the trees, given as [`TreeFilters`] through a query.
@@ -524,4 +581,54 @@ pub async fn get_list(
     };
 
     Ok(Json(list))
+}
+
+#[utoipa::path(
+    get,
+    path = "/get-all-languages",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully retrieved the list of languages.", body = Vec<String>),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Retrieve the list of all tree languages.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// # Returns
+/// A list of all tree languages, as [`Vec<String>`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_languages(
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<Vec<Language>>, ApiError> {
+    Ok(Json(get_languages(&db).await?))
+}
+
+#[utoipa::path(
+    get,
+    path = "/get-all-subjects",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully retrieved the list of subjects.", body = Vec<String>),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Retrieve the list of all tree subjects.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// # Returns
+/// A list of all tree subjects, as [`Vec<String>`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_subjects(
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<HashMap<String, Vec<Subject>>>, ApiError> {
+    Ok(Json(get_subjects(&db).await?))
 }
