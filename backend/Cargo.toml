@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0.8.8", features = ["multipart"] }
+axum = { version = "0.8.8", features = ["multipart", "macros"] }
 axum-extra = { version = "0.12.5", features = [
     "typed-header",
     "cookie",
@@ -31,7 +31,7 @@ sqlx = { version = "0.8", features = [
 tempfile = "3.27.0"
 time = "0.3.47"
 tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
-tower-http = { version = "0.6.8", features = ["fs"] }
+tower-http = { version = "0.6.8", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.23.0", features = ["v4"] }
@@ -39,6 +39,7 @@ utoipa = { version = "5.4.0", features = ["chrono"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipauto = "0.2.0"
 lettre = { version = "0.11.21", features = ["tokio1-native-tls"] }
+rand = "0.10.1"
 
 [dev-dependencies]
 axum-test = "20.0.0"

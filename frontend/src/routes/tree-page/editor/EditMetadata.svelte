@@ -9,55 +9,56 @@
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
 
-    let {
-        numPopupsOpen = $bindable(),
-        treeId,
-        prevTreeData = $bindable()
-    }: { numPopupsOpen: number; treeId: TreeId; prevTreeData: TreeData } = $props();
+    let { treeId, prevTreeData = $bindable() }: { treeId: TreeId; prevTreeData: TreeData } =
+        $props();
 
     let visible = $state(false);
 
     let treeData: TreeData = $state({
-        title: prevTreeData.title ?? '',
-        description: prevTreeData.description ?? '',
-        bookName: prevTreeData.bookName ?? '',
-        bookEdition: prevTreeData.bookEdition ?? '',
+        title: prevTreeData.title,
+        languageCode: prevTreeData.languageCode,
+        description: prevTreeData.description,
+        tags: prevTreeData.tags,
+        subjectId: prevTreeData.subjectId,
+        bookName: prevTreeData.bookName,
+        bookEdition: prevTreeData.bookEdition,
         bookIsbn: prevTreeData.bookIsbn ?? '',
-        bookChapter: prevTreeData.bookChapter ?? '',
-        bookExercise: prevTreeData.bookExercise ?? '',
-        assignmentText: prevTreeData.assignmentText ?? '',
-        published: prevTreeData.published ?? false
+        bookAuthor: prevTreeData.bookAuthor,
+        bookChapter: prevTreeData.bookChapter,
+        bookExercise: prevTreeData.bookExercise,
+        assignmentText: prevTreeData.assignmentText,
+        published: prevTreeData.published
     });
 
     async function saveData() {
         await updateTreeMetaData({
             id: treeId,
-            newData: { ...treeData }
+            newData: { ...treeData, bookIsbn: treeData.bookIsbn === '' ? null : treeData.bookIsbn }
         });
         visible = false;
         prevTreeData = { ...treeData };
-        numPopupsOpen -= 1;
     }
 
     // Restores treeData to its original value.
     function cancelEdit() {
         treeData = { ...prevTreeData };
         visible = false;
-        numPopupsOpen -= 1;
     }
 
     function onEditMetadataButtonClick() {
         visible = true;
-        numPopupsOpen += 1;
     }
 
-    // The form submit keyboard shortcut
     function onkeydown(event: KeyboardEvent) {
         if (!visible) return;
 
+        // When ctrl+z is pressed, we only want that event to be handled in the relevant textbox,
+        // do not let it propagate to the undo/redo buttons of the tree editor page.
+        event.stopPropagation();
+
+        // The form submit keyboard shortcut
         if (event.ctrlKey && event.key == 'Enter') {
             saveData();
-            event.stopPropagation();
         }
     }
 </script>
@@ -66,7 +67,12 @@
     {m.editMetadata()}
 </button>
 
-<svelte:window {onkeydown} />
+<!--
+    We bind this event to the body instead of the window,
+    so that this one fires before the onkeydown in the +page.svelte,
+    so it can possibly stop the propagation.
+-->
+<svelte:body {onkeydown} />
 
 {#if visible}
     <Popup>
