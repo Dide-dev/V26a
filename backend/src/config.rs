@@ -8,9 +8,31 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::api_v1::session::Keys;
+use crate::errors::ApiError;
+use async_trait::async_trait;
 use bcrypt::DEFAULT_COST;
-use lettre::{AsyncSmtpTransport, Tokio1Executor};
+use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use std::env;
+use std::sync::Arc;
+
+/// Generic definition of a mailer, so that the mailer can be replaced with a [`AsyncStubTransport`](lettre::transport::stub::AsyncStubTransport) during testing.
+#[async_trait]
+pub trait Mailer: Send + Sync {
+    async fn send(&self, message: Message) -> Result<(), ApiError>;
+}
+
+/// Mailer to be used in the program, sends mails as usual.
+pub struct SmtpMailer {
+    transport: AsyncSmtpTransport<Tokio1Executor>,
+}
+
+#[async_trait]
+impl Mailer for SmtpMailer {
+    async fn send(&self, message: Message) -> Result<(), ApiError> {
+        self.transport.send(message).await?;
+        Ok(())
+    }
+}
 
 /// For more details, see the '.env.example' file in the root of this repository.
 #[derive(Clone)]
@@ -35,7 +57,7 @@ pub struct Config {
     pub upload_dir: String,
     pub max_upload_size: usize,
 
-    pub mailer: AsyncSmtpTransport<Tokio1Executor>,
+    pub mailer: Arc<dyn Mailer>,
 }
 
 impl Config {
@@ -50,8 +72,7 @@ impl Config {
             .unwrap_or("3000".to_owned())
             .parse()
             .expect("Failed to parse environment variable LISTENING_PORT");
-        let base_url = env::var("BASE_URL")
-            .expect("Environment variable BASE_URL must be set");
+        let base_url = env::var("BASE_URL").expect("Environment variable BASE_URL must be set");
         let database_url =
             env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set");
 
@@ -84,9 +105,10 @@ impl Config {
             * 1_048_576; // Mebibytes to bytes
 
         let smtp_url = env::var("SMTP_URL").expect("SMTP environment variables must be set");
-        let mailer = AsyncSmtpTransport::<Tokio1Executor>::from_url(&smtp_url)
+        let transport = AsyncSmtpTransport::<Tokio1Executor>::from_url(&smtp_url)
             .expect("Failed to create AsyncSmtpTransport.")
             .build();
+        let mailer = Arc::new(SmtpMailer { transport });
 
         Self {
             listening_ip,

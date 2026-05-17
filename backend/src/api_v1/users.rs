@@ -26,7 +26,7 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::{Duration, Utc};
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
-use lettre::{Address, AsyncTransport, Message};
+use lettre::{Address, Message};
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;

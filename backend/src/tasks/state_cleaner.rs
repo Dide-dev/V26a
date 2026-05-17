@@ -12,7 +12,7 @@ use tracing::log::info;
 pub async fn task_handler(arc_state: ArcState) {
     let mut interval = time::interval(Duration::from_hours(1));
     interval.tick().await;
-    
+
     loop {
         interval.tick().await;
 

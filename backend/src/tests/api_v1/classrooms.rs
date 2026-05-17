@@ -40,7 +40,7 @@ async fn test_new_classroom(db: PgPool) {
 
 #[sqlx::test]
 async fn test_new_classroom_forbidden(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),

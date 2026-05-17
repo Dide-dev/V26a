@@ -7,17 +7,17 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
+use crate::api_v1::users::ChangePasswordResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
 };
-use crate::tests::api_v1::{login, register, setup};
+use crate::tests::api_v1::{login, register, register_email, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_get_and_update_own_user_data(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create an account
     let register_data = RegisterData {
@@ -30,13 +30,8 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         language: UserLanguage::En,
     };
 
-    let response = server.post("/users/add").json(&register_data).await;
-    response.assert_status_ok();
-    let response = response.json::<UserResponse>();
-    let UserResponse::Success { user_id } = response else {
-        // Adding a user should never fail in a test
-        panic!("Something unexpected failed while adding a user")
-    };
+    let user_id = register(&test_state, &register_data).await;
+    let server = test_state.server;
 
     let expected_user_data = UserGetData {
         email: register_data.email.clone(),
@@ -100,11 +95,12 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_all_users(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    register_email(&test_state, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "2@gmail.com".to_owned()).await;
 
     let response = server.get("/admin/all-user-data").await;
@@ -114,11 +110,12 @@ async fn test_get_all_users(db: PgPool) {
 
 #[sqlx::test]
 async fn test_update_other_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
-    let user_id_1 = register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    let user_id_1 = register_email(&test_state, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "2@gmail.com".to_owned()).await;
 
     // Update the other user's data.
@@ -142,8 +139,9 @@ async fn test_update_other_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_change_account_type(db: PgPool) {
-    let server = setup(db);
-    let user_id = register(&server, "test@gmail.com".to_owned()).await;
+    let test_state = setup(db);
+    let user_id = register_email(&test_state, "test@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "test@gmail.com".to_owned()).await;
 
     // Update our own user data
@@ -167,8 +165,9 @@ async fn test_change_account_type(db: PgPool) {
 
 #[sqlx::test]
 async fn test_change_enabled_flag(db: PgPool) {
-    let server = setup(db);
-    let user_id = register(&server, "test@gmail.com".to_owned()).await;
+    let test_state = setup(db);
+    let user_id = register_email(&test_state, "test@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "test@gmail.com".to_owned()).await;
 
     // Update our own user data
@@ -192,11 +191,11 @@ async fn test_change_enabled_flag(db: PgPool) {
 
 #[sqlx::test]
 async fn test_successful_password_change(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let email = "test@test.nl";
-
-    register(&server, email.to_owned()).await;
+    register_email(&test_state, email.to_owned()).await;
+    let server = test_state.server;
     login(&server, email.to_owned()).await;
 
     let change_password_data = PasswordChangeRequestBody {
@@ -229,11 +228,11 @@ async fn test_successful_password_change(db: PgPool) {
 
 #[sqlx::test]
 async fn test_change_password_incorrect_old_password(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let email = "test@test.nl";
-
-    register(&server, email.to_owned()).await;
+    register_email(&test_state, email.to_owned()).await;
+    let server = test_state.server;
     login(&server, email.to_owned()).await;
 
     // The default password set is `a$$word`, hence this request should fail.
@@ -267,10 +266,10 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_own_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
     let email = "monkaS@gmail.com".to_owned();
-    let user_id = register(&server, email.clone()).await;
-
+    let user_id = register_email(&test_state, email.clone()).await;
+    let server = test_state.server;
     login(&server, email.clone()).await;
 
     let response = server
@@ -286,11 +285,14 @@ async fn test_delete_own_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_other_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
+
     let email1 = "user1@gmail.com".to_owned();
-    let user_id_1 = register(&server, email1.clone()).await;
     let email2 = "user2@gmail.com".to_owned();
-    register(&server, email2.clone()).await;
+    let user_id_1 = register_email(&test_state, email1.clone()).await;
+    register_email(&test_state, email2.clone()).await;
+
+    let server = test_state.server;
     login(&server, email2.clone()).await;
 
     let response = server
@@ -302,9 +304,11 @@ async fn test_delete_other_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_nonexistent_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
+
     let email = "swag@gmail.com".to_owned();
-    register(&server, email.clone()).await;
+    register_email(&test_state, email.clone()).await;
+    let server = test_state.server;
     login(&server, email.clone()).await;
 
     let response = server

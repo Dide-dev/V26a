@@ -12,7 +12,7 @@ use crate::db_structs::trees::{
     TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
-use crate::tests::api_v1::{login, register, setup, setup_login};
+use crate::tests::api_v1::{login, register_email, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::{BTreeMap, HashMap};
@@ -151,7 +151,16 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
 
 #[sqlx::test]
 async fn test_unpublished_trees(db: PgPool) {
-    let mut server = setup_login(db).await;
+    let test_state = setup(db);
+
+    let first_user_email = "first_user@localhost";
+    let second_user_email = "second_user@localhost";
+    register_email(&test_state, first_user_email.to_owned()).await;
+    register_email(&test_state, second_user_email.to_owned()).await;
+
+    let mut server = test_state.server;
+
+    login(&server, first_user_email.to_owned()).await;
 
     let tree_data = TreeData {
         published: false,
@@ -172,8 +181,6 @@ async fn test_unpublished_trees(db: PgPool) {
     response.assert_status_unauthorized();
     assert_eq!(response.text(), ApiError::MissingAuthentication.to_string());
 
-    let second_user_email = "second_user@localhost";
-    register(&server, second_user_email.to_owned()).await;
     login(&server, second_user_email.to_owned()).await;
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
@@ -411,12 +418,13 @@ async fn test_remove_card(db: PgPool) {
 
 #[sqlx::test]
 async fn test_filter_tree_list(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
     let emails = ["test@one".to_owned(), "test@two".to_owned()];
     let account_ids = [
-        register(&server, emails[0].clone()).await,
-        register(&server, emails[1].clone()).await,
+        register_email(&test_state, emails[0].clone()).await,
+        register_email(&test_state, emails[1].clone()).await,
     ];
+    let server = test_state.server;
     login(&server, emails[0].clone()).await;
 
     let trees_data = vec![
@@ -765,7 +773,7 @@ async fn test_update_metadata(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_languages(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let response = server.get("/trees/get-all-languages").await;
     response.assert_status_ok();
@@ -776,7 +784,7 @@ async fn test_get_languages(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_subjects(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let response = server.get("/trees/get-all-subjects").await;
     response.assert_status_ok();

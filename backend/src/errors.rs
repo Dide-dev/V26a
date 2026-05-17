@@ -214,7 +214,10 @@ impl Display for ApiError {
             }
             ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
             ApiError::LettreException => {
-                write!(f, "An unexpected error occurred while constructing an e-mail.")
+                write!(
+                    f,
+                    "An unexpected error occurred while constructing an e-mail."
+                )
             }
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
