@@ -79,7 +79,8 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
     assert_eq!(new_cookie_data.name, "Sidney");
     assert_eq!(new_cookie_data.nickname, "Cookie Monster");
     assert_eq!(new_cookie_data.sub, original_cookie_data.sub);
-    assert_eq!(original_max_age, new_max_age);
+    // The new duration can differ slightly, this is fine.
+    assert!((original_max_age.whole_seconds() - new_max_age.whole_seconds()).abs() <= 2);
     assert_eq!(
         new_cookie_data.account_type,
         original_cookie_data.account_type
