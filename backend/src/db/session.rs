@@ -66,24 +66,7 @@ pub async fn create_session(
         expires_at,
     )
     .execute(db)
-    .await;
-
-    Ok(())
-}
-
-/// Delete all session belonging to a user, used to replace an existing session on login.
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-///
-/// `user_id` - The user whose session should be deleted.
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn delete_session_by_user_id(db: impl PgExecutor<'_>, user_id: i32) -> Result<(), ApiError> {
-    query!("DELETE FROM session WHERE user_id = $1", user_id)
-        .execute(db)
-        .await;
+    .await?;
 
     Ok(())
 }

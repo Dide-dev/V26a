@@ -7,7 +7,7 @@
 use crate::ArcState;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_email;
-use crate::db::session::{create_session, delete_session_by_user_id};
+use crate::db::session::{create_session};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -18,7 +18,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
-use uuid::Uuid;
+use rand::distr::{Alphanumeric, SampleString};
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
@@ -93,10 +93,11 @@ async fn login(
         account_type: credentials.account_type,
     };
 
-    delete_session_by_user_id(&db, credentials.user_id).await?;
-
     // Create the authorization token.
-    let token = Uuid::new_v4().simple().to_string();
+    let token = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
     let expires_at = Utc::now() + chrono::Duration::seconds(config.session_duration);
 
     create_session(&db, &token, credentials.user_id, expires_at).await?;
