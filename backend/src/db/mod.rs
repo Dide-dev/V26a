@@ -11,6 +11,7 @@ pub mod feedback;
 pub mod images;
 pub mod trees;
 pub mod users;
+pub mod session;
 
 /// Get a [`PgConnection`](sqlx::PgConnection) from a [`PgPool`](sqlx::PgPool).
 ///

@@ -7,6 +7,7 @@
 use crate::Config;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_email;
+use crate::db::session::{create_session, delete_session_by_user_id};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
 use axum::extract::State;
@@ -14,10 +15,10 @@ use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
-use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<Config> {
@@ -88,13 +89,16 @@ async fn login(
 
     let claims = Claims {
         sub: credentials.user_id,
-        exp: Utc::now().timestamp() + config.session_duration,
         account_type: credentials.account_type,
     };
 
+    delete_session_by_user_id(&db, credentials.user_id).await?;
+
     // Create the authorization token.
-    let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
-        .map_err(|_| ApiError::TokenCreationException)?;
+    let token = Uuid::new_v4().simple().to_string();
+    let expires_at = Utc::now() + chrono::Duration::seconds(config.session_duration);
+
+    create_session(&db, &token, credentials.user_id, expires_at).await?;
 
     let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
 

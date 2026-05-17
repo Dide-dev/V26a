@@ -7,7 +7,6 @@
 //! This module parses all external configuration from environment variables.
 //! For more details, see the '.env.example' file in the root of this repository.
 
-use crate::api_v1::session::Keys;
 use std::env;
 
 /// For more details, see the '.env.example' file in the root of this repository.
@@ -21,8 +20,7 @@ pub struct Config {
 
     /// This duration is in _seconds_.
     pub session_duration: i64,
-    pub jwt_keys: Keys,
-
+    
     /// Upload images directory
     pub upload_dir: String,
     pub max_upload_size: usize,
@@ -50,11 +48,6 @@ impl Config {
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
             .expect("Failed to parse environment variable SESSION_EXPIRATION_SECONDS");
-        let jwt_keys = Keys::new(
-            env::var("JWT_SECRET")
-                .expect("Environment variable JWT_SECRET must be set")
-                .as_bytes(),
-        );
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
             .unwrap_or("10".to_string())
@@ -68,7 +61,6 @@ impl Config {
             database_url,
             log_level,
             session_duration,
-            jwt_keys,
             upload_dir,
             max_upload_size,
         }
