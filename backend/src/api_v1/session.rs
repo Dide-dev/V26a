@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
 use crate::db_structs::users::AccountType;
 use crate::db::session::get_session;
 use crate::errors::ApiError;
@@ -28,9 +28,7 @@ pub struct Claims {
 
 async fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.
-    let jar = CookieJar::from_request_parts(parts, state)
-        .await
-        .map_err(|_| ApiError::MissingAuthentication)?;
+    let jar = CookieJar::from_headers(&parts.headers);
     let auth_cookie = jar
         .get("session")
         .ok_or(ApiError::MissingAuthentication)?
@@ -46,7 +44,7 @@ async fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiEr
         .ok_or(ApiError::InvalidSession)
 }
 
-impl FromRequestParts<Config> for Claims {
+impl FromRequestParts<ArcState> for Claims {
     type Rejection = ApiError;
 
     /// Get JWT [`Claims`] from a user's cookies
@@ -69,13 +67,13 @@ impl FromRequestParts<Config> for Claims {
     /// decrypted, or if another error is given by [`jsonwebtoken`].
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &Config,
+        state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
         get_claims(parts, state).await
     }
 }
 
-impl FromRequestParts<Config> for Option<Claims> {
+impl FromRequestParts<ArcState> for Option<Claims> {
     type Rejection = ApiError;
 
     /// Get optional JWT [`Claims`] from a user's cookies
@@ -99,7 +97,7 @@ impl FromRequestParts<Config> for Option<Claims> {
     /// - another error is given by [`jsonwebtoken`]
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &Config,
+        state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
         Ok(get_claims(parts, state).await.ok())
     }

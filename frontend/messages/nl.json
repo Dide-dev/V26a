@@ -95,6 +95,7 @@
     "through": "tot en met",
     "ownerId": "ID van de eigenaar",
     "numberOfTrees": "Aantal bomen per pagina:",
+    "numberOfUsers": "Aantal gebruikers per pagina:",
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
@@ -123,5 +124,6 @@
     "general": "Algemeen",
     "accountSettings": "Accountinstellingen",
     "feedback": "Feedback",
-    "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik"
+    "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik",
+    "pageNotFound": "Deze pagina kon niet worden gevonden"
 }

@@ -5,18 +5,19 @@ name: Frontend Svelte CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event.pull_request.draft == false
 
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [ 24.x ]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     defaults:

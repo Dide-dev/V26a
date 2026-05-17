@@ -7,18 +7,21 @@ import { m } from '$lib/paraglide/messages.js';
 // mock API calls
 vi.mock('$lib/backend/trees', () => ({
     getTreeWithCards: vi.fn().mockResolvedValue({
-        data: {
-            title: 'Test123',
-            description: 'gerdgreg',
-            bookName: 'Monkey',
-            bookEdition: '13th',
-            bookIsbn: '123-456',
-            bookChapter: '10',
-            bookExercise: '3',
-            assignmentText: 'I am a banabana',
-            published: false
+        metadata: {
+            data: {
+                title: 'Test123',
+                description: 'gerdgreg',
+                bookName: 'Monkey',
+                bookEdition: '13th',
+                bookIsbn: '123-456',
+                bookChapter: '10',
+                bookExercise: '3',
+                assignmentText: 'I am a banabana',
+                published: false
+            },
+            genData: { id: 1, ownerId: 1 },
+            linkedData: { ownerName: 'Foo', subjectName: 'Bar' }
         },
-        genData: { id: 1, ownerId: 1 },
         structure: { rootNodes: [] },
         cards: new Map()
     }),

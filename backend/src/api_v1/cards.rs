@@ -14,7 +14,7 @@ use crate::db_structs::cards::{
     CardAddData, CardFilters, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
 };
 use crate::errors::ApiError;
-use crate::{Config, get_connection};
+use crate::{ArcState, get_connection};
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
@@ -22,7 +22,7 @@ use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the cards category.
-pub fn cards() -> Router<Config> {
+pub fn cards() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_card))
         .route("/update", post(update_existing_card))
@@ -221,7 +221,7 @@ async fn get_cards_from_library(
     Extension(db): Extension<PgPool>,
     Query(filters): Query<CardFilters>,
 ) -> Result<Json<Vec<LibraryCardGetData>>, ApiError> {
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
 
     let cards_count = get_queried_cards_count(&mut *transaction, &filters).await?;
     if cards_count == 0 {
@@ -230,10 +230,7 @@ async fn get_cards_from_library(
 
     let cards = get_queried_cards_list(&mut *transaction, &filters).await?;
 
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     Ok(Json(cards))
 }

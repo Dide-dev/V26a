@@ -95,6 +95,7 @@
     "through": "through",
     "ownerId": "ID of the owner",
     "numberOfTrees": "Number of trees per page:",
+    "numberOfUsers": "Number of users per page:",
     "selectDate": "Select date",
     "allTrees": "Tree list",
     "colophon": "Colophon",
@@ -123,5 +124,6 @@
     "general": "General",
     "accountSettings": "Account settings",
     "feedback": "Feedback",
-    "usernameAlreadyExists": "An account with this username already exists"
+    "usernameAlreadyExists": "An account with this username already exists",
+    "pageNotFound": "This page could not be found"
 }

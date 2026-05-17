@@ -7,6 +7,7 @@
 //! This module parses all external configuration from environment variables.
 //! For more details, see the '.env.example' file in the root of this repository.
 
+use bcrypt::DEFAULT_COST;
 use std::env;
 
 /// For more details, see the '.env.example' file in the root of this repository.
@@ -18,6 +19,9 @@ pub struct Config {
 
     pub log_level: tracing_subscriber::EnvFilter,
 
+    /// Defines the amount of iterations (2^n) used by the bcrypt algorithm.
+    /// Higher values are harder to crack but take longer to compute.
+    pub bcrypt_cost: u32,
     /// This duration is in _seconds_.
     pub session_duration: i64,
     
@@ -44,6 +48,10 @@ impl Config {
         let log_level = tracing_subscriber::EnvFilter::try_from_env("RUST_LOG")
             .expect("Environment variable RUST_LOG must be correctly configured");
 
+        let bcrypt_cost = env::var("BCRYPT_COST").map_or(DEFAULT_COST, |s| {
+            s.parse()
+                .expect("Failed to parse environment variable BCRYPT_COST")
+        });
         let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
@@ -60,6 +68,7 @@ impl Config {
             listening_port,
             database_url,
             log_level,
+            bcrypt_cost,
             session_duration,
             upload_dir,
             max_upload_size,

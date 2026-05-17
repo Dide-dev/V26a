@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session_by_user_id};
@@ -21,7 +21,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
-pub fn auth() -> Router<Config> {
+pub fn auth() -> Router<ArcState> {
     Router::new().route("/login", post(login))
 }
 
@@ -73,9 +73,10 @@ pub struct LoginResponse {
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
-    State(config): State<Config>,
+    State(state): State<ArcState>,
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
+    let config = &state.config;
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
@@ -100,7 +101,7 @@ async fn login(
 
     create_session(&db, &token, credentials.user_id, expires_at).await?;
 
-    let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
+    let user_info = serde_json::to_string(&claims)?;
 
     // Age of a cookie (same for the two cookies)
     let time = time::Duration::new(config.session_duration, 0);
