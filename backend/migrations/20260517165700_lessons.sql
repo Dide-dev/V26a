@@ -8,14 +8,11 @@ CREATE TABLE lessons
 (
     id                  SERIAL PRIMARY KEY,
     classroom_id        INTEGER         NOT NULL,
-    order_number        INTEGER UNIQUE  NOT NULL,
+    order_number        INTEGER         NOT NULL,
     created_at          TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     name                VARCHAR(32)     NOT NULL,
     description         VARCHAR(256)    NOT NULL    DEFAULT '',
     published           BOOLEAN         NOT NULL    DEFAULT FALSE,
-    publish_by          TIMESTAMPTZ                 DEFAULT NULL,
-    --^ This is to allow for a scheduled deployment of lessons.
-    -- Would there be need for a depublish_by?
 
     FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE
 );
@@ -26,5 +23,5 @@ CREATE TABLE lesson_trees
     tree_id           INTEGER,
     PRIMARY KEY (lesson_id, tree_id),
     FOREIGN KEY (lesson_id)      REFERENCES lessons (id),
-    FOREIGN KEY (tree_id)         REFERENCES trees (id)
+    FOREIGN KEY (tree_id)        REFERENCES trees (id)
 );

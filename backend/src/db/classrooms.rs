@@ -3,7 +3,7 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::classrooms::ClassroomAddData;
+use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
 use crate::errors::ApiError;
 use chrono::Utc;
 use rand::prelude::*;
@@ -90,6 +90,22 @@ pub async fn add_classroom(
     .fetch_one(db)
     .await?
     .id;
+
+    Ok(id)
+}
+
+pub async fn add_lesson(
+    db: impl PgExecutor<'_>,
+    lesson_add_data: &LessonAddData,
+    classroom_id: i32,
+) -> Result<i32, ApiError> {
+    let id: i32 = query!(
+        "INSERT INTO lessons (classroom_id, order_number, name, description, published) VALUES ($1, ((SELECT MAX(order_number) FROM lessons WHERE classroom_id=$1)+1), $2, $3, $4) RETURNING id",
+        classroom_id,
+        lesson_add_data.name,
+        lesson_add_data.description,
+        lesson_add_data.published,
+    ).fetch_one(db).await?.id;
 
     Ok(id)
 }

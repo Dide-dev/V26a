@@ -6,7 +6,7 @@
 
 use crate::api_v1::session::Claims;
 use crate::db::classrooms::{add_classroom, generate_random_code};
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
@@ -16,7 +16,9 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
-    Router::new().route("/add", post(add_new_classroom))
+    Router::new()
+        .route("/add", post(add_new_classroom))
+        .route("/{id}/add-lesson", post(add_new_lesson))
 }
 
 #[utoipa::path(
@@ -56,4 +58,12 @@ async fn add_new_classroom(
     let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
 
     Ok(Json(ClassroomGeneratedData { id, join_code }))
+}
+
+async fn add_new_lesson(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(lesson_add_data): Json<LessonAddData>,
+) -> Result<Json<i32>, ApiError> {
+    Ok(Json(1))
 }

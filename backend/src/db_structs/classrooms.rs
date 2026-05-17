@@ -22,3 +22,13 @@ pub struct ClassroomGeneratedData {
     pub id: i32,
     pub join_code: String,
 }
+
+/// The basic data of the lesson that is filled in by the user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonAddData {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    pub published: bool,
+}
