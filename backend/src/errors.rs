@@ -17,6 +17,8 @@ pub enum ApiError {
     //------------------//
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
+    /// An error to return when an invalid isbn is attempted to be put in the database.
+    InvalidIsbn,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
     /// An error to return when the user requests a page number that exceeds the defined maximum.
@@ -28,6 +30,10 @@ pub enum ApiError {
     MismatchedStructure,
     /// An error to return when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
+    /// An error to return when a non-existing `language` is used when creating or updating a tree.
+    MissingLanguage(String),
+    /// An error to return when a non-existing `subject_id` is used when creating or updating a tree.
+    MissingSubject(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
@@ -89,16 +95,16 @@ pub enum ApiError {
 
 impl From<sqlx::Error> for ApiError {
     /// Convert `SQLx` errors to our own [`ApiError`], so that ? can be used on `SQLx` results.
-    fn from(_: sqlx::Error) -> Self {
-        // Logging for db errors can be implemented here
+    fn from(error: sqlx::Error) -> Self {
+        tracing::error!("sqlx error: {}", error);
         ApiError::DatabaseException
     }
 }
 
 impl From<serde_json::Error> for ApiError {
     /// Convert `serde` errors to our own [`ApiError`], so that ? can be used on `serde` results.
-    fn from(_: serde_json::Error) -> Self {
-        // Logging for serde errors can be implemented here
+    fn from(error: serde_json::Error) -> Self {
+        tracing::error!("serde error: {}", error);
         ApiError::SerdeException
     }
 }
@@ -112,6 +118,9 @@ impl Display for ApiError {
             //------------------//
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
+            }
+            ApiError::InvalidIsbn => {
+                write!(f, "An invalid isbn was uploaded.")
             }
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
@@ -130,6 +139,8 @@ impl Display for ApiError {
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
             ),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
+            ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
             ApiError::NoImageBodyProvidedException => {
@@ -197,11 +208,14 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::InvalidImageType
+            | ApiError::InvalidIsbn
             | ApiError::InvalidPage
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
             | ApiError::MissingCard(_)
+            | ApiError::MissingLanguage(_)
+            | ApiError::MissingSubject(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
             | ApiError::NoImageBodyProvidedException
