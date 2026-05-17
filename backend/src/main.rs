@@ -117,7 +117,7 @@ fn backend(config: Config, db: sqlx::PgPool) -> Router {
 
     let state = ArcState::new(config);
 
-    // Extract ratelimiter config (per minute) &  create governor layer (minute)
+    // Extract ratelimiter config and create governor layer.
     let governor_layer = ServiceBuilder::new()
         .map_response(map_response_error)
         .layer(rate_limit_layer(

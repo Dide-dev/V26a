@@ -52,7 +52,7 @@ pub struct LoginResponse {
     request_body = LoginRequestBody,
     responses(
         (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
-        (status = 429, description = "Ratelimit exceeded"),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
     params(
