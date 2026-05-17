@@ -20,11 +20,11 @@ CREATE TABLE lessons
     FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE
 );
 
-CREATE TABLE classroom_lessons
+CREATE TABLE lesson_trees
 (
-    classroom_id        INTEGER,
-    lesson_id           INTEGER,
-    PRIMARY KEY (classroom_id, lesson_id),
-    FOREIGN KEY (classroom_id)      REFERENCES classrooms (id),
-    FOREIGN KEY (lesson_id)         REFERENCES lessons (id)
-)
+    lesson_id        INTEGER,
+    tree_id           INTEGER,
+    PRIMARY KEY (lesson_id, tree_id),
+    FOREIGN KEY (lesson_id)      REFERENCES lessons (id),
+    FOREIGN KEY (tree_id)         REFERENCES trees (id)
+);
