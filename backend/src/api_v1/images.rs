@@ -6,7 +6,7 @@
 
 use crate::ArcState;
 
-use crate::api_v1::governor_conf_minute;
+use crate::api_v1::rate_limit_layer;
 use crate::api_v1::session::Claims;
 
 use crate::db::images::{add_image, check_image_existence};
@@ -24,10 +24,7 @@ use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<ArcState> {
-    Router::new().route(
-        "/add",
-        post(add_new_image).layer(governor_conf_minute(10, 20)),
-    )
+    Router::new().route("/add", post(add_new_image).layer(rate_limit_layer(10, 20)))
 }
 
 #[utoipa::path(
@@ -72,8 +69,6 @@ pub fn images() -> Router<ArcState> {
 /// May return a [`NoImageBodyProvidedException`](ApiError::NoImageBodyProvidedException) if the body of the uploaded image is empty.
 ///
 /// May return a [`InvalidImageType`](ApiError::InvalidImageType) if the uploaded image is not of a image/ MIME-type.
-///
-/// May return a [`RateLimitExceeded`](ApiError::RateLimitExceeded) if the rate limit is exceeded.
 ///
 /// May return a [`FileWriteException`](ApiError::FileWriteException) if the uploaded image cannot be written to the uploads directory.
 ///

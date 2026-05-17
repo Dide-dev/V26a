@@ -79,7 +79,7 @@ pub fn v1_api(state: ArcState) -> Router<ArcState> {
 
 // Compute governor config (per minute).
 // Using miliseconds to compute req/min.
-pub fn governor_conf_minute(
+pub fn rate_limit_layer(
     refresh_rate: u64,
     burst_size: u32,
 ) -> GovernorLayer<IpKeyExtractor, NoOpMiddleware<QuantaInstant>, Body> {

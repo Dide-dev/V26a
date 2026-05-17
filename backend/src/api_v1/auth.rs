@@ -5,7 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::governor_conf_minute;
+use crate::api_v1::rate_limit_layer;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db_structs::auth::LoginRequestBody;
@@ -22,7 +22,7 @@ use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
-    Router::new().route("/login", post(login).layer(governor_conf_minute(15, 30)))
+    Router::new().route("/login", post(login).layer(rate_limit_layer(15, 30)))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -71,7 +71,7 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException),[`RateLimitExceeded`](ApiError::RateLimitExceeded), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,

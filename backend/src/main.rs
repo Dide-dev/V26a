@@ -14,7 +14,7 @@ mod errors;
 mod state;
 mod tests;
 
-use crate::api_v1::governor_conf_minute;
+use crate::api_v1::rate_limit_layer;
 use crate::errors::ApiError;
 use crate::{api_v1::v1_api, config::Config, state::ArcState};
 use axum::extract::DefaultBodyLimit;
@@ -118,9 +118,9 @@ fn backend(config: Config, db: sqlx::PgPool) -> Router {
     // Extract ratelimiter config (per minute) &  create governor layer (minute)
     let governor_layer = ServiceBuilder::new()
         .map_response(map_response_error)
-        .layer(governor_conf_minute(
+        .layer(rate_limit_layer(
             state.config.rate_limit_per_minute,
-            state.config.rate_limit_burst_size_minute,
+            state.config.rate_limit_burst_size,
         ));
 
     Router::new()

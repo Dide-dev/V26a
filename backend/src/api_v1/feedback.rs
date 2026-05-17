@@ -5,7 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::governor_conf_minute;
+use crate::api_v1::rate_limit_layer;
 use crate::db::feedback::add_feedback;
 use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
@@ -17,7 +17,7 @@ use sqlx::PgPool;
 pub fn feedback() -> Router<ArcState> {
     Router::new().route(
         "/provide",
-        post(provide_feedback).layer(governor_conf_minute(5, 10)),
+        post(provide_feedback).layer(rate_limit_layer(5, 10)),
     )
 }
 
@@ -41,8 +41,6 @@ pub fn feedback() -> Router<ArcState> {
 /// Nothing.
 ///
 /// # Errors
-///
-/// May return a [`RateLimitExceeded`](ApiError::RateLimitExceeded) if the rate limit is exceeded.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn provide_feedback(

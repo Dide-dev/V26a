@@ -5,7 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::governor_conf_minute;
+use crate::api_v1::rate_limit_layer;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
@@ -30,10 +30,7 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<ArcState> {
     Router::new()
-        .route(
-            "/add",
-            post(add_new_user).layer(governor_conf_minute(5, 20)),
-        )
+        .route("/add", post(add_new_user).layer(rate_limit_layer(5, 20)))
         .route("/me", get(get_own_user_data))
         .route("/update/{user_id}", post(update_user_data))
         .route("/change-password", post(change_password))
@@ -75,8 +72,7 @@ pub enum UserResponse {
 /// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException)
-/// May return a [`RateLimitExceeded`](ApiError::RateLimitExceeded) or
+/// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,

@@ -33,7 +33,7 @@ pub struct Config {
 
     /// Ratelimiter config (minute)
     pub rate_limit_per_minute: u64,
-    pub rate_limit_burst_size_minute: u32,
+    pub rate_limit_burst_size: u32,
 }
 
 impl Config {
@@ -73,10 +73,10 @@ impl Config {
             .parse::<u64>()
             .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
 
-        let rate_limit_burst_size_minute = env::var("RATE_LIMIT_BURST_SIZE_MINUTE")
+        let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
             .unwrap_or("40".to_string())
             .parse::<u32>()
-            .expect("Failed to parse RATE_LIMIT_BURST_SIZE_MINUTE");
+            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
 
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
@@ -96,7 +96,7 @@ impl Config {
             upload_dir,
             max_upload_size,
             rate_limit_per_minute,
-            rate_limit_burst_size_minute,
+            rate_limit_burst_size,
         }
     }
 }
