@@ -56,10 +56,10 @@ pub enum ApiError {
     /// authorized.
     NoPermission,
 
-    //----------------------//
-    // 429: TOO MANY REQUEST //
-    //----------------------//
-    /// An error to return when an user exceeds the ratelimit.
+    //------------------------//
+    // 429: TOO MANY REQUESTS //
+    //------------------------//
+    /// An error to return when a user exceeds the ratelimit.
     RateLimitExceeded,
 
     //----------------------------//

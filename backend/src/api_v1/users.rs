@@ -57,7 +57,7 @@ pub enum UserResponse {
         (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
-        (status = 429, description = "Ratelimit exceeded"),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     )
 )]

@@ -42,7 +42,7 @@ impl KeyExtractor for IpKeyExtractor {
     type Key = String;
 
     fn extract<T>(&self, req: &Request<T>) -> Result<Self::Key, GovernorError> {
-        // Try XFF header to identify ip adress.
+        // Try XFF header to identify ip address.
         if let Some(res) = req
             .headers()
             .get("X-Forwarded-For")

@@ -41,10 +41,10 @@ pub fn images() -> Router<ArcState> {
         ),
     ),
     responses(
-        (status = 200, description = "Image successfully added"),
+        (status = 200, description = "Image successfully added."),
         (status = 400, description = ApiError::NoImageBodyProvidedException.to_string()),
         (status = 400, description = ApiError::InvalidImageType.to_string()),
-        (status = 429, description = "Ratelimit exceeded"),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = ApiError::CreateDirException.to_string()),
         (status = 500, description = ApiError::FileWriteException.to_string()),
         (status = 500, description = "Internal server error.")

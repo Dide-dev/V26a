@@ -28,7 +28,7 @@ pub fn feedback() -> Router<ArcState> {
     request_body = FeedbackData,
     responses(
         (status = 200, description = "Feedback successfully received."),
-        (status = 429, description = "Ratelimit exceeded"),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
 )]
