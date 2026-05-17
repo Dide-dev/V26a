@@ -32,7 +32,7 @@ sqlx = { version = "0.8", features = [
 tempfile = "3.27.0"
 time = "0.3.47"
 tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
-tower-http = { version = "0.6.8", features = ["fs"] }
+tower-http = { version = "0.6.8", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.23.0", features = ["v4"] }
