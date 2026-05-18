@@ -426,8 +426,8 @@ async fn update_tree_data(
 /// Request all data of a specific tree together with all of its cards.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user, as an [`Option`]. Necessary if retrieving the user
-/// is retrieving their own, unpublished tree.
+/// `claims` - The session cookie of the user, as an [`Option`]. Necessary if the user
+/// is retrieving an unpublished tree.
 ///
 /// `tree_id` - The tree to retrieve data from.
 ///
@@ -441,7 +441,7 @@ async fn update_tree_data(
 /// and the user is not logged in.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published
-/// and the user is not its owner.
+/// and the user is not its owner, or an admin.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
@@ -459,9 +459,7 @@ async fn get_tree_with_cards(
             return Err(ApiError::MissingAuthentication);
         };
 
-        if claims.sub != metadata.gen_data.owner_id {
-            return Err(ApiError::NoPermission);
-        }
+        verify_tree_permissions(&db, tree_id, claims).await?;
     }
 
     let tree_cards = get_tree_cards(&db, tree_id).await?;

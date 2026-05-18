@@ -12,7 +12,8 @@ use crate::db_structs::trees::{
     TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
-use crate::tests::api_v1::{login, register, setup, setup_login};
+use crate::get_connection_unwrap;
+use crate::tests::api_v1::{login, register, register_admin, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::{BTreeMap, HashMap};
@@ -151,6 +152,7 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
 
 #[sqlx::test]
 async fn test_unpublished_trees(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
     let mut server = setup_login(db).await;
 
     let tree_data = TreeData {
@@ -178,6 +180,12 @@ async fn test_unpublished_trees(db: PgPool) {
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
+
+    let admin_user_email = "admin@localhost";
+    register_admin(&server, conn, admin_user_email.to_owned()).await;
+    login(&server, admin_user_email.to_owned()).await;
+    let response = server.get(&endpoint).await;
+    response.assert_status_ok();
 }
 
 #[sqlx::test]
