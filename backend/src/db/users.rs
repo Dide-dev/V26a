@@ -109,7 +109,7 @@ pub async fn get_user_all_data(
     id: i32,
 ) -> Result<UserGetAllData, ApiError> {
     let record = query!(
-        "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language FROM users WHERE id = $1",
+        "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language_code FROM users WHERE id = $1",
         id,
     )
     .fetch_one(db)
@@ -123,7 +123,7 @@ pub async fn get_user_all_data(
         about_me: record.about_me,
         email_visible: record.email_visible,
         account_type: AccountType::from_str(record.account_type.as_str())?,
-        language: UserLanguage::from_str(record.language.as_str())?,
+        language: UserLanguage::from_str(record.language_code.as_str())?,
     })
 }
 
