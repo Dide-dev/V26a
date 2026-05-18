@@ -70,6 +70,8 @@ pub enum UserResponse {
 /// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
@@ -120,6 +122,8 @@ async fn add_new_user(
 /// The user's data as [`UserGetData`].
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+///
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
 /// invalid or corrupted.
 ///
@@ -140,7 +144,6 @@ async fn get_own_user_data(
         (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
@@ -152,8 +155,7 @@ async fn get_own_user_data(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `new_data` - The new data of the user, as [`UserUpdateData`]. The `account_type` and `enabled`
-/// fields are only updated if passed, and if the user has permission to do so.
+/// `new_data` - The new data of the user, as [`UserUpdateData`].
 ///
 /// # Returns
 /// Nothing.
@@ -161,8 +163,7 @@ async fn get_own_user_data(
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
-/// the given user's data, or to update one of the specified fields.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
@@ -282,6 +283,8 @@ async fn change_password(
 /// The (cookie) jar that is empty.
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete

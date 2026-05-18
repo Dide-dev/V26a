@@ -36,7 +36,6 @@ pub struct UserGetData {
 }
 
 /// Data needed to update a user in the database.
-/// `account_type` and `enabled` are only updated if a `Some` value is passed.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUpdateData {

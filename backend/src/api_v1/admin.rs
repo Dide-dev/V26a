@@ -142,12 +142,10 @@ async fn get_all_user_data(
 ///
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) when there is no session.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
-/// the given user's data, or to update one of the specified fields.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
-    claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
     Json(new_data): Json<AdminUpdateData>,
@@ -159,7 +157,7 @@ async fn update_user_data(
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
     if let Some(id) = found_user_id
-        && id != claims.sub
+        && id != user_id
     {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
@@ -198,8 +196,7 @@ async fn update_user_data(
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) when there is no session.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
-/// the given user's data, or to update one of the specified fields.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
 ///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
