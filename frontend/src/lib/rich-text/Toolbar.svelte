@@ -162,7 +162,7 @@
 </script>
 
 <div
-    class="z-2 box-border flex flex-wrap items-center gap-1 border-t-0 border-r-0 border-b border-l-0 border-solid border-gray-200 p-2 dark:border-gray-800"
+    class="z-2 box-border flex flex-wrap items-center justify-between gap-1 border-t-0 border-r-0 border-b border-l-0 border-solid border-gray-200 p-1 dark:border-gray-800"
 >
     {#if $items.undo}
         <ToolbarButton
@@ -265,7 +265,7 @@
             <div class="i-lucide-heading-2 block size-5"></div>
         </ToolbarButton>
     {/if}
-    {#if $items.heading3}
+    <!-- {#if $items.heading3}
         <ToolbarButton
             pressed={$items.heading3.isActive}
             disabled={!$items.heading3.canExec}
@@ -274,7 +274,7 @@
         >
             <div class="i-lucide-heading-3 block size-5"></div>
         </ToolbarButton>
-    {/if}
+    {/if} -->
     {#if $items.horizontalRule}
         <ToolbarButton
             pressed={$items.horizontalRule.isActive}
@@ -335,7 +335,7 @@
             <div class="i-lucide-list-collapse block size-5"></div>
         </ToolbarButton>
     {/if} -->
-    {#if $items.indentList}
+    <!-- {#if $items.indentList}
         <ToolbarButton
             pressed={$items.indentList.isActive}
             disabled={!$items.indentList.canExec}
@@ -354,7 +354,7 @@
         >
             <div class="i-lucide-indent-decrease block size-5"></div>
         </ToolbarButton>
-    {/if}
+    {/if} -->
     {#if $items.insertImage}
         <ImageUploader disabled={!$items.insertImage.canExec} tooltip="Insert Image">
             <div class="i-lucide-image block size-5"></div>

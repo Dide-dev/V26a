@@ -152,7 +152,9 @@
         <div class="relative box-border w-full flex-1 overflow-y-auto">
             <div class="ProseMirror min-h-full p-1 outline-hidden" {@attach editor.mount}></div>
         </div>
-        <p class="text-xs">{valueText.length}/{maxLength}</p>
+        <p class="text-xs" class:text-red-700={valueText.length > maxLength}>
+            {valueText.length}/{maxLength}
+        </p>
     </div>
 </ProseKit>
 

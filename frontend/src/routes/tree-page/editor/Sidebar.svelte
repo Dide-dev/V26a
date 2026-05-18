@@ -32,6 +32,8 @@
     const frontMaxLength = 250;
     const backMaxLength = 5000;
 
+    let isVisualEditor = $state(true);
+
     async function finishEdit() {
         let node = followIndexNode(history.currentStructure, sidebar!.location);
         await doEditCard(history, node.cardId, sidebar!.editingVersion);
@@ -88,7 +90,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             style="height: {htmlHeight}px;"
-            class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
+            class="pointer-events-auto sticky top-0 z-30 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
             {onkeydown}
         >
             <h1>{m.editThisCard()}</h1>
@@ -101,7 +103,31 @@
             />
             <div class="h-5"></div>
             <p>Back</p>
-            <Editor maxLength={backMaxLength} bind:valueText={sidebar.editingVersion.back} />
+            <div class="m-1 flex gap-2 rounded bg-white p-1">
+                <button
+                    class="cursor-pointer rounded p-1"
+                    class:bg-green-500={isVisualEditor === true}
+                    onclick={() => (isVisualEditor = true)}
+                >
+                    Visual editor
+                </button>
+                <button
+                    class="cursor-pointer rounded p-1"
+                    class:bg-green-500={isVisualEditor === false}
+                    onclick={() => (isVisualEditor = false)}
+                >
+                    Code editor
+                </button>
+            </div>
+            {#if isVisualEditor}
+                <Editor maxLength={backMaxLength} bind:valueText={sidebar.editingVersion.back} />
+            {:else}
+                <SimpleTextEditArea
+                    maxLength={backMaxLength}
+                    height="full"
+                    bind:valueText={sidebar.editingVersion.back}
+                />
+            {/if}
             <div class="h-5"></div>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>

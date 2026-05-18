@@ -5,7 +5,8 @@
 -->
 
 <!--component
-    This simple component is only used for editing the front of the card.
+    This simple component is used for editing the front of the card,
+    or for the back when in 'code editor' instead of 'visual editor'.
     For the back of the card, see '$lib/rich-text/Editor.svelte'
  -->
 
