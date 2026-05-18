@@ -14,6 +14,8 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
+use crate::db::feedback::{get_all_feedback, get_feedback_count};
+use crate::db_structs::feedback::FeedbackListResponse;
 use crate::{
     ArcState,
     db::users::{get_user_count, get_user_list_by_page},
@@ -22,8 +24,6 @@ use crate::{
     db_structs::users::{AccountType, UserListResponse},
     errors::ApiError,
 };
-use crate::db::feedback::{get_all_feedback, get_feedback_count};
-use crate::db_structs::feedback::{FeedbackListResponse};
 
 /// Checks if the user is an admin. This is used as a middleware in the `admin` function below.
 async fn check_if_admin(
@@ -102,7 +102,6 @@ async fn get_all_user_data(
     Ok(Json(list))
 }
 
-
 #[utoipa::path(
     get,
     path = "/get-feedback",
@@ -129,7 +128,7 @@ async fn get_all_user_data(
 /// # Errors
 /// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than
 /// the defined number of items per page, currently 100.
-/// 
+///
 /// Returns [`MaxPageNumberExceeded`](ApiError::MaxPageNumberExceeded) if the requested page number is greater than the given page number, currently configured to 1000.
 ///
 /// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.

@@ -7,7 +7,7 @@
 use crate::db_structs::feedback::{FeedbackData, FeedbackGetData};
 use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
-use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
+use sqlx::{PgExecutor, query, query_as, query_scalar};
 
 /// Add feedback to the database.
 ///
@@ -55,23 +55,21 @@ pub async fn get_all_feedback(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
 ) -> Result<Vec<FeedbackGetData>, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new(
+    let limit = i64::from(page.get_size());
+    let offset = i64::from((page.get_page() - 1) * page.get_size());
+
+    let feedback = query_as!(
+        FeedbackGetData,
         "SELECT id AS feedback_id, email, feedback, created_at
         FROM feedback
         ORDER BY created_at DESC \
-        LIMIT ",
-    );
-
-    query
-        .push_bind(i64::from(page.get_size()))
-        .push(" OFFSET ")
-        // Page is 1-based
-        .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
-
-    let feedback = query
-        .build_query_as::<FeedbackGetData>()
-        .fetch_all(db)
-        .await?;
+        LIMIT $1
+        OFFSET $2",
+        limit,
+        offset
+    )
+    .fetch_all(db)
+    .await?;
 
     // User requested a page that yields no results. This should only occur if the user requests a
     // page that is too high, as get_queried_count should be used to confirm results exist.
@@ -93,9 +91,9 @@ pub async fn get_all_feedback(
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_feedback_count(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM feedback");
-
-    let feedback_count: i64 = query.build_query_scalar().fetch_one(db).await?;
+    let feedback_count = query_scalar!(r#"SELECT COUNT(*) as "count!" FROM feedback"#)
+        .fetch_one(db)
+        .await?;
 
     Ok(feedback_count)
 }

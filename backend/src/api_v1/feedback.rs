@@ -5,17 +5,16 @@
 */
 
 use crate::ArcState;
-use crate::db::feedback::{add_feedback};
-use crate::db_structs::feedback::{FeedbackData};
+use crate::db::feedback::add_feedback;
+use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
-use axum::routing::{post};
+use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
 pub fn feedback() -> Router<ArcState> {
-    Router::new()
-        .route("/provide", post(provide_feedback))
+    Router::new().route("/provide", post(provide_feedback))
 }
 
 #[utoipa::path(
