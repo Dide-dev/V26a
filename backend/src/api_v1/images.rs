@@ -6,8 +6,8 @@
 
 use crate::ArcState;
 
-use crate::api_v1::session::Claims;
 use crate::db::images::{add_image, check_image_existence};
+use crate::db_structs::session::Claims;
 
 use crate::errors::ApiError;
 use axum::body::Bytes;
