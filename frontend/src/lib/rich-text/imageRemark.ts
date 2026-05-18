@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import type { State as HastToMdastState } from 'hast-util-to-mdast';
 import { type State as MdastToHastState, defaultHandlers } from 'mdast-util-to-hast';
 import type { Element as HastElement } from 'hast';
