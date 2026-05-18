@@ -6,10 +6,10 @@
 
 #![cfg(test)]
 
-use crate::db_structs::session::Claims;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
+use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
     TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
@@ -17,7 +17,7 @@ use crate::db_structs::trees::{
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{login, register, register_admin, setup, setup_login};
+use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::{BTreeMap, HashMap};
@@ -159,16 +159,7 @@ async fn test_unpublished_trees(db: PgPool) {
     let conn = get_connection_unwrap!(db);
     let mut server = setup_login(db).await;
 
-    let tree_data = TreeData {
-        published: false,
-        ..Default::default()
-    };
-    let tree_structure = TreeStructure { root_nodes: vec![] };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let endpoint = format!("/trees/get-with-cards/{tree_id}");
     server.get(&endpoint).await.assert_status_ok();
@@ -196,11 +187,7 @@ async fn test_unpublished_trees(db: PgPool) {
 async fn test_deleting_trees_works(db: PgPool) {
     let server = setup_login(db).await;
 
-    let tree_add_data = TreeAddData {
-        tree_data: TreeData::default(),
-        tree_structure: TreeStructure { root_nodes: vec![] },
-    };
-    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     // We also add a card, to ensure that it does not prevent the tree from being deleted.
     let card_add_data = CardAddData {
@@ -724,21 +711,7 @@ async fn test_update_and_get_tree(db: PgPool) {
 async fn test_update_metadata(db: PgPool) {
     let server = setup_login(db).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    response.assert_status_ok();
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     // Update the metadata
     let new_tree_data = TreeData {
@@ -801,20 +774,7 @@ async fn test_get_subjects(db: PgPool) {
 async fn test_verify_tree_permission_owner(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let claims = Claims {
         sub: 1,
@@ -831,20 +791,7 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
 async fn test_verify_tree_permission_admin(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let claims = Claims {
         sub: 1,
@@ -861,20 +808,7 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
 async fn test_verify_tree_permission_co_author(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
     server
@@ -884,7 +818,7 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
     let claims = Claims {
         sub: 1,
         exp: i64::MAX,
-        account_type: AccountType::Admin,
+        account_type: AccountType::Author,
     };
 
     let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
@@ -896,20 +830,7 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
 async fn test_authorize_co_author_success(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
     let response = server
@@ -929,20 +850,7 @@ async fn test_authorize_co_author_success(db: PgPool) {
 async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     register(&server, "not_tree_owner@email.com".to_owned()).await;
     login(&server, "not_tree_owner@email.com".to_owned()).await;
@@ -959,20 +867,7 @@ async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
 async fn test_cannot_authorize_non_existing_user(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let co_author_id = 238_574_969;
     let response = server

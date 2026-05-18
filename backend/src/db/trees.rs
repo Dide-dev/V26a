@@ -500,7 +500,10 @@ pub async fn db_get_tree_all_data(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_tree_owner(db: impl PgExecutor<'_>, tree_id: i32) -> Result<Option<i32>, ApiError> {
+pub async fn get_tree_owner(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await?

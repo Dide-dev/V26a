@@ -6,8 +6,9 @@
 
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_tree, db_get_tree_all_data, get_languages, get_queried_count, get_queried_list,
-    get_subjects, get_tree_owner, is_structure_valid, language_exists, subject_exists, is_co_author_of_tree, add_co_author,
+    add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
+    get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
+    language_exists, subject_exists,
 };
 use crate::db::users::user_id_exists;
 use crate::db_structs::pagination::OptionalPaginationOptions;
@@ -384,7 +385,7 @@ async fn update_tree_data(
     let mut transaction = db.begin().await?;
 
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(&mut *transaction, tree_update_data.id, claims).await?;
+    verify_tree_permissions(&mut transaction, tree_update_data.id, claims).await?;
 
     if !language_exists(&mut *transaction, &tree_update_data.new_data.language_code).await? {
         return Err(ApiError::MissingLanguage(
@@ -501,11 +502,14 @@ pub async fn verify_tree_permissions(
     claims: Claims,
 ) -> Result<(), ApiError> {
     // Check whether the tree exists.
-    let owner_id = get_tree_owner(&mut *db, tree_id.clone())
+    let owner_id = get_tree_owner(&mut *db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if claims.account_type == AccountType::Admin || claims.sub == owner_id || is_co_author_of_tree(db, &tree_id, &claims.sub).await? {
+    if claims.account_type == AccountType::Admin
+        || claims.sub == owner_id
+        || is_co_author_of_tree(db, &tree_id, &claims.sub).await?
+    {
         Ok(())
     } else {
         Err(ApiError::NoPermission)
@@ -618,7 +622,7 @@ pub async fn get_list(
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
-/// 
+///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree to which the user is added as co-author does not exist.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -633,7 +637,7 @@ async fn authorize_co_author(
 
     // A user can only add a co-author to their own tree, unless they are an admin.
     if claims.sub
-        != get_tree_owner(&db, tree_id.clone())
+        != get_tree_owner(&db, tree_id)
             .await?
             .ok_or(ApiError::MissingTree(tree_id))?
         && claims.account_type != AccountType::Admin
