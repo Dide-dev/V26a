@@ -42,7 +42,7 @@ pub async fn add_feedback(
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `page` - Which page is requested.
+/// `page` - Which page is requested, and its size, as [`PaginationOptions`].
 ///
 /// # Returns
 /// A list with the feedback.
@@ -82,13 +82,13 @@ pub async fn get_all_feedback(
     Ok(feedback)
 }
 
-/// Get the amount of feedback.
+/// Get the number of feedback entries.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
 /// # Returns
-/// The amount of feedback.
+/// The number of feedback entries.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
