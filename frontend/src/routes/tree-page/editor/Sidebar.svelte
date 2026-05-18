@@ -10,8 +10,9 @@
 <script lang="ts">
     import type { CardGetData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
+    import Editor from '$lib/rich-text/Editor.svelte';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
-    import TextEditArea from './TextEditArea.svelte';
+    import SimpleTextEditArea from './SimpleTextEditArea.svelte';
 
     let {
         sidebar = $bindable(),
@@ -95,20 +96,15 @@
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <TextEditArea
+            <SimpleTextEditArea
                 maxLength={frontMaxLength}
                 height={2}
-                hasMenubar={false}
                 bind:valueText={sidebar.editingVersion.front}
             />
             <div class="h-5"></div>
             <p>Back</p>
-            <TextEditArea
-                maxLength={backMaxLength}
-                height="full"
-                hasMenubar={true}
-                bind:valueText={sidebar.editingVersion.back}
-            />
+            <Editor maxLength={backMaxLength} bind:valueText={sidebar.editingVersion.back} />
+            <div class="h-5"></div>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>
             {/if}

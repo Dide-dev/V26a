@@ -4,43 +4,28 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
-<script lang="ts">
-    import { onMount } from 'svelte';
-    import ImageUploadButton from './ImageUploadButton.svelte';
+<!--component
+    This simple component is only used for editing the front of the card.
+    For the back of the card, see '$lib/rich-text/Editor.svelte'
+ -->
 
+<script lang="ts">
     let {
         maxLength,
         height,
-        hasMenubar,
         valueText = $bindable()
     }: {
         maxLength: number;
         height: number | 'full';
-        hasMenubar: boolean;
         valueText: string;
     } = $props();
-    // We ignore these warnings here because these variables are not actually used
-    // reactively, but only in event handlers.
-    // svelte-ignore non_reactive_update
-    let input: HTMLTextAreaElement;
-
-    onMount(() => {
-        input.focus();
-    });
 </script>
 
-<!-- Menubar lookalike -->
-{#if hasMenubar}
-    <div class="flex justify-end gap-2 bg-blue-200">
-        <ImageUploadButton bind:valueText bind:input></ImageUploadButton>
-    </div>
-{/if}
 <textarea
     class="w-full resize-none border"
     class:h-full={height === 'full'}
     rows={height !== 'full' ? height : null}
     maxlength={maxLength}
     bind:value={valueText}
-    bind:this={input}
 ></textarea>
 <p class="text-xs">{valueText.length}/{maxLength}</p>

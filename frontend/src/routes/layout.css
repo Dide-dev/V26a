@@ -7,6 +7,7 @@
 @import 'tailwindcss';
 @import '../lib/assets/katex/katex.css';
 
+@plugin '@egoist/tailwindcss-icons';
 @plugin 'flowbite/plugin';
 
 /* Disable dark mode */
@@ -373,5 +374,9 @@
 
     ol {
         list-style-type: decimal;
+    }
+
+    hr {
+        margin: 0.2rem 0;
     }
 }
