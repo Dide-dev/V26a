@@ -68,6 +68,7 @@
 <div
     style:--resize-root-min-height={`${trueMinHeight}px`}
     style:--resize-root-min-width={`${trueMinWidth}px`}
+    class="my-2"
 >
     <ResizableRoot
         width={attrs.width ?? undefined}

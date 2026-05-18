@@ -47,8 +47,6 @@
         if (sidebar === null) {
             return;
         }
-        sidebar.editingVersion.front = sidebar.editingVersion.front.trim();
-        sidebar.editingVersion.back = sidebar.editingVersion.back.trim();
 
         if (sidebar.editingVersion.back.length === 0) {
             sidebar.errorMessage = m.backTextRequired();
@@ -81,7 +79,7 @@
         }
     }
 
-    export const htmlWidth: number = 350;
+    export const htmlWidth: number = 450;
     export const htmlHeight: number = 650;
 </script>
 

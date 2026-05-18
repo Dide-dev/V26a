@@ -5,8 +5,6 @@
 -->
 
 <script lang="ts">
-    // We intentionally only import the base style, not the typography.css,
-    // so that the editor style looks more like how it is rendered on the cards.
     import 'prosekit/basic/style.css';
     import 'prosekit/basic/typography.css';
 
@@ -152,7 +150,7 @@
     >
         <Toolbar />
         <div class="relative box-border w-full flex-1 overflow-y-auto">
-            <div class="ProseMirror min-h-full p-1" {@attach editor.mount}></div>
+            <div class="ProseMirror min-h-full p-1 outline-hidden" {@attach editor.mount}></div>
         </div>
         <p class="text-xs">{valueText.length}/{maxLength}</p>
     </div>
@@ -168,5 +166,11 @@
     }
     :global(.ProseMirror p) {
         margin: 0;
+    }
+    :global(.ProseMirror .prosemirror-math-block) {
+        margin: 0 !important;
+        :global(.prosemirror-math-display) {
+            padding: 0 !important;
+        }
     }
 </style>
