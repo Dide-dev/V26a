@@ -11,13 +11,15 @@ use axum::{
     response::Response,
     routing::get,
 };
+use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 use crate::{
-    api_v1::session::Claims,
-    config::Config,
-    db::users::get_all_users,
-    db_structs::users::{AccountType, UserGetAllData},
+    ArcState,
+    db::users::{get_user_count, get_user_list_by_page},
+    db_structs::pagination::OptionalPaginationOptions,
+    db_structs::session::Claims,
+    db_structs::users::{AccountType, UserListResponse},
     errors::ApiError,
 };
 
@@ -37,10 +39,10 @@ async fn check_if_admin(
 }
 
 /// Creates an `Axum` [`Router`] for the user category.
-pub fn admin(config: Config) -> Router<Config> {
+pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
-        .route_layer(middleware::from_fn_with_state(config, check_if_admin))
+        .route_layer(middleware::from_fn_with_state(state, check_if_admin))
 }
 
 #[utoipa::path(
@@ -48,23 +50,24 @@ pub fn admin(config: Config) -> Router<Config> {
     path = "/all-user-data",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = Vec<UserGetAllData>),
+        (status = 200, description = "Successfully retrieved data.", body = UserListResponse),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
     )
 )]
 
 /// Gets the data of all the users from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
-/// the data form all users as [`Vec<UserGetAllData>`].
+/// the data form all users and the amount of pages as [`UserListResponse`].
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
@@ -73,9 +76,25 @@ pub fn admin(config: Config) -> Router<Config> {
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
 /// the data of all users.
 ///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the user count.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_user_data(
     Extension(db): Extension<PgPool>,
-) -> Result<Json<Vec<UserGetAllData>>, ApiError> {
-    get_all_users(&db).await.map(Json)
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<UserListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await?;
+    let users_count = get_user_count(&mut *transaction).await?;
+
+    let users = get_user_list_by_page(&mut *transaction, &page).await?;
+    transaction.commit().await?;
+
+    let list = UserListResponse {
+        total_users: i32::try_from(users_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
+        users,
+    };
+
+    Ok(Json(list))
 }
