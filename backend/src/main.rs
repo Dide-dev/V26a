@@ -19,6 +19,8 @@ use axum::extract::DefaultBodyLimit;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::services::ServeDir;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
@@ -105,5 +107,10 @@ fn backend(config: Config, db: sqlx::PgPool) -> Router {
         .nest("/v1", v1_api(state.clone()))
         .layer(Extension(db))
         .layer(DefaultBodyLimit::max(state.config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(DefaultOnResponse::new().level(Level::INFO)),
+        )
         .with_state(state)
 }

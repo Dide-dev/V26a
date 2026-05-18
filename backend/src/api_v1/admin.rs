@@ -14,12 +14,11 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db_structs::users::AdminUpdateData;
+use crate::db_structs::{session::Claims, users::AdminUpdateData};
 use axum::extract::{Path, State};
 
 use crate::{
     ArcState,
-    api_v1::session::Claims,
     api_v1::users::{ChangePasswordResponse, UserResponse},
     db::users::{
         admin_update_user, get_user_by_name, get_user_count, get_user_list_by_page,
