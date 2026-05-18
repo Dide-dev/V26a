@@ -519,7 +519,7 @@ pub async fn get_tree_owner(db: impl PgExecutor<'_>, tree_id: i32) -> Result<Opt
 /// `co_author_id` - The id of the given co-author.
 ///
 /// # Returns
-/// A boolean, indicating whether the given co-author is indeed the co-author of the given tree.
+/// A boolean, indicating whether the given user is indeed a co-author of the given tree.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -546,7 +546,7 @@ pub async fn is_co_author_of_tree(
 ///
 /// `tree_id` - The id of the tree to which a co-author should be added.
 ///
-/// `co_author_id` - The id of the person that should be added as co-author.
+/// `co_author_id` - The id of the user that should be added as co-author.
 ///
 /// # Returns
 /// Nothing.

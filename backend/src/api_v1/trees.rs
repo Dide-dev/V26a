@@ -505,9 +505,7 @@ pub async fn verify_tree_permissions(
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    let is_co_author = is_co_author_of_tree(db, &tree_id, &claims.sub).await?;
-
-    if claims.account_type == AccountType::Admin || claims.sub == owner_id || is_co_author {
+    if claims.account_type == AccountType::Admin || claims.sub == owner_id || is_co_author_of_tree(db, &tree_id, &claims.sub).await? {
         Ok(())
     } else {
         Err(ApiError::NoPermission)
@@ -588,7 +586,7 @@ pub async fn get_list(
 #[utoipa::path(
     post,
     path = "{tree_id}/authorize/{user_id}",
-    context_path = "/api/v1/users/trees",
+    context_path = "/api/v1/trees/",
     responses(
         (status = 200, description = "Co-author successfully added to the tree."),
         (status = 400, description = "Tree or user with given id cannot be found."),
@@ -620,6 +618,8 @@ pub async fn get_list(
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
+/// 
+/// Returns [`MissingTree`](ApiError::MissingTree) if the tree to which the user is added as co-author does not exist.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn authorize_co_author(

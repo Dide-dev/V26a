@@ -11,4 +11,4 @@ CREATE TABLE co_authors(
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
-CREATE INDEX co_author_id ON co_authors (user_id);
+CREATE INDEX co_author_user_id ON co_authors (user_id);
