@@ -10,8 +10,26 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: /srv/V26a/
 
     steps:
-      - name: Test
-        run: touch hi.txt
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Add redirect to Caddyfile
+        run: echo "${{ secrets.CADDYFILE_EXT }}" >> caddy/Caddyfile
+
+      - name: Build container
+        run: docker compose --profile prod build
+
+      - name: Turn off old container
+        run: docker compose --profile "*" down
+
+      - name: Deploy
+        run: docker compose --profile prod up -d
+
+      - name: Remove env file
+        if: always()
+        run: rm -f .env
