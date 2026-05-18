@@ -4,13 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::session::Claims;
 use crate::db::cards::{get_tree_cards, remove_card};
 use crate::db::trees::{
     add_tree, db_get_tree_all_data, get_languages, get_queried_count, get_queried_list,
     get_subjects, get_tree_owner, is_structure_valid, language_exists, subject_exists,
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
+use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
     Language, Subject, TreeAddData, TreeFilters, TreeListResponse, TreeRemoveCardData,
     TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,

@@ -9,5 +9,6 @@ pub mod cards;
 pub mod classrooms;
 pub mod feedback;
 pub mod pagination;
+pub mod session;
 pub mod trees;
 pub mod users;
