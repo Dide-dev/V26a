@@ -41,7 +41,7 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let server = setup(db);
     let email = "SidneyMonster@sesamestreet.com".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    register(&server, email.clone()).await;
     let response = server
         .post("/auth/login")
         .json(&LoginRequestBody {
@@ -57,15 +57,13 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let original_cookie_data: InfoCookieData = serde_json::from_str(&data).unwrap();
 
     let response = server
-        .post(&format!("/users/update/{user_id}"))
+        .post("/users/update")
         .json(&UserUpdateData {
             name: "Sidney".to_string(),
             nickname: "Cookie Monster".to_string(),
             about_me: "I like cookies, yum".to_string(),
             email_visible: false,
             language: UserLanguage::En,
-            account_type: None,
-            enabled: None,
         })
         .await;
     response.assert_status_ok();
