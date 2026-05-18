@@ -95,6 +95,8 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 ///
 /// `new_data` - The new data to be assigned as [`UserUpdateData`], including the id of the user to be updated.
 ///
+/// `id` - The id of the user that needs to be updated.
+///
 /// # Returns
 /// Nothing.
 ///
@@ -105,7 +107,6 @@ pub async fn update_user(
     id: i32,
     new_data: &UserUpdateData,
 ) -> Result<(), ApiError> {
-    // COALESCE is used here to update account_type and enabled only if they are not None.
     query!(
         "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5 WHERE id = $6",
         new_data.name,
@@ -121,12 +122,14 @@ pub async fn update_user(
     Ok(())
 }
 
-/// Updates a user in the database.
+/// Updates a user in the database. Can also update protected fields.
 ///
 /// # Arguments
 /// `db` - A connection to a Postgres database.
 ///
 /// `new_data` - The new data to be assigned as [`AdminUpdateData`], including the id of the user to be updated.
+///
+/// `id` - The id of the user that needs to be updated.
 ///
 /// # Returns
 /// Nothing.
@@ -458,9 +461,9 @@ mod tests {
 
         let user_id = initialize_user(&db, &register_data).await;
 
-        let _result = admin_update_user(&db, user_id, &update_data).await;
+        admin_update_user(&db, user_id, &update_data).await.unwrap();
 
-        let found_user_id = get_user_by_name(&db, "John Smith").await.unwrap();
+        let found_user_id = get_user_by_name(&db, &update_data.name).await.unwrap();
         // Checks whether the users name changed from "Not John Smith" to "John Smith" by checking of the id's are the same.
         assert_eq!(found_user_id, Some(user_id));
     }

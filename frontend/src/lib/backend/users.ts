@@ -107,7 +107,7 @@ export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
 }
 
-/** Update a user's data */
+/** Update a user's own data */
 export function updateUser(
     newData: UserUpdateData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
