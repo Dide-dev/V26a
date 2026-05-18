@@ -4,9 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::session::Claims;
 use crate::db::classrooms::{add_classroom, generate_random_code};
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
+use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 

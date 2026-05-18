@@ -17,9 +17,9 @@ use sqlx::PgPool;
 
 use crate::{
     ArcState,
-    api_v1::session::Claims,
     db::users::{get_user_all_data, get_user_count, get_user_list_by_page, user_id_exists},
     db_structs::pagination::OptionalPaginationOptions,
+    db_structs::session::Claims,
     db_structs::users::{AccountType, UserGetAllData, UserListResponse},
     errors::ApiError,
 };

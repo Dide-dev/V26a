@@ -4,7 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::session::Claims;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{add_card, get_card_text, get_tree_of_card, update_card};
 use crate::db::cards_library::{
@@ -13,6 +12,7 @@ use crate::db::cards_library::{
 use crate::db_structs::cards::{
     CardAddData, CardFilters, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
 };
+use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 use axum::extract::Path;
