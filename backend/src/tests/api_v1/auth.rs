@@ -6,10 +6,9 @@
 
 #![cfg(test)]
 
-use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, UserLanguage, UserUpdateData};
-use crate::tests::api_v1::{register, setup};
+use crate::tests::api_v1::{login, register, setup};
 use percent_encoding::percent_decode_str;
 use sqlx::PgPool;
 
@@ -18,13 +17,7 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
     let email = "KoekieMonster@sesamstraat.nl".to_owned();
     let user_id = register(&server, email.clone()).await;
-    let response = server
-        .post("/auth/login")
-        .json(&LoginRequestBody {
-            email,
-            password: "a$$word".to_string(),
-        })
-        .await;
+    let response = login(&server, email).await;
     let cookies = response.cookies();
     let user_info_cookie = cookies.get("user_info");
     let data = user_info_cookie.unwrap().value();
@@ -42,13 +35,7 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let server = setup(db);
     let email = "SidneyMonster@sesamestreet.com".to_owned();
     register(&server, email.clone()).await;
-    let response = server
-        .post("/auth/login")
-        .json(&LoginRequestBody {
-            email,
-            password: "a$$word".to_string(),
-        })
-        .await;
+    let response = login(&server, email).await;
     let cookies = response.cookies();
     let user_info_cookie = cookies.get("user_info").unwrap();
     let original_max_age = user_info_cookie.max_age().unwrap();
