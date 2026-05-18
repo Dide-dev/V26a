@@ -40,7 +40,6 @@ utoipa = { version = "5.4.0", features = ["chrono"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipauto = "0.2.0"
 rand = "0.10.1"
-percent-encoding = "2.3.2"
 
 [dev-dependencies]
 axum-test = "20.0.0"

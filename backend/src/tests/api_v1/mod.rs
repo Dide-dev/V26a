@@ -150,7 +150,7 @@ async fn setup_login(db: PgPool) -> TestServer {
 
 #[cfg(test)]
 mod tests {
-    use crate::api_v1::session::Claims;
+    use crate::db_structs::session::InfoCookieData;
     use crate::db_structs::users::AccountType;
     use crate::get_connection_unwrap;
     use crate::tests::api_v1::{get_cookie, login, register, register_admin, setup};
@@ -163,7 +163,7 @@ mod tests {
         let user_email = "user@localhost";
         register(&server, user_email.to_owned()).await;
         let res = login(&server, user_email.to_owned()).await;
-        let user_info = get_cookie::<Claims>(&res, "user_info");
+        let user_info = get_cookie::<InfoCookieData>(&res, "user_info");
         assert_eq!(user_info.account_type, AccountType::Author);
     }
 
@@ -175,7 +175,7 @@ mod tests {
         let admin_email = "admin@localhost";
         register_admin(&server, conn, admin_email.to_owned()).await;
         let res = login(&server, admin_email.to_owned()).await;
-        let user_info = get_cookie::<Claims>(&res, "user_info");
+        let user_info = get_cookie::<InfoCookieData>(&res, "user_info");
         assert_eq!(user_info.account_type, AccountType::Admin);
     }
 }
