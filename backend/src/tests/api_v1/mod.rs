@@ -20,19 +20,20 @@ use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::mail::StubMailer;
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
-use axum_test::TestServer;
-use lettre::transport::stub::AsyncStubTransport;
-use std::sync::Arc;
-use tempfile::tempdir;
 use axum_extra::extract::cookie::Cookie;
+use axum_test::{TestResponse, TestServer};
+use lettre::transport::stub::AsyncStubTransport;
 use percent_encoding::percent_decode_str;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
+use std::sync::Arc;
+use tempfile::tempdir;
 
 /// A struct for testing, containing the [`TestServer`] and [`ArcState`].
 pub struct TestState {
     pub server: TestServer,
     pub state: ArcState,
+}
 
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
@@ -145,8 +146,8 @@ async fn register_email(test_state: &TestState, email: String) -> i32 {
 ///
 /// # Returns
 /// An i32 representing the id of the admin created.
-async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email: String) -> i32 {
-    let user_id = register_email(test_server, email).await;
+async fn register_admin(test_state: &TestState, db: impl PgExecutor<'_>, email: String) -> i32 {
+    let user_id = register_email(test_state, email).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -203,15 +204,16 @@ mod tests {
     use crate::db_structs::session::InfoCookieData;
     use crate::db_structs::users::AccountType;
     use crate::get_connection_unwrap;
-    use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
+    use crate::tests::api_v1::{get_cookie_data, login, register_admin, register_email, setup};
     use sqlx::PgPool;
 
     #[sqlx::test]
     async fn test_normal_login(db: PgPool) {
-        let server = setup(db);
+        let test_state = setup(db);
 
         let user_email = "user@localhost";
-        register(&server, user_email.to_owned()).await;
+        register_email(&test_state, user_email.to_owned()).await;
+        let server = test_state.server;
         let res = login(&server, user_email.to_owned()).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
@@ -221,10 +223,11 @@ mod tests {
     #[sqlx::test]
     async fn test_admin_login(db: PgPool) {
         let conn = get_connection_unwrap!(db);
-        let server = setup(db);
+        let test_state = setup(db);
 
         let admin_email = "admin@localhost";
-        register_admin(&server, conn, admin_email.to_owned()).await;
+        register_admin(&test_state, conn, admin_email.to_owned()).await;
+        let server = test_state.server;
         let res = login(&server, admin_email.to_owned()).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);

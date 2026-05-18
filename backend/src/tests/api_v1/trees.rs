@@ -13,7 +13,7 @@ use crate::db_structs::trees::{
 };
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{login, register_email, register_admin, setup, setup_login};
+use crate::tests::api_v1::{login, register_admin, register_email, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::{BTreeMap, HashMap};
@@ -157,8 +157,10 @@ async fn test_unpublished_trees(db: PgPool) {
 
     let first_user_email = "first_user@localhost";
     let second_user_email = "second_user@localhost";
+    let admin_user_email = "admin@localhost";
     register_email(&test_state, first_user_email.to_owned()).await;
     register_email(&test_state, second_user_email.to_owned()).await;
+    register_admin(&test_state, conn, admin_user_email.to_owned()).await;
 
     let mut server = test_state.server;
 
@@ -188,8 +190,6 @@ async fn test_unpublished_trees(db: PgPool) {
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
 
-    let admin_user_email = "admin@localhost";
-    register_admin(&server, conn, admin_user_email.to_owned()).await;
     login(&server, admin_user_email.to_owned()).await;
     let response = server.get(&endpoint).await;
     response.assert_status_ok();

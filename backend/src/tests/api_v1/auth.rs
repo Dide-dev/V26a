@@ -8,14 +8,15 @@
 
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, UserLanguage, UserUpdateData};
-use crate::tests::api_v1::{get_cookie_data, login, register, setup};
+use crate::tests::api_v1::{get_cookie_data, login, register_email, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
     let email = "KoekieMonster@sesamstraat.nl".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    let user_id = register_email(&test_state, email.clone()).await;
+    let server = test_state.server;
     let response = login(&server, email).await;
     let cookie = response.cookie("user_info");
     let cookie_data = get_cookie_data::<InfoCookieData>(&cookie);
@@ -28,9 +29,10 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 
 #[sqlx::test]
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
     let email = "SidneyMonster@sesamestreet.com".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    let user_id = register_email(&test_state, email.clone()).await;
+    let server = test_state.server;
     let response = login(&server, email).await;
     let original_cookie = response.cookie("user_info");
     let original_max_age = original_cookie.max_age().unwrap();

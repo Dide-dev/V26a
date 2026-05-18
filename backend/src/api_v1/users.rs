@@ -23,7 +23,7 @@ use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
 use lettre::{Address, Message};
@@ -119,10 +119,10 @@ async fn add_new_user(
             return Ok(Json(UserResponse::UsernameAlreadyUsed));
         }
 
-        let expires = Utc::now() + Duration::seconds(state.config.verification_timer);
+        let expires = Utc::now().timestamp() + state.config.verification_timer;
         let pending_data = PendingRegisterData {
             register_data: user_data.clone(),
-            expires: expires.timestamp(),
+            expires,
         };
         pending_accounts.insert(verification_code.clone(), pending_data);
 
