@@ -109,14 +109,14 @@
                     class:bg-green-500={isVisualEditor === true}
                     onclick={() => (isVisualEditor = true)}
                 >
-                    Visual editor
+                    {m.visualEditor()}
                 </button>
                 <button
                     class="cursor-pointer rounded p-1"
                     class:bg-green-500={isVisualEditor === false}
                     onclick={() => (isVisualEditor = false)}
                 >
-                    Code editor
+                    {m.codeEditor()}
                 </button>
             </div>
             {#if isVisualEditor}

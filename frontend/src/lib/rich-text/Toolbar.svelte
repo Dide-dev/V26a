@@ -8,6 +8,7 @@
     import type { BasicExtension } from 'prosekit/basic';
     import type { Editor } from 'prosekit/core';
     import { useEditorDerivedValue } from 'prosekit/svelte';
+    import { m } from '$lib/paraglide/messages';
 
     import ToolbarButton from './ToolbarButton.svelte';
     import ImageUploader from './ImageUploader.svelte';
@@ -169,7 +170,7 @@
             pressed={$items.undo.isActive}
             disabled={!$items.undo.canExec}
             onClick={$items.undo.command}
-            tooltip="Undo"
+            tooltip={m.undo()}
         >
             <div class="i-lucide-undo-2 block size-5"></div>
         </ToolbarButton>
@@ -179,7 +180,7 @@
             pressed={$items.redo.isActive}
             disabled={!$items.redo.canExec}
             onClick={$items.redo.command}
-            tooltip="Redo"
+            tooltip={m.redo()}
         >
             <div class="i-lucide-redo-2 block size-5"></div>
         </ToolbarButton>
@@ -190,7 +191,7 @@
             pressed={$items.bold.isActive}
             disabled={!$items.bold.canExec}
             onClick={$items.bold.command}
-            tooltip="Bold"
+            tooltip={m.bold()}
         >
             <div class="i-lucide-bold block size-5"></div>
         </ToolbarButton>
@@ -200,12 +201,12 @@
             pressed={$items.italic.isActive}
             disabled={!$items.italic.canExec}
             onClick={$items.italic.command}
-            tooltip="Italic"
+            tooltip={m.italic()}
         >
             <div class="i-lucide-italic block size-5"></div>
         </ToolbarButton>
     {/if}
-    {#if $items.underline}
+    <!-- {#if $items.underline}
         <ToolbarButton
             pressed={$items.underline.isActive}
             disabled={!$items.underline.canExec}
@@ -244,13 +245,13 @@
         >
             <div class="i-lucide-square-code block size-5"></div>
         </ToolbarButton>
-    {/if}
+    {/if} -->
     {#if $items.heading1}
         <ToolbarButton
             pressed={$items.heading1.isActive}
             disabled={!$items.heading1.canExec}
             onClick={$items.heading1.command}
-            tooltip="Heading 1"
+            tooltip={m.headingN({ n: 1 })}
         >
             <div class="i-lucide-heading-1 block size-5"></div>
         </ToolbarButton>
@@ -260,7 +261,7 @@
             pressed={$items.heading2.isActive}
             disabled={!$items.heading2.canExec}
             onClick={$items.heading2.command}
-            tooltip="Heading 2"
+            tooltip={m.headingN({ n: 2 })}
         >
             <div class="i-lucide-heading-2 block size-5"></div>
         </ToolbarButton>
@@ -280,7 +281,7 @@
             pressed={$items.horizontalRule.isActive}
             disabled={!$items.horizontalRule.canExec}
             onClick={$items.horizontalRule.command}
-            tooltip="Divider"
+            tooltip={m.divider()}
         >
             <div class="i-lucide-minus block size-5"></div>
         </ToolbarButton>
@@ -290,7 +291,7 @@
             pressed={$items.blockquote.isActive}
             disabled={!$items.blockquote.canExec}
             onClick={$items.blockquote.command}
-            tooltip="Blockquote"
+            tooltip={m.blockquote()}
         >
             <div class="i-lucide-text-quote block size-5"></div>
         </ToolbarButton>
@@ -300,7 +301,7 @@
             pressed={$items.bulletList.isActive}
             disabled={!$items.bulletList.canExec}
             onClick={$items.bulletList.command}
-            tooltip="Bullet List"
+            tooltip={m.bulletList()}
         >
             <div class="i-lucide-list block size-5"></div>
         </ToolbarButton>
@@ -310,7 +311,7 @@
             pressed={$items.orderedList.isActive}
             disabled={!$items.orderedList.canExec}
             onClick={$items.orderedList.command}
-            tooltip="Ordered List"
+            tooltip={m.orderedList()}
         >
             <div class="i-lucide-list-ordered block size-5"></div>
         </ToolbarButton>
@@ -356,7 +357,7 @@
         </ToolbarButton>
     {/if} -->
     {#if $items.insertImage}
-        <ImageUploader disabled={!$items.insertImage.canExec} tooltip="Insert Image">
+        <ImageUploader disabled={!$items.insertImage.canExec} tooltip={m.uploadImage()}>
             <div class="i-lucide-image block size-5"></div>
         </ImageUploader>
     {/if}

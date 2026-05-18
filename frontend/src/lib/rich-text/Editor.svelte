@@ -25,8 +25,6 @@
     import { defineImageViewerParserExtension } from './imageProsekit';
     import { defineBlockquote } from '@prosekit/extensions/blockquote';
     import { defineBold } from '@prosekit/extensions/bold';
-    // import { defineCode } from '@prosekit/extensions/code';
-    // import { defineCodeBlock } from '@prosekit/extensions/code-block';
     import { defineDoc } from '@prosekit/extensions/doc';
     import { defineGapCursor } from '@prosekit/extensions/gap-cursor';
     import { defineHardBreak } from '@prosekit/extensions/hard-break';
@@ -39,7 +37,6 @@
     import { defineParagraph } from '@prosekit/extensions/paragraph';
     import { defineTable } from '@prosekit/extensions/table';
     import { defineText } from '@prosekit/extensions/text';
-    // import { defineUnderline } from '@prosekit/extensions/underline';
     import { defineVirtualSelection } from '@prosekit/extensions/virtual-selection';
     import { defineImageCommands } from '@prosekit/extensions/image';
     import { defineKatexMath } from './math';
@@ -117,9 +114,10 @@
                 filterEmptyParagraphs(subnode);
             }
         };
-        filterEmptyParagraphs(newProsekitJson);
+        if (valueText.trim() !== '') {
+            filterEmptyParagraphs(newProsekitJson);
+        }
 
-        console.log('Editor got updated new markdown:', valueText);
         editor.setContent(newProsekitJson);
     });
 
@@ -131,8 +129,6 @@
             let markdown = markdownFromProsekitHtml(html);
             lastTextExported = markdown;
             valueText = markdown;
-
-            console.log('Editor output markdown:', valueText);
         },
         { editor }
     );

@@ -14,6 +14,7 @@
         PopoverRoot,
         PopoverTrigger
     } from 'prosekit/svelte/popover';
+    import { m } from '$lib/paraglide/messages';
 
     import ToolbarButton from './ToolbarButton.svelte';
     import { uploadImage } from '$lib/api-wrapper/images';
@@ -65,7 +66,7 @@
         <PopoverPopup
             class="box-border flex w-sm origin-(--transform-origin) flex-col gap-y-4 rounded-xl border border-gray-200 bg-[canvas] p-6 text-sm shadow-lg transition-[opacity,scale] transition-discrete duration-40 data-[state=closed]:scale-95 data-[state=closed]:opacity-0 data-[state=closed]:duration-150 motion-reduce:transition-none dark:border-gray-800 starting:scale-95 starting:opacity-0"
         >
-            <label for="id-upload-{ariaId}">Upload</label>
+            <label for="id-upload-{ariaId}">{m.upload()}</label>
             <input
                 id="id-upload-{ariaId}"
                 bind:this={fileInput}
@@ -80,7 +81,7 @@
                     class="inline-flex h-10 w-full items-center justify-center rounded-md border-0 bg-gray-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-50 ring-offset-white transition-colors hover:bg-gray-900/90 focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 dark:bg-gray-50 dark:text-gray-900 dark:ring-offset-gray-950 dark:hover:bg-gray-50/90 dark:focus-visible:ring-gray-300"
                     onclick={handleSubmit}
                 >
-                    Upload Image
+                    {m.uploadImage()}
                 </button>
             {/if}
         </PopoverPopup>
