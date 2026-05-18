@@ -10,5 +10,6 @@ pub mod classrooms;
 pub mod feedback;
 pub mod mail;
 pub mod pagination;
+pub mod session;
 pub mod trees;
 pub mod users;
