@@ -27,6 +27,7 @@
     import type { SideBar } from './Sidebar.svelte';
     import SidebarComponent from './Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
+    import Lock from './Lock.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -144,6 +145,7 @@
     {#if loading}
         <p class="text-green-800">{m.loadingTree()}</p>
     {:else if tree}
+        <Lock treeId={tree.history.treeId} />
         <h1 class="ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
         <p class="ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
             {tree.data.description}

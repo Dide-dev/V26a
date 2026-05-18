@@ -4,7 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
+use tokio::sync::{Mutex, oneshot};
 
 use crate::config::Config;
 
@@ -31,12 +33,17 @@ impl std::ops::Deref for ArcState {
 /// Use the [`ArcState`] type for this.
 pub struct State {
     pub config: Config,
+
+    pub tree_edit_locks: Mutex<HashMap<i32, oneshot::Sender<()>>>,
     // Later, we will add fields for
-    // sessions, email validation and websockets.
+    // sessions, email validation.
 }
 
 impl ArcState {
     pub fn new(config: Config) -> ArcState {
-        ArcState(Arc::new(State { config }))
+        ArcState(Arc::new(State {
+            config,
+            tree_edit_locks: Mutex::default(),
+        }))
     }
 }

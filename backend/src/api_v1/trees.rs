@@ -31,6 +31,8 @@ use sqlx::{PgConnection, PgPool};
 use crate::db_structs::Validated;
 use std::collections::HashMap;
 
+pub mod edit_lock;
+
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
@@ -45,6 +47,10 @@ pub fn trees() -> Router<ArcState> {
         .route("/get-all-subjects", get(get_all_subjects))
         .route("/{tree_id}/duplicate", post(duplicate_tree))
         .route("/{tree_id}/authorize/{username}", post(authorize_co_author))
+        .route(
+            "/{tree_id}/aquire-edit-lock",
+            axum::routing::any(edit_lock::aquire_edit_lock),
+        )
 }
 
 #[utoipa::path(
