@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { defineNodeSpec, Priority, union, withPriority } from 'prosekit/core';
+import { defineNodeSpec, union } from 'prosekit/core';
 import { defineSvelteNodeView, type SvelteNodeViewComponent } from 'prosekit/svelte';
 import ImageView from './ImageView.svelte';
 

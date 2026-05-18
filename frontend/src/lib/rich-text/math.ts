@@ -1,4 +1,4 @@
-import type { Element, Root } from 'hast';
+import type { Element, Text, Root } from 'hast';
 import type { State } from 'hast-util-to-mdast';
 import { render } from 'katex';
 import type { Nodes, RootContent } from 'mdast';
@@ -57,8 +57,10 @@ export function rehypeMathToProsekit() {
             let prosemirrorClassname = 'prosemirror-math-inline';
             let newTagName = 'span';
             if ('tagName' in parent && parent.tagName === 'pre') {
+                element = parent;
                 parents = parents.slice(0, -1);
                 parent = parents[parents.length - 1];
+
                 prosemirrorClassname = 'prosemirror-math-block';
                 newTagName = 'div';
             }
@@ -82,7 +84,7 @@ export function rehypeMathToProsekit() {
 export function rehypeRemarkSpanHandler(
     state: State,
     node: Element
-): RootContent[] | { type: 'inlineMath'; value: 'string' } {
+): RootContent[] | { type: 'inlineMath'; value: string } {
     const classes = node.properties.className as string[];
 
     if (!classes.includes('prosemirror-math-inline')) {
@@ -90,11 +92,14 @@ export function rehypeRemarkSpanHandler(
         return state.all(node);
     }
 
-    return {
-        type: 'inlineMath',
-        // @ts-expect-error: Maybe we should assert the 'type' field instead of ignoring it.
-        value: node.children[0].children[0].value
-    };
+    const codeElement = node.children[0] as Element;
+
+    // It is possible that the text in the inline math is undefined deleting its content.
+    if (codeElement.children.length === 0) {
+        return [];
+    }
+
+    return { type: 'inlineMath', value: (codeElement.children[0] as Text).value };
 }
 
 /** Will translate a rehype 'div' element to a remark node, and handles math blocks correctly. */
@@ -108,14 +113,12 @@ export function rehypeRemarkDivHandler(
         // This is the default implementation for a 'div' found in hast-util-to-mdast
         return state.toFlow(state.all(node));
     }
-
-    let value = '';
-    // @ts-expect-error: Maybe we should assert the 'type' field instead of ignoring it.
-    const codeElement = node.children[0].children[0];
+    const codeElement = (node.children[0] as Element).children[0] as Element;
 
     // It is possible that the text in the code block is undefined when initially creating it.
+    let value = '';
     if (codeElement.children.length > 0) {
-        value = codeElement.children[0].value;
+        value = (codeElement.children[0] as Text).value;
     }
 
     return { type: 'math', value };

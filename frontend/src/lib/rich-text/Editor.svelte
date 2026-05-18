@@ -15,7 +15,9 @@
         defineBaseCommands,
         defineBaseKeymap,
         defineHistory,
-        union
+        jsonFromHTML,
+        union,
+        type NodeJSON
     } from 'prosekit/core';
     import { ProseKit, useDocChange } from 'prosekit/svelte';
     import { onMount } from 'svelte';
@@ -39,7 +41,7 @@
     import { defineParagraph } from '@prosekit/extensions/paragraph';
     import { defineTable } from '@prosekit/extensions/table';
     import { defineText } from '@prosekit/extensions/text';
-    import { defineUnderline } from '@prosekit/extensions/underline';
+    // import { defineUnderline } from '@prosekit/extensions/underline';
     import { defineVirtualSelection } from '@prosekit/extensions/virtual-selection';
     import { defineImageCommands } from '@prosekit/extensions/image';
     import { defineKatexMath } from './math';
@@ -98,13 +100,29 @@
     $effect(() => {
         if (lastTextExported === valueText) return;
 
-        console.log('Editor got updated new markdown:', valueText);
-        editor.setContent(markdownToProsekitHtml(valueText));
+        let newProsekitJson = jsonFromHTML(markdownToProsekitHtml(valueText), {
+            schema: editor.schema
+        });
 
-        console.log(`Editor actually got ${markdownToProsekitHtml(valueText)}`);
-        console.log(
-            `Editor created JSON from that: ${JSON.stringify(editor.getDocJSON(), null, 4)}`
-        );
+        // Remove empty paragraphs that prosekit creates from the <p><img .../></p>
+        const filterEmptyParagraphs = (node: NodeJSON) => {
+            if (node.content === undefined) return;
+
+            for (let i = 0; i < node.content.length; i++) {
+                let subnode = node.content[i];
+                if (subnode.type === 'paragraph' && subnode.content === undefined) {
+                    node.content.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                filterEmptyParagraphs(subnode);
+            }
+        };
+        filterEmptyParagraphs(newProsekitJson);
+
+        console.log('Editor got updated new markdown:', valueText);
+        editor.setContent(newProsekitJson);
     });
 
     useDocChange(
@@ -138,12 +156,17 @@
         </div>
         <p class="text-xs">{valueText.length}/{maxLength}</p>
     </div>
-    <!-- <div class="h-full bg-white p-1 outline-2" {@attach editor.mount}></div> -->
 </ProseKit>
 
 <style>
+    /* Default prosekit style has a lot of additional room, but that looks weird */
     :global(.ProseMirror pre) {
-        /* Default prosekit style is 2rem, but that looks weird */
         padding: 1rem;
+    }
+    :global(.ProseMirror img) {
+        margin: 0;
+    }
+    :global(.ProseMirror p) {
+        margin: 0;
     }
 </style>
