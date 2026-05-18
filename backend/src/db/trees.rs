@@ -12,7 +12,7 @@ use crate::{
     },
     errors::ApiError,
 };
-use sqlx::{PgConnection, PgExecutor, PgPool, Postgres, QueryBuilder, query, query_as};
+use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
 /// Check whether the given subject exists.
@@ -500,7 +500,7 @@ pub async fn db_get_tree_all_data(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_tree_owner(db: &PgPool, tree_id: &i32) -> Result<Option<i32>, ApiError> {
+pub async fn get_tree_owner(db: impl PgExecutor<'_>, tree_id: i32) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
         .await?
@@ -524,7 +524,7 @@ pub async fn get_tree_owner(db: &PgPool, tree_id: &i32) -> Result<Option<i32>, A
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn is_co_author_of_tree(
-    db: &PgPool,
+    db: impl PgExecutor<'_>,
     tree_id: &i32,
     co_author_id: &i32,
 ) -> Result<bool, ApiError> {
@@ -567,56 +567,6 @@ pub async fn add_co_author(
     .execute(db)
     .await?;
     Ok(())
-}
-
-// TODO: unit tests
-/// Get the list of all trees owned by some owner.
-/// Should only be called if the user is authorised to see private trees!
-///
-/// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-///
-/// `owner_id` - The id of the owner that is queried on.
-///
-/// # Returns
-/// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
-///
-/// # Errors
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_trees_by_owner(
-    db: impl PgExecutor<'_>,
-    owner_id: i32,
-) -> Result<Vec<TreeMetadata>, ApiError> {
-    let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
-        .fetch_all(db)
-        .await?;
-
-    let trees_metadata = records
-        .into_iter()
-        .map(|t| TreeMetadata {
-            data: TreeData {
-                title: t.title,
-                description: t.description,
-                book_name: t.book_name,
-                book_edition: t.book_edition,
-                book_isbn: t.book_isbn,
-                book_chapter: t.book_chapter,
-                book_exercise: t.book_exercise,
-                assignment_text: t.assignment_text,
-                published: t.published,
-            },
-            gen_data: TreeGeneratedData {
-                id: t.id,
-                owner_id: t.owner_id,
-                created_at: t.created_at,
-                last_modified: t.last_modified,
-                times_visited: t.times_visited,
-                last_visited: t.last_visited,
-            },
-        })
-        .collect::<Vec<TreeMetadata>>();
-
-    Ok(trees_metadata)
 }
 
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
@@ -1087,7 +1037,7 @@ mod tests {
     async fn test_get_tree_owner(db: PgPool) {
         let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
-        let found_owner_id = get_tree_owner(&db, &tree_id).await.unwrap();
+        let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
         assert_eq!(found_owner_id, Some(user_id));
     }
 

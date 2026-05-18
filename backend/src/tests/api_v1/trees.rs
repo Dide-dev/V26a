@@ -6,7 +6,7 @@
 
 #![cfg(test)]
 
-use crate::api_v1::session::Claims;
+use crate::db_structs::session::Claims;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
@@ -822,7 +822,7 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(&db, tree_id, claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
 
     assert!(result.is_ok());
 }
@@ -852,7 +852,7 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
         account_type: AccountType::Admin,
     };
 
-    let result = verify_tree_permissions(&db, tree_id, claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
 
     assert!(result.is_ok());
 }
@@ -887,7 +887,7 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
         account_type: AccountType::Admin,
     };
 
-    let result = verify_tree_permissions(&db, tree_id, claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
 
     assert!(result.is_ok());
 }

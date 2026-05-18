@@ -173,7 +173,7 @@ mod tests {
         let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let owner_id = get_tree_owner(&db, &tree_id).await.unwrap().unwrap();
+        let owner_id = get_tree_owner(&db, tree_id.clone()).await.unwrap().unwrap();
         let title = "title".to_owned();
         let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
