@@ -148,6 +148,8 @@ async fn add_new_user(
     Ok(Json(UserResponse::Pending))
 }
 
+/// Struct for a verification code for the /users/verify endpoint.
+/// Needs to be a struct so it can be read from the correct query parameter "code".
 #[derive(serde::Deserialize, ToSchema)]
 pub struct VerificationCode {
     code: String,
