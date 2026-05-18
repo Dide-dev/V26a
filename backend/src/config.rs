@@ -8,31 +8,11 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::api_v1::session::Keys;
-use crate::errors::ApiError;
-use async_trait::async_trait;
+use crate::db_structs::mail::{Mailer, SmtpMailer};
 use bcrypt::DEFAULT_COST;
-use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
+use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env;
 use std::sync::Arc;
-
-/// Generic definition of a mailer, so that the mailer can be replaced with a [`AsyncStubTransport`](lettre::transport::stub::AsyncStubTransport) during testing.
-#[async_trait]
-pub trait Mailer: Send + Sync {
-    async fn send(&self, message: Message) -> Result<(), ApiError>;
-}
-
-/// Mailer to be used in the program, sends mails as usual.
-pub struct SmtpMailer {
-    transport: AsyncSmtpTransport<Tokio1Executor>,
-}
-
-#[async_trait]
-impl Mailer for SmtpMailer {
-    async fn send(&self, message: Message) -> Result<(), ApiError> {
-        self.transport.send(message).await?;
-        Ok(())
-    }
-}
 
 /// For more details, see the '.env.example' file in the root of this repository.
 #[derive(Clone)]

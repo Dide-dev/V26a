@@ -84,7 +84,7 @@ pub enum UserResponse {
 /// [`DatabaseException`](ApiError::DatabaseException),
 /// [`EmailParseError`](ApiError::EmailParseError),
 /// [`SmtpError`](ApiError::SmtpError) or
-/// [`LettreError`](ApiError::LettreError) instead.
+/// [`LettreException`](ApiError::LettreException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,

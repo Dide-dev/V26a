@@ -15,15 +15,12 @@ mod users;
 
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
-use crate::config::Mailer;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::mail::StubMailer;
 use crate::db_structs::users::{RegisterData, UserLanguage};
-use crate::errors::ApiError;
-use async_trait::async_trait;
 use axum::Extension;
 use axum_test::TestServer;
 use lettre::transport::stub::AsyncStubTransport;
-use lettre::{AsyncTransport, Message};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tempfile::tempdir;
@@ -32,19 +29,6 @@ use tempfile::tempdir;
 pub struct TestState {
     pub server: TestServer,
     pub state: ArcState,
-}
-
-/// Mailer to be used for tests. Does not mail.
-pub struct StubMailer {
-    transport: AsyncStubTransport,
-}
-
-#[async_trait]
-impl Mailer for StubMailer {
-    async fn send(&self, message: Message) -> Result<(), ApiError> {
-        self.transport.send(message).await.unwrap();
-        Ok(())
-    }
 }
 
 /// Sets up an API test server with the given mock database.

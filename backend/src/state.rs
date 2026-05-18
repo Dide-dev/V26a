@@ -37,7 +37,7 @@ pub struct State {
 
 impl ArcState {
     pub fn new(config: Config) -> ArcState {
-        let pending_accounts = Default::default();
+        let pending_accounts = Mutex::default();
 
         ArcState(Arc::new(State {
             config,
