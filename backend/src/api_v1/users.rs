@@ -5,12 +5,12 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
 };
+use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
     UserUpdateData,
@@ -22,8 +22,10 @@ use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Duration;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
@@ -172,11 +174,12 @@ async fn get_own_user_data(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
+    mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
     Json(new_data): Json<UserUpdateData>,
-) -> Result<Json<UserResponse>, ApiError> {
+) -> Result<(CookieJar, Json<UserResponse>), ApiError> {
     // A user can only update another user's data if they are an administrator.
     if claims.sub != user_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
@@ -198,12 +201,28 @@ async fn update_user_data(
     if let Some(id) = found_user_id
         && id != claims.sub
     {
-        return Ok(Json(UserResponse::UsernameAlreadyUsed));
+        return Ok((jar, Json(UserResponse::UsernameAlreadyUsed)));
     }
 
     update_user(&db, user_id, &new_data).await?;
 
-    Ok(Json(UserResponse::Success { user_id }))
+    let new_user_info_cookie = InfoCookieData {
+        name: new_data.name,
+        nickname: new_data.nickname,
+        sub: claims.sub,
+        account_type: new_data.account_type.unwrap_or(claims.account_type),
+    };
+    let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
+    let time = Duration::seconds(claims.exp - Utc::now().timestamp());
+    let user_cookie = Cookie::build(("user_info", new_user_info))
+        .path("/")
+        .secure(true)
+        .max_age(time)
+        .http_only(false);
+    // `add` automatically replaces the cookie values, `remove` sets the cookie to an empty value and the maxAge to 0.
+    jar = jar.add(user_cookie);
+
+    Ok((jar, Json(UserResponse::Success { user_id })))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
