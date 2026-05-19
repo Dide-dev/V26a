@@ -6,7 +6,11 @@
 <script lang="ts">
     import { Datepicker } from 'flowbite-svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { type FilterOptions, type TreeListResponse, getFilteredList } from '$lib/backend/trees';
+    import {
+        type FilterOptions,
+        type TreeListResponse,
+        getFilteredList
+    } from '$lib/api-wrapper/trees';
     import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
