@@ -12,10 +12,10 @@ import type {
     TreeMetadata,
     TreeStructure,
     TreeWithCards
-} from '$lib/backend/trees';
-import type { CardGetData, CardId } from '$lib/backend/cards';
-import { getTreeWithCards } from '$lib/backend/trees';
-import { getUserInfo } from '$lib/backend/users';
+} from '$lib/api-calls/trees';
+import type { CardGetData, CardId } from '$lib/api-calls/cards';
+import { getTreeWithCards } from '$lib/api-calls/trees';
+import { getUserInfo } from '$lib/api-calls/users';
 
 // Mock the logging check.
 vi.mock('$lib/backend/users', () => ({

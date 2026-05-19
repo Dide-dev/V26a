@@ -9,7 +9,7 @@ import { test, vi, afterEach, expect, type MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
-import { login } from '$lib/backend/auth';
+import { login } from '$lib/api-calls/auth';
 
 vi.mock('$lib/backend/auth', () => {
     return {

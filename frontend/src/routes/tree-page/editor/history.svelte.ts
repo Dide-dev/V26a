@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { addCard, updateCard, type CardGetData, type CardId } from '$lib/backend/cards';
+import { addCard, updateCard, type CardGetData, type CardId } from '$lib/api-calls/cards';
 import {
     type TreeStructure,
     type Node,
@@ -12,7 +12,7 @@ import {
     removeCardFromTree,
     updateTreeStructure,
     type RootNode
-} from '$lib/backend/trees';
+} from '$lib/api-calls/trees';
 
 export type TreeHistory = {
     // Used for the API requests

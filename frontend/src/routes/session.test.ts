@@ -1,5 +1,5 @@
 import { expect, test, beforeEach } from 'vitest';
-import { getUserInfo } from '$lib/backend/users';
+import { getUserInfo } from '$lib/api-calls/users';
 
 beforeEach(() => {
     // reset cookie for each test

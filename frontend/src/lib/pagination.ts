@@ -3,7 +3,7 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-import type { Option } from '$lib/backend/types';
+import type { Option } from '$lib/api-calls/types';
 
 export type PaginationOptions = {
     page: Option<number>;

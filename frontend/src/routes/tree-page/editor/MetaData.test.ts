@@ -72,7 +72,7 @@ test('cancel restores original values', async () => {
 });
 
 test('save calls updateTreeMetaData with correct data', async () => {
-    const { updateTreeMetaData } = await import('$lib/backend/trees');
+    const { updateTreeMetaData } = await import('$lib/api-calls/trees');
     const user = userEvent.setup();
     render(MetaData);
 
