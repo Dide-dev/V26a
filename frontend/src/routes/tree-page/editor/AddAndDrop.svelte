@@ -11,7 +11,7 @@
  -->
 <script lang="ts">
     import iconAdd from '$lib/assets/icons/add.svg?raw';
-    import type { CardGetData } from '$lib/backend/cards';
+    import type { CardGetData } from '$lib/api-wrapper/cards';
     import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './SubtreeEditor.svelte';
     import type { SideBar } from './Sidebar.svelte';

@@ -6,14 +6,18 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { getFilteredList, type TreeListResponse, type FilterOptions } from '$lib/backend/trees';
+    import {
+        getFilteredList,
+        type TreeListResponse,
+        type FilterOptions
+    } from '$lib/api-wrapper/trees';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
 
     // This cannot be done with the {#await ...} in svelte,

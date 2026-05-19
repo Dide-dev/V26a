@@ -12,7 +12,7 @@
     import { NavLink } from '$lib/navigation';
     import Footer from './Footer.svelte';
     import { FooterLink } from '$lib/footer';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/api-wrapper/users';
     import { afterNavigate } from '$app/navigation';
     import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime.js';
     import { page } from '$app/state';

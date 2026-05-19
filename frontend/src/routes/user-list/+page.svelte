@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { getAllUserData, type UserListResponse } from '$lib/backend/admin';
+    import { getAllUserData, type UserListResponse } from '$lib/api-wrapper/admin';
     import { onMount } from 'svelte';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';

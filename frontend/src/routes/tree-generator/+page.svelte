@@ -8,12 +8,12 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
-    import { addTree, type TreeData } from '$lib/backend/trees';
+    import { addTree, type TreeData } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
-    import { getUserInfo, type UserInfo } from '$lib/backend/users';
-    import { redirectLogin } from '$lib/backend';
+    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
+    import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
-    import type { Option } from '$lib/backend/types';
+    import type { Option } from '$lib/api-wrapper/types';
 
     let userInfo: UserInfo | null = $state(null);
 
