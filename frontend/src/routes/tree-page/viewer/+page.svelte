@@ -5,12 +5,12 @@
 -->
 
 <script lang="ts">
-    import SubtreeViewer from '../SubtreeViewer.svelte';
+    import SubtreeViewer from './SubtreeViewer.svelte';
     import { onMount } from 'svelte';
-    import { getTreeWithCards, type TreeWithCards } from '$lib/backend/trees';
+    import { getTreeWithCards, type TreeWithCards } from '$lib/api-wrapper/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
 

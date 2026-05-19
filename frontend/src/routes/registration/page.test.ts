@@ -10,7 +10,7 @@ import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
-import { addUser } from '$lib/api-calls/users';
+import { addUser } from '$lib/api-wrapper/users';
 import { goto } from '$app/navigation';
 import { appLink } from '$lib';
 import { getLocale } from '$lib/paraglide/runtime.js';

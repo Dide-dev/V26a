@@ -18,7 +18,7 @@ import {
     type UserGetData,
     type UserUpdateData,
     type UserInfo
-} from '$lib/api-calls/users';
+} from '$lib/api-wrapper/users';
 
 vi.mock('$lib/backend/users', () => {
     return {

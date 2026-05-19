@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import { htmlFromMarkdown } from '$lib/markdown';
-    import type { CardGetData } from '$lib/backend/cards';
+    import type { CardGetData } from '$lib/api-wrapper/cards';
     let {
         card
     }: {

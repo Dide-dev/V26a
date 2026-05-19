@@ -4,8 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost } from '$lib/api-calls/index';
-import type { Option } from '$lib/api-calls/types';
+import { apiCallPost } from '$lib/api-wrapper/index';
+import type { Option } from '$lib/api-wrapper/types';
 
 const prefix = '/classrooms';
 

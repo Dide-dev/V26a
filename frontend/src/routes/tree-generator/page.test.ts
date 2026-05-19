@@ -9,7 +9,7 @@ import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
-import { addTree } from '$lib/api-calls/trees';
+import { addTree } from '$lib/api-wrapper/trees';
 
 vi.mock('$lib/backend/trees', () => {
     return {
