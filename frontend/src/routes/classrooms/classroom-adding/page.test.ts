@@ -8,9 +8,9 @@ import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
-import { addClassroom } from '$lib/backend/classrooms';
+import { addClassroom } from '$lib/api-wrapper/classrooms';
 
-vi.mock('$lib/backend/classrooms', () => {
+vi.mock('$lib/api-wrapper/classrooms', () => {
     return {
         addClassroom: vi.fn()
     };
