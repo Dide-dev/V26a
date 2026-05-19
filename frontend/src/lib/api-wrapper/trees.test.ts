@@ -5,7 +5,7 @@
 */
 
 import { expect, test } from 'vitest';
-import { type FilterOptions, getPaginationAndFilterParams } from '$lib/backend/trees';
+import { type FilterOptions, getPaginationAndFilterParams } from '$lib/api-wrapper/trees';
 import type { PaginationOptions } from '$lib/pagination';
 
 test('Pagination & Filter link generator', () => {

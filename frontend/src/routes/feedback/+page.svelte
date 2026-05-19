@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import { provideFeedback, type FeedbackData } from '$lib/backend/feedback';
+    import { provideFeedback, type FeedbackData } from '$lib/api-wrapper/feedback';
     import { m } from '$lib/paraglide/messages.js';
 
     let feedbackData: FeedbackData = $state({
