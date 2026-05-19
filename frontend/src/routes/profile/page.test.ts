@@ -18,9 +18,9 @@ import {
     type UserGetData,
     type UserUpdateData,
     type UserInfo
-} from '$lib/backend/users';
+} from '$lib/api-wrapper/users';
 
-vi.mock('$lib/backend/users', () => {
+vi.mock('$lib/api-wrapper/users', () => {
     return {
         getOwnUserData: vi.fn(),
         getUserInfo: vi.fn(),
