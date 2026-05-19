@@ -81,6 +81,7 @@ services:
       context: frontend
       dockerfile: Containerfile
       target: dev
+    restart: unless-stopped
     environment:
       NODE_ENV: development
     develop:

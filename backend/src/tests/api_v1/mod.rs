@@ -20,14 +20,14 @@ use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
+use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use percent_encoding::percent_decode_str;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
 
-fn get_cookie<T: DeserializeOwned>(res: &TestResponse, cookie_str: &str) -> T {
-    let cookie = res.cookie(cookie_str);
+fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
     let decoded_value = percent_decode_str(value).decode_utf8().unwrap();
     serde_json::from_str(&decoded_value).unwrap()
@@ -154,7 +154,7 @@ mod tests {
     use crate::db_structs::session::InfoCookieData;
     use crate::db_structs::users::AccountType;
     use crate::get_connection_unwrap;
-    use crate::tests::api_v1::{get_cookie, login, register, register_admin, setup};
+    use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -164,7 +164,8 @@ mod tests {
         let user_email = "user@localhost";
         register(&server, user_email.to_owned()).await;
         let res = login(&server, user_email.to_owned()).await;
-        let user_info = get_cookie::<InfoCookieData>(&res, "user_info");
+        let cookie = res.cookie("user_info");
+        let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Author);
     }
 
@@ -176,7 +177,8 @@ mod tests {
         let admin_email = "admin@localhost";
         register_admin(&server, conn, admin_email.to_owned()).await;
         let res = login(&server, admin_email.to_owned()).await;
-        let user_info = get_cookie::<InfoCookieData>(&res, "user_info");
+        let cookie = res.cookie("user_info");
+        let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Admin);
     }
 }
