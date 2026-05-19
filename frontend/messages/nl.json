@@ -129,5 +129,12 @@
     "pageNotFound": "Deze pagina kon niet worden gevonden",
     "account": "Account",
     "admin": "Beheer",
-    "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica"
+    "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
+    "classroom": "Klaslokaal",
+    "classroomAdd": "Maak klaslokaal",
+    "classroomDashboard": "Dashboard",
+    "classroomName": "Naam van klaslokaal",
+    "exampleClassroomName": "Wiskunde-B V6A",
+    "classroomDescription": "Beschrijving",
+    "exampleClassroomDescription": "Welkom leerlingen, in dit klaslokaal zullen jullie meer leren over wiskundige heuristiekbomen."
 }

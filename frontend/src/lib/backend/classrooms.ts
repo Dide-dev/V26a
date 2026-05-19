@@ -7,7 +7,7 @@
 import { apiCallPost } from '$lib/backend/index';
 import type { Option } from '$lib/backend/types';
 
-const prefix = '/classrooms';
+const prefix = 'classrooms/';
 
 function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);

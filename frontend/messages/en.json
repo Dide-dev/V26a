@@ -129,5 +129,12 @@
     "pageNotFound": "This page could not be found",
     "account": "Account",
     "admin": "Admin",
-    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences"
+    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
+    "classroom": "Classroom",
+    "classroomAdd": "Add classroom",
+    "classroomDashboard": "Dashboard",
+    "classroomName": "Name of classroom",
+    "exampleClassroomName": "Math 101",
+    "classroomDescription": "Description",
+    "exampleClassroomDescription": "Welcome students, in this classroom you will learn more about mathematical heuristic trees."
 }
