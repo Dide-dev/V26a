@@ -70,8 +70,8 @@
     "edit": "Bewerk",
     "add": "Voeg toe",
     "preview": "Voorbeeld",
-    "myTrees": "Mijn bos",
-    "trees": "Bos",
+    "myTrees": "Mijn bomen",
+    "trees": "Bomen",
     "credits": "Colofon",
     "timesVisited": "Keren bezocht",
     "createdAt": "Aangemaakt op",
@@ -100,6 +100,7 @@
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
     "otherProjects": "Andere projecten",
+    "apiDocs": "API documentatie",
     "uploadImage": "Upload afbeelding",
     "requiredPlaceholder": "{value} (vereist)",
     "optionalPlaceholder": "{value} (optioneel)",
@@ -125,5 +126,8 @@
     "accountSettings": "Accountinstellingen",
     "feedback": "Feedback",
     "usernameAlreadyExists": "Deze gebruikersnaam is al in gebruik",
-    "pageNotFound": "Deze pagina kon niet worden gevonden"
+    "pageNotFound": "Deze pagina kon niet worden gevonden",
+    "account": "Account",
+    "admin": "Beheer",
+    "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica"
 }

@@ -70,8 +70,8 @@
     "edit": "Edit",
     "add": "Add",
     "preview": "Preview",
-    "myTrees": "My forest",
-    "trees": "Forest",
+    "myTrees": "My trees",
+    "trees": "Trees",
     "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
@@ -100,6 +100,7 @@
     "allTrees": "Tree list",
     "colophon": "Colophon",
     "otherProjects": "Other projects",
+    "apiDocs": "API documentation",
     "uploadImage": "Upload image",
     "requiredPlaceholder": "{value} (required)",
     "optionalPlaceholder": "{value} (optional)",
@@ -125,5 +126,8 @@
     "accountSettings": "Account settings",
     "feedback": "Feedback",
     "usernameAlreadyExists": "An account with this username already exists",
-    "pageNotFound": "This page could not be found"
+    "pageNotFound": "This page could not be found",
+    "account": "Account",
+    "admin": "Admin",
+    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences"
 }
