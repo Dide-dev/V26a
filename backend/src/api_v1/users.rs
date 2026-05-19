@@ -72,7 +72,7 @@ pub enum UserResponse {
 /// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
-/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -124,7 +124,7 @@ async fn add_new_user(
 /// The user's data as [`UserGetData`].
 ///
 /// # Errors
-/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
 /// invalid or corrupted.
@@ -163,9 +163,7 @@ async fn get_own_user_data(
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
-///
-/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
@@ -305,7 +303,7 @@ async fn change_password(
 /// The (cookie) jar that is empty.
 ///
 /// # Errors
-/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if your not logged in.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
