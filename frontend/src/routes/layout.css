@@ -358,9 +358,26 @@
         color: #36c;
     }
 
-    blockquote p {
-        margin-left: 1.5rem;
-        color: #555555;
+    blockquote {
+        padding-top: 3px;
+        padding-bottom: 3px;
+        margin: 4px 0;
+        padding-inline: 1em 2px;
+        position: relative;
+
+        &:before {
+            top: 2px;
+            bottom: 2px;
+            border-inline-start: 0.25em solid #999;
+            content: '';
+            display: block;
+            position: absolute;
+            inset-inline-start: 2px;
+        }
+        p {
+            /*margin-left: 1.5rem;*/
+            color: #444;
+        }
     }
 
     ul li,
@@ -368,11 +385,11 @@
         margin-left: 1.5rem;
     }
 
-    ul {
+    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
         list-style-type: disc;
     }
 
-    ol {
+    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
         list-style-type: decimal;
     }
 

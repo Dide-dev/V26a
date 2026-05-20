@@ -5,8 +5,11 @@
 -->
 
 <script lang="ts">
+    // We do not use the recommended 'typography.css' from prosekit,
+    // since that would make it no longer 'what you see is what you get'
+    // Instead, at the bottom of this file are some of the styles to make
+    // math editing work nicely. More styles are not needed for us.
     import 'prosekit/basic/style.css';
-    import 'prosekit/basic/typography.css';
 
     import {
         createEditor,
@@ -105,7 +108,11 @@
 
             for (let i = 0; i < node.content.length; i++) {
                 let subnode = node.content[i];
-                if (subnode.type === 'paragraph' && subnode.content === undefined) {
+                if (
+                    node.content[i + 1]?.type === 'image' &&
+                    subnode.type === 'paragraph' &&
+                    subnode.content === undefined
+                ) {
                     node.content.splice(i, 1);
                     i--;
                     continue;
@@ -155,20 +162,25 @@
 </ProseKit>
 
 <style>
-    /* Default prosekit style has a lot of additional room, but that looks weird */
-    :global(.ProseMirror pre) {
-        padding: 1rem;
-    }
-    :global(.ProseMirror img) {
-        margin: 0;
-    }
-    :global(.ProseMirror p) {
-        margin: 0;
-    }
-    :global(.ProseMirror .prosemirror-math-block) {
-        margin: 0 !important;
-        :global(.prosemirror-math-display) {
-            padding: 0 !important;
+    :global(.ProseMirror) {
+        :global(.prosemirror-math-inline.prosemirror-math-head-inside .prosemirror-math-source) {
+            :global(&:before, &:after) {
+                content: '$';
+                opacity: 0.5;
+            }
+        }
+
+        :global(pre) {
+            border: 1px solid #9993;
+            border-radius: 0.375rem;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        :global(code) {
+            font-size: 0.875em;
+            line-height: 1.6rem;
         }
     }
 </style>
