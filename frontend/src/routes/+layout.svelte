@@ -79,16 +79,12 @@
                 }),
                 // Can be changed when additional front-end classroom functionalities are added.
                 new NavLink({
-                    defaultHref: '/classrooms/classroom-adding',
+                    defaultHref: '/classrooms/add',
                     text: m.classroom(),
                     children: [
                         {
-                            href: '/classrooms/classroom-adding',
+                            href: '/classrooms/add',
                             text: m.classroomAdd()
-                        },
-                        {
-                            href: '/classrooms/classroom-dashboard',
-                            text: m.classroomDashboard()
                         }
                     ]
                 })

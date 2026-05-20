@@ -5,7 +5,7 @@
 */
 
 import { render, screen } from '@testing-library/svelte';
-import { test, vi, afterEach, expect } from 'vitest';
+import { test, vi, afterEach, expect, type MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { addClassroom } from '$lib/api-wrapper/classrooms';
@@ -34,6 +34,10 @@ test('No submission without classroom name', async () => {
 });
 
 test('Submission with full classroom data', async () => {
+    (addClassroom as MockedFunction<typeof addClassroom>).mockResolvedValue({
+        id: 1,
+        joinCode: 'Join12'
+    });
     const user = userEvent.setup();
     render(page);
 

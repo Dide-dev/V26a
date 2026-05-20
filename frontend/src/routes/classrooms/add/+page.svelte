@@ -5,7 +5,11 @@
 -->
 
 <script lang="ts">
-    import { addClassroom, type ClassroomAddData } from '$lib/api-wrapper/classrooms';
+    import {
+        addClassroom,
+        type ClassroomAddData,
+        type ClassroomGeneratedData
+    } from '$lib/api-wrapper/classrooms';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
@@ -43,9 +47,9 @@
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        await addClassroom(classroomData);
+        let classroomGenData: ClassroomGeneratedData = await addClassroom(classroomData);
 
-        await goto(appLink('/classrooms/classroom-dashboard'));
+        await goto(appLink(`/classrooms/teacher-dashboard?id=${classroomGenData.id}`));
     }
 </script>
 
@@ -73,7 +77,7 @@
         </div>
         <div>
             <label for="description">
-                {m.classroomDescription()}
+                {m.description()}
             </label>
             <textarea
                 id="description"
