@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
@@ -59,7 +65,7 @@ pub struct NewUser {
     pub created_at: DateTime<Utc>,
     pub email_visible: bool,
     pub account_type: AccountType,
-    pub language: UserLanguage,
+    pub language_code: UserLanguage,
 }
 
 #[derive(Debug)]
@@ -116,10 +122,10 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
             _ => panic!("email visible not set in prototype database. User: {user:?}")
         },
         account_type: match user.email.as_str() {
-            "r.d.bos@uu.nl" | "theo.vandenbogaart@hu.nl" => AccountType::Admin,
+            "r.d.bos@uu.nl" | "theo.vandenbogaart@hu.nl" | "j.quist1@students.uu.nl" => AccountType::Admin,
             _ => AccountType::Author
         },
-        language: UserLanguage::from_str(&user.language.clone().unwrap_or_default()).unwrap()
+        language_code: UserLanguage::from_str(&user.language.clone().unwrap_or_default()).unwrap()
     }).collect::<Vec<_>>();
 
     // Update the next value of the serial id.
@@ -133,7 +139,7 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
     postgres_query.execute(postgres_db).await.unwrap();
 
     // Add the users to the new database.
-    let mut query_builder = QueryBuilder::new("INSERT INTO users (id, email, password_hash, name, nickname, about_me, created_at, email_visible, account_type, language) ");
+    let mut query_builder = QueryBuilder::new("INSERT INTO users (id, email, password_hash, name, nickname, about_me, created_at, email_visible, account_type, language_code) ");
     query_builder.push_values(new_users, |mut b, user| 
             {
                 b.push_bind(user.id)
@@ -145,7 +151,7 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
                  .push_bind(user.created_at)
                  .push_bind(user.email_visible)
                  .push_bind(user.account_type.to_string())
-                 .push_bind(user.language.to_string());
+                 .push_bind(user.language_code.to_string());
             });
     
     let postgres_query = query_builder.build();

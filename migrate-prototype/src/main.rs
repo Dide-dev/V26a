@@ -1,5 +1,10 @@
-#![warn(clippy::pedantic)]
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
 
+mod books;
 mod hints;
 mod trees;
 mod users;
@@ -8,7 +13,9 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sqlx::{mysql::MySqlPoolOptions, postgres::PgPoolOptions};
 
-use crate::{hints::migrate_hints, trees::migrate_trees, users::migrate_users};
+use crate::{
+    books::create_books, hints::migrate_hints, trees::migrate_trees, users::migrate_users,
+};
 
 // use std::env;
 
@@ -57,7 +64,7 @@ async fn main() {
 
     let response = client
         // .post("https://boom.its.uu.nl/api/v1/auth/login")
-        .post("http://localhost:3000/api/v1/auth/login")
+        .post("http://localhost/api/v1/auth/login")
         .json(&LoginRequestBody {
             email: "j.quist1@students.uu.nl".to_owned(),
             password: "heuristics!".to_owned(),
@@ -67,6 +74,8 @@ async fn main() {
         .unwrap();
 
     println!("Logged in: {}", response.text().await.unwrap());
+
+    create_books(&postgres_db).await;
 
     migrate_trees(&mysql_db, &postgres_db, &client).await;
     migrate_hints(&mysql_db, &postgres_db, &client).await;
@@ -111,7 +120,7 @@ async fn insert_img_in_db(client: &reqwest::Client, relative_path: &str) -> Stri
 
     client
         // .post("https://boom.its.uu.nl/api/v1/images/add")
-        .post("http://localhost:3000/api/v1/images/add")
+        .post("http://localhost/api/v1/images/add")
         .body(image)
         .send()
         .await

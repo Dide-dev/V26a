@@ -21,7 +21,7 @@ CREATE TABLE subjects
     FOREIGN KEY (language_code) REFERENCES languages (code)
 );
 
-INSERT INTO subjects (language_code, name) VALUES ('nl', 'Wiskunde A'), ('nl', 'Wiskunde B'), ('nl', 'Wiskunde C'), ('nl', 'Wiskunde D'), ('nl', 'Nederlands'), ('nl', 'Engels');
+INSERT INTO subjects (language_code, name) VALUES ('nl', 'Wiskunde'), ('nl', 'Wiskunde A'), ('nl', 'Wiskunde B'), ('nl', 'Wiskunde C'), ('nl', 'Wiskunde D'), ('nl', 'Nederlands'), ('nl', 'Engels');
 
 CREATE TABLE books
 (

@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 use html_to_markdown_rs::convert;
 use reqwest::Client;
 use sqlx::{MySqlExecutor, PgPool, QueryBuilder, query_as};
@@ -36,6 +42,7 @@ pub async fn migrate_hints(
     let mut new_hints = vec![];
 
     for hint in &hints {
+        // String needed to add to back if an image is present
         let add_str = if hint.plaatje.clone().unwrap() == "" {
             String::new()
         } else {
