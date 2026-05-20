@@ -41,7 +41,6 @@ pub fn feedback() -> Router<ArcState> {
 /// Nothing.
 ///
 /// # Errors
-///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn provide_feedback(
     Extension(db): Extension<PgPool>,

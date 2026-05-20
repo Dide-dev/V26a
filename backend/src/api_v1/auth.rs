@@ -33,18 +33,6 @@ pub struct LoginResponse {
     pub succeeded: bool,
 }
 
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
-/// with an encoded JWT.
-///
-/// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
-///
-/// # Error
-/// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
-///
-/// Returns a [`RateLimitExceeded`](ApiError::RateLimitExceeded) if the rate limit is exceeded.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 #[utoipa::path(
     post,
     path = "/login",
@@ -59,7 +47,8 @@ pub struct LoginResponse {
         ("claims" = Claims, Cookie),
     )
 )]
-/// Login to an account if the given credentials are valid.
+/// An endpoint for logging in, if the given credentials are valid. Takes a [`LoginRequestBody`], and on success sets a session cookie
+/// with an encoded JWT.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
@@ -71,8 +60,12 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException) if the password hashing fails.
+/// 
+/// May return a [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
+/// 
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
