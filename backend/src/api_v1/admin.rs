@@ -114,6 +114,7 @@ async fn get_all_user_data(
         (status = 500, description = "Internal server error."),
     ),
     params(
+        ("session" = Claims, Cookie),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
