@@ -2,6 +2,7 @@ name: Backend Rust CI
 
 on:
   push:
+    branches: [ "main" ]
 
 jobs:
   deploy:
