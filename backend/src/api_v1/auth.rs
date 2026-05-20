@@ -63,10 +63,10 @@ pub struct LoginResponse {
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException) if the password hashing fails.
-/// 
+///
 /// May return a [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
-/// 
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
