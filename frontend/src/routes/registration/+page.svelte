@@ -7,7 +7,7 @@
 <script lang="ts">
     import { ParaglideMessage } from '@inlang/paraglide-js-svelte';
     import { getLocale } from '$lib/paraglide/runtime.js';
-    import { addUser, type RegisterData } from '$lib/backend/users';
+    import { addUser, type RegisterData } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
