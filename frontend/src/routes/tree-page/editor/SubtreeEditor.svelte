@@ -14,7 +14,7 @@
     import RootNodeEditor from './RootNodeEditor.svelte';
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
-    import type { Node, RootNode } from '$lib/backend/trees';
+    import type { Node, RootNode } from '$lib/api-wrapper/trees';
 
     let {
         history = $bindable(),

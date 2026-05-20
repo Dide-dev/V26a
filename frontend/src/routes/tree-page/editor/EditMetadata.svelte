@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import { updateTreeMetaData, type TreeData, type TreeId } from '$lib/backend/trees';
+    import { updateTreeMetaData, type TreeData, type TreeId } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
 
