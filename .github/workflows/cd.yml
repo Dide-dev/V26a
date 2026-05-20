@@ -1,0 +1,40 @@
+# This program has been developed by students from the bachelor Computer Science at
+# Utrecht University within the Software Project course.
+# © Copyright Utrecht University (Department of Information and Computing Sciences)
+
+name: Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Add redirect to Caddyfile
+        run: echo "${{ secrets.CADDYFILE_EXT }}" >> caddy/Caddyfile
+
+      - name: Build container
+        run: docker compose --profile prod build
+
+      - name: Turn off old container
+        run: docker compose --profile "*" down
+
+      - name: Deploy
+        run: docker compose --profile prod up -d
+
+      - name: Remove env file
+        if: always()
+        run: rm -f .env
