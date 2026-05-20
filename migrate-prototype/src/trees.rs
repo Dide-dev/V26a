@@ -81,6 +81,7 @@ pub async fn migrate_trees(
     mysql_db: impl MySqlExecutor<'_>,
     postgres_db: &PgPool,
     client: &Client,
+    api_base_url: String,
 ) {
     let bomen = query_as!(
         Boom,
@@ -161,7 +162,7 @@ pub async fn migrate_trees(
                 .opgavenummer
                 .map(|num| num.to_string())
                 .unwrap_or_default(),
-            assignment_text: get_converted_opgave(client, boom).await,
+            assignment_text: get_converted_opgave(client, boom, api_base_url.clone()).await,
             structure: tree_structure,
             language_code: "nl".to_owned(),
             subject_id: get_subject_id(boom),
@@ -208,7 +209,7 @@ pub async fn migrate_trees(
     postgres_query.execute(postgres_db).await.unwrap();
 
     for tree in new_trees {
-        add_tags(client, tree).await;
+        add_tags(client, tree, api_base_url.clone()).await;
     }
 }
 
@@ -270,7 +271,7 @@ fn parse_block(data: &str) -> (char, i32) {
     (depth, num)
 }
 
-async fn get_converted_opgave(client: &Client, boom: &Boom) -> String {
+async fn get_converted_opgave(client: &Client, boom: &Boom, api_base_url: String) -> String {
     // Insert image in the assignment if present
     let add_str = if boom.plaatje.clone().unwrap() == "" {
         String::new()
@@ -283,7 +284,7 @@ async fn get_converted_opgave(client: &Client, boom: &Boom) -> String {
         format!(
             "![{}]({})",
             prototype_path,
-            insert_img_in_db(client, &prototype_path).await
+            insert_img_in_db(client, &prototype_path, api_base_url.clone()).await
         )
     };
 
@@ -291,7 +292,7 @@ async fn get_converted_opgave(client: &Client, boom: &Boom) -> String {
     let is_image_fixed: bool;
     let fix_image = if raw_text.contains(r#"<img src=\"plaatjes/opgave505.jpg\">"#) {
         is_image_fixed = true;
-        replace_picture_link(client, raw_text, "opgave505.jpg").await
+        replace_picture_link(client, raw_text, "opgave505.jpg", api_base_url).await
     } else {
         is_image_fixed = false;
         raw_text
@@ -464,10 +465,9 @@ pub struct TreeUpdateData {
     pub new_data: TreeData,
 }
 
-async fn add_tags(client: &Client, tree: Tree) {
+async fn add_tags(client: &Client, tree: Tree, api_base_url: String) {
     let response = client
-        // .post("https://boom.its.uu.nl/api/v1/trees/update-data")
-        .post("http://localhost/api/v1/trees/update-data")
+        .post(api_base_url + "/api/v1/trees/update-data")
         .json(&TreeUpdateData {
             id: tree.id,
             new_data: TreeData {

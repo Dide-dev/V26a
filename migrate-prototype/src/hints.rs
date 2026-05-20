@@ -31,6 +31,7 @@ pub async fn migrate_hints(
     mysql_db: impl MySqlExecutor<'_>,
     postgres_db: &PgPool,
     client: &Client,
+    api_base_url: String,
 ) {
     let hints = query_as!(Hint, "SELECT * FROM `hints`")
         .fetch_all(mysql_db)
@@ -55,7 +56,7 @@ pub async fn migrate_hints(
             format!(
                 "![{}]({})",
                 prototype_path,
-                insert_img_in_db(client, &prototype_path).await
+                insert_img_in_db(client, &prototype_path, api_base_url.clone()).await
             )
         };
 
@@ -64,10 +65,10 @@ pub async fn migrate_hints(
 
         let fix_images = if raw_back.contains(r#"<img src=\"plaatjes/hint505h7142.jpg\">"#) {
             is_image_fixed = true;
-            replace_picture_link(client, raw_back, "hint505h7142").await
+            replace_picture_link(client, raw_back, "hint505h7142", api_base_url.clone()).await
         } else if raw_back.contains(r#"<img src=\"plaatjes/hint505h7147.jpg\">"#) {
             is_image_fixed = true;
-            replace_picture_link(client, raw_back, "hint505h7147").await
+            replace_picture_link(client, raw_back, "hint505h7147", api_base_url.clone()).await
         } else {
             is_image_fixed = false;
             raw_back

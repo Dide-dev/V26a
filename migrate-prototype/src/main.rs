@@ -17,7 +17,7 @@ use crate::{
     books::create_books, hints::migrate_hints, trees::migrate_trees, users::migrate_users,
 };
 
-// use std::env;
+use std::env;
 
 /// The body for a login request that contains the email address and password.
 #[derive(Deserialize, Serialize)]
@@ -30,17 +30,28 @@ pub struct LoginRequestBody {
 async fn main() {
     println!("Start");
 
-    let database_url = "postgresql://user:password@localhost/postgres_db";
-    // env::var("POSTGRES_URL").expect("Environment variable DATABASE_URL must be set");
+    // Connect to databases, using environment variables
+    if let Err(err) = dotenvy::dotenv() {
+        assert!(
+            err.not_found(),
+            "The .env file was found but could not be loaded: {err}"
+        );
+    }
+
+    let postgres_url =
+        env::var("POSTGRES_URL").expect("Environment variable POSTGRES_URL must be set");
 
     let postgres_db = PgPoolOptions::new()
         .max_connections(20)
-        .connect(database_url)
+        .connect(&postgres_url)
         .await
         .expect("failed to connect to postgres database.");
 
+    let mysql_url =
+        env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set");
+
     let mysql_db = MySqlPoolOptions::new()
-        .connect("mysql://root:password@localhost:3307/mysql_db")
+        .connect(&mysql_url)
         .await
         .expect("failed to connect to mysql database.");
 
@@ -51,7 +62,12 @@ async fn main() {
 
     println!("Connected to databases");
 
-    migrate_users(&mysql_db, &postgres_db).await;
+    let migrator_email =
+        env::var("MIGRATOR_EMAIL").expect("Environment variable MIGRATOR_EMAIL must be set");
+    let migrator_password =
+        env::var("MIGRATOR_PASSWORD").expect("Environment variable MIGRATOR_PASSWORD must be set");
+
+    migrate_users(&mysql_db, &postgres_db, &migrator_email).await;
 
     println!("Migrated users");
 
@@ -62,12 +78,14 @@ async fn main() {
 
     println!("Created client");
 
+    let api_base_url =
+        env::var("API_BASE_URL").expect("Environment variable API_BASE_URL must be set");
+
     let response = client
-        // .post("https://boom.its.uu.nl/api/v1/auth/login")
-        .post("http://localhost/api/v1/auth/login")
+        .post(api_base_url.clone() + "/api/v1/auth/login")
         .json(&LoginRequestBody {
-            email: "j.quist1@students.uu.nl".to_owned(),
-            password: "heuristics!".to_owned(),
+            email: migrator_email,
+            password: migrator_password,
         })
         .send()
         .await
@@ -77,8 +95,16 @@ async fn main() {
 
     create_books(&postgres_db).await;
 
-    migrate_trees(&mysql_db, &postgres_db, &client).await;
-    migrate_hints(&mysql_db, &postgres_db, &client).await;
+    println!("Created books");
+
+    migrate_trees(&mysql_db, &postgres_db, &client, api_base_url.clone()).await;
+
+    println!("Migrated trees");
+
+    migrate_hints(&mysql_db, &postgres_db, &client, api_base_url).await;
+
+    println!("Migrated hints");
+    println!("Succeeded!");
 }
 
 fn recover_string(old_str: &str) -> String {
@@ -106,7 +132,11 @@ fn recover_string(old_str: &str) -> String {
 }
 
 // Returns the relative permanent url of the image
-async fn insert_img_in_db(client: &reqwest::Client, relative_path: &str) -> String {
+async fn insert_img_in_db(
+    client: &reqwest::Client,
+    relative_path: &str,
+    api_base_url: String,
+) -> String {
     let full_path = "https://edspace.nl/hboom/".to_owned() + relative_path;
 
     let image = reqwest::get(&full_path)
@@ -119,8 +149,7 @@ async fn insert_img_in_db(client: &reqwest::Client, relative_path: &str) -> Stri
     println!("Got image {relative_path}");
 
     client
-        // .post("https://boom.its.uu.nl/api/v1/images/add")
-        .post("http://localhost/api/v1/images/add")
+        .post(api_base_url + "/api/v1/images/add")
         .body(image)
         .send()
         .await
@@ -130,12 +159,17 @@ async fn insert_img_in_db(client: &reqwest::Client, relative_path: &str) -> Stri
         .unwrap()
 }
 
-async fn replace_picture_link(client: &Client, content: String, short_link: &str) -> String {
+async fn replace_picture_link(
+    client: &Client,
+    content: String,
+    short_link: &str,
+    api_base_url: String,
+) -> String {
     content.replace(
         "src=",
         &format!(
             "src={} alt=plaatjes/{}",
-            insert_img_in_db(client, &format!("plaatjes/{short_link}")).await,
+            insert_img_in_db(client, &format!("plaatjes/{short_link}"), api_base_url).await,
             short_link
         ),
     )

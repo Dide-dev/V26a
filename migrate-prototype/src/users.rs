@@ -83,7 +83,7 @@ impl Display for AccountType {
     }
 }
 
-pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPool) {
+pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPool, migrator_email: &str) {
     let users = 
         query_as!(User, 
             "SELECT user_id, created_at, email, pwd_hash, naam, pseudoniem, persoonsbeschrijving, emailvermelding, language 
@@ -95,7 +95,7 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
 
     let new_users = users.iter().map(|user| NewUser {
         id: user.user_id as i32,
-        email: user.email.clone(),
+        email: user.email.clone().to_lowercase(),
         password_hash: user.pwd_hash.clone(),
         name: {
             let polished = polish_user_name(&recover_string(&user.naam));
@@ -122,7 +122,7 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
             _ => panic!("email visible not set in prototype database. User: {user:?}")
         },
         account_type: match user.email.as_str() {
-            "r.d.bos@uu.nl" | "theo.vandenbogaart@hu.nl" | "j.quist1@students.uu.nl" => AccountType::Admin,
+            e if e == migrator_email || e == "r.d.bos@uu.nl" || e == "theo.vandenbogaart@hu.nl"  => AccountType::Admin,
             _ => AccountType::Author
         },
         language_code: UserLanguage::from_str(&user.language.clone().unwrap_or_default()).unwrap()
