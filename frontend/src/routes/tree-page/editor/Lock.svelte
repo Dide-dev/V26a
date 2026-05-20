@@ -10,10 +10,14 @@
  -->
 <script lang="ts">
     import type { UserId } from '$lib/api-wrapper/users';
-    import type { TreeId } from '$lib/backend/trees';
-    import { onMount } from 'svelte';
+    import type { TreeId } from '$lib/api-wrapper/trees';
+    import { onMount, type Snippet } from 'svelte';
 
-    let { treeId }: { treeId: TreeId } = $props();
+    let {
+        treeId,
+        /** These children will only be mounted if the lock is aquired */
+        children
+    }: { treeId: TreeId; children: Snippet } = $props();
 
     type FrontendMessage = FrontendMessageForce | FrontendMessageForceSetActive;
     type FrontendMessageForce = {
@@ -54,7 +58,7 @@
         type: 'serverDisconnected';
     };
 
-    let localState: LocalState = $state({ type: 'waiting' });
+    let localState = $state({ type: 'waiting' } as LocalState);
     let hasLock = $derived(localState.type === 'lockAchieved');
 
     let protocol = $derived(window.location.protocol === 'http:' ? 'ws' : 'wss');
@@ -86,24 +90,36 @@
 
 <svelte:document
     onvisibilitychange={() => {
+        if (websocket.readyState === WebSocket.CONNECTING) {
+            // When lock is first mounted, the websocket is not yet connected,
+            // but this event will fire and say that the document is visible.
+            return;
+        }
+
         const newActiveState = !document.hidden;
-        console.log(newActiveState);
         sendMessage({ type: 'setActive', newActiveState });
     }}
 />
 
-<!-- Temporary debugging -->
-<div class="flex flex-col gap-2">
-    <p class="font-bold" class:text-red-600={!hasLock} class:text-green-600={hasLock}>
-        {JSON.stringify(localState)}
-    </p>
-    <button
-        class="rounded bg-blue-300 p-1"
-        class:hidden={localState.type !== 'lockFailed'}
-        onclick={() => {
-            sendMessage({ type: 'force' });
-        }}
-    >
-        Force kick
-    </button>
-</div>
+{#if localState.type !== 'lockAchieved'}
+    <div class="flex flex-col gap-2">
+        <!-- TODO: make prettier, add translations -->
+        <p class="font-bold" class:text-red-600={!hasLock} class:text-green-600={hasLock}>
+            {JSON.stringify(localState)}
+        </p>
+        {#if localState.type === 'lockFailed'}
+            <button
+                class="rounded bg-blue-300 p-1"
+                onclick={() => {
+                    sendMessage({ type: 'force' });
+                }}
+            >
+                Force kick
+            </button>
+        {/if}
+    </div>
+{/if}
+
+{#if localState.type === 'lockAchieved'}
+    {@render children()}
+{/if}
