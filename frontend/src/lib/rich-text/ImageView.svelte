@@ -87,7 +87,7 @@
         {#if url && !error}
             <img
                 src={url}
-                alt="upload preview"
+                alt={attrs.alt}
                 class="h-full max-h-full w-full max-w-full object-contain"
                 onload={handleImageLoad}
             />

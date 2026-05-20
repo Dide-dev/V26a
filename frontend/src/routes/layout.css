@@ -396,4 +396,12 @@
     hr {
         margin: 0.2rem 0;
     }
+
+    /** For styling broken images that users created in trees. */
+    img:before {
+        border: 1px solid;
+        display: flex;
+        height: 100%;
+        width: 100%;
+    }
 }

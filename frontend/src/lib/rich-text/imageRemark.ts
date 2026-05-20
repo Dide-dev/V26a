@@ -28,29 +28,37 @@ export function rehypeRemarkImgHandler(
         sizeExtension += ` =${width}x${height}`;
     }
 
-    // TODO? alt text
-    const value = `![](${url}${sizeExtension})`;
+    const alt = (node.properties['alt'] ?? '') as string;
+
+    const value = `![${alt}](${url}${sizeExtension})`;
 
     // We use the 'html' since no further processing will need to be done on this element.
     return { type: 'html', value };
 }
 
 /**
- * Translate a remmark 'text' element to a rehype element,
+ * Translate a remark 'text' element to a rehype element,
  * will parse it as an image if the syntax for it is present.
  */
 export function remarkRehypeTextHandler(state: MdastToHastState, node: Text) {
     const txt = node.value.trim();
     // TODO? alt text
-    const start = '![](';
+    const start = '![';
+    const middle = '](';
     const end = ')';
 
-    if (!txt.startsWith(start) || !txt.endsWith(end)) {
+    const middlePartIndex = txt.lastIndexOf(middle);
+
+    if (!txt.startsWith(start) || !txt.endsWith(end) || !txt.includes(middle)) {
         return defaultHandlers.text(state, node);
     }
 
-    const middle = txt.slice(start.length, -end.length);
-    const spaceParts = middle.split(' ');
+    let alt: string | undefined = txt.slice(start.length, middlePartIndex).trim();
+    if (alt === '') {
+        alt = undefined;
+    }
+
+    const spaceParts = txt.slice(middlePartIndex + middle.length, -end.length).split(' ');
 
     const src = spaceParts[0];
 
@@ -72,7 +80,7 @@ export function remarkRehypeTextHandler(state: MdastToHastState, node: Text) {
     const element: HastElement = {
         type: 'element',
         tagName: 'img',
-        properties: { src, width, height },
+        properties: { src, width, height, alt },
         children: []
     };
 

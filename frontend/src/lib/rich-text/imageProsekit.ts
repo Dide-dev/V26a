@@ -12,6 +12,7 @@ export type ImageAttrs = {
     src?: string | null;
     width?: number | null;
     height?: number | null;
+    alt?: string | null;
 };
 
 export function defineImageViewerParserExtension() {
@@ -20,7 +21,8 @@ export function defineImageViewerParserExtension() {
         attrs: {
             src: { default: null, validate: 'string|null' },
             width: { default: null, validate: 'number|null' },
-            height: { default: null, validate: 'number|null' }
+            height: { default: null, validate: 'number|null' },
+            alt: { default: null, validate: 'string|null' }
         },
         group: 'block',
         defining: true,
@@ -33,7 +35,8 @@ export function defineImageViewerParserExtension() {
                         return { src: null };
                     }
 
-                    const src = element.getAttribute('src') || null;
+                    const src = element.getAttribute('src') ?? null;
+                    const alt = element.getAttribute('alt') ?? null;
 
                     const parseNum = (value: string | null) =>
                         value === null ? null : Number(value);
@@ -41,7 +44,7 @@ export function defineImageViewerParserExtension() {
                     const width: number | null = parseNum(element.getAttribute('width'));
                     const height: number | null = parseNum(element.getAttribute('height'));
 
-                    return { src, width, height };
+                    return { src, width, height, alt };
                 }
             }
         ],
