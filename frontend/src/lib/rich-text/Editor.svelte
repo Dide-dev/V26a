@@ -43,6 +43,8 @@
     import { defineVirtualSelection } from '@prosekit/extensions/virtual-selection';
     import { defineImageCommands } from '@prosekit/extensions/image';
     import { defineKatexMath } from './math';
+    import { defineCodeBlock } from '@prosekit/extensions/code-block';
+    import { defineCode } from '@prosekit/extensions/code';
 
     let {
         maxLength,
@@ -63,7 +65,9 @@
         defineHorizontalRule(),
         defineHardBreak(),
         defineTable(),
-        // defineCodeBlock(),
+        // If this one ever gets removed, please add the `defineCodeBlockKeymap`,
+        // so that pressing 'enter' a bunch in math block mode, the user can exit it.
+        defineCodeBlock(),
 
         // Own custom stuff
         defineImageViewerParserExtension(),
@@ -74,7 +78,7 @@
         defineBold(),
         // defineUnderline(),
         // defineStrike(),
-        // defineCode(),
+        defineCode(),
         defineLink(),
 
         // Others
