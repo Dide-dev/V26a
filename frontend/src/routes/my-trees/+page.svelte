@@ -36,11 +36,13 @@
         let userInfo = getUserInfo();
 
         let filterOptions: FilterOptions = {
-            ownerId: userInfo?.sub ?? 0,
+            ownerId: null,
+            coAuthor: userInfo?.sub ?? 0,
             book: [],
             createdAfter: null,
             createdBefore: null,
-            showOwnPrivate: true
+            showOwnPrivate: true,
+            editable: true,
         };
         let paginationOptions: PaginationOptions = {
             page: thisPage,
@@ -105,6 +107,7 @@
             <thead>
                 <tr>
                     <th class="text-left">{m.title()}</th>
+                    <th class="text-left">{m.owner()}</th>
                     <th class="text-left">{m.lastEdited()}</th>
                     <th class="text-left">{m.published()}</th>
                     <!-- Edit button -->
@@ -120,6 +123,7 @@
                                 target="_blank">{tree.data.title}</a
                             >
                         </td>
+                        <td class="pr-4">{tree.linkedData.ownerName}</td>
                         <td class="pr-4">
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                             {new Date(tree.genData.lastModified.toString()).toLocaleString()}

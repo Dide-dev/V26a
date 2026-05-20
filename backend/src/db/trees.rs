@@ -667,19 +667,29 @@ fn apply_tree_filters<'a>(
 ) -> Result<(), ApiError> {
     let TreeFilters {
         owner_id,
+        co_author,
         book,
         created_after,
         created_before,
         show_own_private,
+        editable,
     } = filters;
 
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
     separated.push("(published = true");
     if *show_own_private && let Some(user_id) = user_id {
-        separated.push_unseparated(" OR (published = false AND owner_id = ");
+        separated.push_unseparated(" OR (published = false AND (owner_id = ");
         separated.push_bind_unseparated(user_id);
-        separated.push_unseparated(")");
+
+        separated.push_unseparated(
+            " OR EXISTS(
+                SELECT 1
+                FROM co_authors
+                WHERE co_authors.user_id = ",
+        );
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated(")))");
     }
     separated.push_unseparated(")");
     if let Some(owner_id) = owner_id {
@@ -687,6 +697,20 @@ fn apply_tree_filters<'a>(
             .push("(owner_id = ")
             .push_bind_unseparated(owner_id)
             .push_unseparated(")");
+    }
+    if *editable && let Some(co_author) = co_author {
+        separated.push("(owner_id = ");
+
+        separated.push_bind_unseparated(co_author);
+
+        separated.push_unseparated(
+            " OR EXISTS(
+                SELECT 1
+                FROM co_authors
+                WHERE co_authors.user_id = ",
+        );
+        separated.push_bind_unseparated(co_author);
+        separated.push_unseparated("))");
     }
     if !book.is_empty() {
         let parsed_isbns = book
@@ -788,6 +812,8 @@ pub async fn get_queried_list(
         .push(" OFFSET ")
         // Page is 1-based
         .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
+
+    println!("{:?}", query.sql());
 
     let rows = query.build().fetch_all(db).await?;
 
@@ -1125,10 +1151,12 @@ mod tests {
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_id: Some(67),
+            co_author: None,
             book: vec!["0-451-52493-4".to_owned()],
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
             show_own_private: true,
+            editable: false,
         };
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
