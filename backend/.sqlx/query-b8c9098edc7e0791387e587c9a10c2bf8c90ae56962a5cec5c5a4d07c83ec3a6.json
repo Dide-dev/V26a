@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language_code)\n        VALUES ($1, $2, $3, $4, $5, $6, $7)\n        RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "Varchar",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b8c9098edc7e0791387e587c9a10c2bf8c90ae56962a5cec5c5a4d07c83ec3a6"
+}

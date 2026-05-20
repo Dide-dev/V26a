@@ -8,15 +8,17 @@ import type {
     Node,
     TreeData,
     TreeGeneratedData,
+    TreeLinkedData,
+    TreeMetadata,
     TreeStructure,
     TreeWithCards
-} from '$lib/backend/trees';
-import type { CardGetData, CardId } from '$lib/backend/cards';
-import { getTreeWithCards } from '$lib/backend/trees';
-import { getUserInfo } from '$lib/backend/users';
+} from '$lib/api-wrapper/trees';
+import type { CardGetData, CardId } from '$lib/api-wrapper/cards';
+import { getTreeWithCards } from '$lib/api-wrapper/trees';
+import { getUserInfo } from '$lib/api-wrapper/users';
 
 // Mock the logging check.
-vi.mock('$lib/backend/users', () => ({
+vi.mock('$lib/api-wrapper/users', () => ({
     getUserInfo: vi.fn()
 }));
 
@@ -32,7 +34,11 @@ function createTree(): TreeWithCards {
     const treeData: TreeData = {
         title: 'Test Tree',
         description: 'Test Tree Description',
+        languageCode: 'en',
+        tags: [],
+        subjectId: 1,
         bookName: 'Test book name',
+        bookAuthor: 'Test author',
         bookEdition: 'Test edition',
         bookIsbn: '12345679',
         bookChapter: 'Test chapter 4',
@@ -61,9 +67,19 @@ function createTree(): TreeWithCards {
         lastVisited: new Date('December 17, 1995 15:09:11')
     };
 
-    const treeWithCards: TreeWithCards = {
+    const treeLinkedData: TreeLinkedData = {
+        ownerName: 'Test owner name',
+        subjectName: 'Test subject name'
+    };
+
+    const treeMetadata: TreeMetadata = {
         data: treeData,
         genData: treeGeneratedData,
+        linkedData: treeLinkedData
+    };
+
+    const treeWithCards: TreeWithCards = {
+        metadata: treeMetadata,
         structure: treeStructure,
         cards: cards
     };
@@ -71,7 +87,7 @@ function createTree(): TreeWithCards {
     return treeWithCards;
 }
 
-vi.mock('$lib/backend/trees', () => {
+vi.mock('$lib/api-wrapper/trees', () => {
     return { getTreeWithCards: vi.fn() };
 });
 afterEach(() => {
@@ -86,9 +102,9 @@ test('Page successfully loads tree', async () => {
     page.url.searchParams.set('id', '4');
     render(PageComponent);
 
-    await screen.findByText(tree.data.title);
+    await screen.findByText(tree.metadata.data.title);
 
-    const description = tree.data.description as string;
+    const description = tree.metadata.data.description as string;
     screen.getByText(description);
 
     screen.getByText(tree.cards[1].front);

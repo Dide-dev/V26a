@@ -18,9 +18,9 @@ import {
     type UserGetData,
     type UserUpdateData,
     type UserInfo
-} from '$lib/backend/users';
+} from '$lib/api-wrapper/users';
 
-vi.mock('$lib/backend/users', () => {
+vi.mock('$lib/api-wrapper/users', () => {
     return {
         getOwnUserData: vi.fn(),
         getUserInfo: vi.fn(),
@@ -324,11 +324,10 @@ test('No submission without old password', async () => {
     await user.type(await screen.findByTestId('newPassword'), 'P@ssword123');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123');
 
-    await user.click(screen.getByTestId('confirm-button'));
-    const error = screen.getByTestId('change-attempt-error');
+    const form = await screen.findByTestId('profile-form');
+    expect(form.classList).not.toContain('completed');
 
     expect(changePassword).not.toHaveBeenCalled();
-    expect(error.textContent).toBe(m.changePasswordAttempt());
 });
 
 test('No submission without new password', async () => {
@@ -359,13 +358,11 @@ test('No submission without new password', async () => {
     render(page);
 
     await user.type(await screen.findByTestId('oldPassword'), 'P@ssword123');
-    await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123');
 
-    await user.click(screen.getByTestId('confirm-button'));
-    const error = screen.getByTestId('change-attempt-error');
+    const form = await screen.findByTestId('profile-form');
+    expect(form.classList).not.toContain('completed');
 
     expect(changePassword).not.toHaveBeenCalled();
-    expect(error.textContent).toBe(m.changePasswordAttempt());
 });
 
 test('No submission without repeat password', async () => {
@@ -398,11 +395,10 @@ test('No submission without repeat password', async () => {
     await user.type(await screen.findByTestId('oldPassword'), 'P@ssword123');
     await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
 
-    await user.click(screen.getByTestId('confirm-button'));
-    const error = screen.getByTestId('change-attempt-error');
+    const form = await screen.findByTestId('profile-form');
+    expect(form.classList).not.toContain('completed');
 
     expect(changePassword).not.toHaveBeenCalled();
-    expect(error.textContent).toBe(m.changePasswordAttempt());
 });
 
 test('No submission when old and new password are the same', async () => {

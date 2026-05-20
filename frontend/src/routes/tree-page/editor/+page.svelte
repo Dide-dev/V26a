@@ -11,27 +11,26 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { getTreeWithCards, type TreeData } from '$lib/backend/trees';
+    import { getTreeWithCards, type TreeData } from '$lib/api-wrapper/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
-    import NodeViewer, { type DragState } from '../NodeViewer.svelte';
+    import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
     import {
         type TreeHistory,
         undo,
         redo,
         initializeHistory,
-        fillStateStructure,
         canUndo,
         canRedo
-    } from '../history.svelte';
+    } from './history.svelte';
     import EditMetadata from './EditMetadata.svelte';
-    import type { SideBar } from '../Sidebar.svelte';
-    import SidebarComponent from '../Sidebar.svelte';
-    import RootNodeAddButton from '../RootNodeAddButton.svelte';
+    import type { SideBar } from './Sidebar.svelte';
+    import SidebarComponent from './Sidebar.svelte';
+    import RootNodeAddButton from './RootNodeAddButton.svelte';
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
-    // We scroll the page for the user if they are dragging and the mouse is near the edge
+    // We scroll the page for the user if they are dragging some cards and the mouse is near the edge.
     $effect(() => {
         if (dragState?.type !== 'dragging') return;
 
@@ -80,11 +79,6 @@
     let tree: {
         data: TreeData;
         history: TreeHistory;
-        /**
-         * Is used to prevent keyboard shortcuts like ctrl+z when a popup is open.
-         * Currently should only be 0 or 1, but in the future that could change.
-         */
-        numPopupsOpen: number;
         sidebar: null | SideBar;
         sidebarElement: null | SidebarComponent;
     } | null = $state(null);
@@ -108,13 +102,12 @@
 
         const fetchedTree = await getTreeWithCards(id);
         tree = {
-            data: fetchedTree.data,
+            data: fetchedTree.metadata.data,
             history: initializeHistory(
-                fetchedTree.genData.id,
-                fillStateStructure(fetchedTree.structure, true),
+                fetchedTree.metadata.genData.id,
+                fetchedTree.structure,
                 fetchedTree.cards
             ),
-            numPopupsOpen: 0,
             sidebar: null,
             sidebarElement: null
         };
@@ -132,10 +125,6 @@
     }
     // The undo & redo keyboard shortcuts
     function onkeydown(event: KeyboardEvent) {
-        if (tree?.numPopupsOpen !== 0) {
-            return;
-        }
-
         if (event.ctrlKey && event.key == 'z') {
             undoButtonClick();
             event.stopPropagation();
@@ -151,89 +140,87 @@
     }
 </script>
 
-{#if loading}
-    <p class="text-green-800">{m.loadingTree()}</p>
-{:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
-    <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree.data.description}
-    </p>
+<div class="flex h-full w-full flex-col items-start">
+    {#if loading}
+        <p class="text-green-800">{m.loadingTree()}</p>
+    {:else if tree}
+        <h1 class="ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
+        <p class="ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
+            {tree.data.description}
+        </p>
 
-    <div class="m-2 flex gap-2">
-        <EditMetadata
-            bind:numPopupsOpen={tree.numPopupsOpen}
-            treeId={tree.history.treeId}
-            bind:prevTreeData={tree.data}
-        />
-        <button
-            class={[
-                'rounded-sm bg-emerald-500 p-1',
-                canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
-                !canUndo(tree.history) && 'stroke-gray-500'
-            ]}
-            onclick={undoButtonClick}
-            title={m.undo()}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconUndo}
-        </button>
-        <button
-            class={[
-                'rounded-sm bg-emerald-500 p-1',
-                canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
-                !canRedo(tree.history) && 'stroke-gray-500'
-            ]}
-            onclick={redoButtonClick}
-            title={m.redo()}
-        >
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconRedo}
-        </button>
-        <a
-            class="rounded-sm bg-emerald-500 p-1 *:inline"
-            href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
-            target="_blank"
-        >
-            {m.viewTree()}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html iconExternalLink}
-        </a>
-    </div>
-
-    <div class="relative">
-        <!--
-            The padding on the bottom is to make the scrollbar not intersect with some buttons.
-        -->
-        <div
-            bind:this={scrollArea}
-            class="m-1 flex overflow-auto pb-7"
-            style:min-height={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlHeight}px`}
-        >
-            <div class="flex grow flex-col">
-                {#each tree.history.currentStructure.rootNodes as root, location (root)}
-                    <NodeViewer
-                        bind:history={tree.history}
-                        location={[location]}
-                        bind:dragState
-                        editingPage={true}
-                        bind:numPopupsOpen={tree.numPopupsOpen}
-                        bind:sidebar={tree.sidebar}
-                    />
-                {/each}
-                <RootNodeAddButton history={tree.history} bind:numPopupsOpen={tree.numPopupsOpen} />
-            </div>
-            <div
-                class="shrink-0"
-                style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
-            ></div>
+        <div class="m-2 flex gap-2">
+            <EditMetadata treeId={tree.history.treeId} bind:prevTreeData={tree.data} />
+            <button
+                class={[
+                    'rounded-sm bg-emerald-500 p-1',
+                    canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
+                    !canUndo(tree.history) && 'stroke-gray-500'
+                ]}
+                onclick={undoButtonClick}
+                title={m.undo()}
+            >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html iconUndo}
+            </button>
+            <button
+                class={[
+                    'rounded-sm bg-emerald-500 p-1',
+                    canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
+                    !canRedo(tree.history) && 'stroke-gray-500'
+                ]}
+                onclick={redoButtonClick}
+                title={m.redo()}
+            >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html iconRedo}
+            </button>
+            <a
+                class="rounded-sm bg-emerald-500 p-1 *:inline"
+                href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
+                target="_blank"
+            >
+                {m.viewTree()}
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                {@html iconExternalLink}
+            </a>
         </div>
-        <SidebarComponent
-            bind:this={tree.sidebarElement}
-            bind:sidebar={tree.sidebar}
-            history={tree.history}
-        />
-    </div>
-{/if}
+
+        <div class="relative w-full">
+            <!--
+                The padding on the bottom is to make the scrollbar not intersect with some buttons.
+            -->
+            <div
+                bind:this={scrollArea}
+                class="m-1 flex overflow-x-auto pb-7"
+                style:min-height={tree.sidebar === null
+                    ? ''
+                    : `${tree.sidebarElement!.htmlHeight}px`}
+            >
+                <div class="flex grow flex-col">
+                    {#each tree.history.currentStructure.rootNodes as root, location (root)}
+                        <SubtreeEditor
+                            bind:history={tree.history}
+                            location={[location]}
+                            bind:dragState
+                            bind:sidebar={tree.sidebar}
+                        />
+                    {/each}
+                    <RootNodeAddButton history={tree.history} enabled={dragState === null} />
+                </div>
+                <div
+                    class="shrink-0"
+                    style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
+                ></div>
+            </div>
+            <SidebarComponent
+                bind:this={tree.sidebarElement}
+                bind:sidebar={tree.sidebar}
+                history={tree.history}
+            />
+        </div>
+    {/if}
+</div>
 
 <!--
     We need to listen on the entire body to detect if drag & drop did not find target.
@@ -261,16 +248,3 @@
         }
     </style>
 {/if}
-
-<!--
-    Here we add a few css classes to the body,
-    to make sure that the element above here with the `overflow-auto` class can be
-    growing in height until the scroll bar is at the bottom of the screen.
--->
-<style>
-    :global(body) {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-</style>

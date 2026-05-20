@@ -8,14 +8,15 @@
 
 use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
 use crate::db_structs::trees::{
-    Node, RootNode, TreeAddData, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData,
-    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
+    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::errors::ApiError;
-use crate::tests::api_v1::{login, register, setup, setup_login};
+use crate::get_connection_unwrap;
+use crate::tests::api_v1::{login, register, register_admin, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
     let basic_tree_structure = TreeStructure {
@@ -60,9 +61,52 @@ async fn test_new_empty_tree(db: PgPool) {
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_add_data.tree_data);
-    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.metadata.data, tree_add_data.tree_data);
+    assert_eq!(full_tree.metadata.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
+}
+
+#[sqlx::test]
+async fn test_new_invalid_tree(db: PgPool) {
+    let server = setup_login(db).await;
+
+    // Create tree with invalid language
+    let tree_data = TreeData {
+        language_code: "NO".to_string(),
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingLanguage("NO".to_string()).to_string());
+
+    // Create tree with invalid subject
+    let tree_data = TreeData {
+        subject_id: Some(420),
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingSubject(420).to_string());
 }
 
 #[sqlx::test]
@@ -71,13 +115,17 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
 
     let tree_data = TreeData {
         title: "Test tree".to_string(),
-        description: Some("This is used for testing".to_string()),
-        book_name: Some("Introduction to mathematics".to_string()),
-        book_edition: Some("4b".to_string()),
+        description: "This is used for testing".to_string(),
+        language_code: "en".to_string(),
+        tags: vec!["geometry".to_string(), "difficult".to_string()],
+        subject_id: Some(2),
+        book_name: "Introduction to mathematics".to_string(),
+        book_author: "Leonhard Euler".to_string(),
+        book_edition: "4b".to_string(),
         book_isbn: Some("9780136019701".to_string()),
-        book_chapter: Some("5".to_string()),
-        book_exercise: Some("27a".to_string()),
-        assignment_text: Some("Try to solve the following equation".to_string()),
+        book_chapter: "5".to_string(),
+        book_exercise: "27a".to_string(),
+        assignment_text: "Try to solve the following equation".to_string(),
         published: true,
     };
     let tree_structure = TreeStructure {
@@ -97,13 +145,14 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_add_data.tree_data);
-    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.metadata.data, tree_add_data.tree_data);
+    assert_eq!(full_tree.metadata.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
 
 #[sqlx::test]
 async fn test_unpublished_trees(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
     let mut server = setup_login(db).await;
 
     let tree_data = TreeData {
@@ -131,6 +180,12 @@ async fn test_unpublished_trees(db: PgPool) {
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
+
+    let admin_user_email = "admin@localhost";
+    register_admin(&server, conn, admin_user_email.to_owned()).await;
+    login(&server, admin_user_email.to_owned()).await;
+    let response = server.get(&endpoint).await;
+    response.assert_status_ok();
 }
 
 #[sqlx::test]
@@ -206,11 +261,15 @@ async fn test_deleting_trees_denied(db: PgPool) {
 #[sqlx::test]
 async fn test_retrieving_owned_trees(db: PgPool) {
     let server = setup_login(db).await;
-
-    let response = server.get("/trees/get-mine-all").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
+        .await;
     response.assert_status_ok();
-    let vec: Vec<TreeMetadata> = response.json();
-    let empty: Vec<TreeMetadata> = Vec::new();
+    let vec: TreeListResponse = response.json();
+    let empty: TreeListResponse = TreeListResponse {
+        total_trees: 0,
+        trees: Vec::new(),
+    };
     assert_eq!(empty, vec);
 
     let tree_data = TreeData::default();
@@ -228,10 +287,12 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let response = server.get("/trees/get-mine-all").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
+        .await;
     response.assert_status_ok();
-    let vec: Vec<TreeMetadata> = response.json();
-    let tree_metadata: &TreeMetadata = vec.first().unwrap();
+    let vec: TreeListResponse = response.json();
+    let tree_metadata: &TreeMetadata = vec.trees.first().unwrap();
     assert_eq!(tree_id, tree_metadata.gen_data.id);
     assert_eq!(tree_add_data.tree_data, tree_metadata.data);
 }
@@ -372,7 +433,7 @@ async fn test_filter_tree_list(db: PgPool) {
             ..Default::default()
         },
         TreeData {
-            book_name: Some("vwo 4".to_string()),
+            book_isbn: Some("9780061120084".to_string()),
             published: true,
             ..Default::default()
         },
@@ -384,9 +445,16 @@ async fn test_filter_tree_list(db: PgPool) {
 
     add_multiple_trees(&server, &trees_data).await;
 
+    // A search with an invalid isbn
+    let response = server
+        .get("/trees/get-list?page=1&size=1&book=not-an-isbn")
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::InvalidIsbn.to_string());
+
     // A search that yields no results
     let response = server
-        .get("/trees/get-list?page=1&size=1&book=no+results")
+        .get("/trees/get-list?page=1&size=1&book=978-0-306-40615-7")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -429,21 +497,10 @@ async fn test_filter_tree_list(db: PgPool) {
         .collect::<Vec<_>>();
     assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
-    // Filter on book with space
-    let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;
-    response.assert_status_ok();
-    let requested_trees: TreeListResponse = response.json();
-    let requested_trees_data = requested_trees
-        .trees
-        .into_iter()
-        .map(|t| t.data)
-        .collect::<Vec<_>>();
-    assert_eq!(requested_trees_data, vec![trees_data[1].clone()]);
-
     login(&server, emails[1].clone()).await;
     let other_user_trees_data = vec![
         TreeData {
-            book_name: Some("vwo 5".to_string()),
+            book_isbn: Some("9780306406157".to_string()),
             published: true,
             ..Default::default()
         },
@@ -475,7 +532,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=vwo+4&book=vwo+5")
+        .get("/trees/get-list?page=1&size=100&book=978-0-061-12008-4&book=978-0-306-40615-7")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -491,11 +548,10 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books, incorrectly formatted
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=vwo+4,vwo+5")
+        .get("/trees/get-list?page=1&size=100&book=978-0-061-12008-4,978-0-306-40615-7")
         .await;
-    response.assert_status_ok();
-    let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, Vec::new());
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::InvalidIsbn.to_string());
 
     // All public trees from user 0
     let response = server
@@ -619,7 +675,7 @@ async fn test_update_and_get_tree(db: PgPool) {
     response.assert_status_ok();
     let tree_with_cards_valid: TreeWithCards = response.json();
     assert_eq!(tree_with_cards_valid.structure, structure_valid);
-    assert_eq!(tree_with_cards_valid.data, tree_data);
+    assert_eq!(tree_with_cards_valid.metadata.data, tree_data);
     assert!(
         tree_with_cards_valid
             .cards
@@ -683,13 +739,17 @@ async fn test_update_metadata(db: PgPool) {
     // Update the metadata
     let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
-        description: Some("Updated description".to_string()),
-        book_name: Some("Updated book".to_string()),
-        book_edition: Some("2nd".to_string()),
+        language_code: "en".to_string(),
+        tags: vec!["tag1".to_string(), "tag2".to_string()],
+        subject_id: Some(1),
+        description: "Updated description".to_string(),
+        book_name: "Updated book".to_string(),
+        book_author: "Updated author".to_string(),
+        book_edition: "2nd".to_string(),
         book_isbn: Some("9780136019701".to_string()),
-        book_chapter: Some("3".to_string()),
-        book_exercise: Some("5b".to_string()),
-        assignment_text: Some("Updated assignment".to_string()),
+        book_chapter: "3".to_string(),
+        book_exercise: "5b".to_string(),
+        assignment_text: "Updated assignment".to_string(),
         published: true,
     };
     let tree_update_data: TreeUpdateData = TreeUpdateData {
@@ -708,5 +768,27 @@ async fn test_update_metadata(db: PgPool) {
         .await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, new_tree_data);
+    assert_eq!(full_tree.metadata.data, new_tree_data);
+}
+
+#[sqlx::test]
+async fn test_get_languages(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/trees/get-all-languages").await;
+    response.assert_status_ok();
+
+    let languages: Vec<Language> = response.json();
+    assert_ne!(languages.len(), 0);
+}
+
+#[sqlx::test]
+async fn test_get_subjects(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/trees/get-all-subjects").await;
+    response.assert_status_ok();
+
+    let subjects: HashMap<String, Vec<Subject>> = response.json();
+    assert_ne!(subjects.len(), 0);
 }
