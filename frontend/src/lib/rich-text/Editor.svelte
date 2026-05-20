@@ -167,7 +167,25 @@
 
 <style>
     :global(.ProseMirror) {
-        :global(.prosemirror-math-inline.prosemirror-math-head-inside .prosemirror-math-source) {
+        /** Force math blocks to be visible if empty */
+        :global(pre.prosemirror-math-source:has(.ProseMirror-trailingBreak)) {
+            display: block !important;
+
+            /** hide the empty vertical space created by the empty katex display */
+            :global(+ .prosemirror-math-display) {
+                display: none;
+            }
+        }
+        /** Same for inline math */
+        :global(span.prosemirror-math-source:has(code:empty)) {
+            opacity: unset !important;
+            max-width: unset !important;
+            max-height: unset !important;
+            pointer-events: unset !important;
+            overflow: unset !important;
+        }
+
+        :global(.prosemirror-math-inline .prosemirror-math-source) {
             :global(&:before, &:after) {
                 content: '$';
                 opacity: 0.5;

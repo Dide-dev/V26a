@@ -6,14 +6,18 @@
 
 <script lang="ts">
     import type { BasicExtension } from 'prosekit/basic';
-    import type { Editor } from 'prosekit/core';
+    import type { Editor, Union } from 'prosekit/core';
     import { useEditorDerivedValue } from 'prosekit/svelte';
     import { m } from '$lib/paraglide/messages';
 
     import ToolbarButton from './ToolbarButton.svelte';
     import ImageUploader from './ImageUploader.svelte';
+    import type { MyMathExtension } from './math';
 
-    function getToolbarItems(editor: Editor<BasicExtension>) {
+    // This is not exactly the type of the actual Editor, but it is close enough
+    type MyEditor = Editor<Union<[BasicExtension, MyMathExtension]>>;
+
+    function getToolbarItems(editor: MyEditor) {
         return {
             undo: editor.commands.undo
                 ? {
@@ -71,6 +75,34 @@
                       command: () => editor.commands.insertCodeBlock({ language: 'javascript' })
                   }
                 : undefined,
+            math: editor.commands.insertMathInline
+                ? {
+                      isActive: editor.nodes.mathInline.isActive(),
+                      canExec: editor.commands.insertMathInline.canExec(),
+                      command: () => {
+                          if (
+                              !editor.nodes.mathInline.isActive() &&
+                              !editor.nodes.mathBlock.isActive()
+                          ) {
+                              editor.commands.insertMathInline();
+                          }
+                      }
+                  }
+                : undefined,
+            mathBlock: editor.commands.insertMathBlock
+                ? {
+                      isActive: editor.nodes.mathBlock.isActive(),
+                      canExec: editor.commands.insertMathBlock.canExec(),
+                      command: () => {
+                          if (
+                              !editor.nodes.mathInline.isActive() &&
+                              !editor.nodes.mathBlock.isActive()
+                          ) {
+                              editor.commands.insertMathBlock();
+                          }
+                      }
+                  }
+                : undefined,
             heading1: editor.commands.toggleHeading
                 ? {
                       isActive: editor.nodes.heading.isActive({ level: 1 }),
@@ -120,22 +152,20 @@
                       command: () => editor.commands.toggleList({ kind: 'ordered' })
                   }
                 : undefined,
-
-            // These are not used by us
-            // taskList: editor.commands.toggleList
-            //     ? {
-            //           isActive: editor.nodes.list.isActive({ kind: 'task' }),
-            //           canExec: editor.commands.toggleList.canExec({ kind: 'task' }),
-            //           command: () => editor.commands.toggleList({ kind: 'task' })
-            //       }
-            //     : undefined,
-            // toggleList: editor.commands.toggleList
-            //     ? {
-            //           isActive: editor.nodes.list.isActive({ kind: 'toggle' }),
-            //           canExec: editor.commands.toggleList.canExec({ kind: 'toggle' }),
-            //           command: () => editor.commands.toggleList({ kind: 'toggle' })
-            //       }
-            //     : undefined,
+            taskList: editor.commands.toggleList
+                ? {
+                      isActive: editor.nodes.list.isActive({ kind: 'task' }),
+                      canExec: editor.commands.toggleList.canExec({ kind: 'task' }),
+                      command: () => editor.commands.toggleList({ kind: 'task' })
+                  }
+                : undefined,
+            toggleList: editor.commands.toggleList
+                ? {
+                      isActive: editor.nodes.list.isActive({ kind: 'toggle' }),
+                      canExec: editor.commands.toggleList.canExec({ kind: 'toggle' }),
+                      command: () => editor.commands.toggleList({ kind: 'toggle' })
+                  }
+                : undefined,
             indentList: editor.commands.indentList
                 ? {
                       isActive: false,
@@ -246,6 +276,26 @@
             <div class="i-lucide-square-code block size-5"></div>
         </ToolbarButton>
     {/if} -->
+    {#if $items.math}
+        <ToolbarButton
+            pressed={$items.math.isActive}
+            disabled={!$items.math.canExec}
+            onClick={$items.math.command}
+            tooltip={m.math()}
+        >
+            <div class="i-lucide-sigma block size-5"></div>
+        </ToolbarButton>
+    {/if}
+    {#if $items.mathBlock}
+        <ToolbarButton
+            pressed={$items.mathBlock.isActive}
+            disabled={!$items.mathBlock.canExec}
+            onClick={$items.mathBlock.command}
+            tooltip={m.mathBlock()}
+        >
+            <div class="i-lucide-square-sigma block size-5"></div>
+        </ToolbarButton>
+    {/if}
     {#if $items.heading1}
         <ToolbarButton
             pressed={$items.heading1.isActive}
@@ -266,7 +316,7 @@
             <div class="i-lucide-heading-2 block size-5"></div>
         </ToolbarButton>
     {/if}
-    <!-- {#if $items.heading3}
+    {#if $items.heading3}
         <ToolbarButton
             pressed={$items.heading3.isActive}
             disabled={!$items.heading3.canExec}
@@ -275,17 +325,17 @@
         >
             <div class="i-lucide-heading-3 block size-5"></div>
         </ToolbarButton>
-    {/if} -->
-    {#if $items.horizontalRule}
+    {/if}
+    <!-- {#if $items.horizontalRule}
         <ToolbarButton
             pressed={$items.horizontalRule.isActive}
             disabled={!$items.horizontalRule.canExec}
             onClick={$items.horizontalRule.command}
-            tooltip={m.divider()}
+            tooltip="Divider"
         >
             <div class="i-lucide-minus block size-5"></div>
         </ToolbarButton>
-    {/if}
+    {/if} -->
     {#if $items.blockquote}
         <ToolbarButton
             pressed={$items.blockquote.isActive}

@@ -8,8 +8,15 @@ import type { Element, Text, Root } from 'hast';
 import type { State } from 'hast-util-to-mdast';
 import { render } from 'katex';
 import type { Nodes, RootContent } from 'mdast';
-import { defineMath } from 'prosekit/extensions/math';
+import { defineCommands, union, type Extension, type Union } from 'prosekit/core';
+import { defineMath, type MathExtension } from 'prosekit/extensions/math';
 import { visitParents } from 'unist-util-visit-parents';
+import { insertAndSelectInsideNode } from './prosekitInsertAndSelect';
+
+export type MyMathExtension = Union<[MathExtension, MyMathCommands]>;
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export type MyMathCommands = Extension<{ Commands: { insertMathBlock: []; insertMathInline: [] } }>;
 
 export function defineKatexMath() {
     function renderKaTeXMathBlock(text: string, element: HTMLElement) {
@@ -19,15 +26,31 @@ export function defineKatexMath() {
         render(text, element, { displayMode: false, throwOnError: false, output: 'html' });
     }
 
-    return defineMath({
-        renderMathBlock: renderKaTeXMathBlock,
-        renderMathInline: renderKaTeXMathInline
-    });
+    return union(
+        defineMath({
+            renderMathBlock: renderKaTeXMathBlock,
+            renderMathInline: renderKaTeXMathInline
+        }),
+        // For whatever reason the `defineMath` does not define these commands by default.
+        // We need them for the toolbar, so we add them here
+        defineCommands({
+            insertMathBlock: () => {
+                return insertAndSelectInsideNode({ type: 'mathBlock' });
+            },
+            insertMathInline: () => {
+                // An empty node math inline would result in weird behavior
+                return insertAndSelectInsideNode({
+                    type: 'mathInline',
+                    content: [{ type: 'text', text: 'x^2' }]
+                });
+            }
+        })
+    );
 }
 
 /**
  * The following function is for converting from the 'remarkMath' html math variant
- * to the math variatn of prosekit
+ * to the math variant of prosekit
  *
  * The difference is:
  * `<div class="prosemirror-math-block"><pre><code>x^2</code></pre></div>`
@@ -127,5 +150,9 @@ export function rehypeRemarkDivHandler(
         value = (codeElement.children[0] as Text).value;
     }
 
-    return { type: 'math', value };
+    if (value.trim() === '') {
+        return [];
+    } else {
+        return { type: 'math', value };
+    }
 }
