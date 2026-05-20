@@ -81,7 +81,7 @@
         }
     }
 
-    export const htmlWidth: number = 450;
+    export const htmlWidth: number = 600;
     export const htmlHeight: number = 650;
 </script>
 
