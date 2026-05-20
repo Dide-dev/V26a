@@ -28,7 +28,7 @@
         createdAfter: null,
         createdBefore: null,
         showOwnPrivate: true,
-        editable: false,
+        editable: null
     });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,

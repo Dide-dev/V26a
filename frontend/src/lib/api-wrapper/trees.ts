@@ -80,6 +80,7 @@ export type TreeGeneratedData = {
 export type TreeLinkedData = {
     ownerName: Option<string>;
     subjectName: Option<string>;
+    coAuthors: UserId[];
 };
 
 export type TreeMetadata = {

@@ -42,7 +42,7 @@
             createdAfter: null,
             createdBefore: null,
             showOwnPrivate: true,
-            editable: true,
+            editable: true
         };
         let paginationOptions: PaginationOptions = {
             page: thisPage,
