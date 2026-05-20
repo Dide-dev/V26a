@@ -119,9 +119,10 @@ async fn get_all_user_data(
 /// Gets the data of one user from the database.
 ///
 /// # Arguments
+/// `user_id` - The user from whom we want to get the data.
 ///
 /// # Returns
-/// The data form of a user as [`UserGetAllData`].
+/// The data of a user as [`UserGetAllData`].
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
