@@ -76,8 +76,6 @@
         // Marks
         defineItalic(),
         defineBold(),
-        // defineUnderline(),
-        // defineStrike(),
         defineCode(),
         defineLink(),
 
@@ -134,8 +132,8 @@
 
     useDocChange(
         () => {
-            // TODO: is this too expensive to run on every keypress?
-            // if so we need to implement debouncing.
+            // If this ever turns out to be too expensive to run on every keypress,
+            // you will need to implement debouncing.
             let html = editor.getDocHTML();
             let markdown = markdownFromProsekitHtml(html);
             lastTextExported = markdown;

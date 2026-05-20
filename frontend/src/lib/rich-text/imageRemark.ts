@@ -42,7 +42,6 @@ export function rehypeRemarkImgHandler(
  */
 export function remarkRehypeTextHandler(state: MdastToHastState, node: Text) {
     const txt = node.value.trim();
-    // TODO? alt text
     const start = '![';
     const middle = '](';
     const end = ')';
