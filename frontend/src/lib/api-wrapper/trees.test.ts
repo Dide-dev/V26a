@@ -18,7 +18,6 @@ test('Pagination & Filter link generator', () => {
         createdAfter: null,
         createdBefore: null,
         ownerId: null,
-        coAuthor: null,
         showOwnPrivate: null,
         editable: null
     };
@@ -29,7 +28,6 @@ test('Pagination & Filter link generator', () => {
     const fullPage: PaginationOptions = { page: 1, size: 50 };
     const fullFilters: FilterOptions = {
         ownerId: 123,
-        coAuthor: 123,
         book: ['test', 'test2'],
         createdAfter: new Date(Date.UTC(2012, 3, 10)),
         createdBefore: new Date(Date.UTC(2019, 11, 3)),
@@ -39,13 +37,12 @@ test('Pagination & Filter link generator', () => {
 
     const fullParams = getPaginationAndFilterParams(fullPage, fullFilters);
     expect(fullParams).equals(
-        'page=1&size=50&ownerId=123&coAuthor=123&book=test&book=test2&createdAfter=2012-04-10T00%3A00%3A00.000Z&createdBefore=2019-12-03T00%3A00%3A00.000Z&showOwnPrivate=true&editable=true'
+        'page=1&size=50&ownerId=123&book=test&book=test2&createdAfter=2012-04-10T00%3A00%3A00.000Z&createdBefore=2019-12-03T00%3A00%3A00.000Z&showOwnPrivate=true&editable=true'
     );
 
     const partialPage: PaginationOptions = { page: 1, size: null };
     const partialFilters: FilterOptions = {
         ownerId: null,
-        coAuthor: null,
         book: ['test'],
         createdAfter: new Date(Date.UTC(2012, 3, 10)),
         createdBefore: null,

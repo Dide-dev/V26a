@@ -64,20 +64,21 @@ fn setup(db: PgPool) -> TestServer {
 /// `email` - The new user's email address.
 ///
 /// # Returns
-/// An i32 representing the id of the user created.
-async fn register(test_server: &TestServer, email: String) -> i32 {
-    let response = test_server
-        .post("/users/add")
-        .json(&RegisterData {
-            email,
-            password: "a$$word".to_string(),
-            name: format!("John Test {}", uuid::Uuid::new_v4()),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::En,
-        })
-        .await;
+/// A tuple containing the id of the user created and the [`RegisterData`] used.
+async fn register(test_server: &TestServer, email: String) -> (i32, RegisterData) {
+    let username = format!("John_Test_{}", uuid::Uuid::new_v4());
+
+    let register_data = RegisterData {
+        email,
+        password: "a$$word".to_string(),
+        name: username,
+        nickname: String::new(),
+        about_me: String::new(),
+        email_visible: false,
+        language: UserLanguage::En,
+    };
+
+    let response = test_server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
@@ -85,7 +86,8 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
-    user_id
+
+    (user_id, register_data)
 }
 
 /// Creates an admin account with the given [`TestServer`]
@@ -98,9 +100,13 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
 /// `email` - The new admin's email address.
 ///
 /// # Returns
-/// An i32 representing the id of the admin created.
-async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email: String) -> i32 {
-    let user_id = register(test_server, email).await;
+/// A tuple containing the id of the admin user created and the [`RegisterData`] used.
+async fn register_admin(
+    test_server: &TestServer,
+    db: impl PgExecutor<'_>,
+    email: String,
+) -> (i32, RegisterData) {
+    let (user_id, register_data) = register(test_server, email).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -110,7 +116,7 @@ async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email
     .await
     .unwrap();
 
-    user_id
+    (user_id, register_data)
 }
 
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.

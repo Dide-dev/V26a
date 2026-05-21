@@ -15,12 +15,12 @@ use sqlx::PgPool;
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
     let email = "KoekieMonster@sesamstraat.nl".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    let user_id = register(&server, email.clone()).await.0;
     let response = login(&server, email).await;
     let cookie = response.cookie("user_info");
     let cookie_data = get_cookie_data::<InfoCookieData>(&cookie);
 
-    assert!(cookie_data.name.starts_with("John Test"));
+    assert!(cookie_data.name.starts_with("John_Test"));
     assert_eq!(cookie_data.nickname, "");
     assert_eq!(cookie_data.sub, user_id);
     assert_eq!(cookie_data.account_type, AccountType::Author);
