@@ -47,7 +47,7 @@ async fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiEr
 impl FromRequestParts<ArcState> for Claims {
     type Rejection = ApiError;
 
-    /// Get JWT [`Claims`] from a user's cookies
+    /// Get [`Claims`] from a user's cookies
     ///
     /// # Example
     /// Passing `claims: `[`Claims`] into an axum function will automatically call this function.
@@ -76,7 +76,7 @@ impl FromRequestParts<ArcState> for Claims {
 impl FromRequestParts<ArcState> for Option<Claims> {
     type Rejection = ApiError;
 
-    /// Get optional JWT [`Claims`] from a user's cookies
+    /// Get optional [`Claims`] from a user's cookies
     ///
     /// # Example
     /// Passing `optional_claims: `[`Option<Claims>`](Claims) into an axum function will automatically call this function.

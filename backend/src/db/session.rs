@@ -70,3 +70,125 @@ pub async fn create_session(
 
     Ok(())
 }
+
+/// Delete a  session from the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `token` - The opaque session token to delete.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn delete_session(
+    db: impl PgExecutor<'_>,
+    token: &str,
+) -> Result<(), ApiError> {
+    query!(
+        "DELETE FROM session WHERE token = $1",
+        token,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+/// Delete all sessions of an user from the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `user_id` - The user this session belongs to.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn delete_all_sessions(
+    db: impl PgExecutor<'_>,
+    user_id: i32,
+) -> Result<(), ApiError> {
+    query!(
+        "DELETE FROM session WHERE user_id = $1",
+        user_id,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::test::initialize_basic_user;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_get_session(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
+        let token = "donut-token";
+
+        create_session(&db, token, user_id, expires_at).await.unwrap();
+
+        let claims = get_session(&db, token).await.unwrap().unwrap();
+        
+        // Validates if the user is in claims, meaning the session is returned if it is true.
+        assert_eq!(claims.sub, user_id);
+    }
+
+    #[sqlx::test]
+    async fn test_create_session(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
+        let token = "test-token";
+
+        create_session(&db, token, user_id, expires_at).await.unwrap();
+
+        let row = query!("SELECT token, user_id, expires_at FROM session WHERE token = $1", token)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+
+        // Checks if the corresponding token and userid are present in the rows of the session table.
+        assert_eq!(row.token, token);
+        assert_eq!(row.user_id, user_id);
+    }
+
+    #[sqlx::test]
+    async fn test_delete_session(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
+        let token = "test-token";
+
+        create_session(&db, token, user_id, expires_at).await.unwrap();
+        delete_session(&db, token).await.unwrap();
+
+        let row = query!("SELECT token FROM session WHERE token = $1", token)
+            .fetch_optional(&db)
+            .await
+            .unwrap();
+
+        // Deleting the session is equal to deleting a row of session table. So no row should be present.
+        assert!(row.is_none());
+    }
+
+    #[sqlx::test]
+    async fn test_delete_all_sessions(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
+
+        create_session(&db, "token-1", user_id, expires_at).await.unwrap();
+        create_session(&db, "token-2", user_id, expires_at).await.unwrap();
+
+        delete_all_sessions(&db, user_id).await.unwrap();
+
+        let rows = query!("SELECT token FROM session WHERE user_id = $1", user_id)
+            .fetch_all(&db)
+            .await
+            .unwrap();
+
+        // Deleting multiple sessions would result in multiple rows being empty.
+        assert!(rows.is_empty());
+    }
+}

@@ -7,6 +7,7 @@
 use crate::ArcState;
 use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_id;
+use crate::db::session::delete_all_sessions;
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
@@ -330,9 +331,13 @@ async fn delete_user_data(
     delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
 
     if claims.sub == user_id {
+        // Unset the cookies by changing the date to a time in the past.
         jar = jar
             .remove(Cookie::from("session"))
             .remove(Cookie::from("user_info"));
+
+        // Unvalidate all the sessions based on userid.
+        delete_all_sessions(&mut *transaction, claims.sub).await?;
     }
 
     transaction.commit().await?;
