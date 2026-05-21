@@ -680,7 +680,6 @@ fn apply_tree_filters<'a>(
     let mut separated = builder.separated(" AND ");
     separated.push("(published = true");
     if *show_own_private && let Some(user_id) = user_id {
-        println!("{user_id}");
         separated.push_unseparated(" OR (published = false AND (owner_id = ");
         separated.push_bind_unseparated(user_id);
 
@@ -814,8 +813,6 @@ pub async fn get_queried_list(
         .push(" OFFSET ")
         // Page is 1-based
         .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
-
-    println!("{:?}", query.sql());
 
     let rows = query.build().fetch_all(db).await?;
 
