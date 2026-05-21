@@ -145,7 +145,6 @@ export type TreeListResponse = {
 
 export type FilterOptions = {
     ownerId: Option<number>;
-    coAuthor: Option<number>;
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;

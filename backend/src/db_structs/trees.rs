@@ -384,7 +384,6 @@ pub struct TreeListResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,
-    pub co_author: Option<i32>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
