@@ -5,8 +5,8 @@
 */
 
 use crate::ArcState;
-use crate::db_structs::users::AccountType;
 use crate::db::session::get_session;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
-/// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
+/// The claims contained in an opaque token. Specifies the subject (user id) and the
 /// expiration time.
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -63,8 +63,7 @@ impl FromRequestParts<ArcState> for Claims {
     ///
     /// Returns [`ExpiredSession`](ApiError::ExpiredSession) if the user's session has expired.
     ///
-    /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be
-    /// decrypted, or if another error is given by [`jsonwebtoken`].
+    /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be created.
     async fn from_request_parts(
         parts: &mut Parts,
         state: &ArcState,
@@ -94,7 +93,6 @@ impl FromRequestParts<ArcState> for Option<Claims> {
     /// - The cookies can not be extracted from the request,
     /// - The user's session has expired,
     /// - The user's session can not be decrypted,
-    /// - another error is given by [`jsonwebtoken`]
     async fn from_request_parts(
         parts: &mut Parts,
         state: &ArcState,

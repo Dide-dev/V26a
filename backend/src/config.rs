@@ -24,7 +24,7 @@ pub struct Config {
     pub bcrypt_cost: u32,
     /// This duration is in _seconds_.
     pub session_duration: i64,
-    
+
     /// Upload images directory
     pub upload_dir: String,
     pub max_upload_size: usize,

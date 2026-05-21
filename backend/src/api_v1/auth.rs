@@ -11,21 +11,22 @@ use crate::db::session::{create_session, delete_session};
 use crate::db::users::user_id_exists;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::errors::ApiError;
+use axum::extract::Path;
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
+use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use utoipa::ToSchema;
-use rand::distr::{Alphanumeric, SampleString};
-use axum::extract::Path;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
-    Router::new().route("/login", post(login))
-                 .route("/{user_id}/logout", post(logout))
+    Router::new()
+        .route("/login", post(login))
+        .route("/{user_id}/logout", post(logout))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -36,8 +37,7 @@ pub struct LoginResponse {
     pub succeeded: bool,
 }
 
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
-/// with an encoded JWT.
+/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie.
 ///
 /// # Returns
 /// A [`LoginResponse`] which flags whether the combination of email and password is correct.
@@ -168,7 +168,7 @@ async fn login(
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
-/// 
+///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete the session.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -205,5 +205,5 @@ async fn logout(
         .await
         .map_err(|_| ApiError::DatabaseException)?;
 
-    Ok(jar) 
+    Ok(jar)
 }
