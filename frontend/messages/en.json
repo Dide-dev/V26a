@@ -135,5 +135,6 @@
     "classroomDashboard": "Dashboard",
     "classroomName": "Name of classroom",
     "exampleClassroomName": "Math 101",
-    "exampleClassroomDescription": "Welcome students, in this classroom you will learn more about mathematical heuristic trees."
+    "exampleClassroomDescription": "Welcome students, in this classroom you will learn more about mathematical heuristic trees.",
+    "owner": "Owner"
 }

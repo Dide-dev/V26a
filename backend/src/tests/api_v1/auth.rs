@@ -30,22 +30,20 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let server = setup(db);
     let email = "SidneyMonster@sesamestreet.com".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    register(&server, email.clone()).await;
     let response = login(&server, email).await;
     let original_cookie = response.cookie("user_info");
     let original_max_age = original_cookie.max_age().unwrap();
     let original_cookie_data = get_cookie_data::<InfoCookieData>(&original_cookie);
 
     let response = server
-        .post(&format!("/users/update/{user_id}"))
+        .post("/users/update")
         .json(&UserUpdateData {
             name: "Sidney".to_string(),
             nickname: "Cookie Monster".to_string(),
             about_me: "I like cookies, yum".to_string(),
             email_visible: false,
             language: UserLanguage::En,
-            account_type: None,
-            enabled: None,
         })
         .await;
     response.assert_status_ok();
