@@ -126,7 +126,7 @@ async fn get_all_user_data(
         ("user_id" = i32, Path),
     )
 )]
-/// Update a user's data in the database..
+/// Update a user's data in the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
