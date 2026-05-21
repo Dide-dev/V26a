@@ -4,7 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost } from './index';
+import { apiCallPost, apiCallGet } from './index';
+import type { PaginationOptions } from '$lib/pagination';
+import { getPaginationParams } from '$lib/pagination';
 
 const prefix = 'feedback/';
 
@@ -12,13 +14,37 @@ function apiCallPostFeedback(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
-/** The data corresponding to given feedback */
+function apiCallGetFeedback(path: string) {
+    return apiCallGet(prefix + path);
+}
+
+/** The data corresponding to given feedback. */
 export type FeedbackData = {
     email: string;
     feedback: string;
 };
 
-/** Add feedback to the database */
+/** The data returned when retrieving feedback. */
+export type FeedbackListResponse = {
+    feedbackTotal: number;
+    feedback: FeedbackGetData[];
+};
+
+/** Data corresponding to a returned piece of feedback. */
+export type FeedbackGetData = {
+    feedbackId: number;
+    email: string;
+    feedback: string;
+    createdAt: Date;
+};
+
+/** Add feedback to the database. */
 export function provideFeedback(feedback: FeedbackData) {
     return apiCallPostFeedback('provide', feedback);
+}
+
+/** Get feedback from the database. */
+export function getFeedback(pageOptions: PaginationOptions): Promise<FeedbackListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetFeedback(`get?${params}`);
 }

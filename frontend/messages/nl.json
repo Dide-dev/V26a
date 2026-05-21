@@ -129,5 +129,6 @@
     "pageNotFound": "Deze pagina kon niet worden gevonden",
     "account": "Account",
     "admin": "Beheer",
-    "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica"
+    "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
+    "owner": "Eigenaar"
 }

@@ -18,6 +18,7 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
@@ -147,6 +148,29 @@ async fn setup_login(db: PgPool) -> TestServer {
     login(&server, test_email).await;
 
     server
+}
+
+/// Creates a basic tree that can be used in tests.
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// # Returns
+/// An i32 representing the tree's id.
+async fn create_tree(test_server: &TestServer) -> i32 {
+    let tree_data = TreeData::default();
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = test_server.post("/trees/add").json(&tree_add_data).await;
+    response.json()
 }
 
 #[cfg(test)]
