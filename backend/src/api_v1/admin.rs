@@ -7,6 +7,7 @@
 use axum::{
     Extension, Json, Router,
     extract::Request,
+    extract::{Path, State},
     middleware::{self, Next},
     response::Response,
     routing::{get, post},
@@ -16,17 +17,18 @@ use sqlx::PgPool;
 
 use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::db_structs::{feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData};
-use axum::extract::{Path, State};
 
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
     db::users::{
-        admin_update_user, get_user_by_name, get_user_count, get_user_list_by_page,
-        update_password, user_id_exists,
+        admin_update_user, get_user_all_data, get_user_by_name, get_user_count,
+        get_user_list_by_page, update_password, user_id_exists,
     },
     db_structs::pagination::OptionalPaginationOptions,
-    db_structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
+    db_structs::users::{
+        AccountType, AdminPasswordChangeRequestBody, UserGetAllData, UserListResponse,
+    },
     errors::ApiError,
 };
 
@@ -49,6 +51,7 @@ async fn check_if_admin(
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
+        .route("/users/{userId}", get(get_user_data))
         .route("/users/{user_id}/update-data", post(update_user_data))
         .route("/users/{user_id}/update-password", post(change_password))
         .route("/get-feedback", get(get_feedback))
@@ -70,7 +73,6 @@ pub fn admin(state: ArcState) -> Router<ArcState> {
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
-
 /// Gets the data of all the users from the database.
 ///
 /// # Arguments
@@ -217,6 +219,50 @@ async fn change_password(
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
+#[utoipa::path(
+    get,
+    path = "/users/{user_id}",
+    context_path = "/api/v1/admin",
+    responses(
+        (status = 200, description = "Successfully retrieved data.", body = UserGetAllData),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
+    )
+)]
+/// Gets the data of one user from the database.
+///
+/// # Arguments
+/// `user_id` - The user from whom we want to get the data.
+///
+/// # Returns
+/// The data of a user as [`UserGetAllData`].
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
+/// the data of all users.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_user_data(
+    Extension(db): Extension<PgPool>,
+    Path(user_id): Path<i32>,
+) -> Result<Json<UserGetAllData>, ApiError> {
+    if !user_id_exists(&db, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+    get_user_all_data(&db, user_id).await.map(Json)
+}
+
 #[utoipa::path(
     get,
     path = "/get-feedback",

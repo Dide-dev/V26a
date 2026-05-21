@@ -71,6 +71,21 @@ pub struct AllUsersGetData {
     pub enabled: bool,
 }
 
+/// Data received when getting the data of a user from the database.
+/// Should only be used by admins
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserGetAllData {
+    pub email: String,
+    pub name: String,
+    pub enabled: bool,
+    pub nickname: String,
+    pub about_me: String,
+    pub email_visible: bool,
+    pub account_type: AccountType,
+    pub language: UserLanguage,
+}
+
 /// The data returned when requesting a list of users.
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
