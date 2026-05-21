@@ -1,10 +1,14 @@
+# This program has been developed by students from the bachelor Computer Science at
+# Utrecht University within the Software Project course.
+# © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 name: Backend Rust CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 env:
   CARGO_TERM_COLOR: always
