@@ -119,14 +119,12 @@
         usernameAlreadyExists = false;
         resetInputStates();
 
-        const result = await updateUser(userInfo.sub, {
+        const result = await updateUser({
             name: userData.name,
             nickname: userData.nickname,
             aboutMe: userData.aboutMe,
             emailVisible: userData.emailVisible,
-            language: userData.language,
-            accountType: null,
-            enabled: null
+            language: userData.language
         });
 
         if (result.type === 'Success') {

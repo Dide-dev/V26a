@@ -36,7 +36,6 @@ pub struct UserGetData {
 }
 
 /// Data needed to update a user in the database.
-/// `account_type` and `enabled` are only updated if a `Some` value is passed.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUpdateData {
@@ -45,17 +44,27 @@ pub struct UserUpdateData {
     pub about_me: String,
     pub email_visible: bool,
     pub language: UserLanguage,
-    /// This field may only be updated by admins.
-    pub account_type: Option<AccountType>,
-    /// This field may only be updated by admins.
-    pub enabled: Option<bool>,
+}
+
+/// Data needed for an admin to update a user in the database.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminUpdateData {
+    pub email: String,
+    pub name: String,
+    pub enabled: bool,
+    pub nickname: String,
+    pub about_me: String,
+    pub email_visible: bool,
+    pub account_type: AccountType,
+    pub language: UserLanguage,
 }
 
 /// Data received when getting all user data from the database.
 /// Should only be used by admins
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct UserGetAllData {
+pub struct AllUsersGetData {
     pub id: i32,
     pub email: String,
     pub name: String,
@@ -68,7 +77,7 @@ pub struct UserGetAllData {
 pub struct UserListResponse {
     /// The total amount of users that are visible in the query.
     pub total_users: i32,
-    pub users: Vec<UserGetAllData>,
+    pub users: Vec<AllUsersGetData>,
 }
 
 /// The body for a password change request that contains the old password, and the new password.
@@ -76,6 +85,12 @@ pub struct UserListResponse {
 #[serde(rename_all = "camelCase")]
 pub struct PasswordChangeRequestBody {
     pub old_password: String,
+    pub new_password: String,
+}
+/// The body for a password change request that contains the new password.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminPasswordChangeRequestBody {
     pub new_password: String,
 }
 
