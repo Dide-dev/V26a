@@ -23,10 +23,12 @@
 
     let filterOptions: FilterOptions = $state({
         ownerId: null,
+        coAuthor: null,
         book: [],
         createdAfter: null,
         createdBefore: null,
-        showOwnPrivate: true
+        showOwnPrivate: true,
+        editable: null
     });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,

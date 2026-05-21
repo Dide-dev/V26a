@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT trees.*, users.name AS owner_name, subjects.name AS \"subject_name?\", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        WHERE trees.id = $1",
+  "query": "SELECT trees.*, users.name AS owner_name, subjects.name AS \"subject_name?\", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        WHERE trees.id = $1",
   "describe": {
     "columns": [
       {
@@ -117,6 +117,11 @@
         "ordinal": 21,
         "name": "tags",
         "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 22,
+        "name": "co_authors",
+        "type_info": "Int4Array"
       }
     ],
     "parameters": {
@@ -146,8 +151,9 @@
       null,
       null,
       null,
+      null,
       null
     ]
   },
-  "hash": "5a7297ec98ea27c37b05ee7f19980045a4aa8ce3e2ae55aa708a7d03dd612217"
+  "hash": "e31c1a7efde5ccf411c5197e82c94c89c16ca2354ef7c927fc71b9198eca8c2b"
 }
