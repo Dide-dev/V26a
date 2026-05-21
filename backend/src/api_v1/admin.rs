@@ -14,7 +14,8 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db_structs::{session::Claims, users::AdminUpdateData};
+use crate::db::feedback::{get_all_feedback, get_feedback_count};
+use crate::db_structs::{feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData};
 use axum::extract::{Path, State};
 
 use crate::{
@@ -50,6 +51,7 @@ pub fn admin(state: ArcState) -> Router<ArcState> {
         .route("/all-user-data", get(get_all_user_data))
         .route("/users/{user_id}/update-data", post(update_user_data))
         .route("/users/{user_id}/update-password", post(change_password))
+        .route("/get-feedback", get(get_feedback))
         .route_layer(middleware::from_fn_with_state(state, check_if_admin))
 }
 
@@ -214,4 +216,66 @@ async fn change_password(
     .await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
+}
+#[utoipa::path(
+    get,
+    path = "/get-feedback",
+    context_path = "/api/v1/admin",
+    responses(
+        (status = 200, description = "Feedback successfully retrieved.", body = FeedbackListResponse),
+        (status = 400, description = "Requested page or page size has exceeded a limit."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
+    )
+)]
+/// Retrieve feedback from the database.
+///
+/// # Arguments
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
+///
+/// # Returns
+/// A list with the feedback at the requested page.
+///
+/// # Errors
+/// Returns [`MaxPageSizeExceeded`](ApiError::MaxPageSizeExceeded) if the user requests more than
+/// the defined number of items per page, currently 100.
+///
+/// Returns [`MaxPageNumberExceeded`](ApiError::MaxPageNumberExceeded) if the requested page number is greater than the given page number, currently configured to 1000.
+///
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if  the user is not logged in.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to retrieve the feedback. Only admins have this permission.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) or
+/// [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) instead.
+async fn get_feedback(
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<FeedbackListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let feedback_count = get_feedback_count(&db).await?;
+
+    if feedback_count == 0 {
+        return Ok(Json(FeedbackListResponse {
+            feedback_total: 0,
+            feedback: Vec::new(),
+        }));
+    }
+
+    let feedback = get_all_feedback(&db, &page).await?;
+
+    let list = FeedbackListResponse {
+        feedback_total: i32::try_from(feedback_count).map_err(|_| ApiError::DatabaseMemoryCap)?,
+        feedback,
+    };
+
+    Ok(Json(list))
 }
