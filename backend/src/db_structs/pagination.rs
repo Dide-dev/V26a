@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::errors::ApiError;
-use crate::errors::ApiError::{InvalidPage, MaxPageNumberExceeded};
+use crate::errors::ApiError::{InvalidPage, MaxPageNumberExceeded, MaxPageSizeExceeded};
 use utoipa::ToSchema;
 
 /// A struct representing the entries a user wants to receive on an endpoint with pagination.
@@ -55,7 +55,7 @@ impl OptionalPaginationOptions {
 
 impl PaginationOptions {
     /// Returns true if the page number and size are both greater than 0,
-    /// and if both do not exceed 1000.
+    /// and if both do not exceed the given maxima.
     pub fn new(page: i32, size: i32, max_page: i32, max_size: i32) -> Result<Self, ApiError> {
         if page < 1 || size < 1 {
             return Err(InvalidPage);
@@ -64,7 +64,7 @@ impl PaginationOptions {
             return Err(MaxPageNumberExceeded(max_page));
         }
         if size > max_size {
-            return Err(MaxPageNumberExceeded(max_size));
+            return Err(MaxPageSizeExceeded(max_size));
         }
         Ok(Self { page, size })
     }
