@@ -6,11 +6,10 @@
 
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
-    AccountType, AllUsersGetData, RegisterData, UserGetAllData, UserGetData, UserLanguage,
-    UserUpdateData,
+    AccountType, AdminUpdateData, AllUsersGetData, RegisterData, UserGetAllData, UserGetData,
+    UserLanguage, UserUpdateData,
 };
 use crate::errors::ApiError;
-
 use bcrypt::hash;
 use sqlx::{PgConnection, PgExecutor, query, query_as, query_scalar};
 use std::str::FromStr;
@@ -134,6 +133,8 @@ pub async fn get_user_all_data(
 ///
 /// `new_data` - The new data to be assigned as [`UserUpdateData`], including the id of the user to be updated.
 ///
+/// `id` - The id of the user that needs to be updated.
+///
 /// # Returns
 /// Nothing.
 ///
@@ -144,16 +145,50 @@ pub async fn update_user(
     id: i32,
     new_data: &UserUpdateData,
 ) -> Result<(), ApiError> {
-    // COALESCE is used here to update account_type and enabled only if they are not None.
     query!(
-        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5, account_type = COALESCE($6, account_type), enabled = COALESCE($7, enabled) WHERE id = $8",
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5 WHERE id = $6",
         new_data.name,
         new_data.nickname,
         new_data.about_me,
         new_data.email_visible,
         new_data.language.to_string(),
-        new_data.account_type.map(|t| t.to_string()),
+        id,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+/// Updates a user in the database. Can also update protected fields.
+///
+/// # Arguments
+/// `db` - A connection to a Postgres database.
+///
+/// `new_data` - The new data to be assigned as [`AdminUpdateData`], including the id of the user to be updated.
+///
+/// `id` - The id of the user that needs to be updated.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn admin_update_user(
+    db: impl PgExecutor<'_>,
+    id: i32,
+    new_data: &AdminUpdateData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5, account_type = $6, enabled = $7, email = $8 WHERE id = $9",
+        new_data.name,
+        new_data.nickname,
+        new_data.about_me,
+        new_data.email_visible,
+        new_data.language.to_string(),
+        new_data.account_type.to_string(),
         new_data.enabled,
+        new_data.email,
         id,
     )
     .execute(db)
@@ -440,6 +475,38 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_admin_update_user(db: PgPool) {
+        let register_data = RegisterData {
+            email: "hoi@gmail.com".to_owned(),
+            password: "password".to_owned(),
+            name: "Not John Smith".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        };
+
+        let update_data = AdminUpdateData {
+            email: "JohnSmith@gmail.com".to_owned(),
+            name: "John Smith".to_owned(),
+            enabled: true,
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            account_type: AccountType::Admin,
+            language: UserLanguage::Nl,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+
+        admin_update_user(&db, user_id, &update_data).await.unwrap();
+
+        let found_user_id = get_user_by_name(&db, &update_data.name).await.unwrap();
+        // Checks whether the users name changed from "Not John Smith" to "John Smith" by checking of the id's are the same.
+        assert_eq!(found_user_id, Some(user_id));
+    }
+
+    #[sqlx::test]
     async fn test_get_user_by_name(db: PgPool) {
         let name = "name".to_owned();
 
@@ -627,8 +694,6 @@ mod tests {
             about_me: String::new(),
             email_visible: false,
             language: UserLanguage::Nl,
-            account_type: None,
-            enabled: None,
         };
         update_user(&db, user_id, &new_user_data).await.unwrap();
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
@@ -641,16 +706,8 @@ mod tests {
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
             language: all_found_user_data.language_code.parse().unwrap(),
-            // These need to be checked separately as they are both None in new_user_data.
-            account_type: new_user_data.account_type,
-            enabled: new_user_data.enabled,
         };
         assert_eq!(found_update_data, new_user_data);
-        assert_eq!(
-            all_found_user_data.account_type,
-            AccountType::Author.to_string()
-        );
-        assert!(all_found_user_data.enabled);
 
         // Test updating the account type and enabled flag
         let new_user_data = UserUpdateData {
@@ -659,8 +716,6 @@ mod tests {
             about_me: "Nothing interesting".to_owned(),
             email_visible: true,
             language: UserLanguage::En,
-            account_type: Some(AccountType::Admin),
-            enabled: Some(false),
         };
         update_user(&db, user_id, &new_user_data).await.unwrap();
         let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
@@ -673,8 +728,6 @@ mod tests {
             about_me: all_found_user_data.about_me,
             email_visible: all_found_user_data.email_visible,
             language: all_found_user_data.language_code.parse().unwrap(),
-            account_type: Some(AccountType::from_str(&all_found_user_data.account_type).unwrap()),
-            enabled: Some(all_found_user_data.enabled),
         };
         assert_eq!(found_update_data, new_user_data);
     }

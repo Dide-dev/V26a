@@ -4,14 +4,24 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallGet } from './index';
-import { type UserId } from './users';
+import { apiCallGet, apiCallPost } from './index';
+import {
+    type UserId,
+    type UserSuccess,
+    type UserEmailInvalid,
+    type UsernameInvalid,
+    type ChangePasswordResponse
+} from './users';
 import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
 const prefix = 'admin/';
 
 function apiCallGetAdmin(path: string) {
     return apiCallGet(prefix + path);
+}
+
+function apiCallPostUser(path: string, body: unknown) {
+    return apiCallPost(prefix + path, body);
 }
 
 /** The data of the user that is returned when requesting the data of all users */
@@ -22,7 +32,8 @@ export type AllUsersGetData = {
     enabled: boolean;
 };
 
-export type UserGetAllData = {
+/** The data of the user that is returned when requesting the data of one user */
+export type UserAllData = {
     email: string;
     name: string;
     enabled: boolean;
@@ -31,6 +42,10 @@ export type UserGetAllData = {
     emailVisible: boolean;
     accountType: string;
     language: string;
+};
+/** The data needed to change a user's password */
+export type AdminChangePasswordData = {
+    newPassword: string;
 };
 
 export type UserListResponse = {
@@ -45,6 +60,21 @@ export function getAllUserData(pageOptions: PaginationOptions): Promise<UserList
 }
 
 /** Get the data of a specific user */
-export function getUserAllData(userId: UserId): Promise<UserGetAllData> {
+export function getUserAllData(userId: UserId): Promise<UserAllData> {
     return apiCallGetAdmin(`users/${userId}`);
+}
+/** Update the data of a user */
+export function updateUserData(
+    userId: UserId,
+    newData: UserAllData
+): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
+    return apiCallPostUser(`users/${userId}/update-data`, newData);
+}
+
+/** Change a user's password */
+export function adminChangePassword(
+    userId: UserId,
+    changePasswordData: AdminChangePasswordData
+): Promise<ChangePasswordResponse> {
+    return apiCallPostUser(`users/${userId}/update-password`, changePasswordData);
 }
