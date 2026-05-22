@@ -6,7 +6,7 @@
 
 use crate::ArcState;
 use crate::db::auth::get_user_credentials_by_id;
-use crate::db::session::delete_all_sessions;
+use crate::db::session::{delete_all_sessions, get_session};
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
@@ -18,6 +18,7 @@ use crate::db_structs::users::{
 };
 use crate::errors::ApiError;
 
+use crate::errors::ApiError::MissingAuthentication;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -183,6 +184,11 @@ async fn update_user_data(
 
     update_user(&db, claims.sub, &new_data).await?;
 
+    let session_token = jar.get("session").ok_or(MissingAuthentication)?.value();
+    let old_exp = get_session(&db, session_token)
+        .await?
+        .ok_or(MissingAuthentication)?
+        .exp;
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
@@ -190,7 +196,7 @@ async fn update_user_data(
         account_type: claims.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
-    let time = Duration::seconds(claims.exp - Utc::now().timestamp());
+    let time = Duration::seconds(old_exp - Utc::now().timestamp());
     let user_cookie = Cookie::build(("user_info", new_user_info))
         .path("/")
         .secure(true)

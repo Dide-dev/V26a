@@ -7,7 +7,7 @@
 use crate::ArcState;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
-use crate::db::users::{user_id_exists, get_user};
+use crate::db::users::{get_user, user_id_exists};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
@@ -20,7 +20,7 @@ use chrono::Utc;
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use time::Duration;
+use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
@@ -92,18 +92,13 @@ async fn login(
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     }
 
-    let claims = Claims {
-        sub: credentials.user_id,
-        account_type: credentials.account_type,
-    };
-
     let user_data = get_user(&db, credentials.user_id).await?;
 
     let user_info_cookie = InfoCookieData {
         name: user_data.name,
         nickname: user_data.nickname,
-        sub: claims.sub,
-        account_type: claims.account_type,
+        sub: credentials.user_id,
+        account_type: credentials.account_type,
     };
 
     // Create the authorization token.

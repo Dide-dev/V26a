@@ -1,4 +1,4 @@
-use crate::api_v1::session::Claims;
+use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use chrono::{DateTime, Utc};
@@ -21,23 +21,25 @@ use std::str::FromStr;
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<Claims>, ApiError> {
     let row = query!(
-        "SELECT s.user_id, u.account_type
+        "SELECT s.user_id, u.account_type, s.expires_at AS exp
          FROM session s
          JOIN users u ON u.id = s.user_id
          WHERE s.token = $1 AND s.expires_at > NOW()",
         token
     )
     .fetch_optional(db)
-    .await;
+    .await?;
 
-    let Ok(Some(row)) = row else {
-        return Ok(None);
+    let claims = match row {
+        Some(r) => Some(Claims {
+            sub: r.user_id,
+            exp: r.exp.timestamp(),
+            account_type: AccountType::from_str(&r.account_type)?,
+        }),
+        None => None,
     };
 
-    Ok(Some(Claims {
-        sub: row.user_id,
-        account_type: AccountType::from_str(&row.account_type)?,
-    }))
+    Ok(claims)
 }
 
 /// Insert a new session into the database.

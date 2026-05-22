@@ -6,26 +6,12 @@
 
 use crate::ArcState;
 use crate::db::session::get_session;
-use crate::db_structs::users::AccountType;
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use utoipa::ToSchema;
-
-/// The claims contained in an opaque token. Specifies the subject (user id) and the
-/// expiration time.
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct Claims {
-    /// The subject (whom the token refers to).
-    pub sub: i32,
-    /// the account type
-    pub account_type: AccountType,
-}
 
 async fn get_claims(parts: &mut Parts, _state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.

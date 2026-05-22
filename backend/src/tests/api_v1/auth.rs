@@ -8,7 +8,6 @@
 
 use crate::api_v1::auth::LoginResponse;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::tests::api_v1::{login, register, setup};
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, UserLanguage, UserUpdateData};
 use crate::tests::api_v1::{get_cookie_data, login, register, setup};
@@ -86,6 +85,8 @@ async fn test_logout_failure(db: PgPool) {
         .post(&format!("/auth/{user_id}/logout"))
         .await
         .assert_status_unauthorized();
+}
+
 #[sqlx::test]
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
