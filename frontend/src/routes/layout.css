@@ -355,7 +355,15 @@
     }
 
     p a {
-        color: #36c;
+        color: var(--color-blue-600);
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        &:active {
+            color: var(--color-blue-800);
+        }
     }
 
     blockquote {

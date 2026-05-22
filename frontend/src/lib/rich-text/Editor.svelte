@@ -151,7 +151,7 @@
 
 <ProseKit {editor}>
     <div
-        class="box-border flex h-full min-h-36 w-full flex-col overflow-x-hidden overflow-y-hidden rounded-md border border-solid border-gray-200 bg-[canvas] text-black shadow-sm dark:border-gray-700 dark:text-white"
+        class="box-border flex h-full min-h-36 w-full flex-col rounded-md border border-solid border-gray-200 bg-[canvas] text-black shadow-sm dark:border-gray-700 dark:text-white"
     >
         <Toolbar />
         <div class="relative box-border w-full flex-1 overflow-y-auto">

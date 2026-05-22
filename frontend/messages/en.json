@@ -22,6 +22,7 @@
     "headingN": "Heading {n}",
     "math": "Math",
     "mathBlock": "Math block",
+    "mathSyntaxInfo": "For supported syntax, see",
     "blockquote": "Blockquote",
     "bulletList": "Bullet list",
     "orderedList": "Ordered list",

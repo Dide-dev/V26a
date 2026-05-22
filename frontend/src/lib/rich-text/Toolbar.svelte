@@ -129,6 +129,16 @@
     const items = useEditorDerivedValue(getToolbarItems);
 </script>
 
+{#snippet katexHelp()}
+    <div class="info -ml-1.5">
+        <sup>🛈</sup>
+        <p class="info__content">
+            {m.mathSyntaxInfo()}
+            <a href="https://katex.org/docs/supported" target="_blank">Katex docs</a>.
+        </p>
+    </div>
+{/snippet}
+
 <div
     class="z-2 box-border flex flex-wrap items-center justify-between gap-1 border-t-0 border-r-0 border-b border-l-0 border-solid border-gray-200 p-1 dark:border-gray-800"
 >
@@ -174,24 +184,30 @@
         </ToolbarButton>
     {/if}
     {#if $items.math}
-        <ToolbarButton
-            pressed={$items.math.isActive}
-            disabled={!$items.math.canExec}
-            onClick={$items.math.command}
-            tooltip={m.math()}
-        >
-            <div class="i-lucide-sigma block size-5"></div>
-        </ToolbarButton>
+        <div class="flex">
+            <ToolbarButton
+                pressed={$items.math.isActive}
+                disabled={!$items.math.canExec}
+                onClick={$items.math.command}
+                tooltip={m.math()}
+            >
+                <div class="i-lucide-sigma block size-5"></div>
+            </ToolbarButton>
+            {@render katexHelp()}
+        </div>
     {/if}
     {#if $items.mathBlock}
-        <ToolbarButton
-            pressed={$items.mathBlock.isActive}
-            disabled={!$items.mathBlock.canExec}
-            onClick={$items.mathBlock.command}
-            tooltip={m.mathBlock()}
-        >
-            <div class="i-lucide-square-sigma block size-5"></div>
-        </ToolbarButton>
+        <div class="flex">
+            <ToolbarButton
+                pressed={$items.mathBlock.isActive}
+                disabled={!$items.mathBlock.canExec}
+                onClick={$items.mathBlock.command}
+                tooltip={m.mathBlock()}
+            >
+                <div class="i-lucide-square-sigma block size-5"></div>
+            </ToolbarButton>
+            {@render katexHelp()}
+        </div>
     {/if}
     {#if $items.heading1}
         <ToolbarButton

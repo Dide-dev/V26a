@@ -22,6 +22,7 @@
     "headingN": "Koptekst {n}",
     "math": "Wiskunde",
     "mathBlock": "Wiskunde blok",
+    "mathSyntaxInfo": "Voor ondersteunde notatie, zie",
     "blockquote": "Citaatblok",
     "bulletList": "Opsommingslijst",
     "orderedList": "Genummerde lijst",
