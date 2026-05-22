@@ -7,6 +7,7 @@
 use crate::ArcState;
 use crate::db::session::get_session;
 use crate::db_structs::users::AccountType;
+use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;

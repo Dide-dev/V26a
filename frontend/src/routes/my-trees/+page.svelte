@@ -6,14 +6,18 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { getFilteredList, type TreeListResponse, type FilterOptions } from '$lib/backend/trees';
+    import {
+        getFilteredList,
+        type TreeListResponse,
+        type FilterOptions
+    } from '$lib/api-wrapper/trees';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
     import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
 
     // This cannot be done with the {#await ...} in svelte,
@@ -32,11 +36,13 @@
         let userInfo = getUserInfo();
 
         let filterOptions: FilterOptions = {
-            ownerId: userInfo?.sub ?? 0,
+            ownerId: null,
+            coAuthor: userInfo?.sub ?? 0,
             book: [],
             createdAfter: null,
             createdBefore: null,
-            showOwnPrivate: true
+            showOwnPrivate: true,
+            editable: true
         };
         let paginationOptions: PaginationOptions = {
             page: thisPage,
@@ -101,6 +107,7 @@
             <thead>
                 <tr>
                     <th class="text-left">{m.title()}</th>
+                    <th class="text-left">{m.owner()}</th>
                     <th class="text-left">{m.lastEdited()}</th>
                     <th class="text-left">{m.published()}</th>
                     <!-- Edit button -->
@@ -116,6 +123,7 @@
                                 target="_blank">{tree.data.title}</a
                             >
                         </td>
+                        <td class="pr-4">{tree.linkedData.ownerName}</td>
                         <td class="pr-4">
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
                             {new Date(tree.genData.lastModified.toString()).toLocaleString()}

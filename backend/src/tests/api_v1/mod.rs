@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+mod admin;
 mod auth;
 mod cards;
 mod classrooms;
@@ -17,11 +18,21 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::{RegisterData, UserLanguage};
 use axum::Extension;
-use axum_test::TestServer;
-use sqlx::PgPool;
+use axum_extra::extract::cookie::Cookie;
+use axum_test::{TestResponse, TestServer};
+use percent_encoding::percent_decode_str;
+use serde::de::DeserializeOwned;
+use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
+
+fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
+    let value = cookie.value();
+    let decoded_value = percent_decode_str(value).decode_utf8().unwrap();
+    serde_json::from_str(&decoded_value).unwrap()
+}
 
 /// Sets up an API test server with the given mock database.
 ///
@@ -77,13 +88,38 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
     user_id
 }
 
+/// Creates an admin account with the given [`TestServer`]
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// `db` - A [`PgConnection`] to the database used to make the [`TestServer`]
+///
+/// `email` - The new admin's email address.
+///
+/// # Returns
+/// An i32 representing the id of the admin created.
+async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email: String) -> i32 {
+    let user_id = register(test_server, email).await;
+
+    query!(
+        r"UPDATE users SET account_type='admin' WHERE id = $1",
+        user_id
+    )
+    .execute(db)
+    .await
+    .unwrap();
+
+    user_id
+}
+
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.
 ///
 /// # Arguments
 /// `test_server` - The [`TestServer`] to use for making the API calls.
 ///
-/// `email` - The new user's email address.
-async fn login(test_server: &TestServer, email: String) {
+/// `email` - The user's email address.
+async fn login(test_server: &TestServer, email: String) -> TestResponse {
     let response = test_server
         .post("/auth/login")
         .json(&LoginRequestBody {
@@ -92,6 +128,8 @@ async fn login(test_server: &TestServer, email: String) {
         })
         .await;
     response.assert_status_ok();
+
+    response
 }
 
 /// Sets up an API test server with the given mock database, creates an account and logs in.
@@ -110,4 +148,61 @@ async fn setup_login(db: PgPool) -> TestServer {
     login(&server, test_email).await;
 
     server
+}
+
+/// Creates a basic tree that can be used in tests.
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// # Returns
+/// An i32 representing the tree's id.
+async fn create_tree(test_server: &TestServer) -> i32 {
+    let tree_data = TreeData::default();
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = test_server.post("/trees/add").json(&tree_add_data).await;
+    response.json()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db_structs::session::InfoCookieData;
+    use crate::db_structs::users::AccountType;
+    use crate::get_connection_unwrap;
+    use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_normal_login(db: PgPool) {
+        let server = setup(db);
+
+        let user_email = "user@localhost";
+        register(&server, user_email.to_owned()).await;
+        let res = login(&server, user_email.to_owned()).await;
+        let cookie = res.cookie("user_info");
+        let user_info = get_cookie_data::<InfoCookieData>(&cookie);
+        assert_eq!(user_info.account_type, AccountType::Author);
+    }
+
+    #[sqlx::test]
+    async fn test_admin_login(db: PgPool) {
+        let conn = get_connection_unwrap!(db);
+        let server = setup(db);
+
+        let admin_email = "admin@localhost";
+        register_admin(&server, conn, admin_email.to_owned()).await;
+        let res = login(&server, admin_email.to_owned()).await;
+        let cookie = res.cookie("user_info");
+        let user_info = get_cookie_data::<InfoCookieData>(&cookie);
+        assert_eq!(user_info.account_type, AccountType::Admin);
+    }
 }

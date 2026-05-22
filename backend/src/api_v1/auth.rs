@@ -5,11 +5,11 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::session::Claims;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
-use crate::db::users::user_id_exists;
+use crate::db::users::{user_id_exists, get_user};
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
 use axum::extract::Path;
 use axum::extract::State;
@@ -20,6 +20,7 @@ use chrono::Utc;
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Duration;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
@@ -96,6 +97,15 @@ async fn login(
         account_type: credentials.account_type,
     };
 
+    let user_data = get_user(&db, credentials.user_id).await?;
+
+    let user_info_cookie = InfoCookieData {
+        name: user_data.name,
+        nickname: user_data.nickname,
+        sub: claims.sub,
+        account_type: claims.account_type,
+    };
+
     // Create the authorization token.
     let token = {
         let mut rng = rand::rng();
@@ -105,10 +115,10 @@ async fn login(
 
     create_session(&db, &token, credentials.user_id, expires_at).await?;
 
-    let user_info = serde_json::to_string(&claims)?;
+    let user_info = serde_json::to_string(&user_info_cookie)?;
 
     // Age of a cookie (same for the two cookies)
-    let time = time::Duration::new(config.session_duration, 0);
+    let time = Duration::seconds(config.session_duration);
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.

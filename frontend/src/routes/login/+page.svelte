@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import { login, type LoginData } from '$lib/backend/auth';
+    import { login, type LoginData } from '$lib/api-wrapper/auth';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';

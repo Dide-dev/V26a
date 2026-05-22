@@ -5,7 +5,6 @@
 */
 
 import { apiCallPost, apiCallGet, apiCallDelete } from './index';
-import type { Option } from './types';
 
 const prefix = 'users/';
 
@@ -74,8 +73,6 @@ export type UserUpdateData = {
     aboutMe: string;
     emailVisible: boolean;
     language: string;
-    accountType: Option<AccountType>;
-    enabled: Option<boolean>;
 };
 
 /** The data in the cookie */
@@ -110,12 +107,11 @@ export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
 }
 
-/** Update a user's data */
+/** Update a user's own data */
 export function updateUser(
-    userId: UserId,
     newData: UserUpdateData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser(`update/${userId}`, newData);
+    return apiCallPostUser(`update`, newData);
 }
 
 /**

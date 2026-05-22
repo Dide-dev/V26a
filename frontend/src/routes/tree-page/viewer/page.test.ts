@@ -12,13 +12,13 @@ import type {
     TreeMetadata,
     TreeStructure,
     TreeWithCards
-} from '$lib/backend/trees';
-import type { CardGetData, CardId } from '$lib/backend/cards';
-import { getTreeWithCards } from '$lib/backend/trees';
-import { getUserInfo } from '$lib/backend/users';
+} from '$lib/api-wrapper/trees';
+import type { CardGetData, CardId } from '$lib/api-wrapper/cards';
+import { getTreeWithCards } from '$lib/api-wrapper/trees';
+import { getUserInfo } from '$lib/api-wrapper/users';
 
 // Mock the logging check.
-vi.mock('$lib/backend/users', () => ({
+vi.mock('$lib/api-wrapper/users', () => ({
     getUserInfo: vi.fn()
 }));
 
@@ -69,7 +69,8 @@ function createTree(): TreeWithCards {
 
     const treeLinkedData: TreeLinkedData = {
         ownerName: 'Test owner name',
-        subjectName: 'Test subject name'
+        subjectName: 'Test subject name',
+        coAuthors: []
     };
 
     const treeMetadata: TreeMetadata = {
@@ -87,7 +88,7 @@ function createTree(): TreeWithCards {
     return treeWithCards;
 }
 
-vi.mock('$lib/backend/trees', () => {
+vi.mock('$lib/api-wrapper/trees', () => {
     return { getTreeWithCards: vi.fn() };
 });
 afterEach(() => {

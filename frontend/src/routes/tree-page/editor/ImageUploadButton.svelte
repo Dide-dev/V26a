@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import { uploadImage } from '$lib/backend/images';
+    import { uploadImage } from '$lib/api-wrapper/images';
     import { m } from '$lib/paraglide/messages';
 
     let {

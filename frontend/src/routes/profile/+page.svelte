@@ -13,7 +13,7 @@
         changePassword,
         type UserGetData,
         type ChangePasswordData
-    } from '$lib/backend/users';
+    } from '$lib/api-wrapper/users';
     import {
         checkSamePassword,
         checkLowercase,
@@ -22,7 +22,7 @@
         checkSpecialCharacter
     } from '$lib/passwords';
     import { m } from '$lib/paraglide/messages.js';
-    import { redirectLogin } from '$lib/backend';
+    import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 
     let userDataPromise = $state(getOwnUserData());
@@ -119,14 +119,12 @@
         usernameAlreadyExists = false;
         resetInputStates();
 
-        const result = await updateUser(userInfo.sub, {
+        const result = await updateUser({
             name: userData.name,
             nickname: userData.nickname,
             aboutMe: userData.aboutMe,
             emailVisible: userData.emailVisible,
-            language: userData.language,
-            accountType: null,
-            enabled: null
+            language: userData.language
         });
 
         if (result.type === 'Success') {
