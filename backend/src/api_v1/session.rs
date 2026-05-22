@@ -26,7 +26,7 @@ pub struct Claims {
     pub account_type: AccountType,
 }
 
-async fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiError> {
+async fn get_claims(parts: &mut Parts, _state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.
     let jar = CookieJar::from_headers(&parts.headers);
     let auth_cookie = jar
@@ -39,7 +39,7 @@ async fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiEr
         .get::<PgPool>()
         .ok_or(ApiError::DatabaseException)?;
 
-    get_session(db, &auth_cookie)
+    get_session(db, auth_cookie)
         .await?
         .ok_or(ApiError::InvalidSession)
 }

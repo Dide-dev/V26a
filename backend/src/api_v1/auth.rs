@@ -68,7 +68,7 @@ pub struct LoginResponse {
 ///
 /// # Returns
 /// A [`LoginResponse`] which flags whether the combination of email and password is correct.
-/// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
+/// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
@@ -142,7 +142,7 @@ async fn login(
     path = "/{user_id}/logout",
     context_path = "/api/v1/auth",
     responses(
-        (status = 200, description = "User data successfully deleted."),
+        (status = 200, description = "User data successfully logged out."),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),

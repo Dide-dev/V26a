@@ -26,3 +26,8 @@ export type LoginResponse = {
 export function login(credentials: LoginData): Promise<LoginResponse> {
     return apiCallPostAuth('login', credentials);
 }
+
+/** Log out the user */
+export function logout(userId: number): Promise<void> {
+    return apiCallPostAuth(`/${userId}/logout`, {});
+}

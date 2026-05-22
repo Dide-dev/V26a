@@ -279,9 +279,11 @@ async fn test_delete_own_user(db: PgPool) {
 
     response.assert_status_ok();
 
-    // Check if user is logged out after deletion.
-    let response = server.get("/users/me").await;
-    response.assert_status_unauthorized();
+    // Check if cookies are unset after deletion.
+    assert!(response.headers().contains_key("set-cookie"));
+
+    // Check that sessions are unvalidated.
+    server.get("/users/me").await.assert_status_unauthorized();
 }
 
 #[sqlx::test]
