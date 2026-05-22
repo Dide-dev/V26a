@@ -11,11 +11,13 @@ mod cards;
 mod classrooms;
 mod feedback;
 mod images;
+mod tasks;
 mod trees;
 mod users;
 
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
+use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::mail::StubMailer;
 use crate::db_structs::users::{RegisterData, UserLanguage};
@@ -28,7 +30,6 @@ use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use std::sync::Arc;
 use tempfile::tempdir;
-use crate::config::Config;
 
 /// A struct for testing, containing the [`TestServer`] and [`ArcState`].
 pub struct TestState {
@@ -37,10 +38,10 @@ pub struct TestState {
 }
 
 /// Retrieve and decode the value of a cookie, as [`T: DeserializeOwned`](T)
-/// 
+///
 /// # Arguments
 /// `cookie` - The [`Cookie`] to retrieve the value from
-/// 
+///
 /// # Returns
 /// The retrieved value, decoded as type [`T: DeserializeOwned`](T)
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
@@ -50,16 +51,30 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
 }
 
 /// Sets up an API test server with the given mock database and application config.
+/// The following settings will be overridden:
+/// - upload_dir,
+/// - bcrypt_cost,
+/// - mailer
 ///
 /// # Arguments
 /// `db` - A [`PgPool`] to use for the [`TestServer`].
-/// 
+///
 /// `config` - The [`Config`] options to use in the application.
 ///
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints and saves cookies.
-fn setup_config(db: PgPool, config: Config) -> TestState {
-    let state = ArcState::new(config);
+fn setup_config(db: PgPool, config: &mut Config) -> TestState {
+    // Apply some default settings during testing
+    let temp_dir = tempdir().unwrap();
+    let stub_mailer = AsyncStubTransport::new_ok();
+    config.upload_dir = temp_dir.path().to_string_lossy().to_string();
+    // Set a low bcrypt cost to speed up password hashing during testing.
+    config.bcrypt_cost = 4;
+    config.mailer = Arc::new(StubMailer {
+        transport: stub_mailer,
+    });
+
+    let state = ArcState::new(config.to_owned());
     let router = crate::api_v1::v1_api(state.clone())
         .layer(Extension(db))
         .with_state(state.clone());
@@ -77,19 +92,26 @@ fn setup_config(db: PgPool, config: Config) -> TestState {
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints and saves cookies.
 fn setup(db: PgPool) -> TestState {
-    let temp_dir = tempdir().unwrap();
-    let stub_mailer = AsyncStubTransport::new_ok();
-
-    // Apply default configs during testing
     let mut config = Config::load();
-    config.upload_dir = temp_dir.path().to_string_lossy().to_string();
-    // Set a low bcrypt cost to speed up password hashing during testing.
-    config.bcrypt_cost = 4;
-    config.mailer = Arc::new(StubMailer {
-        transport: stub_mailer,
-    });
-    
-    setup_config(db, config)
+
+    setup_config(db, &mut config)
+}
+
+async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
+    let verification_code = {
+        let pending_accounts = test_state.state.pending_accounts.lock().await;
+        pending_accounts
+            .iter()
+            .find(|(_, p)| p.register_data.email == email)
+            .unwrap()
+            .0
+            .clone()
+    };
+
+    test_state
+        .server
+        .get(&format!("/users/verify?code={verification_code}"))
+        .await
 }
 
 /// Creates an account with the given [`TestState`]
@@ -109,20 +131,7 @@ async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
         .await;
     response.assert_status_ok();
 
-    let verification_code = {
-        let pending_accounts = test_state.state.pending_accounts.lock().await;
-        pending_accounts
-            .iter()
-            .find(|(_, p)| p.register_data.email == register_data.email)
-            .unwrap()
-            .0
-            .clone()
-    };
-
-    let response = test_state
-        .server
-        .get(&format!("/users/verify?code={verification_code}"))
-        .await;
+    let response = try_verify(&test_state, register_data.email.clone()).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
