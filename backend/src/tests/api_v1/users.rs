@@ -7,12 +7,12 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::ChangePasswordResponse;
+use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
 };
-use crate::tests::api_v1::{login, register, register_email, setup};
+use crate::tests::api_v1::{TestState, login, register, register_email, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -316,4 +316,142 @@ async fn test_delete_nonexistent_user(db: PgPool) {
         .await;
 
     response.assert_status_bad_request();
+}
+
+#[sqlx::test]
+async fn test_invalid_validation_code(db: PgPool) {
+    let TestState { server, state } = setup(db);
+
+    let response = server
+        .post("/users/add")
+        .json(&RegisterData {
+            email: "johnsmith@gmail.com".to_owned(),
+            password: "VeryStrongPassword1!".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        })
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::Pending);
+
+    let before_pending_count = { state.pending_accounts.lock().await.len() };
+
+    let response = server.get("/users/verify?code=1").await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::InvalidVerification);
+
+    let after_pending_count = { state.pending_accounts.lock().await.len() };
+    assert_eq!(before_pending_count, after_pending_count);
+}
+
+#[sqlx::test]
+async fn test_register_pending_user(db: PgPool) {
+    let server = setup(db).server;
+
+    let response = server
+        .post("/users/add")
+        .json(&RegisterData {
+            email: "johnsmith@gmail.com".to_owned(),
+            password: "VeryStrongPassword1!".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        })
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::Pending);
+
+    // Name already used
+    let response = server
+        .post("/users/add")
+        .json(&RegisterData {
+            email: "janedoe@gmail.com".to_owned(),
+            password: "VeryStrongPassword1!".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        })
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::UsernameAlreadyUsed);
+
+    // E-mail already used
+    let response = server
+        .post("/users/add")
+        .json(&RegisterData {
+            email: "johnsmith@gmail.com".to_owned(),
+            password: "VeryStrongPassword1!".to_owned(),
+            name: "name2".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        })
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::EmailAlreadyUsed);
+}
+
+#[sqlx::test]
+async fn test_update_pending_user(db: PgPool) {
+    let test_state = setup(db);
+
+    let verified_user = RegisterData {
+        email: "johnsmith@localhost".to_string(),
+        password: "a$$word".to_string(),
+        name: "first".to_string(),
+        nickname: "bob".to_string(),
+        about_me: "I'm bob".to_string(),
+        email_visible: false,
+        language: UserLanguage::En,
+    };
+    let real_user_id = register(&test_state, &verified_user).await;
+
+    let server = test_state.server;
+    let response = server
+        .post("/users/add")
+        .json(&RegisterData {
+            email: "janedoe@gmail.com".to_owned(),
+            password: "VeryStrongPassword1!".to_owned(),
+            name: "second".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        })
+        .await;
+    response.assert_status_ok();
+
+    login(&server, verified_user.email).await;
+    let updated_user = UserUpdateData {
+        name: "second".to_string(),
+        nickname: "bob".to_string(),
+        about_me: "I'm still bob".to_string(),
+        email_visible: false,
+        language: UserLanguage::En,
+        account_type: None,
+        enabled: None,
+    };
+    let response = server
+        .post(&format!("/users/update/{real_user_id}"))
+        .json(&updated_user)
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::UsernameAlreadyUsed);
 }

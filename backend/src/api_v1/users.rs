@@ -44,7 +44,7 @@ pub fn users() -> Router<ArcState> {
         .route("/{user_id}/delete", delete(delete_user_data))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
 #[serde(tag = "type")]
 pub enum UserResponse {
     /// Return body signalling the user has been successfully added/updated with the contained `user_id`.
