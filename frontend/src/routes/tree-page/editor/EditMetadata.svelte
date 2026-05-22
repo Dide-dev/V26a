@@ -91,13 +91,13 @@
                     ></textarea></label
                 >
                 <label
-                    >{m.bookname()}<input
+                    >{m.bookName()}<input
                         class="w-full rounded border p-1"
                         bind:value={treeData.bookName}
                     /></label
                 >
                 <label
-                    >{m.bookEdition()}<input
+                    >{m.edition()}<input
                         class="w-full rounded border p-1"
                         bind:value={treeData.bookEdition}
                     /></label
@@ -105,25 +105,25 @@
             </div>
             <div class="w-64">
                 <label
-                    >{m.bookIsbn()}<input
+                    >{m.isbn()}<input
                         class="w-full rounded border p-1"
                         bind:value={treeData.bookIsbn}
                     /></label
                 >
                 <label
-                    >{m.bookChapter()}<input
+                    >{m.chapter()}<input
                         class="w-full rounded border p-1"
                         bind:value={treeData.bookChapter}
                     /></label
                 >
                 <label
-                    >{m.bookExercise()}<input
+                    >{m.exercise()}<input
                         class="w-full rounded border p-1"
                         bind:value={treeData.bookExercise}
                     /></label
                 >
                 <label
-                    >{m.assignmentText()}<input
+                    >{m.assignment()}<input
                         class="w-full rounded border p-1"
                         bind:value={treeData.assignmentText}
                     /></label

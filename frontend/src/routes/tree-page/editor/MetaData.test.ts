@@ -53,8 +53,8 @@ test('fields are prefilled with tree data', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    expect((screen.getByLabelText(m.bookname()) as HTMLInputElement).value).toBe('Monkey');
-    expect((screen.getByLabelText(m.bookIsbn()) as HTMLInputElement).value).toBe('123-456');
+    expect((screen.getByLabelText(m.bookName()) as HTMLInputElement).value).toBe('Monkey');
+    expect((screen.getByLabelText(m.isbn()) as HTMLInputElement).value).toBe('123-456');
 });
 
 test('cancel restores original values', async () => {
@@ -63,12 +63,12 @@ test('cancel restores original values', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    await user.clear(screen.getByLabelText(m.bookname()));
-    await user.type(screen.getByLabelText(m.bookname()), 'Changed Book');
+    await user.clear(screen.getByLabelText(m.bookName()));
+    await user.type(screen.getByLabelText(m.bookName()), 'Changed Book');
     await user.click(screen.getByText(m.cancel()));
 
     await user.click(screen.getByText(m.editMetadata()));
-    expect((screen.getByLabelText(m.bookname()) as HTMLInputElement).value).toBe('Monkey');
+    expect((screen.getByLabelText(m.bookName()) as HTMLInputElement).value).toBe('Monkey');
 });
 
 test('save calls updateTreeMetaData with correct data', async () => {
@@ -78,8 +78,8 @@ test('save calls updateTreeMetaData with correct data', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    await user.clear(screen.getByLabelText(m.bookname()));
-    await user.type(screen.getByLabelText(m.bookname()), 'New Apple');
+    await user.clear(screen.getByLabelText(m.bookName()));
+    await user.type(screen.getByLabelText(m.bookName()), 'New Apple');
     await user.click(screen.getByText(m.save()));
 
     expect(updateTreeMetaData).toHaveBeenCalledWith({

@@ -94,6 +94,7 @@ export type TreeAddData = {
 };
 
 export type Subject = {
+    id: number;
     languageCode: string;
     name: string;
 };

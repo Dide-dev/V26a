@@ -40,12 +40,16 @@ test('Submission with correct data', async () => {
     await user.type(titleInput, 'Test tree title');
     const descriptionInput = screen.getByTestId('description');
     await user.type(descriptionInput, 'Test tree description');
-    const bookNameInput = screen.getByTestId('bookname');
-    await user.type(bookNameInput, 'A book name');
-    const bookEditionInput = screen.getByTestId('bookEdition');
-    await user.type(bookEditionInput, '4');
+    const tagsInput = screen.getByTestId('tags');
+    await user.type(tagsInput, 'tag1, tag2 , tag3');
     const bookIsbnInput = screen.getByTestId('bookIsbn');
     await user.type(bookIsbnInput, '9781408883464');
+    const bookNameInput = screen.getByTestId('bookname');
+    await user.type(bookNameInput, 'A book name');
+    const bookAuthorInput = screen.getByTestId('bookAuthor');
+    await user.type(bookAuthorInput, 'Johnny Test');
+    const bookEditionInput = screen.getByTestId('bookEdition');
+    await user.type(bookEditionInput, '4');
     const chapterInput = screen.getByTestId('chapter');
     await user.type(chapterInput, 'chapter 1');
     const excerciseInput = screen.getByTestId('exercise');
@@ -58,7 +62,9 @@ test('Submission with correct data', async () => {
         expect.objectContaining({
             title: 'Test tree title',
             description: 'Test tree description',
+            tags: ['tag1', 'tag2', 'tag3'],
             bookName: 'A book name',
+            bookAuthor: 'Johnny Test',
             bookEdition: '4',
             bookIsbn: '9781408883464',
             bookChapter: 'chapter 1',
