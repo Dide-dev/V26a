@@ -1,9 +1,443 @@
 <!--
-    This program has been developed by students from the bachelor Computer Science at Utrecht
-    University within the Software Project course.
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
+
 <script lang="ts">
+    import { locales } from '$lib/paraglide/runtime.js';
+    import {
+        getUserAllData,
+        type UserAllData,
+        updateUserData,
+        adminChangePassword,
+        type AdminChangePasswordData
+    } from '$lib/api-wrapper/admin';
+    import {
+        checkLowercase,
+        checkUppercase,
+        checkNumber,
+        checkSpecialCharacter
+    } from '$lib/passwords';
+    import { m } from '$lib/paraglide/messages.js';
+    import { redirectLogin } from '$lib/api-wrapper';
+    import { page } from '$app/state';
+    import { goto } from '$app/navigation';
+    import { appLink } from '$lib';
+    import { onMount } from 'svelte';
+
+    let id: number | null = null;
+
+    onMount(async () => {
+        const pageId = page.url.searchParams.get('id');
+
+        if (!pageId) {
+            goto(appLink('/'));
+        }
+
+        id = Number(pageId);
+
+        if (Number.isNaN(id)) {
+            goto(appLink('/'));
+        }
+        userDataPromise = await getUserAllData(id);
+    });
+    let userDataPromise: UserAllData = $state({
+        email: '',
+        name: '',
+        enabled: true,
+        nickname: '',
+        aboutMe: '',
+        emailVisible: true,
+        accountType: 'author',
+        language: 'nl'
+    });
+
+    let changePasswordData: AdminChangePasswordData = $state({
+        newPassword: ''
+    });
+    let passwordMissingChar: boolean = $state(false);
+    let usernameAlreadyExists: boolean = $state(false);
+    let emailAlreadyExists: boolean = $state(false);
+    let successfulPasswordChange: boolean = $state(false);
+
+    let inputsChanged = $state({
+        enabledChanged: false,
+        accountTypeChanged: false,
+        emailChanged: false,
+        nameChanged: false,
+        nicknameChanged: false,
+        aboutMeChanged: false,
+        languageChanged: false,
+        emailVisibleChanged: false,
+        passwordChanged: false,
+        error: false
+    });
+
+    let formChanged: boolean = $derived(
+        inputsChanged.error ||
+            inputsChanged.emailChanged ||
+            inputsChanged.nameChanged ||
+            inputsChanged.nicknameChanged ||
+            inputsChanged.aboutMeChanged ||
+            inputsChanged.languageChanged ||
+            inputsChanged.emailVisibleChanged ||
+            inputsChanged.enabledChanged ||
+            inputsChanged.accountTypeChanged ||
+            changePasswordData.newPassword.length > 0
+    );
+
+    const minInputLengths = {
+        email: 0,
+        name: 2,
+        nickname: 2,
+        aboutMe: 0,
+        password: 8
+    };
+
+    const maxInputLengths = {
+        email: 256,
+        name: 128,
+        nickname: 128,
+        aboutMe: 160,
+        password: 72
+    };
+
+    function resetInputStates() {
+        inputsChanged.enabledChanged = false;
+        inputsChanged.accountTypeChanged = false;
+        inputsChanged.emailChanged = false;
+        inputsChanged.nameChanged = false;
+        inputsChanged.nicknameChanged = false;
+        inputsChanged.aboutMeChanged = false;
+        inputsChanged.languageChanged = false;
+        inputsChanged.emailVisibleChanged = false;
+        inputsChanged.error = false;
+    }
+
+    function resetInputResponses() {
+        passwordMissingChar = false;
+        usernameAlreadyExists = false;
+        emailAlreadyExists = false;
+        successfulPasswordChange = false;
+    }
+
+    async function handleSubmit(event: SubmitEvent, userData: UserAllData) {
+        event.preventDefault();
+
+        const pageId = page.url.searchParams.get('id');
+
+        if (!pageId) {
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
+            return;
+        }
+
+        let id = Number(pageId);
+
+        if (Number.isNaN(id)) {
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
+            return;
+        }
+
+        if (!formChanged) {
+            return;
+        }
+
+        await handlePasswordChange(id);
+
+        const userInfo = getUserAllData(id);
+        if (userInfo === null) {
+            await redirectLogin(page.url);
+            return;
+        }
+
+        usernameAlreadyExists = false;
+        resetInputStates();
+
+        const result = await updateUserData(id, {
+            email: userData.email,
+            name: userData.name,
+            enabled: userData.enabled,
+            nickname: userData.nickname,
+            aboutMe: userData.aboutMe,
+            emailVisible: userData.emailVisible,
+            accountType: userData.accountType,
+            language: userData.language
+        });
+        if (result.type === 'Success') {
+            emailAlreadyExists = false;
+            usernameAlreadyExists = false;
+        } else if (result.type === 'EmailAlreadyUsed') {
+            emailAlreadyExists = true;
+            inputsChanged.error = true;
+            return;
+        } else if (result.type === 'UsernameAlreadyUsed') {
+            usernameAlreadyExists = true;
+            inputsChanged.error = true;
+            return;
+        } else {
+            throw new Error('ERROR: Unexpected output from API.');
+        }
+
+        // Effectively reloads the page. This is not really necessary, but prevents
+        // the displayed data from being inconsistent with the database in case something
+        // goes wrong.
+        userDataPromise = await getUserAllData(id);
+    }
+
+    async function handlePasswordChange(id: number) {
+        successfulPasswordChange = false;
+
+        // Return if the user has not entered all required fields.
+        if (changePasswordData.newPassword == '') {
+            return;
+        }
+
+        passwordMissingChar = false;
+
+        if (
+            !checkLowercase(changePasswordData.newPassword) ||
+            !checkUppercase(changePasswordData.newPassword) ||
+            !checkNumber(changePasswordData.newPassword) ||
+            !checkSpecialCharacter(changePasswordData.newPassword)
+        ) {
+            passwordMissingChar = true;
+            return;
+        }
+
+        let changePasswordResponse = await adminChangePassword(id, changePasswordData);
+
+        if (changePasswordResponse.succeeded) {
+            successfulPasswordChange = true;
+        }
+
+        changePasswordData.newPassword = '';
+    }
+
+    async function handleCancel(e: Event) {
+        const pageId = page.url.searchParams.get('id');
+
+        if (!pageId) {
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
+            return;
+        }
+
+        let id = Number(pageId);
+
+        if (Number.isNaN(id)) {
+            // TODO: redirect to tree list
+            await goto(appLink('/'));
+            return;
+        }
+
+        if (!formChanged) {
+            return;
+        }
+        if (!formChanged) return;
+        e.preventDefault();
+        resetInputStates();
+        resetInputResponses();
+        changePasswordData.newPassword = '';
+        userDataPromise = await getUserAllData(id);
+    }
 </script>
 
-This is an empty page
+<div>
+    {#await userDataPromise}
+        <p>{m.loading()}</p>
+    {:then userData}
+        <form
+            data-testid="profile-form"
+            class={[formChanged && 'completed']}
+            onsubmit={(event) => handleSubmit(event, userData)}
+        >
+            <h1 class="page__title">{m.profile()}</h1>
+            <h2 class="page__heading">{m.general()}</h2>
+            <div>
+                <label for="email">{m.email()}</label>
+                <input
+                    id="email"
+                    class={[
+                        !inputsChanged.emailChanged && 'inactive',
+                        emailAlreadyExists && 'error',
+                        'input__text'
+                    ]}
+                    bind:value={userData.email}
+                    name="email"
+                    type="email"
+                    data-testid="email"
+                    minlength={minInputLengths.email}
+                    maxlength={maxInputLengths.email}
+                    oninput={() => {
+                        inputsChanged.emailChanged = true;
+                    }}
+                    required
+                />
+                {#if emailAlreadyExists}
+                    <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
+                {/if}
+            </div>
+            <div>
+                <label for="name">{m.name()}</label>
+                <div class="input__container">
+                    <input
+                        id="name"
+                        class={[
+                            !inputsChanged.nameChanged && 'inactive',
+                            usernameAlreadyExists && 'error',
+                            'input__text'
+                        ]}
+                        bind:value={userData.name}
+                        name="name"
+                        type="text"
+                        data-testid="name"
+                        placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
+                        minlength={minInputLengths.name}
+                        maxlength={maxInputLengths.name}
+                        oninput={() => {
+                            inputsChanged.nameChanged = true;
+                        }}
+                        required
+                    />
+                </div>
+                {#if usernameAlreadyExists}
+                    <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
+                {/if}
+            </div>
+            <div>
+                <label for="nickname">{m.nickname()}</label>
+                <div class="input__container">
+                    <input
+                        id="nickname"
+                        class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
+                        bind:value={userData.nickname}
+                        name="nickname"
+                        type="text"
+                        placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
+                        minlength={minInputLengths.nickname}
+                        maxlength={maxInputLengths.nickname}
+                        oninput={() => {
+                            inputsChanged.nicknameChanged = true;
+                        }}
+                    />
+                </div>
+            </div>
+            <div>
+                <label for="aboutMe">{m.aboutMe()}</label>
+                <textarea
+                    id="aboutMe"
+                    class={[!inputsChanged.aboutMeChanged && 'inactive', 'input__long_text']}
+                    bind:value={userData.aboutMe}
+                    name="aboutMe"
+                    placeholder={m.optional()}
+                    minlength={minInputLengths.aboutMe}
+                    maxlength={maxInputLengths.aboutMe}
+                    rows="2"
+                    data-testid="about-me"
+                    oninput={() => {
+                        inputsChanged.aboutMeChanged = true;
+                    }}
+                ></textarea>
+            </div>
+            <h2 class="page__heading">{m.accountSettings()}</h2>
+            <div>
+                <label for="language">{m.language()}</label>
+                <select
+                    id="language"
+                    class={[!inputsChanged.languageChanged && 'inactive', 'input__select']}
+                    bind:value={userData.language}
+                    oninput={() => {
+                        inputsChanged.languageChanged = true;
+                    }}
+                >
+                    {#each locales as value (value)}
+                        <option class={['input__select_option']}>
+                            {value}
+                        </option>
+                    {/each}
+                </select>
+            </div>
+            <div>
+                <label for="accountType">{m.account()}</label>
+                <select
+                    id="acccountType"
+                    class={[!inputsChanged.accountTypeChanged && 'inactive', 'input__select']}
+                    bind:value={userData.accountType}
+                    oninput={() => {
+                        inputsChanged.accountTypeChanged = true;
+                    }}
+                >
+                    <option class={['input__select_option']}>admin </option>
+                    <option class={['input__select_option']}>author </option>
+                </select>
+            </div>
+            <div class="checkbox__container">
+                <input
+                    id="emailVisible"
+                    class={[!inputsChanged.emailVisibleChanged && 'inactive', 'input__checkbox']}
+                    bind:checked={userData.emailVisible}
+                    name="emailVisible"
+                    type="checkbox"
+                    oninput={() => {
+                        inputsChanged.emailVisibleChanged = true;
+                    }}
+                />
+                <label for="emailVisible">
+                    {m.emailVisible()}
+                </label>
+                <div class="info">
+                    <sup>🛈</sup>
+                    <div class="info__content">{m.emailVisibleInfo()}</div>
+                </div>
+            </div>
+            <div class="checkbox__container">
+                <input
+                    id="enabled"
+                    class={[!inputsChanged.enabledChanged && 'inactive', 'input__checkbox']}
+                    bind:checked={userData.enabled}
+                    name="enabled"
+                    type="checkbox"
+                    oninput={() => {
+                        inputsChanged.enabledChanged = true;
+                    }}
+                />
+                <label for="enabled">
+                    {m.enabled()}
+                </label>
+            </div>
+            <h2 class="page__heading">{m.changePassword()}</h2>
+            <div>
+                <label for="newPassword">{m.newPassword()}</label>
+                <input
+                    id="newPassword"
+                    class={[passwordMissingChar && 'error', 'input__text']}
+                    bind:value={changePasswordData.newPassword}
+                    name="newPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    data-testid="newPassword"
+                    placeholder={m.requiredPlaceholder({ value: m.newPassword() })}
+                    minlength={minInputLengths.password}
+                    maxlength={maxInputLengths.password}
+                />
+                {#if passwordMissingChar}
+                    <p class="text__error" data-testid="missing-char-error">
+                        {m.missingCharacter()}
+                    </p>
+                {/if}
+                {#if successfulPasswordChange}
+                    <p class="text__success" data-testid="password-change-success">
+                        {m.succesfulPasswordChange()}
+                    </p>
+                {/if}
+            </div>
+            <div class="mb-0 flex flex-row gap-1 *:w-1/2">
+                <button data-testid="confirm-button">{m.confirmChanges()}</button>
+                <button onclick={handleCancel}>{m.cancel()}</button>
+            </div>
+        </form>
+    {/await}
+</div>
