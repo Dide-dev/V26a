@@ -28,6 +28,7 @@ use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use std::sync::Arc;
 use tempfile::tempdir;
+use crate::config::Config;
 
 /// A struct for testing, containing the [`TestServer`] and [`ArcState`].
 pub struct TestState {
@@ -35,10 +36,37 @@ pub struct TestState {
     pub state: ArcState,
 }
 
+/// Retrieve and decode the value of a cookie, as [`T: DeserializeOwned`](T)
+/// 
+/// # Arguments
+/// `cookie` - The [`Cookie`] to retrieve the value from
+/// 
+/// # Returns
+/// The retrieved value, decoded as type [`T: DeserializeOwned`](T)
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
     let decoded_value = percent_decode_str(value).decode_utf8().unwrap();
     serde_json::from_str(&decoded_value).unwrap()
+}
+
+/// Sets up an API test server with the given mock database and application config.
+///
+/// # Arguments
+/// `db` - A [`PgPool`] to use for the [`TestServer`].
+/// 
+/// `config` - The [`Config`] options to use in the application.
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints and saves cookies.
+fn setup_config(db: PgPool, config: Config) -> TestState {
+    let state = ArcState::new(config);
+    let router = crate::api_v1::v1_api(state.clone())
+        .layer(Extension(db))
+        .with_state(state.clone());
+    TestState {
+        server: TestServer::builder().save_cookies().build(router),
+        state,
+    }
 }
 
 /// Sets up an API test server with the given mock database.
@@ -52,22 +80,16 @@ fn setup(db: PgPool) -> TestState {
     let temp_dir = tempdir().unwrap();
     let stub_mailer = AsyncStubTransport::new_ok();
 
-    let mut config = crate::Config::load();
+    // Apply default configs during testing
+    let mut config = Config::load();
     config.upload_dir = temp_dir.path().to_string_lossy().to_string();
     // Set a low bcrypt cost to speed up password hashing during testing.
     config.bcrypt_cost = 4;
     config.mailer = Arc::new(StubMailer {
         transport: stub_mailer,
     });
-
-    let state = ArcState::new(config);
-    let router = crate::api_v1::v1_api(state.clone())
-        .layer(Extension(db))
-        .with_state(state.clone());
-    TestState {
-        server: TestServer::builder().save_cookies().build(router),
-        state,
-    }
+    
+    setup_config(db, config)
 }
 
 /// Creates an account with the given [`TestState`]
