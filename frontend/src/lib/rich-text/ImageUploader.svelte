@@ -29,7 +29,7 @@
         children?: import('svelte').Snippet;
     } = $props();
 
-    const validImageTypes = ['images/png', 'image/jpeg', 'image/avif', 'image/gif', 'image/webp'];
+    const validImageTypes = ['image/png', 'image/jpeg', 'image/avif', 'image/gif', 'image/webp'];
 
     let open = $state(false);
     let file = $state<File | null>(null);
