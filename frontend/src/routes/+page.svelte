@@ -37,11 +37,11 @@
                 color: 'var(--color-tree-100)',
                 plainContents: [
                     'Wanneer je bezig bent met een opgave, loop je op een gegeven moment vast. ' +
-                        'Dan kun je ervoor kiezen om het antwoordenmodel erbij te pakken, maar ' +
-                        'daarvan wordt je niet meteen beter in het oplossen van problemen.',
+                        'Dan kun je ervoor kiezen om het antwoordmodel erbij te pakken, maar ' +
+                        'daarvan word je niet meteen beter in het oplossen van problemen.',
                     'In plaats daarvan, kun je ook gebruik maken van een heuristiekboom: ' +
                         'een set aan hintkaartjes waar je in een boomstructuur doorheen kunt lopen.',
-                    `Je kunt <a href=${appLink('/all-trees')} class="text__link">hier</a> talloze heurstiekbomen vinden, ` +
+                    `Je kunt <a href=${appLink('/all-trees')} class="text__link">hier</a> talloze heuristiekbomen vinden, ` +
                         'waarmee je meteen aan de slag kunt!'
                 ],
                 popOpenContents: [
@@ -71,7 +71,7 @@
                                 'door op de kaartjes te klikken. ' +
                                 'De heuristieken beginnen algemeen en worden steeds concreter, ' +
                                 'des te dieper je een boom induikt.',
-                            'De meeste bomen zijn opgedeeld in drie hoofdtaken. ' +
+                            'De meeste bomen zijn opgedeeld in drie hoofdtakken. ' +
                                 'Iedere hoofdtak hoort bij een fase: ' +
                                 '<ul>' +
                                 '<li><b>Oriëntatie:</b> ' +
@@ -111,10 +111,10 @@
                         content: [
                             'Om te beginnen met het maken van heuristiekbomen, ' +
                                 'moet je eerst een account aanmaken op de ' +
-                                `<a href=${appLink('/registration')} class="text__link">registratiepagina</a>.`,
+                                `<a href=${appLink('/registration')} class="text__link">registratie</a>-pagina.`,
                             'Als je eenmaal bent ingelogd, kun je je begeven naar de ' +
                                 `<a href=${appLink('/tree-generator')} class="text__link">
-                                        boom-creatie pagina</a>, ` +
+                                        boom-creatie</a>-pagina, ` +
                                 'waarvandaan je, na het invullen van wat informatie over de boom, ' +
                                 'wordt doorgeleid naar de <i>tree-editor</i>.'
                         ]
@@ -135,8 +135,8 @@
                                 'kan later weer worden geopend door te klikken op het potloodje ' +
                                 'linksboven een kaart.</li>' +
                                 '<li>Een kaart kan worden verwijderd door te klikken op het vuilnisbakje ' +
-                                'linksbovenin een kaart.</li>' +
-                                '<li>Een kaart kan samen met al haar <i>kinderen</i> worden versleept' +
+                                'linksboven een kaart.</li>' +
+                                '<li>Een kaart kan samen met al haar <i>kinderen</i> worden versleept ' +
                                 'door de pijltjes linksboven in een kaart vast te grijpen. ' +
                                 'De kaart(en) worden geplaatst op het gestippelde kader ' +
                                 'waarboven ze worden losgelaten.</li>' +
@@ -217,7 +217,7 @@
                 title: 'Improve your problem-solving skills with heuristic trees',
                 color: 'var(--color-tree-100)',
                 plainContents: [
-                    "When working on an assignment, you'll likely get suck at some point. " +
+                    "When working on an assignment, you'll likely get stuck at some point. " +
                         "At that point you might choose to look at a solution, but this won't " +
                         'immediately make you better at solving similar problems in the future.',
                     'Instead, you could use a heuristic tree: a set of hint-cards you can ' +
@@ -274,8 +274,8 @@
                 title: 'Create new heuristic trees for your students',
                 color: 'var(--color-sky-100)',
                 plainContents: [
-                    `By <a href=${appLink('/registration')} class="text__link">registering</a>, ` +
-                        'an account, you can create heuristic trees for those difficult problems, ' +
+                    `By <a href=${appLink('/registration')} class="text__link">registering</a> ` +
+                        'an account, you can create heuristic trees for those difficult problems ' +
                         'your students keep struggling with.',
                     'With our <i>tree-editor</i> you can easily create your own heuristic tree, ' +
                         'and publish it for free, so each of your students, ' +
@@ -286,10 +286,10 @@
                         heading: 'How do I create a heuristic tree?',
                         content: [
                             'To start creating heuristic trees, you must first register an account ' +
-                                `on the <a href=${appLink('/registration')} class="text__link">registration-page</a>.`,
+                                `on the <a href=${appLink('/registration')} class="text__link">registration</a>-page.`,
                             'Once you have logged in, you can navigate to the ' +
                                 `<a href=${appLink('/tree-generator')} class="text__link">
-                                        tree-generator page</a> ` +
+                                        tree generator</a>-page ` +
                                 'from where you will be sent to the <i>tree-editor</i>, ' +
                                 'after filling out some information on the tree.'
                         ]
@@ -300,7 +300,7 @@
                             'Within the <i>tree-editor</i> you can easily add, remove and ' +
                                 'drag cards throughout your tree:' +
                                 '<ul>' +
-                                '<li>By clicking on one of the dashed boxed with a plus, ' +
+                                '<li>By clicking on one of the dashed boxes with a plus, ' +
                                 'you can add a new card to the tree.</li>' +
                                 '<li>In the sidebar that is opened upon adding a new card, ' +
                                 'the front- and back-texts of the card can be edited. ' +
@@ -315,7 +315,7 @@
                                 'The card(s) will be placed on the dashed box above which ' +
                                 'they are let go.</li>' +
                                 '<li>You can undo and redo your last actions by clicking on ' +
-                                'the forwards and backwards arrows at the top of the page, ' +
+                                'the forward and backward arrows at the top of the page, ' +
                                 'or by using the keyboard shortcuts ' +
                                 '<i>Ctrl + Z</i> and <i>Ctrl + Y</i>.</li>' +
                                 '</ul>',
@@ -334,7 +334,7 @@
                                 'KaTeX</a>-notation.',
                             'With Markdown <span class="text__code">**Important text**</span> ' +
                                 'will be displayed as <b>Important text</b>, for example, and ' +
-                                'with KaTeX lots of mathmetical formulas can be displayed. ' +
+                                'with KaTeX lots of mathematical formulas can be displayed. ' +
                                 'For example, a fraction can be displayed using this notation: ' +
                                 '<span class="text__code">$\\frac{1}{2}$</span>.',
                             'See the above-linked documentation for all the possibilities. ' +
@@ -345,7 +345,7 @@
                     {
                         heading: 'How do I publish my heuristic tree?',
                         content: [
-                            'On the <i>tree-editor</i>-page, you can easily publish your tree. ' +
+                            'On the <i>tree editor</i>-page, you can easily publish your tree. ' +
                                 `Click on '${m.editMetadata()}' and check the field ` +
                                 `'${m.published()}', to publish the tree.`,
                             'To verify whether a tree of yours is published, you can check on the ' +
