@@ -11,7 +11,7 @@ mod users;
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use sqlx::{mysql::MySqlPoolOptions, postgres::PgPoolOptions};
+use sqlx::{QueryBuilder, mysql::MySqlPoolOptions, postgres::PgPoolOptions};
 
 use crate::{
     books::create_books, hints::migrate_hints, trees::migrate_trees, users::migrate_users,
@@ -24,6 +24,30 @@ use std::env;
 pub struct LoginRequestBody {
     pub email: String,
     pub password: String,
+}
+
+/// Data needed to add a user to the database.
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterData {
+    pub email: String,
+    pub password: String,
+    pub name: String,
+    pub nickname: String,
+    pub about_me: String,
+    pub email_visible: bool,
+    pub language: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum UserResponse {
+    /// Return body signaling the user has been successfully added/updated with the contained `user_id`.
+    Success { user_id: i32 },
+    /// Return body signaling the user could not be added/updated, as the e-mail was already in use.
+    EmailAlreadyUsed,
+    /// Return body signaling the user could not be added/updated, as the username was already in use.
+    UsernameAlreadyUsed,
 }
 
 #[tokio::main]
@@ -61,25 +85,58 @@ async fn main() {
         .expect("failed to run prototype database migration");
 
     println!("Connected to databases");
+    
+    migrate_users(&mysql_db, &postgres_db).await;
+    
+    println!("Migrated users");
+
+    let client = reqwest::ClientBuilder::new()
+    .cookie_store(true)
+    .build()
+    .unwrap();
+
+    println!("Created client");
+
+    let api_base_url =
+        env::var("API_BASE_URL").expect("Environment variable API_BASE_URL must be set");
 
     let migrator_email =
         env::var("MIGRATOR_EMAIL").expect("Environment variable MIGRATOR_EMAIL must be set");
     let migrator_password =
         env::var("MIGRATOR_PASSWORD").expect("Environment variable MIGRATOR_PASSWORD must be set");
 
-    migrate_users(&mysql_db, &postgres_db, &migrator_email).await;
-
-    println!("Migrated users");
-
-    let client = reqwest::ClientBuilder::new()
-        .cookie_store(true)
-        .build()
+    let response = client
+        .post(api_base_url.clone() + "/api/v1/users/add")
+        .json(&RegisterData {
+            email: migrator_email.clone(),
+            password: migrator_password.clone(),
+            name: "PrototypeDBMigrator".to_string(),
+            nickname: "PDBM".to_string(),
+            about_me: "The migrator of the prototype database".to_string(),
+            email_visible: false,
+            language: "nl".to_string(),
+        })
+        .send()
+        .await
         .unwrap();
 
-    println!("Created client");
+    let user_response = response.json::<UserResponse>().await.unwrap();
+    let UserResponse::Success {
+        user_id: migrator_id,
+    } = user_response
+    else {
+        panic!("Failed to register migrator account.")
+    };
 
-    let api_base_url =
-        env::var("API_BASE_URL").expect("Environment variable API_BASE_URL must be set");
+    let mut query_builder = QueryBuilder::new(format!(
+        "UPDATE users SET account_type = 'admin' WHERE id = {migrator_id}"
+    ));
+
+    let postgres_query = query_builder.build();
+
+    postgres_query.execute(&postgres_db).await.unwrap();
+
+    println!("Added migrator account");
 
     let response = client
         .post(api_base_url.clone() + "/api/v1/auth/login")

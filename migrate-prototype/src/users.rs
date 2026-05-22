@@ -83,7 +83,7 @@ impl Display for AccountType {
     }
 }
 
-pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPool, migrator_email: &str) {
+pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPool) {
     let users = 
         query_as!(User, 
             "SELECT user_id, created_at, email, pwd_hash, naam, pseudoniem, persoonsbeschrijving, emailvermelding, language 
@@ -122,13 +122,15 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
             _ => panic!("email visible not set in prototype database. User: {user:?}")
         },
         account_type: match user.email.as_str() {
-            e if e == migrator_email || e == "r.d.bos@uu.nl" || e == "theo.vandenbogaart@hu.nl"  => AccountType::Admin,
+            "r.d.bos@uu.nl" | "theo.vandenbogaart@hu.nl"  => AccountType::Admin,
             _ => AccountType::Author
         },
         language_code: UserLanguage::from_str(&user.language.clone().unwrap_or_default()).unwrap()
     }).collect::<Vec<_>>();
 
     // Update the next value of the serial id.
+    // This is needed because if values are added directly with their id value, 
+    // the serial counter isn't updated automatically.
     let next_id = new_users.last().unwrap().id + 1;
 
     let mut query_builder = QueryBuilder::new(format!(
@@ -157,7 +159,6 @@ pub async fn migrate_users(mysql_db: impl MySqlExecutor<'_>, postgres_db: &PgPoo
     let postgres_query = query_builder.build();
 
     postgres_query.execute(postgres_db).await.unwrap();
-    
 }
 
 fn polish_user_name(old_str: &str) -> String {

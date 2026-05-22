@@ -93,6 +93,8 @@ pub async fn migrate_hints(
     }
 
     // Update the next value of the serial id.
+    // This is needed because if values are added directly with their id value,
+    // the serial counter isn't updated automatically.
     let next_id = new_hints.last().unwrap().id + 1;
 
     let mut query_builder = QueryBuilder::new(format!(
