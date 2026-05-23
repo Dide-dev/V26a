@@ -607,7 +607,7 @@ pub async fn get_list(
 )]
 /// Add a user to a tree to make them a co-author.
 ///
-/// Only the owner of the given tree or an admin can add a user to become co-author of the tree.
+/// Only the owner of the given tree or an admin can add a user to become a co-author of the tree.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
