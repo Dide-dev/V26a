@@ -326,7 +326,7 @@
                             <p class="text__error">{m.invalidISBN()}</p>
                         {/if}
                     </div>
-                    <div>
+                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
                         <label for="bookName">{m.bookName()}</label>
                         <div class="input__container">
                             <input
@@ -346,7 +346,7 @@
                             />
                         </div>
                     </div>
-                    <div>
+                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
                         <label for="author">{m.author()}</label>
                         <div class="input__container">
                             <input
@@ -366,7 +366,7 @@
                             />
                         </div>
                     </div>
-                    <div>
+                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
                         <label for="edition">{m.edition()}</label>
                         <div class="input__container">
                             <input
@@ -388,7 +388,7 @@
                             />
                         </div>
                     </div>
-                    <div>
+                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
                         <label for="chapter">{m.chapter()}</label>
                         <div class="input__container">
                             <input
@@ -410,7 +410,7 @@
                             />
                         </div>
                     </div>
-                    <div>
+                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
                         <label for="exercise">{m.exercise()}</label>
                         <div class="input__container">
                             <input
