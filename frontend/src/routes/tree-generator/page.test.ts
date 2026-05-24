@@ -11,9 +11,18 @@ import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { addTree } from '$lib/backend/trees';
 
-vi.mock('$lib/backend/trees', () => {
+vi.mock('$lib/backend/trees', async (importOriginal) => {
     return {
-        addTree: vi.fn()
+        ...(await importOriginal()),
+        addTree: vi.fn(),
+        getAllLanguages: vi.fn().mockResolvedValue(['Nederlands', 'English']),
+        getAllSubjects: vi.fn().mockResolvedValue({
+            nl: [
+                { id: 1, languageCode: 'nl', name: 'Nederlands' },
+                { id: 2, languageCode: 'nl', name: 'Wiskunde' }
+            ]
+        }),
+        updateTreeMetaData: vi.fn().mockResolvedValue(undefined)
     };
 });
 vi.mock('$app/navigation', () => ({

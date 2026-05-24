@@ -8,10 +8,13 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
+    import { tryParseTags, tryParseISBN } from '$lib/treeMetadata.js';
     import {
         addTree,
         getAllLanguages,
         getAllSubjects,
+        minInputLengths,
+        maxInputLengths,
         type Language,
         type Subject,
         type TreeData
@@ -25,7 +28,6 @@
     } from '$lib/backend/users';
     import { redirectLogin } from '$lib/backend';
     import { page } from '$app/state';
-    import type { Option } from '$lib/backend/types';
 
     let userInfo: UserInfo | null = $state(null);
     let userData: UserGetData | null = $state(null);
@@ -65,126 +67,23 @@
     let isbnInvalid = $state(false);
     let formCompleted: boolean = $derived(treeData.title !== '');
 
-    const minInputLengths = {
-        title: 4,
-        description: 0,
-        tag: 2,
-        bookName: 0,
-        bookAuthor: 0,
-        bookEdition: 0,
-        bookIsbn: 10,
-        bookChapter: 0,
-        bookExercise: 0,
-        assignmentText: 0
-    };
-
-    const maxInputLengths = {
-        title: 128,
-        description: 256,
-        tag: 32,
-        bookName: 192,
-        bookAuthor: 192,
-        bookEdition: 32,
-        bookIsbn: 17,
-        bookChapter: 32,
-        bookExercise: 32,
-        assignmentText: 5000
-    };
-
-    /* Returns either the normalized value of the ISBN if it is valid,
-     * or `null` if it is not. */
-    function tryParseISBN(): Option<string> {
-        if (!treeData.bookIsbn) {
-            return '';
-        }
-
-        const isbn = treeData.bookIsbn.trim().replaceAll('-', '');
-
-        if (isbn.length === 10 && checkISBN10(isbn)) {
-            return isbn;
-        } else if (isbn.length === 13 && checkISBN13(isbn)) {
-            return isbn;
-        } else {
-            return null;
-        }
-    }
-
-    function checkISBN10(str: string): boolean {
-        let s = 0,
-            t = 0;
-
-        for (let i = 0; i < 9; i++) {
-            let d = parseInt(str[i]);
-
-            if (isNaN(d)) {
-                return false;
-            }
-
-            t += d;
-            s += t;
-        }
-
-        s += t;
-
-        const lastChar = str[9];
-        if (lastChar === 'X') {
-            // X is used to indicate a checksum digit value of '10'
-            return 11 - (s % 11) === 10;
-        } else {
-            return (11 - (s % 11)) % 11 === parseInt(lastChar);
-        }
-    }
-
-    function checkISBN13(str: string): boolean {
-        let w = 1,
-            s = 0;
-
-        for (let c of str) {
-            const d = parseInt(c);
-
-            if (isNaN(d)) {
-                return false;
-            }
-
-            s += w * d;
-            w = (w + 2) % 4;
-        }
-
-        return s % 10 === 0;
-    }
-
-    function tryParseTags(): string[] | null {
-        if (tagsInput.trim() === '') {
-            return [];
-        }
-        const list = tagsInput.split(',').map((t) => t.trim());
-        if (list.some((t) => t.length < minInputLengths.tag || t.length > maxInputLengths.tag)) {
-            tagsInputError = m.tagLengthRequirements();
-            return null;
-        }
-        if (list.some((t) => /\s/.test(t))) {
-            tagsInputError = m.noWhitespaceInTags();
-            return null;
-        }
-        return list;
-    }
-
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         isbnInvalid = false;
 
-        const isbn = tryParseISBN();
+        const isbn = tryParseISBN(treeData.bookIsbn);
         if (isbn === null) {
             isbnInvalid = true;
             return;
         }
         treeData.bookIsbn = isbn === '' ? null : isbn;
 
-        const tags = tryParseTags();
-        if (tags === null) {
+        const result = tryParseTags(tagsInput);
+        if (typeof result === 'string') {
+            tagsInputError = result;
             return;
         }
-        treeData.tags = tags;
+        treeData.tags = result;
 
         const treeId = await addTree(treeData);
         await goto(appLink(`/tree-page/editor?id=${treeId}`));

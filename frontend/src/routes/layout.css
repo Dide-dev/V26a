@@ -250,15 +250,14 @@
             border-color: currentColor;
         }
 
-        &.completed {
-            button {
-                color: var(--color-black);
-                background-color: var(--color-neutral-200);
-                border-color: var(--color-neutral-600);
-                cursor: pointer;
-            }
+        &.completed button,
+        button.always__active {
+            color: var(--color-black);
+            background-color: var(--color-neutral-200);
+            border-color: var(--color-neutral-600);
+            cursor: pointer;
 
-            button:hover {
+            &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
                 animation: completedFormButtonSelect 0.15s ease-in-out;

@@ -5,28 +5,42 @@ import MetaData from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 
 // mock API calls
-vi.mock('$lib/backend/trees', () => ({
-    getTreeWithCards: vi.fn().mockResolvedValue({
-        metadata: {
-            data: {
-                title: 'Test123',
-                description: 'gerdgreg',
-                bookName: 'Monkey',
-                bookEdition: '13th',
-                bookIsbn: '123-456',
-                bookChapter: '10',
-                bookExercise: '3',
-                assignmentText: 'I am a banabana',
-                published: false
+vi.mock('$lib/backend/trees', async (importOriginal) => {
+    return {
+        ...(await importOriginal()),
+        getTreeWithCards: vi.fn().mockResolvedValue({
+            metadata: {
+                data: {
+                    title: 'Test123',
+                    description: 'gerdgreg',
+                    tags: ['tag1', 'tag2', 'tag3'],
+                    languageCode: 'nl',
+                    subjectId: 1,
+                    bookName: 'Monkey',
+                    bookAuthor: 'John Test',
+                    bookEdition: '13th',
+                    bookIsbn: '9780439023481',
+                    bookChapter: '10',
+                    bookExercise: '3',
+                    assignmentText: 'I am a banabana',
+                    published: false
+                },
+                genData: { id: 1, ownerId: 1 },
+                linkedData: { ownerName: 'Foo', subjectName: 'Bar' }
             },
-            genData: { id: 1, ownerId: 1 },
-            linkedData: { ownerName: 'Foo', subjectName: 'Bar' }
-        },
-        structure: { rootNodes: [] },
-        cards: new Map()
-    }),
-    updateTreeMetaData: vi.fn().mockResolvedValue(undefined)
-}));
+            structure: { rootNodes: [] },
+            cards: new Map()
+        }),
+        getAllLanguages: vi.fn().mockResolvedValue(['Nederlands', 'English']),
+        getAllSubjects: vi.fn().mockResolvedValue({
+            nl: [
+                { id: 1, languageCode: 'nl', name: 'Nederlands' },
+                { id: 2, languageCode: 'nl', name: 'Wiskunde' }
+            ]
+        }),
+        updateTreeMetaData: vi.fn().mockResolvedValue(undefined)
+    };
+});
 
 // mock state
 vi.mock('$app/state', () => ({
@@ -54,7 +68,7 @@ test('fields are prefilled with tree data', async () => {
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     expect((screen.getByLabelText(m.bookName()) as HTMLInputElement).value).toBe('Monkey');
-    expect((screen.getByLabelText(m.isbn()) as HTMLInputElement).value).toBe('123-456');
+    expect((screen.getByLabelText(m.isbn()) as HTMLInputElement).value).toBe('9780439023481');
 });
 
 test('cancel restores original values', async () => {
@@ -80,7 +94,7 @@ test('save calls updateTreeMetaData with correct data', async () => {
     await user.click(screen.getByText(m.editMetadata()));
     await user.clear(screen.getByLabelText(m.bookName()));
     await user.type(screen.getByLabelText(m.bookName()), 'New Apple');
-    await user.click(screen.getByText(m.save()));
+    await user.click(screen.getByText(m.confirmChanges()));
 
     expect(updateTreeMetaData).toHaveBeenCalledWith({
         id: 1,
@@ -94,7 +108,9 @@ test('dropdown closes after save', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    await user.click(screen.getByText(m.save()));
+    // Change one of the fields so that the confirm button is enabled.
+    await user.type(screen.getByLabelText(m.bookName()), 'Changed Book');
+    await user.click(screen.getByText(m.confirmChanges()));
     expect(screen.queryByTestId('metadata-popup')).toBeNull();
 });
 
