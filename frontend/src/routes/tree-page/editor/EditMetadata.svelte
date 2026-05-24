@@ -17,7 +17,7 @@
         type TreeData,
         type TreeId,
         type TreeLinkedData
-    } from '$lib/backend/trees';
+    } from '$lib/api-wrapper/trees';
     import { tryParseISBN, tryParseTags } from '$lib/treeMetadata';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';

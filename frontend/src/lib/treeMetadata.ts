@@ -5,8 +5,8 @@
 */
 
 import { m } from '$lib/paraglide/messages.js';
-import { type Option } from './backend/types';
-import { minInputLengths, maxInputLengths } from './backend/trees';
+import { type Option } from './api-wrapper/types';
+import { minInputLengths, maxInputLengths } from './api-wrapper/trees';
 
 /**
  * Returns either the list of tags parsed into an array if the input is valid,
@@ -46,7 +46,7 @@ export function tryParseISBN(isbn: Option<string>): Option<string> {
     }
 }
 
-export function checkISBN10(str: string): boolean {
+function checkISBN10(str: string): boolean {
     let s = 0,
         t = 0;
 

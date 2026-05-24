@@ -5,9 +5,10 @@
 */
 
 use crate::db_structs::cards::CardGetData;
+use crate::errors::ApiError;
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::{Error, FromRow, Row};
+use sqlx::{FromRow, Row};
 use std::collections::BTreeMap;
 use utoipa::openapi::{ObjectBuilder, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
@@ -179,6 +180,7 @@ pub struct TreeLinkedData {
     pub owner_name: String,
     #[sqlx(rename = "subject_name?")]
     pub subject_name: Option<String>,
+    pub co_authors: Vec<i32>,
 }
 
 /// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
@@ -191,7 +193,7 @@ pub struct TreeMetadata {
 }
 
 impl TreeMetadata {
-    pub fn from_pg_row(row: &PgRow) -> Result<Self, Error> {
+    pub fn from_pg_row(row: &PgRow) -> Result<Self, ApiError> {
         let data = TreeData::from_row(row)?;
         let gen_data = TreeGeneratedData::from_row(row)?;
         let linked_data = TreeLinkedData::from_row(row)?;
@@ -382,6 +384,7 @@ pub struct TreeListResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,
+    pub co_author: Option<i32>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
@@ -392,6 +395,8 @@ pub struct TreeFilters {
     // Needed for optional boolean
     #[serde(default)]
     pub show_own_private: bool,
+    #[serde(default)]
+    pub editable: bool,
 }
 
 #[cfg(test)]

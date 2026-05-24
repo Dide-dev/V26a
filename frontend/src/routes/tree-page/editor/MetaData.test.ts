@@ -5,7 +5,7 @@ import MetaData from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 
 // mock API calls
-vi.mock('$lib/backend/trees', async (importOriginal) => {
+vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
     return {
         ...(await importOriginal()),
         getTreeWithCards: vi.fn().mockResolvedValue({
@@ -86,7 +86,7 @@ test('cancel restores original values', async () => {
 });
 
 test('save calls updateTreeMetaData with correct data', async () => {
-    const { updateTreeMetaData } = await import('$lib/backend/trees');
+    const { updateTreeMetaData } = await import('$lib/api-wrapper/trees');
     const user = userEvent.setup();
     render(MetaData);
 

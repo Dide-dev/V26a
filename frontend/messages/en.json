@@ -73,8 +73,8 @@
     "edit": "Edit",
     "add": "Add",
     "preview": "Preview",
-    "myTrees": "My forest",
-    "trees": "Forest",
+    "myTrees": "My trees",
+    "trees": "Trees",
     "credits": "Credits",
     "timesVisited": "Times visited",
     "createdAt": "Created at",
@@ -103,6 +103,7 @@
     "allTrees": "Tree list",
     "colophon": "Colophon",
     "otherProjects": "Other projects",
+    "apiDocs": "API documentation",
     "uploadImage": "Upload image",
     "requiredPlaceholder": "{value} (required)",
     "optionalPlaceholder": "{value} (optional)",
@@ -133,5 +134,9 @@
     "usernameAlreadyExists": "An account with this username already exists",
     "pageNotFound": "This page could not be found",
     "tagLengthRequirements": "Tags must contain at least 2 and at most 32 characters",
-    "noWhitespaceInTags": "Tags cannot contain any whitespace characters"
+    "noWhitespaceInTags": "Tags cannot contain any whitespace characters",
+    "account": "Account",
+    "admin": "Admin",
+    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
+    "owner": "Owner"
 }

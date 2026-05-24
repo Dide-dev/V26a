@@ -80,6 +80,7 @@ export type TreeGeneratedData = {
 export type TreeLinkedData = {
     ownerName: Option<string>;
     subjectName: Option<string>;
+    coAuthors: UserId[];
 };
 
 export type TreeMetadata = {
@@ -145,10 +146,12 @@ export type TreeListResponse = {
 
 export type FilterOptions = {
     ownerId: Option<number>;
+    coAuthor: Option<number>;
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
     showOwnPrivate: Option<boolean>;
+    editable: Option<boolean>;
 };
 
 /** Add a tree to the database. */
@@ -227,6 +230,11 @@ export function getFilteredList(
 ): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
+}
+
+/** Add user as co-author to a tree. */
+export function addCoAuthor(treeId: TreeId, userId: UserId) {
+    return apiCallPostTree(`${treeId}/authorize/${userId}`, null);
 }
 
 /** Get the list of all languages. */

@@ -19,6 +19,8 @@ chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 infer = "0.19.0"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+percent-encoding = "2.3.2"
+rand = "0.10.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.11.0"
@@ -34,11 +36,10 @@ tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
 tower-http = { version = "0.6.8", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-uuid = { version = "1.23.0", features = ["v4"] }
 utoipa = { version = "5.4.0", features = ["chrono"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipauto = "0.2.0"
-rand = "0.10.1"
+uuid = { version = "1.23.0", features = ["v4"] }
 
 [dev-dependencies]
 axum-test = "20.0.0"

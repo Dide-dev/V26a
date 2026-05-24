@@ -8,7 +8,7 @@
     This sidebar is currently only used for the card editing, but could be used for more later.
  -->
 <script lang="ts">
-    import type { CardGetData } from '$lib/backend/cards';
+    import type { CardGetData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
     import TextEditArea from './TextEditArea.svelte';

@@ -18,15 +18,15 @@
         type Language,
         type Subject,
         type TreeData
-    } from '$lib/backend/trees';
+    } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
     import {
         getOwnUserData,
         getUserInfo,
         type UserGetData,
         type UserInfo
-    } from '$lib/backend/users';
-    import { redirectLogin } from '$lib/backend';
+    } from '$lib/api-wrapper/users';
+    import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 
     let userInfo: UserInfo | null = $state(null);

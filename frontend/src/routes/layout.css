@@ -5,6 +5,7 @@
 */
 
 @import 'tailwindcss';
+@import '../lib/assets/katex/katex.css';
 
 @plugin 'flowbite/plugin';
 
@@ -12,8 +13,6 @@
 @custom-variant dark (&:where(.light, .light *));
 
 @source '../../node_modules/flowbite-svelte/dist';
-
-@import '../lib/assets/katex/katex.css';
 
 @theme {
     /* Custom colours */
@@ -42,10 +41,7 @@
 
     --color-neutral-350: oklch(0.78 0 0);
 
-    /* Spacing nav bar */
-    --spacing-nav-normal: calc(var(--spacing) * 40);
-    --spacing-nav-thin: calc(var(--spacing) * 24);
-    --spacing-nav-extra-thin: calc(var(--spacing) * 14);
+    --color-underline: var(--color-black);
 
     /* Text spacing */
     --spacing-text-normal: calc(var(--spacing) * 4);
@@ -53,9 +49,21 @@
     --spacing-text-minor: calc(var(--spacing) * 1);
 
     /* Padding */
+    --spacing-padding-lg: calc(var(--spacing) * 6);
     --spacing-padding-normal: calc(var(--spacing) * 4);
     --spacing-padding-small: calc(var(--spacing) * 2);
     --spacing-padding-minor: calc(var(--spacing) * 1);
+
+    /* Spacing nav bar */
+    --spacing-nav-md: calc(var(--spacing) * 40);
+    --spacing-nav-th: calc(var(--spacing) * 28);
+    --spacing-nav-xt: calc(var(--spacing) * 14);
+
+    /* Spacing footer */
+    --spacing-footer-xl: calc(var(--spacing) * 54);
+    --spacing-footer-lg: calc(var(--spacing) * 40);
+    --spacing-footer-md: calc(var(--spacing) * 32);
+    --spacing-footer-th: calc(var(--spacing) * 20);
 }
 
 @layer base {
@@ -63,7 +71,7 @@
     body {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        min-height: 100vh;
     }
 
     /* General layout classes */

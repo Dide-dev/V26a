@@ -18,9 +18,9 @@ import {
     type UserGetData,
     type UserUpdateData,
     type UserInfo
-} from '$lib/backend/users';
+} from '$lib/api-wrapper/users';
 
-vi.mock('$lib/backend/users', () => {
+vi.mock('$lib/api-wrapper/users', () => {
     return {
         getOwnUserData: vi.fn(),
         getUserInfo: vi.fn(),
@@ -97,11 +97,9 @@ test('Submission with full data', async () => {
         nickname: 'Johnny',
         aboutMe: 'Some interesting backstory',
         emailVisible: false,
-        language: 'en',
-        accountType: null,
-        enabled: null
+        language: 'en'
     };
-    expect(updateUser).toHaveBeenCalledWith(userInfo.sub, expectedUpdateData);
+    expect(updateUser).toHaveBeenCalledWith(expectedUpdateData);
 });
 
 test('New password without upper case letter shows error', async () => {
