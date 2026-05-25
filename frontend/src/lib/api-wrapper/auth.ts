@@ -28,6 +28,6 @@ export function login(credentials: LoginData): Promise<LoginResponse> {
 }
 
 /** Log out the user */
-export function logout(userId: number): Promise<void> {
-    return apiCallPostAuth(`/${userId}/logout`, {});
+export function logout(): Promise<void> {
+    return apiCallPostAuth(`logout`, {});
 }

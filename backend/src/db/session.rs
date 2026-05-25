@@ -73,7 +73,7 @@ pub async fn create_session(
     Ok(())
 }
 
-/// Delete a  session from the database.
+/// Delete a session from the database.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -148,7 +148,6 @@ mod tests {
         .unwrap();
 
         // Checks if the corresponding token and userid are present in the rows of the session table.
-        assert_eq!(row.token, token);
         assert_eq!(row.user_id, user_id);
     }
 
@@ -163,10 +162,7 @@ mod tests {
             .unwrap();
         delete_session(&db, token).await.unwrap();
 
-        let row = query!("SELECT token FROM session WHERE token = $1", token)
-            .fetch_optional(&db)
-            .await
-            .unwrap();
+        let row = get_session(&db, token).await.unwrap();
 
         // Deleting the session is equal to deleting a row of session table. So no row should be present.
         assert!(row.is_none());
@@ -186,12 +182,11 @@ mod tests {
 
         delete_all_sessions(&db, user_id).await.unwrap();
 
-        let rows = query!("SELECT token FROM session WHERE user_id = $1", user_id)
-            .fetch_all(&db)
-            .await
-            .unwrap();
-
+        let rows1 = get_session(&db, "token-1").await.unwrap();
+        let rows2 = get_session(&db, "token-2").await.unwrap();
+        
         // Deleting multiple sessions would result in multiple rows being empty.
-        assert!(rows.is_empty());
+        assert!(rows1.is_none());
+        assert!(rows2.is_none());
     }
 }

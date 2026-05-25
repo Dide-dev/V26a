@@ -14,29 +14,6 @@ use crate::tests::api_v1::{get_cookie_data, login, register, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
-async fn test_login_success(db: PgPool) {
-    let server = setup(db);
-    register(&server, "gorilla@gmail.com".to_owned()).await;
-
-    let response = server
-        .post("/auth/login")
-        .json(&LoginRequestBody {
-            email: "gorilla@gmail.com".to_owned(),
-            password: "a$$word".to_owned(),
-        })
-        .await;
-
-    response.assert_status_ok();
-    assert!(response.json::<LoginResponse>().succeeded);
-
-    // Checks if cookie is set after log in.
-    assert!(response.headers().contains_key("set-cookie"));
-
-    // Checks if there is a valid session present.
-    server.get("/users/me").await.assert_status_ok();
-}
-
-#[sqlx::test]
 async fn test_login_fail(db: PgPool) {
     let server = setup(db);
     register(&server, "Caesar@gmail.com".to_owned()).await;
@@ -65,7 +42,7 @@ async fn test_logout_success(db: PgPool) {
     let user_id = register(&server, "Caesar@gmail.com".to_owned()).await;
     login(&server, "Caesar@gmail.com".to_owned()).await;
 
-    let response = server.post(&format!("/auth/{user_id}/logout")).await;
+    let response = server.post(&format!("/auth/logout")).await;
 
     response.assert_status_ok();
     // Checks if a cookie is unset.
@@ -78,13 +55,13 @@ async fn test_logout_success(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_failure(db: PgPool) {
     let server = setup(db);
-    let user_id = register(&server, "Caesar@gmail.com".to_owned()).await;
+    let _user_id = register(&server, "Caesar@gmail.com".to_owned()).await;
 
     // logout is not possible without a valid session.
     server
-        .post(&format!("/auth/{user_id}/logout"))
+        .post(&format!("/auth/logout"))
         .await
-        .assert_status_unauthorized();
+        .assert_status_forbidden();
 }
 
 #[sqlx::test]

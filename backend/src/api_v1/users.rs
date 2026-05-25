@@ -339,13 +339,13 @@ async fn delete_user_data(
     delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
 
     if claims.sub == user_id {
+        // Unvalidate all the sessions based on userid.
+        delete_all_sessions(&mut *transaction, claims.sub).await?;
+
         // Unset the cookies by changing the date to a time in the past.
         jar = jar
             .remove(Cookie::from("session"))
             .remove(Cookie::from("user_info"));
-
-        // Unvalidate all the sessions based on userid.
-        delete_all_sessions(&mut *transaction, claims.sub).await?;
     }
 
     transaction.commit().await?;

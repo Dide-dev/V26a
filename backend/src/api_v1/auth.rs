@@ -7,11 +7,10 @@
 use crate::ArcState;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
-use crate::db::users::{get_user, user_id_exists};
+use crate::db::users::get_user;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
-use axum::extract::Path;
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
@@ -27,7 +26,7 @@ use utoipa::ToSchema;
 pub fn auth() -> Router<ArcState> {
     Router::new()
         .route("/login", post(login))
-        .route("/{user_id}/logout", post(logout))
+        .route("/logout", post(logout))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -144,17 +143,15 @@ async fn login(
 
 #[utoipa::path(
     post,
-    path = "/{user_id}/logout",
+    path = "/logout",
     context_path = "/api/v1/auth",
     responses(
         (status = 200, description = "User data successfully logged out."),
-        (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("user_id" = i32, Path),
         ("session" = Claims, Cookie),
     )
 )]
@@ -164,46 +161,34 @@ async fn login(
 /// # Arguments
 /// `jar` - The jar with the cookies (`user_info` & session).
 ///
-/// `claims` - The session cookie of the user.
-///
 /// `user_id` - The user to logout.
 ///
 /// # Returns
 /// The (cookie) jar that is empty.
 ///
 /// # Errors
-/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
-///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete the session.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn logout(
     mut jar: CookieJar,
-    claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
 ) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
 
-    if !user_id_exists(&mut *transaction, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
-    }
+    let token = jar
+        .get("session")
+        .ok_or(ApiError::NoPermission)?
+        .value()
+        .to_string();
 
-    if claims.sub == user_id {
-        let token = jar
-            .get("session")
-            .ok_or(ApiError::NoPermission)?
-            .value()
-            .to_string();
+    // Unvalidate the session.
+    delete_session(&mut *transaction, &token).await?;
 
-        // Unset the cookie, remove set the time of the cookie in the past.
-        jar = jar
-            .remove(Cookie::from("session"))
-            .remove(Cookie::from("user_info"));
-
-        // Unvalidate the session.
-        delete_session(&mut *transaction, &token).await?;
-    }
+    // Unset the cookie, "remove" sets the time of the cookie in the past.
+    jar = jar
+        .remove(Cookie::from("session"))
+        .remove(Cookie::from("user_info"));
 
     transaction
         .commit()
