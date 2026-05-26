@@ -94,7 +94,7 @@
     const editor = createEditor({ extension });
 
     /**
-     * Used to prevent changes to the valueText by the editor to be send to the editor again,
+     * Used to prevent changes to the valueText by the editor to be sent to the editor again,
      * as prosekit will make those changes internally.
      */
     let lastTextExported: null | string = $state(null);
@@ -134,7 +134,7 @@
     useDocChange(
         () => {
             // If this ever turns out to be too expensive to run on every keypress,
-            // you will need to implement debouncing.
+            // we will need to implement debouncing.
             let html = editor.getDocHTML();
             let markdown = markdownFromProsekitHtml(html);
             lastTextExported = markdown;
