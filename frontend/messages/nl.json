@@ -66,6 +66,7 @@
     "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde.",
     "profile": "Profiel",
+    "profileOf": "Profiel van gebruiker {id}",
     "confirmChanges": "Bevestig wijzigingen",
     "edit": "Bewerk",
     "add": "Voeg toe",

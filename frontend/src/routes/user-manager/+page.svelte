@@ -26,7 +26,7 @@
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
 
-    let id: number | null = null;
+    let id: number | null = $state(null);
 
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
@@ -250,7 +250,7 @@
             class={[formChanged && 'completed']}
             onsubmit={(event) => handleSubmit(event, userData)}
         >
-            <h1 class="page__title">{m.profile()}</h1>
+            <h1 class="page__title">{m.profileOf({ id: id })}</h1>
             <h2 class="page__heading">{m.general()}</h2>
             <div>
                 <label for="email">{m.email()}</label>
