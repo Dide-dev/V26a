@@ -17,7 +17,8 @@
         checkLowercase,
         checkUppercase,
         checkNumber,
-        checkSpecialCharacter
+        checkSpecialCharacter,
+        checkSamePassword
     } from '$lib/passwords';
     import { m } from '$lib/paraglide/messages.js';
     import { redirectLogin } from '$lib/api-wrapper';
@@ -53,6 +54,7 @@
         language: 'nl'
     });
 
+    let repeatPassword = $state('');
     let changePasswordData: AdminChangePasswordData = $state({
         newPassword: ''
     });
@@ -60,6 +62,7 @@
     let usernameAlreadyExists: boolean = $state(false);
     let emailAlreadyExists: boolean = $state(false);
     let successfulPasswordChange: boolean = $state(false);
+    let passwordNotSame: boolean = $state(false);
 
     let inputsChanged = $state({
         enabledChanged: false,
@@ -82,7 +85,7 @@
             inputsChanged.languageChanged ||
             inputsChanged.enabledChanged ||
             inputsChanged.accountTypeChanged ||
-            changePasswordData.newPassword.length > 0
+            (changePasswordData.newPassword.length > 0 && repeatPassword.length > 0)
     );
 
     const minInputLengths = {
@@ -117,6 +120,7 @@
         usernameAlreadyExists = false;
         emailAlreadyExists = false;
         successfulPasswordChange = false;
+        passwordNotSame = false;
     }
 
     async function handleSubmit(event: SubmitEvent, userData: UserAllData) {
@@ -186,11 +190,12 @@
         successfulPasswordChange = false;
 
         // Return if the user has not entered all required fields.
-        if (changePasswordData.newPassword == '') {
+        if (!(changePasswordData.newPassword && repeatPassword)) {
             return;
         }
 
         passwordMissingChar = false;
+        passwordNotSame = false;
 
         if (
             !checkLowercase(changePasswordData.newPassword) ||
@@ -202,6 +207,11 @@
             return;
         }
 
+        if (!checkSamePassword(changePasswordData.newPassword, repeatPassword)) {
+            passwordNotSame = true;
+            return;
+        }
+
         let changePasswordResponse = await adminChangePassword(id, changePasswordData);
 
         if (changePasswordResponse.succeeded) {
@@ -209,6 +219,7 @@
         }
 
         changePasswordData.newPassword = '';
+        repeatPassword = '';
     }
 
     async function handleCancel(e: Event) {
@@ -234,6 +245,7 @@
         resetInputStates();
         resetInputResponses();
         changePasswordData.newPassword = '';
+        repeatPassword = '';
         userDataPromise = await getUserAllData(id);
     }
 </script>
@@ -401,6 +413,26 @@
                     <p class="text__error" data-testid="missing-char-error">
                         {m.missingCharacter()}
                     </p>
+                {/if}
+                {#if changePasswordData.newPassword}
+                    <input
+                        class={[passwordNotSame && 'error', 'input__text']}
+                        bind:value={repeatPassword}
+                        name="repeatPassword"
+                        type="password"
+                        autocomplete="new-password"
+                        data-testid="repeatPassword"
+                        placeholder={m.requiredPlaceholder({ value: m.repeatPassword() })}
+                        minlength={minInputLengths.password}
+                        maxlength={maxInputLengths.password}
+                        required
+                    />
+
+                    {#if passwordNotSame}
+                        <p class="text__error" data-testid="differing-password-error">
+                            {m.passwordsNotTheSame()}
+                        </p>
+                    {/if}
                 {/if}
                 {#if successfulPasswordChange}
                     <p class="text__success" data-testid="password-change-success">
