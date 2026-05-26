@@ -69,7 +69,6 @@
         nicknameChanged: false,
         aboutMeChanged: false,
         languageChanged: false,
-        emailVisibleChanged: false,
         passwordChanged: false,
         error: false
     });
@@ -81,7 +80,6 @@
             inputsChanged.nicknameChanged ||
             inputsChanged.aboutMeChanged ||
             inputsChanged.languageChanged ||
-            inputsChanged.emailVisibleChanged ||
             inputsChanged.enabledChanged ||
             inputsChanged.accountTypeChanged ||
             changePasswordData.newPassword.length > 0
@@ -111,7 +109,6 @@
         inputsChanged.nicknameChanged = false;
         inputsChanged.aboutMeChanged = false;
         inputsChanged.languageChanged = false;
-        inputsChanged.emailVisibleChanged = false;
         inputsChanged.error = false;
     }
 
@@ -369,25 +366,6 @@
                     <option class={['input__select_option']}>admin </option>
                     <option class={['input__select_option']}>author </option>
                 </select>
-            </div>
-            <div class="checkbox__container">
-                <input
-                    id="emailVisible"
-                    class={[!inputsChanged.emailVisibleChanged && 'inactive', 'input__checkbox']}
-                    bind:checked={userData.emailVisible}
-                    name="emailVisible"
-                    type="checkbox"
-                    oninput={() => {
-                        inputsChanged.emailVisibleChanged = true;
-                    }}
-                />
-                <label for="emailVisible">
-                    {m.emailVisible()}
-                </label>
-                <div class="info">
-                    <sup>🛈</sup>
-                    <div class="info__content">{m.emailVisibleInfo()}</div>
-                </div>
             </div>
             <div class="checkbox__container">
                 <input
