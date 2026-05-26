@@ -6,6 +6,7 @@
 
 use crate::ArcState;
 use crate::db::feedback::add_feedback;
+use crate::db_structs::Validated;
 use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
 use axum::routing::post;
@@ -41,6 +42,7 @@ async fn provide_feedback(
     Extension(db): Extension<PgPool>,
     feedback_data: Json<FeedbackData>,
 ) -> Result<(), ApiError> {
+    feedback_data.validate_inputs()?;
     add_feedback(&db, &feedback_data).await?;
 
     Ok(())

@@ -35,11 +35,13 @@ afterEach(() => {
 test('No submission without name', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -64,11 +66,13 @@ test('No submission without name', async () => {
 test('Submission with full data', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -93,11 +97,13 @@ test('Submission with full data', async () => {
     await user.click(screen.getByTestId('confirm-button'));
 
     const expectedUpdateData: UserUpdateData = {
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: 'Some interesting backstory',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: 'Some interesting backstory',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     expect(updateUser).toHaveBeenCalledWith(expectedUpdateData);
 });
@@ -105,11 +111,13 @@ test('Submission with full data', async () => {
 test('New password without upper case letter shows error', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -143,11 +151,13 @@ test('New password without upper case letter shows error', async () => {
 test('New password without lower case letter shows error', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -181,11 +191,13 @@ test('New password without lower case letter shows error', async () => {
 test('New password without special character shows error', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -219,11 +231,13 @@ test('New password without special character shows error', async () => {
 test('New password without number shows error', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -257,11 +271,13 @@ test('New password without number shows error', async () => {
 test('Differing new password and repeat password shows error', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -295,11 +311,13 @@ test('Differing new password and repeat password shows error', async () => {
 test('No submission without old password', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -331,11 +349,13 @@ test('No submission without old password', async () => {
 test('No submission without new password', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -366,11 +386,13 @@ test('No submission without new password', async () => {
 test('No submission without repeat password', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -402,11 +424,13 @@ test('No submission without repeat password', async () => {
 test('No submission when old and new password are the same', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -440,11 +464,13 @@ test('No submission when old and new password are the same', async () => {
 test('Submission when all password expectations have been met', async () => {
     const userData: UserGetData = {
         email: 'john@test.com',
-        name: 'John Test',
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        language: 'en'
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
     };
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
@@ -475,5 +501,5 @@ test('Submission when all password expectations have been met', async () => {
     const confirmation = screen.getByTestId('password-change-success');
 
     expect(changePassword).toHaveBeenCalled();
-    expect(confirmation.textContent).toBe(m.succesfulPasswordChange());
+    expect(confirmation.textContent).toBe(m.successfulPasswordChange());
 });

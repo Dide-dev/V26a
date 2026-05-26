@@ -23,15 +23,20 @@ function apiCallGetUser(path: string) {
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
 
-/** The data needed to register a new user */
-export type RegisterData = {
-    email: string;
-    password: string;
+/** The data a user can modify, except email or password*/
+export type UserData = {
     name: string;
     nickname: string;
     aboutMe: string;
     emailVisible: boolean;
     language: string;
+};
+
+/** The data needed to register a new user */
+export type RegisterData = {
+    email: string;
+    password: string;
+    data: UserData;
 };
 
 export type UserSuccess = {
@@ -54,11 +59,7 @@ export type ChangePasswordResponse = {
 /** The data of the user that is returned when requesting it */
 export type UserGetData = {
     email: string;
-    name: string;
-    nickname: string;
-    aboutMe: string;
-    emailVisible: boolean;
-    language: string;
+    data: UserData;
 };
 
 /**
@@ -68,11 +69,7 @@ export type UserGetData = {
  * database.
  */
 export type UserUpdateData = {
-    name: string;
-    nickname: string;
-    aboutMe: string;
-    emailVisible: boolean;
-    language: string;
+    data: UserData;
 };
 
 /** The data in the cookie */

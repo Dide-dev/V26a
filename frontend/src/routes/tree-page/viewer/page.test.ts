@@ -13,7 +13,7 @@ import type {
     TreeStructure,
     TreeWithCards
 } from '$lib/api-wrapper/trees';
-import type { CardGetData, CardId } from '$lib/api-wrapper/cards';
+import type { CardData, CardId } from '$lib/api-wrapper/cards';
 import { getTreeWithCards } from '$lib/api-wrapper/trees';
 import { getUserInfo } from '$lib/api-wrapper/users';
 
@@ -25,7 +25,7 @@ vi.mock('$lib/api-wrapper/users', () => ({
 function createTree(): TreeWithCards {
     // eslint-disable as CardId's are seen as object literal property, and should therefore follow camelCase.
     /* eslint-disable @typescript-eslint/naming-convention */
-    const cards: Record<CardId, CardGetData> = {
+    const cards: Record<CardId, CardData> = {
         1: { front: 'front 1', back: 'back 1' },
         2: { front: 'front 2', back: 'back 2' }
     };

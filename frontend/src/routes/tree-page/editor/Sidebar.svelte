@@ -8,7 +8,7 @@
     This sidebar is currently only used for the card editing, but could be used for more later.
  -->
 <script lang="ts">
-    import type { CardGetData } from '$lib/api-wrapper/cards';
+    import type { CardData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
     import TextEditArea from './TextEditArea.svelte';
@@ -24,12 +24,14 @@
     export type SideBar = {
         type: 'NewCard' | 'EditCard';
         location: number[];
-        editingVersion: CardGetData;
+        editingVersion: CardData;
         errorMessage?: string;
     };
 
-    const frontMaxLength = 250;
-    const backMaxLength = 5000;
+    const maxInputLengths = {
+        frontMaxLength: 250,
+        backMaxLength: 5000
+    };
 
     async function finishEdit() {
         let node = followIndexNode(history.currentStructure, sidebar!.location);
@@ -54,12 +56,16 @@
             return;
         }
 
-        if (sidebar.editingVersion.front.length > frontMaxLength) {
-            sidebar.errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
+        if (sidebar.editingVersion.front.length > maxInputLengths.frontMaxLength) {
+            sidebar.errorMessage = m.frontTextCharacterLimit({
+                limit: maxInputLengths.frontMaxLength
+            });
             return;
         }
-        if (sidebar.editingVersion.back.length > backMaxLength) {
-            sidebar.errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
+        if (sidebar.editingVersion.back.length > maxInputLengths.backMaxLength) {
+            sidebar.errorMessage = m.backTextCharacterLimit({
+                limit: maxInputLengths.backMaxLength
+            });
             return;
         }
         sidebar.errorMessage = '';
@@ -96,7 +102,7 @@
 
             <p>Front</p>
             <TextEditArea
-                maxLength={frontMaxLength}
+                maxLength={maxInputLengths.frontMaxLength}
                 height={2}
                 hasMenubar={false}
                 bind:valueText={sidebar.editingVersion.front}
@@ -104,7 +110,7 @@
             <div class="h-5"></div>
             <p>Back</p>
             <TextEditArea
-                maxLength={backMaxLength}
+                maxLength={maxInputLengths.backMaxLength}
                 height="full"
                 hasMenubar={true}
                 bind:valueText={sidebar.editingVersion.back}

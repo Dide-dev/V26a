@@ -8,7 +8,7 @@
 
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
+use crate::db_structs::cards::{CardAddData, CardData, CardUpdateData};
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
@@ -192,8 +192,10 @@ async fn test_deleting_trees_works(db: PgPool) {
     // We also add a card, to ensure that it does not prevent the tree from being deleted.
     let card_add_data = CardAddData {
         tree_id,
-        front: "abc".to_owned(),
-        back: "def".to_owned(),
+        data: CardData {
+            front: "abc".to_owned(),
+            back: "def".to_owned(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -216,8 +218,10 @@ async fn test_deleting_trees_works(db: PgPool) {
         .post("/cards/update")
         .json(&CardUpdateData {
             card_id,
-            new_front: String::new(),
-            new_back: String::new(),
+            data: CardData {
+                front: String::new(),
+                back: String::new(),
+            },
         })
         .await;
     response.assert_status_bad_request();
@@ -309,8 +313,10 @@ async fn test_remove_card(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id,
-        front: String::new(),
-        back: "heuristic".to_string(),
+        data: CardData {
+            front: String::new(),
+            back: "heuristic".to_string(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -325,9 +331,9 @@ async fn test_remove_card(db: PgPool) {
     let mut expected_btree = BTreeMap::new();
     expected_btree.insert(
         card_id,
-        CardGetData {
-            front: card_add_data.front,
-            back: card_add_data.back,
+        CardData {
+            front: card_add_data.data.front,
+            back: card_add_data.data.back,
         },
     );
 
@@ -620,14 +626,16 @@ async fn test_update_and_get_tree(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let card_get_data = CardGetData {
+    let card_get_data = CardData {
         front: String::new(),
         back: "heuristic".to_string(),
     };
     let card_add_data = CardAddData {
         tree_id,
-        front: card_get_data.front.clone(),
-        back: card_get_data.back.clone(),
+        data: CardData {
+            front: card_get_data.front.clone(),
+            back: card_get_data.back.clone(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();

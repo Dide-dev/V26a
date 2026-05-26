@@ -25,7 +25,7 @@
     };
 
     const maxInputLengths = {
-        email: 256,
+        email: 128,
         password: 72
     };
 

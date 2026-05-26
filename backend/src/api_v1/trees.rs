@@ -27,6 +27,7 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgPool};
 
+use crate::db_structs::Validated;
 use std::collections::HashMap;
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -88,9 +89,8 @@ async fn add_new_tree(
     Extension(db): Extension<PgPool>,
     Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    if !is_tree_structure_empty(&tree_add_data.tree_structure) {
-        return Err(ApiError::NonEmptyStructure);
-    }
+    tree_add_data.validate_inputs()?;
+
     let mut transaction = db.begin().await?;
     if !language_exists(&mut *transaction, &tree_add_data.tree_data.language_code).await? {
         return Err(ApiError::MissingLanguage(
@@ -150,14 +150,6 @@ async fn remove_tree(
     verify_tree_permissions(get_connection!(db), tree_id, claims).await?;
 
     db::trees::remove_tree(&db, tree_id).await
-}
-
-/// Check whether a tree structure contains no cards.
-///
-/// # Returns
-/// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
-fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
-    tree_structure.flatten().is_empty()
 }
 
 #[utoipa::path(
@@ -382,6 +374,7 @@ async fn update_tree_data(
     Extension(db): Extension<PgPool>,
     Json(tree_update_data): Json<TreeUpdateData>,
 ) -> Result<(), ApiError> {
+    tree_update_data.new_data.validate_inputs()?;
     let mut transaction = db.begin().await?;
 
     // Verify the tree's existence and the user's permissions.

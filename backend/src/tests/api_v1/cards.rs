@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::db_structs::cards::{
-    CardAddData, CardGetData, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
+    CardAddData, CardData, CardUpdateData, LibraryCardAddData, LibraryCardGetData,
 };
 use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure, TreeWithCards};
 use crate::tests::api_v1::setup_login;
@@ -20,8 +20,10 @@ async fn test_new_card(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id: 0,
-        front: "front".to_owned(),
-        back: "back".to_owned(),
+        data: CardData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        },
     };
 
     let response = server.post("/cards/add").json(&card_add_data).await;
@@ -38,8 +40,10 @@ async fn test_new_card(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id,
-        front: "front".to_owned(),
-        back: "back".to_owned(),
+        data: CardData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        },
     };
 
     let response = server.post("/cards/add").json(&card_add_data).await;
@@ -49,9 +53,9 @@ async fn test_new_card(db: PgPool) {
     let mut expected_btree = BTreeMap::new();
     expected_btree.insert(
         card_id,
-        CardGetData {
-            front: card_add_data.front,
-            back: card_add_data.back,
+        CardData {
+            front: card_add_data.data.front,
+            back: card_add_data.data.back,
         },
     );
 
@@ -78,8 +82,10 @@ async fn test_update_existing_card(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id,
-        front: "front".to_owned(),
-        back: "back".to_owned(),
+        data: CardData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        },
     };
 
     let response = server.post("/cards/add").json(&card_add_data).await;
@@ -88,8 +94,10 @@ async fn test_update_existing_card(db: PgPool) {
 
     let card_update_data = CardUpdateData {
         card_id,
-        new_front: "FRONT".to_owned(),
-        new_back: "BACK".to_owned(),
+        data: CardData {
+            front: "FRONT".to_owned(),
+            back: "BACK".to_owned(),
+        },
     };
 
     let response = server.post("/cards/update").json(&card_update_data).await;
@@ -98,9 +106,9 @@ async fn test_update_existing_card(db: PgPool) {
     let mut expected_btree = BTreeMap::new();
     expected_btree.insert(
         card_id,
-        CardGetData {
-            front: card_update_data.new_front,
-            back: card_update_data.new_back,
+        CardData {
+            front: card_update_data.data.front,
+            back: card_update_data.data.back,
         },
     );
 
@@ -138,8 +146,10 @@ async fn test_library_card_add(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id,
-        front: "front".to_owned(),
-        back: "back".to_owned(),
+        data: CardData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        },
     };
 
     let response = server.post("/cards/add").json(&card_add_data).await;
@@ -166,6 +176,6 @@ async fn test_library_card_add(db: PgPool) {
 
     assert_eq!(library_card_add_data.title, retrieved_library_card.title);
     assert_eq!(library_card_add_data.tags, retrieved_library_card.tags);
-    assert_eq!(card_add_data.front, retrieved_library_card.front);
-    assert_eq!(card_add_data.back, retrieved_library_card.back);
+    assert_eq!(card_add_data.data.front, retrieved_library_card.front);
+    assert_eq!(card_add_data.data.back, retrieved_library_card.back);
 }

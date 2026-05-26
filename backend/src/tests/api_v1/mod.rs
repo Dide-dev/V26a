@@ -19,11 +19,12 @@ use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
-use crate::db_structs::users::{RegisterData, UserLanguage};
+use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use percent_encoding::percent_decode_str;
+use rand::RngExt;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
@@ -66,16 +67,20 @@ fn setup(db: PgPool) -> TestServer {
 /// # Returns
 /// An i32 representing the id of the user created.
 async fn register(test_server: &TestServer, email: String) -> i32 {
+    let mut rng = rand::rng();
+    let n: u64 = rng.random();
     let response = test_server
         .post("/users/add")
         .json(&RegisterData {
             email,
             password: "a$$word".to_string(),
-            name: format!("John Test {}", uuid::Uuid::new_v4()),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::En,
+            data: UserData {
+                name: format!("John_Test_{n}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
         })
         .await;
     response.assert_status_ok();
