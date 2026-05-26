@@ -13,7 +13,7 @@
     import { getUserInfo } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
-    import lock from '$lib/assets/icons/lock.svg?raw';
+    import editIcon from '$lib/assets/icons/edit.svg?raw';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { htmlFromMarkdown } from '$lib/markdown';
 
@@ -56,47 +56,38 @@
         <p class="text-green-800">{m.loadingTree()}</p>
     {:else}
         <div class="ml-1.5 flex w-[calc(100%-1.5*var(--spacing))] flex-col">
-            <div class="flex flex-auto flex-row">
-                <div class="flex flex-col">
-                    <div class="flex">
-                        <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
-                        <div class="flex flex-col justify-center">
-                            {#if !tree.metadata.data.published}
-                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                <h1 class="page__title mt-1">{@html lock}</h1>
-                            {/if}
-                        </div>
-                    </div>
-                    <p class="-mt-1 italic *:*:inline">
-                        {m.madeBy()}:
-                        <AnimatedUnderline --weight-underline="calc(var(--spacing) / 3)">
+            <div class="flex flex-col">
+                <div class="flex">
+                    <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
+                    <div class="flex flex-col justify-center">
+                        {#if userAllowedToEdit}
                             <a
-                                href={appLink(`/all-trees?owner=${tree.metadata.genData.ownerId}`)}
-                                class="text-black">{tree.metadata.linkedData.ownerName}</a
+                                href={appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`)}
+                                class="page__title mt-3 ml-1"
+                                data-testid="edit-button"
                             >
-                        </AnimatedUnderline>
-                    </p>
-                    <p class="font-semibold text-neutral-600">
-                        {tree.metadata.data.description}
-                    </p>
-                    <div class="mt-1 flex flex-row">
-                        {#each tree.metadata.data.tags as tag (tag)}
-                            {@render tagBlob(tag)}
-                        {/each}
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html editIcon}
+                            </a>
+                        {/if}
                     </div>
                 </div>
-                <div class="flex flex-auto"></div>
-                <div class="flex flex-col">
-                    {#if userAllowedToEdit}
-                        <button
-                            data-testid="edit-button"
-                            class="mr-4 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2"
-                            onclick={() =>
-                                goto(appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`))}
+                <p class="-mt-1 italic *:*:inline">
+                    {m.madeBy()}:
+                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 3)">
+                        <a
+                            href={appLink(`/all-trees?owner=${tree.metadata.genData.ownerId}`)}
+                            class="text-black">{tree.metadata.linkedData.ownerName}</a
                         >
-                            {m.edit()}
-                        </button>
-                    {/if}
+                    </AnimatedUnderline>
+                </p>
+                <p class="font-semibold text-neutral-600">
+                    {tree.metadata.data.description}
+                </p>
+                <div class="mt-1 flex flex-row">
+                    {#each tree.metadata.data.tags as tag (tag)}
+                        {@render tagBlob(tag)}
+                    {/each}
                 </div>
             </div>
             <div class="mt-text-small flex flex-auto flex-row">
@@ -109,22 +100,29 @@
                     </p>
                 </div>
                 <div class="flex flex-auto"></div>
-                <div class="mr-4 flex flex-col">
+                <div class="mr-4 flex flex-col text-right">
                     {#if tree.metadata.data.bookIsbn !== null}
                         <a
                             href={appLink(`/all-trees?isbn=${tree.metadata.data.bookIsbn}`)}
-                            class="flex text-right *:*:flex-col"
+                            class="flex w-min self-end *:*:flex-col"
                         >
                             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                                 <h2 class="w-fit self-end text-lg font-semibold text-neutral-800">
                                     {tree.metadata.data.bookName}
                                 </h2>
-                                <p class="italic">
-                                    {m.writtenBy({ name: tree.metadata.data.bookAuthor })}
-                                </p>
-                                <p>{m.bookChapter()} {tree.metadata.data.bookChapter}</p>
                             </AnimatedUnderline>
                         </a>
+                        <p class="italic">
+                            {m.writtenBy({ name: tree.metadata.data.bookAuthor })}
+                        </p>
+                        <p>
+                            {m.bookEdition()}
+                            {tree.metadata.data.bookEdition},
+                            {m.bookChapter()}
+                            {tree.metadata.data.bookChapter},
+                            {m.bookExercise()}
+                            {tree.metadata.data.bookExercise}
+                        </p>
                     {/if}
                 </div>
             </div>
