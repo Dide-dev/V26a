@@ -36,10 +36,10 @@
                 title: 'Verbeter je oplosvaardigheden met heuristiekbomen',
                 color: 'var(--color-tree-100)',
                 plainContents: [
-                    'Wanneer je bezig bent met een opgave, loop je op een gegeven moment vast. ' +
+                    'Wanneer je bezig bent met een opgave, loop je waarschijnlijk op een gegeven moment vast. ' +
                         'Dan kun je ervoor kiezen om het antwoordmodel erbij te pakken, maar ' +
                         'daarvan word je niet meteen beter in het oplossen van problemen.',
-                    'In plaats daarvan, kun je ook gebruik maken van een heuristiekboom: ' +
+                    'In plaats daarvan kun je ook gebruik maken van een heuristiekboom: ' +
                         'een set aan hintkaartjes waar je in een boomstructuur doorheen kunt lopen.',
                     `Je kunt <a href=${appLink('/all-trees')} class="text__link">hier</a> talloze heuristiekbomen vinden, ` +
                         'waarmee je meteen aan de slag kunt!'
@@ -98,37 +98,37 @@
                 title: 'Creëer nieuwe heuristiekbomen voor je leerlingen',
                 color: 'var(--color-sky-100)',
                 plainContents: [
-                    `Door een account te <a href=${appLink('/registration')} class="text__link">registreren</a>, ` +
-                        'kun je zelf nieuwe heuristiekbomen creëren voor die lastige opgaves, ' +
+                    `Door je te <a href=${appLink('/registration')} class="text__link">registreren</a>, ` +
+                        'kun je zelf nieuwe heuristiekbomen creëren voor lastige opgaves ' +
                         'waar je leerlingen moeite mee hebben.',
-                    'Met onze <i>tree-editor</i> maak je gemakkelijk een heuristiekboom, ' +
-                        'en publiceer je deze gratis, zodat al jouw leerlingen, ' +
-                        'en hopelijk nog meer, daar gebruik van kunnen maken.'
+                    'Met onze <i>tree editor</i> maak je gemakkelijk een heuristiekboom ' +
+                        'en publiceer je deze gratis, zodat al jouw leerlingen ' +
+                        'en ieder ander die dat wil, daar gebruik van kunnen maken.'
                 ],
                 popOpenContents: [
                     {
                         heading: 'Hoe maak ik een heuristiekboom?',
                         content: [
-                            'Om te beginnen met het maken van heuristiekbomen, ' +
+                            'Om te beginnen met het maken van heuristiekbomen ' +
                                 'moet je eerst een account aanmaken op de ' +
                                 `<a href=${appLink('/registration')} class="text__link">registratie</a>-pagina.`,
                             'Als je eenmaal bent ingelogd, kun je je begeven naar de ' +
                                 `<a href=${appLink('/tree-generator')} class="text__link">
                                         boom-creatie</a>-pagina, ` +
                                 'waarvandaan je, na het invullen van wat informatie over de boom, ' +
-                                'wordt doorgeleid naar de <i>tree-editor</i>.'
+                                'wordt doorgeleid naar de <i>tree editor</i>.'
                         ]
                     },
                     {
                         heading: 'Hoe bewerk ik mijn heuristiekboom?',
                         content: [
-                            'Vanuit de <i>tree-editor</i> kun je gemakkelijk kaartjes ' +
+                            'Vanuit de <i>tree editor</i> kun je gemakkelijk kaartjes ' +
                                 'toevoegen, verwijderen en verslepen: ' +
                                 '<ul>' +
                                 '<li>Door op een van de gestippelde kaders met een plusje ' +
                                 'te klikken voeg je een nieuwe kaart toe.</li>' +
-                                '<li>In het zijmenu dat opent bij het toevoegen van een kaart, ' +
-                                'kan de voor- en achtertekst worden bewerkt. ' +
+                                '<li>In het zijmenu dat opent bij het toevoegen van een kaart ' +
+                                'kan de tekst op de voor- en achterkant worden bewerkt. ' +
                                 'De voortekst wordt getoond voordat de kaart is geopend, ' +
                                 'en de achterkant, die dus de heuristiek bevat, daarna.</li>' +
                                 '<li>Dit zijmenu om de inhoud van een kaart te wijzigen ' +
@@ -140,7 +140,7 @@
                                 'door de pijltjes linksboven in een kaart vast te grijpen. ' +
                                 'De kaart(en) worden geplaatst op het gestippelde kader ' +
                                 'waarboven ze worden losgelaten.</li>' +
-                                '<li>Je kunt je laatste actie ongedaan maken door te klikken ' +
+                                '<li>Je kunt je laatste acties ongedaan maken door te klikken ' +
                                 'op de pijltjes bovenaan de pagina, of door gebruik te maken van ' +
                                 'de sneltoetsen <i>Ctrl + Z</i> en <i>Ctrl + Y</i>.</li>' +
                                 '</ul>',
@@ -170,7 +170,7 @@
                     {
                         heading: 'Hoe publiceer ik mijn heuristiekboom?',
                         content: [
-                            'Het publiceren van de boom kan vanaf de <i>tree-editor</i>-pagina. ' +
+                            'Het publiceren van de boom kan vanaf de <i>tree editor</i>-pagina. ' +
                                 `Klik daar op '${m.editMetadata()}' en vink het veld ` +
                                 `'${m.published()}' aan, om de boom te publiceren.`,
                             'Om te controleren of een boom gepubliceerd is, kun je op de ' +
@@ -193,7 +193,7 @@
                                 '<li>Bos, R., & van den Bogaart, T. (2022). Heuristic Trees as ' +
                                 'a Digital Tool to Foster Compression and Decompression in ' +
                                 'Problem‑Solving. ' +
-                                '<i>Digital Experiences in Mathematics Education, 8</i>, 157–182. ' +
+                                '<i>Digital Experiences in Mathematics Education</i>, 8, 157–182. ' +
                                 '<a href="https://doi.org/10.1007/s40751-022-00101-6" target="_blank" class="text__link">' +
                                 'https://doi.org/10.1007/s40751-022-00101-6</a></li>' +
                                 '<li>Lemmink, R. (2019): Improving Help-Seeking Behavior for ' +
@@ -219,11 +219,11 @@
                 plainContents: [
                     "When working on an assignment, you'll likely get stuck at some point. " +
                         "At that point you might choose to look at a solution, but this won't " +
-                        'immediately make you better at solving similar problems in the future.',
+                        'necessarily make you better at solving similar problems in the future.',
                     'Instead, you could use a heuristic tree: a set of hint-cards you can ' +
-                        'follow through a tree structure.',
+                        'traverse through a tree structure.',
                     `<a href=${appLink('/all-trees')} class="text__link">Here</a> you may find ` +
-                        'countless heuristic trees, you can get started on right away!'
+                        'countless heuristic trees you can get started on right away!'
                 ],
                 popOpenContents: [
                     {
@@ -240,7 +240,7 @@
                         heading: 'What is a heuristic tree?',
                         content: [
                             'A heuristic tree offers hints structured in the form of a tree. ' +
-                                'Heuristic trees are taylor made for a specific assignment, ' +
+                                'Heuristic trees are tailor-made for a specific assignment, ' +
                                 'and as such, they offer more direction than a general list of heuristics.'
                         ]
                     },
@@ -249,20 +249,20 @@
                         content: [
                             'Upon opening a heuristic tree, all hint-cards are closed. ' +
                                 'These can be opened from left to right, by clicking on the cards. ' +
-                                'The heuristics start off general and get more concrete, ' +
+                                'The heuristics start off abstract and get more concrete, ' +
                                 'the deeper you crawl into the tree.',
                             'Most trees are separated into three main branches. ' +
                                 'Each branch belongs to a phase: ' +
                                 '<ul>' +
                                 '<li><b>Orientation:</b> ' +
-                                'here you explore the problem and you try to get a grip on it.' +
+                                'here you explore the problem and you try to grasp it.' +
                                 '</li>' +
                                 '<li><b>Making & executing plans:</b> ' +
-                                'here you come up with a strategy and try to execute it – at best, ' +
+                                'here you come up with a strategy and try to execute it, ' +
                                 'until you have solved the problem.' +
                                 '</li>' +
-                                '<li><b>Afronding:</b> ' +
-                                'Here you look back at the solution and your solution process, ' +
+                                '<li><b>Completion:</b> ' +
+                                'here you look back at the solution and your solution process, ' +
                                 'and try to come up with learning points for the future.' +
                                 '</li>' +
                                 '</ul>'
@@ -277,9 +277,9 @@
                     `By <a href=${appLink('/registration')} class="text__link">registering</a> ` +
                         'an account, you can create heuristic trees for those difficult problems ' +
                         'your students keep struggling with.',
-                    'With our <i>tree-editor</i> you can easily create your own heuristic tree, ' +
+                    'With our tree editor you can easily create your own heuristic tree ' +
                         'and publish it for free, so each of your students, ' +
-                        'and hopefully even more, can make use of it.'
+                        'and anyone else interested, can make use of it.'
                 ],
                 popOpenContents: [
                     {
@@ -290,20 +290,20 @@
                             'Once you have logged in, you can navigate to the ' +
                                 `<a href=${appLink('/tree-generator')} class="text__link">
                                         tree generator</a>-page ` +
-                                'from where you will be sent to the <i>tree-editor</i>, ' +
+                                'from where you will be sent to the tree editor, ' +
                                 'after filling out some information on the tree.'
                         ]
                     },
                     {
                         heading: 'How do I edit my heuristic tree?',
                         content: [
-                            'Within the <i>tree-editor</i> you can easily add, remove and ' +
+                            'Within the tree editor you can easily add, remove and ' +
                                 'drag cards throughout your tree:' +
                                 '<ul>' +
-                                '<li>By clicking on one of the dashed boxes with a plus, ' +
+                                '<li>By clicking on one of the dashed boxes containing a plus, ' +
                                 'you can add a new card to the tree.</li>' +
-                                '<li>In the sidebar that is opened upon adding a new card, ' +
-                                'the front- and back-texts of the card can be edited. ' +
+                                '<li>In the sidebar, which opens upon adding a new card, ' +
+                                'the texts on the front and back of the card can be edited. ' +
                                 'The front-text is shown before the card has been opened, ' +
                                 'and the back-text, containing the actual heuristic, afterward.</li>' +
                                 '<li>This sidebar can be reopened later, by clicking on the ' +
@@ -312,7 +312,7 @@
                                 'at the top-left of the card.</li>' +
                                 '<li>A card can be moved, together with all its <i>children</i>, ' +
                                 'by holding onto the arrows at the top-left of a card. ' +
-                                'The card(s) will be placed on the dashed box above which ' +
+                                'The card(s) will be placed on the highlighted dashed box above which ' +
                                 'they are let go.</li>' +
                                 '<li>You can undo and redo your last actions by clicking on ' +
                                 'the forward and backward arrows at the top of the page, ' +
@@ -345,7 +345,7 @@
                     {
                         heading: 'How do I publish my heuristic tree?',
                         content: [
-                            'On the <i>tree editor</i>-page, you can easily publish your tree. ' +
+                            'On the tree editor-page, you can easily publish your tree. ' +
                                 `Click on '${m.editMetadata()}' and check the field ` +
                                 `'${m.published()}', to publish the tree.`,
                             'To verify whether a tree of yours is published, you can check on the ' +
@@ -363,7 +363,7 @@
                                 '<li>Bos, R., & van den Bogaart, T. (2022). Heuristic Trees as ' +
                                 'a Digital Tool to Foster Compression and Decompression in ' +
                                 'Problem‑Solving. ' +
-                                '<i>Digital Experiences in Mathematics Education, 8</i>, 157–182. ' +
+                                '<i>Digital Experiences in Mathematics Education</i>, 8, 157–182. ' +
                                 '<a href="https://doi.org/10.1007/s40751-022-00101-6" target="_blank" class="text__link">' +
                                 'https://doi.org/10.1007/s40751-022-00101-6</a></li>' +
                                 '<li>Lemmink, R. (2019): Improving Help-Seeking Behavior for ' +
