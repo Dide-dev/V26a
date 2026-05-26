@@ -24,6 +24,7 @@
     import { onMount } from 'svelte';
     import { markdownFromProsekitHtml, markdownToProsekitHtml } from './markdown';
     import Toolbar from './Toolbar.svelte';
+    import { DropIndicator } from 'prosekit/svelte/drop-indicator';
 
     import { defineImageViewerParserExtension } from './imageProsekit';
     import { defineBlockquote } from '@prosekit/extensions/blockquote';
@@ -154,6 +155,7 @@
         class="box-border flex h-full min-h-36 w-full flex-col rounded-md border border-solid border-gray-200 bg-[canvas] text-black shadow-sm dark:border-gray-700 dark:text-white"
     >
         <Toolbar />
+        <DropIndicator class="z-50 bg-blue-500 transition-all" />
         <div class="relative box-border w-full flex-1 overflow-y-auto">
             <div class="ProseMirror min-h-full p-1 outline-hidden" {@attach editor.mount}></div>
         </div>
