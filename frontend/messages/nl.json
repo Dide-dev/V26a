@@ -131,6 +131,7 @@
     "exampleBookChapter": "VII",
     "exampleExercise": "2",
     "exampleAssignment": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+    "writtenBy": "geschreven door {name}",
     "noAccount": "Nog geen account? Registreer je hier.",
     "invalidISBN": "Voer een geldige ISBN van lengte 10 of 13 in",
     "general": "Algemeen",

@@ -13,6 +13,9 @@
     import { getUserInfo } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
+    import lock from '$lib/assets/icons/lock.svg?raw';
+    import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
+    import { htmlFromMarkdown } from '$lib/markdown';
 
     let userInfo = getUserInfo();
 
@@ -52,23 +55,80 @@
     {#if tree === null}
         <p class="text-green-800">{m.loadingTree()}</p>
     {:else}
-        {#if userAllowedToEdit}
-            <button
-                data-testid="edit-button"
-                class="fixed top-16 right-4 z-50 m-2 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2 shadow"
-                onclick={() => goto(appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`))}
-            >
-                {m.edit()}
-            </button>
-        {/if}
-
-        <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree.metadata.data.title}</h1>
-        <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-            {tree.metadata.data.description}
-        </p>
-        <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-            {tree.metadata.data.assignmentText}
-        </p>
+        <div class="ml-1.5 flex w-[calc(100%-1.5*var(--spacing))] flex-col">
+            <div class="flex flex-auto flex-row">
+                <div class="flex flex-col">
+                    <div class="flex">
+                        <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
+                        <div class="flex flex-col justify-center">
+                            {#if !tree.metadata.data.published}
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                <h1 class="page__title mt-1">{@html lock}</h1>
+                            {/if}
+                        </div>
+                    </div>
+                    <p class="-mt-1 italic *:*:inline">
+                        {m.madeBy()}:
+                        <AnimatedUnderline --weight-underline="calc(var(--spacing) / 3)">
+                            <a
+                                href={appLink(`/all-trees?owner=${tree.metadata.genData.ownerId}`)}
+                                class="text-black">{tree.metadata.linkedData.ownerName}</a
+                            >
+                        </AnimatedUnderline>
+                    </p>
+                    <p class="font-semibold text-neutral-600">
+                        {tree.metadata.data.description}
+                    </p>
+                    <div class="mt-1 flex flex-row">
+                        {#each tree.metadata.data.tags as tag (tag)}
+                            {@render tagBlob(tag)}
+                        {/each}
+                    </div>
+                </div>
+                <div class="flex flex-auto"></div>
+                <div class="flex flex-col">
+                    {#if userAllowedToEdit}
+                        <button
+                            data-testid="edit-button"
+                            class="mr-4 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2"
+                            onclick={() =>
+                                goto(appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`))}
+                        >
+                            {m.edit()}
+                        </button>
+                    {/if}
+                </div>
+            </div>
+            <div class="mt-text-small flex flex-auto flex-row">
+                <div class="flex flex-col">
+                    <p class="mt-text-minor text-lg font-semibold">{m.assignmentText()}</p>
+                    <p>
+                        <!-- Trees from the prototype may contain images. -->
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                        {@html htmlFromMarkdown(tree.metadata.data.assignmentText)}
+                    </p>
+                </div>
+                <div class="flex flex-auto"></div>
+                <div class="mr-4 flex flex-col">
+                    {#if tree.metadata.data.bookIsbn !== null}
+                        <a
+                            href={appLink(`/all-trees?isbn=${tree.metadata.data.bookIsbn}`)}
+                            class="flex text-right *:*:flex-col"
+                        >
+                            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                                <h2 class="w-fit self-end text-lg font-semibold text-neutral-800">
+                                    {tree.metadata.data.bookName}
+                                </h2>
+                                <p class="italic">
+                                    {m.writtenBy({ name: tree.metadata.data.bookAuthor })}
+                                </p>
+                                <p>{m.bookChapter()} {tree.metadata.data.bookChapter}</p>
+                            </AnimatedUnderline>
+                        </a>
+                    {/if}
+                </div>
+            </div>
+        </div>
 
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
             {#each tree.structure.rootNodes as root (root)}
@@ -77,3 +137,16 @@
         </div>
     {/if}
 </div>
+
+{#snippet tagBlob(tag: string)}
+    <a
+        href={appLink(`/all-trees?tags=${tag}`)}
+        class={[
+            'mr-1.5 rounded-4xl border border-neutral-400 bg-neutral-200 p-[0.25rem_0.5rem] italic',
+            'transition-all duration-200',
+            'hover:bg-neutral-400 hover:p-[0.25rem_1rem] hover:text-white'
+        ]}
+    >
+        {tag}
+    </a>
+{/snippet}
