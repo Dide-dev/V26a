@@ -26,7 +26,7 @@
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
 
-    let id: number | null = $state(null);
+    let id: number = $state(0);
 
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
