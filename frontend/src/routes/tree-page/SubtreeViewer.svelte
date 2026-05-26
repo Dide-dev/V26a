@@ -14,14 +14,16 @@
     let {
         node,
         cards,
-        parentRevealed = true
+        distanceFromRevealed = $bindable()
     }: {
         node: RootNode | Node;
         cards: Record<CardId, CardData>;
-        parentRevealed?: boolean;
+        distanceFromRevealed: number;
     } = $props();
 
     let revealed = $derived('label' in node);
+
+    let distance = $derived(revealed ? 0 : distanceFromRevealed);
 </script>
 
 <div class="flex">
@@ -34,14 +36,18 @@
         <!-- Standard Node -->
         <!-- The 'flex' here prevents some weird vertical whitespace -->
         <div class="mb-2 flex">
-            <CardViewer bind:revealed {parentRevealed} card={cards[node.cardId]} />
+            <CardViewer
+                bind:distanceFromRevealed={distance}
+                card={cards[node.cardId]}
+                baseColor="tree"
+            />
         </div>
     {/if}
 
-    <LineDrawings>
+    <LineDrawings numberOfChildren={node.children.length}>
         <!-- Here the html gets recursive as we render the 'node.children' -->
         {#each node.children as child_node (child_node)}
-            <SubtreeViewer node={child_node} {cards} parentRevealed={revealed} />
+            <SubtreeViewer node={child_node} {cards} distanceFromRevealed={distance + 1} />
         {/each}
     </LineDrawings>
 </div>

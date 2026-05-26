@@ -9,33 +9,75 @@
     import type { CardData } from '$lib/api-wrapper/cards';
     let {
         card,
-        revealed = $bindable(),
-        parentRevealed
+        baseColor,
+        distanceFromRevealed = $bindable()
     }: {
         card: CardData;
-        revealed: boolean;
-        parentRevealed: boolean;
+        baseColor: string;
+        distanceFromRevealed: number;
     } = $props();
 
     function makeRevealed() {
-        revealed = true;
+        distanceFromRevealed = 0;
     }
+
+    // --color-tree-200 --color-tree-500 --color-tree-600 --color-tree-650 --color-tree-700 --color-tree-750 --color-tree-800
+
+    let openColor = $derived(`var(--color-${baseColor}-200)`);
+    let hoverColor = $derived(`var(--color-${baseColor}-500)`);
+
+    let closedColor = $derived(`var(--color-${baseColor}-${Math.min(800, 550 + 50 * distanceFromRevealed)})`);
 </script>
 
-{#if revealed}
+{#if distanceFromRevealed === 0}
+    {@render revealedCard(card)}
+{:else if distanceFromRevealed === 1}
+    {@render openableCard(card)}
+{:else}
+    {@render closedCard()}
+{/if}
+
+{#snippet revealedCard(card: CardGetData)}
     <p
-        class="h-fit min-h-9 w-xl overflow-auto border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
+        style="--background-color: {openColor}; --hover-color: {openColor}"
+        class="card min-h-card-height-md w-card-width-md overflow-auto border-green-800 p-1 wrap-anywhere"
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html markdownToFinalHtml(card.back)}
     </p>
-{:else if parentRevealed}
+{/snippet}
+
+{#snippet openableCard(card: CardGetData)}
     <button
-        class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
+        style="--background-color: {closedColor}; --hover-color: {hoverColor}"
+        class="card min-h-card-height-md w-card-width-md text-lg italic text-neutral-200 hover:text-neutral-100 cursor-pointer overflow-auto border-green-800 p-1 text-center wrap-anywhere"
         onclick={makeRevealed}
     >
-        {card.front}
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html markdownToFinalHtml(card.front)}
     </button>
-{:else}
-    <p class="tree-node h-fit min-h-9 w-4 border-2 border-green-800 bg-green-800 p-1"><br /></p>
-{/if}
+{/snippet}
+
+{#snippet closedCard()}
+    <p
+        style="--background-color: {closedColor}; --hover-color: {closedColor}"
+       class={[distanceFromRevealed == 2 ? 'w-card-width-sm' : 'w-card-width-xs', "tree-node card min-h-card-height-sm p-1"]}
+    ></p>
+{/snippet}
+
+<style>
+    @layer components {
+        .card {
+            height: fit-content;
+
+            border-radius: var(--radius-md);
+            border-width: 2px;
+
+            background-color: var(--background-color);
+
+            &:hover {
+                background-color: var(--hover-color);
+            }
+        }
+    }
+</style>

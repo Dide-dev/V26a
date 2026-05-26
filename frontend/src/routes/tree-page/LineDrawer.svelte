@@ -15,7 +15,13 @@
     import type { Snippet } from 'svelte';
     import { lineOffset, strokeWidth, svgWidth } from './lineConstants';
 
-    let { children }: { children: Snippet } = $props();
+    let {
+        numberOfChildren,
+        children
+    }: {
+        numberOfChildren: number;
+        children: Snippet;
+    } = $props();
 
     let svgHeight = $state(0);
 
@@ -27,6 +33,8 @@
         x2: number;
         y2: number;
     };
+
+    let width = $derived(numberOfChildren > 1 ? svgWidth : svgWidth / 2);
 
     function redrawLines() {
         svgLines = [];
@@ -42,9 +50,9 @@
                 container.children[container.children.length - 1].getBoundingClientRect();
             let childTop = lastChildBounding.top;
             svgLines.push({
-                x1: svgWidth / 2,
+                x1: width / 2,
                 y1: lineOffset,
-                x2: svgWidth / 2,
+                x2: width / 2,
                 y2: childTop - top + lineOffset
             });
             svgHeight = strokeWidth + childTop - top + lineOffset;
@@ -56,9 +64,9 @@
             let childTop = childBounding.top;
 
             svgLines.push({
-                x1: svgWidth / 2,
+                x1: width / 2,
                 y1: childTop + lineOffset - top,
-                x2: svgWidth,
+                x2: width,
                 y2: childTop + lineOffset - top
             });
         }
@@ -67,7 +75,7 @@
         svgLines.push({
             x1: 0,
             y1: lineOffset,
-            x2: svgWidth / 2,
+            x2: width / 2,
             y2: lineOffset
         });
     }
@@ -96,7 +104,7 @@
     });
 </script>
 
-<svg width={svgWidth} height={svgHeight} class="shrink-0">
+<svg {width} height={svgHeight} class="shrink-0">
     {#each svgLines as line (line)}
         <line
             {...line}

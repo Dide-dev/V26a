@@ -30,6 +30,7 @@
     --color-tree-610: oklch(0.58 0.118 142.42);
     --color-tree-625: oklch(0.55 0.112 142.42);
     --color-tree-650: oklch(0.525 0.102 142.42);
+    --color-tree-700: oklch(0.500 0.095 142.42);
     --color-tree-750: oklch(0.475 0.087 142.42);
     --color-tree-800: oklch(0.405 0.077 142.42);
     --color-tree-900: oklch(0.365 0.072 142.42);
@@ -65,6 +66,14 @@
     --spacing-footer-lg: calc(var(--spacing) * 40);
     --spacing-footer-md: calc(var(--spacing) * 32);
     --spacing-footer-th: calc(var(--spacing) * 20);
+
+    /* Spacing cards */
+    --spacing-card-height-md: calc(var(--spacing) * 16);
+    --spacing-card-height-sm: calc(var(--spacing) * 8);
+
+    --spacing-card-width-md: calc(var(--spacing) * 80);
+    --spacing-card-width-sm: calc(var(--spacing) * 24);
+    --spacing-card-width-xs: calc(var(--spacing) * 4);
 
     /* Spacing visual editor */
     --spacing-text-area: calc(var(--spacing) * 64);
