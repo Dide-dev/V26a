@@ -360,26 +360,26 @@ fn get_tags(boom: &Boom) -> Vec<String> {
             || deel.contains("klas 1")
             || deel.contains("BK 1")
     }) {
-        Some("Leerjaar 1".to_string())
+        Some("leerjaar-1".to_string())
     } else if boom.deel.clone().is_some_and(|deel| {
         deel.contains("2 havo/vwo")
             || deel.contains("2 vwo deel1")
             || deel.contains("vwo2")
             || deel.contains("BK 2")
     }) {
-        Some("Leerjaar 2".to_string())
+        Some("leerjaar-2".to_string())
     } else if boom.deel.clone().is_some_and(|deel| {
         deel.contains("Leerjaar 3") || deel.contains("wiskunde 3") || deel.contains("VMBO3KGT")
     }) {
-        Some("Leerjaar 3".to_string())
+        Some("leerjaar-3".to_string())
     } else if boom.deel.clone().is_some_and(|deel| deel.contains("4")) {
-        Some("Leerjaar 4".to_string())
+        Some("leerjaar-4".to_string())
     } else if boom
         .deel
         .clone()
         .is_some_and(|deel| deel.contains("klas 5"))
     {
-        Some("Leerjaar 5".to_string())
+        Some("leerjaar-5".to_string())
     } else {
         None
     };
