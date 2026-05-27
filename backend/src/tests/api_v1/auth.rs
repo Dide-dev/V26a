@@ -15,7 +15,7 @@ use sqlx::PgPool;
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
     let email = "KoekieMonster@sesamstraat.nl".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    let user_id = register(&server, email.clone()).await.0;
     let response = login(&server, email).await;
     let cookie = response.cookie("user_info");
     let cookie_data = get_cookie_data::<InfoCookieData>(&cookie);

@@ -19,6 +19,8 @@ pub enum ApiError {
     IllegalName,
     /// An error to return when an input provided is too long for the database.
     InputLengthExceeded(&'static str, usize),
+    /// An error to return when a user tries to authorize themselves as a co-author on their own tree.
+    InvalidAuthorisationTarget,
     /// An error to return when an invalid image type is attempted to be put in the database.
     InvalidImageType,
     /// An error to return when an invalid isbn is attempted to be put in the database.
@@ -42,6 +44,8 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
     MissingUser(i32),
+    /// An error to return when a non-existing `username` is used to access a user.
+    MissingUsername(String),
     /// An error to return when `add_new_image` has been called with an empty body.
     NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
@@ -121,6 +125,9 @@ impl Display for ApiError {
                     "Input in field \"{offending_string}\" exceeds the maximum length of {max_length} characters."
                 )
             }
+            ApiError::InvalidAuthorisationTarget => {
+                write!(f, "Cannot authorize this target.")
+            }
             ApiError::InvalidImageType => {
                 write!(f, "An invalid image type was uploaded.")
             }
@@ -148,6 +155,9 @@ impl Display for ApiError {
             ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
+            ApiError::MissingUsername(username) => {
+                write!(f, "The user with username {username} could not be found.")
+            }
             ApiError::NoImageBodyProvidedException => {
                 write!(f, "No image body has been provided.")
             }
@@ -209,6 +219,7 @@ impl ApiError {
         match &self {
             ApiError::IllegalName
             | ApiError::InputLengthExceeded(_, _)
+            | ApiError::InvalidAuthorisationTarget
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
             | ApiError::InvalidPage
@@ -220,6 +231,7 @@ impl ApiError {
             | ApiError::MissingSubject(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
+            | ApiError::MissingUsername(_)
             | ApiError::NoImageBodyProvidedException
             | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
 

@@ -1,6 +1,5 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
-    "helloWorld": "Hello, {name} from en!",
     "title": "Title",
     "description": "Description",
     "bookname": "Book name",
@@ -16,6 +15,18 @@
     "editThisCard": "Edit this card",
     "deleteThisCard": "Delete this card",
     "editRootnodeLabel": "Edit branch label",
+    "visualEditor": "Visual editor",
+    "codeEditor": "Code editor",
+    "bold": "Bold",
+    "italic": "Italic",
+    "headingN": "Heading {n}",
+    "math": "Math",
+    "mathBlock": "Math block",
+    "mathSyntaxInfo": "For supported syntax, see",
+    "blockquote": "Blockquote",
+    "bulletList": "Bullet list",
+    "orderedList": "Ordered list",
+    "upload": "Upload",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "deleteRootnode": "Remove this branch",
@@ -131,5 +142,6 @@
     "account": "Account",
     "admin": "Admin",
     "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
-    "owner": "Owner"
+    "owner": "Owner",
+    "heuristicTrees": "Heuristic trees"
 }

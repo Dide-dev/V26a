@@ -90,7 +90,8 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
-    user_id
+
+    (user_id, register_data)
 }
 
 /// Creates an admin account with the given [`TestServer`]
@@ -103,9 +104,13 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
 /// `email` - The new admin's email address.
 ///
 /// # Returns
-/// An i32 representing the id of the admin created.
-async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email: String) -> i32 {
-    let user_id = register(test_server, email).await;
+/// A tuple containing the id of the admin user created and the [`RegisterData`] used.
+async fn register_admin(
+    test_server: &TestServer,
+    db: impl PgExecutor<'_>,
+    email: String,
+) -> (i32, RegisterData) {
+    let (user_id, register_data) = register(test_server, email).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -115,7 +120,7 @@ async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email
     .await
     .unwrap();
 
-    user_id
+    (user_id, register_data)
 }
 
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.

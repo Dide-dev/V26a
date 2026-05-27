@@ -1,6 +1,5 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
-    "helloWorld": "Hallo, {name} vanuit nl!",
     "title": "Titel",
     "description": "Beschrijving",
     "bookname": "Naam boek",
@@ -16,6 +15,18 @@
     "editThisCard": "Bewerk deze kaart",
     "deleteThisCard": "Verwijder deze kaart",
     "editRootnodeLabel": "Bewerk taklabel",
+    "visualEditor": "Visuele editor",
+    "codeEditor": "Code editor",
+    "bold": "Dikgedrukt",
+    "italic": "Schuingedrukt",
+    "headingN": "Koptekst {n}",
+    "math": "Wiskunde",
+    "mathBlock": "Wiskunde blok",
+    "mathSyntaxInfo": "Voor ondersteunde notatie, zie",
+    "blockquote": "Citaatblok",
+    "bulletList": "Opsommingslijst",
+    "orderedList": "Genummerde lijst",
+    "upload": "Upload",
     "moveUp": "Verplaats omhoog",
     "moveDown": "Verplaats naar beneden",
     "deleteRootnode": "Verwijder deze tak",
@@ -131,5 +142,6 @@
     "account": "Account",
     "admin": "Beheer",
     "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
-    "owner": "Eigenaar"
+    "owner": "Eigenaar",
+    "heuristicTrees": "Heuristiekbomen"
 }
