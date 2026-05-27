@@ -7,12 +7,13 @@
 use crate::ArcState;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::users::{
-    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
-    update_user, user_id_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
+    update_password, update_user, user_id_exists,
 };
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PublicUserData, RegisterData,
+    UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
@@ -36,6 +37,7 @@ pub fn users() -> Router<ArcState> {
         .route("/update", post(update_user_data))
         .route("/change-password", post(change_password))
         .route("/{user_id}/delete", delete(delete_user_data))
+        .route("/{user_id}/public", get(get_public_user_data))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -137,6 +139,39 @@ async fn get_own_user_data(
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<UserGetData>, ApiError> {
     get_user(&db, claims.sub).await.map(Json)
+}
+
+#[utoipa::path(
+    get,
+    path = "/public",
+    context_path = "/api/v1/users/{user_id}",
+    responses(
+        (status = 200, description = "Successfully retrieved public data of user.", body = PublicUserData),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Get a user's public data from the database.
+///
+/// # Returns
+/// The user's data as [`PublicUserData`].
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if no user of the given id could be found.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_public_user_data(
+    Path(user_id): Path<i32>,
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<PublicUserData>, ApiError> {
+    if let Some(user_data) = get_user_public_data(&db, user_id).await? {
+        Ok(Json(user_data))
+    } else {
+        Err(ApiError::MissingUser(user_id))
+    }
 }
 
 #[utoipa::path(

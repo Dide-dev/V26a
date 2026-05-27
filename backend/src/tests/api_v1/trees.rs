@@ -956,13 +956,16 @@ async fn test_acquire_lock(db: PgPool) {
     let server = setup_with_options(db.clone(), true);
     let email1 = "a@localhost".to_owned();
     let email2 = "b@localhost".to_owned();
-    let user_id1 = register(&server, email1.clone()).await;
-    let user_id2 = register(&server, email2.clone()).await;
+    let register1 = register(&server, email1.clone()).await;
+    let register2 = register(&server, email2.clone()).await;
+    let user_id1 = register1.0;
+    let user_id2 = register2.0;
+    let user_name2 = register2.1.data.name;
 
     login(&server, email1.clone()).await;
     let tree_id = create_tree(&server).await;
     server
-        .post(&format!("/trees/{tree_id}/authorize/{user_id2}"))
+        .post(&format!("/trees/{tree_id}/authorize/{user_name2}"))
         .await
         .assert_status_ok();
 

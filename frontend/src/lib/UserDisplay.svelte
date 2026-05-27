@@ -6,23 +6,42 @@
 
 <!--
     @component
-    Displays the nickname of a user given the `user_id`.
-
+    Displays the name and/or nickname of a user given the `user_id`, as an inline html element.
 -->
 
 <script lang="ts">
     import { onMount } from 'svelte';
-    import type { UserId } from './api-wrapper/users';
+    import { getPublicUserData, type UserId } from './api-wrapper/users';
+    import { m } from './paraglide/messages';
 
     let { userId }: { userId: UserId } = $props();
 
-    let username = $state('Username loading...');
-    onMount(() => {
-        // TODO: actually get the nickname from a backend call,
-        // when that gets created.
-        // maybe also show real name on hover, make a link to profile page, show if user is admin, ...
-        username = userId.toString();
+    type DisplayData = {
+        displayText: string;
+        hoverText: string | null;
+    };
+
+    let data: DisplayData = $state({
+        displayText: `${m.loading()}...`,
+        hoverText: `${m.loading()}...`
+    });
+
+    onMount(async () => {
+        let userData = await getPublicUserData(userId);
+
+        if (userData.nickname.trim() === '') {
+            data = {
+                displayText: userData.name,
+                hoverText: null
+            };
+        } else {
+            data = {
+                displayText: userData.nickname,
+                hoverText: userData.name
+            };
+        }
     });
 </script>
 
-<span class="underline">{username}</span>
+<!-- Once a profile page for users is created, this could be turned into a link to it. -->
+<span class="underline" title={data.hoverText}>{data.displayText}</span>

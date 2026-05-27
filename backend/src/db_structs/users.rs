@@ -83,12 +83,26 @@ impl Validated for RegisterData {
     }
 }
 
-/// Data received when getting user data from the database.
+/// Data received when getting own user data from the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserGetData {
     pub email: String,
     pub data: UserData,
+}
+
+/// Data received when getting public user data from the database.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicUserData {
+    pub name: String,
+    pub nickname: String,
+    pub about_me: String,
+    pub language: UserLanguage,
+    pub account_type: AccountType,
+
+    /// If email is not visible, this will be set to None
+    pub email: Option<String>,
 }
 
 /// Data needed for an admin to update a user in the database.

@@ -78,7 +78,7 @@ pub async fn acquire_edit_lock(
     Path(tree_id): Path<i32>,
 ) -> Result<Response, ApiError> {
     let user_id = claims.sub;
-    super::verify_tree_permissions(crate::get_connection!(db), tree_id, claims).await?;
+    super::verify_tree_permissions(crate::get_connection!(db), tree_id, &claims).await?;
 
     Ok(ws.on_upgrade(move |socket| handle_socket_without_lock(socket, state, tree_id, user_id)))
 }

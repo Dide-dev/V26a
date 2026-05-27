@@ -5,6 +5,7 @@
 */
 
 import { apiCallPost, apiCallGet, apiCallDelete } from './index';
+import type { Option } from './types';
 
 const prefix = 'users/';
 
@@ -62,10 +63,21 @@ export type ChangePasswordResponse = {
     succeeded: boolean;
 };
 
-/** The data of the user that is returned when requesting it */
+/** The private data of the user that is returned when requesting it */
 export type UserGetData = {
     email: string;
     data: UserData;
+};
+
+/** The public data of a users profile page. */
+export type PublicUserData = {
+    name: string;
+    nickname: string;
+    aboutMe: string;
+    language: string;
+    accountType: AccountType;
+    /** Is null when the user set the `emailVisible` to false. */
+    email: Option<string>;
 };
 
 /** The data in the cookie */
@@ -98,6 +110,11 @@ export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> 
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('me');
+}
+
+/** Get a user's public data. Is by default cached in a global variable, to reduce server load. */
+export function getPublicUserData(userId: UserId): Promise<PublicUserData> {
+    return apiCallGetUser(`${userId}/public`);
 }
 
 /** Update a user's own data */
