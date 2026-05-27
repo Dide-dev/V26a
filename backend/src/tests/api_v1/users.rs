@@ -172,7 +172,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
     let email = "monkaS@gmail.com".to_owned();
-    let user_id = register(&server, email.clone()).await;
+    let user_id = register(&server, email.clone()).await.0;
 
     login(&server, email.clone()).await;
 
@@ -191,7 +191,7 @@ async fn test_delete_own_user(db: PgPool) {
 async fn test_delete_other_user(db: PgPool) {
     let server = setup(db);
     let email1 = "user1@gmail.com".to_owned();
-    let user_id_1 = register(&server, email1.clone()).await;
+    let user_id_1 = register(&server, email1.clone()).await.0;
     let email2 = "user2@gmail.com".to_owned();
     register(&server, email2.clone()).await;
     login(&server, email2.clone()).await;

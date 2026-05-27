@@ -34,15 +34,19 @@ impl PartialSchema for TreeWithCards {
             .examples(Some(serde_json::json!({
                 "metadata": {
                     "data": {
-                      "title": "string",
-                      "description": "string",
-                      "bookName": "string",
-                      "bookEdition": "string",
-                      "bookIsbn": "string",
-                      "bookChapter": "string",
-                      "bookExercise": "string",
-                      "assignmentText": "string",
-                      "published": true
+                      "assignmentText": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+                      "bookAuthor": "Serge Lang",
+                      "bookChapter": "VII",
+                      "bookEdition": "3",
+                      "bookExercise": "2",
+                      "bookIsbn": "9780387953854",
+                      "bookName": "Algebra",
+                      "description": "My first tree!",
+                      "languageCode": "nl",
+                      "published": true,
+                      "subjectId": 1,
+                      "tags": ["tag_1", "tag_2"],
+                      "title": "My heuristic tree"
                     },
                     "genData": {
                       "id": 7,
@@ -362,24 +366,32 @@ impl PartialSchema for TreeAddData {
             .property("treeStructure", TreeStructure::schema())
             .examples(Some(serde_json::json!({
                 "treeData": {
-                  "assignmentText": "string",
-                  "bookChapter": "string",
-                  "bookEdition": "string",
-                  "bookExercise": "string",
-                  "bookIsbn": "string",
-                  "bookName": "string",
-                  "description": "string",
+                  "assignmentText": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+                  "bookAuthor": "Serge Lang",
+                  "bookChapter": "VII",
+                  "bookEdition": "3",
+                  "bookExercise": "2",
+                  "bookIsbn": "9780387953854",
+                  "bookName": "Algebra",
+                  "description": "My first tree!",
+                  "languageCode": "nl",
                   "published": true,
-                  "title": "string"
+                  "subjectId": 1,
+                  "tags": ["tag_1", "tag_2"],
+                  "title": "My heuristic tree"
                 },
                 "treeStructure": {
                   "rootNodes": [
                     {
-                      "label": "string",
+                      "label": "Orientation",
                       "children": []
                     },
                     {
-                      "label": "string",
+                      "label": "Making & executing plans",
+                      "children": []
+                    },
+                    {
+                      "label": "Completion",
                       "children": []
                     }
                   ]
@@ -405,7 +417,6 @@ pub struct TreeListResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,
-    pub co_author: Option<i32>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
