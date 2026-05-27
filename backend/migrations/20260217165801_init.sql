@@ -8,11 +8,15 @@ CREATE EXTENSION citext;
 
 CREATE TABLE languages
 (
-    code CHAR(2)     PRIMARY KEY,
+    code CHAR(2) PRIMARY KEY,
     name VARCHAR(32) NOT NULL UNIQUE
 );
 
-INSERT INTO languages (code, name) VALUES ('nl', 'Nederlands'), ('en', 'English'), ('de', 'Deutsch'), ('fr', 'Français');
+INSERT INTO languages (code, name)
+VALUES ('nl', 'Nederlands'),
+       ('en', 'English'),
+       ('de', 'Deutsch'),
+       ('fr', 'Français');
 
 CREATE TABLE users
 (
@@ -27,23 +31,30 @@ CREATE TABLE users
     email_visible BOOLEAN       NOT NULL DEFAULT FALSE,
     account_type  VARCHAR(32)   NOT NULL DEFAULT 'author',
     language_code CHAR(2)       NOT NULL DEFAULT 'nl'  -- ISO 639-1
-    FOREIGN KEY (language_code) REFERENCES languages (code)
+        FOREIGN KEY (language_code) REFERENCES languages (code)
 );
 
 CREATE TABLE subjects
 (
-    id            SERIAL      PRIMARY KEY,
+    id            SERIAL PRIMARY KEY,
     language_code CHAR(2)     NOT NULL,
     name          VARCHAR(32) NOT NULL,
     UNIQUE (language_code, name),
     FOREIGN KEY (language_code) REFERENCES languages (code)
 );
 
-INSERT INTO subjects (language_code, name) VALUES ('nl', 'Wiskunde'), ('nl', 'Wiskunde A'), ('nl', 'Wiskunde B'), ('nl', 'Wiskunde C'), ('nl', 'Wiskunde D'), ('nl', 'Nederlands'), ('nl', 'Engels');
+INSERT INTO subjects (language_code, name)
+VALUES ('nl', 'Wiskunde'),
+       ('nl', 'Wiskunde A'),
+       ('nl', 'Wiskunde B'),
+       ('nl', 'Wiskunde C'),
+       ('nl', 'Wiskunde D'),
+       ('nl', 'Nederlands'),
+       ('nl', 'Engels');
 
 CREATE TABLE books
 (
-    isbn    BIGINT       PRIMARY KEY,
+    isbn    BIGINT PRIMARY KEY,
     title   VARCHAR(192) NOT NULL DEFAULT '',
     author  VARCHAR(192) NOT NULL DEFAULT '',
     edition VARCHAR(32)  NOT NULL DEFAULT ''
@@ -82,7 +93,7 @@ CREATE INDEX trees_filter_book_isbn ON trees (book_isbn);
 
 CREATE TABLE tags
 (
-    id   SERIAL      PRIMARY KEY,
+    id   SERIAL PRIMARY KEY,
     name VARCHAR(32) NOT NULL UNIQUE
 );
 
@@ -91,7 +102,7 @@ CREATE TABLE tree_tags
     tree_id INTEGER NOT NULL,
     tag_id  INTEGER NOT NULL,
     FOREIGN KEY (tree_id) REFERENCES trees (id) ON DELETE CASCADE, -- deleting a tree also deletes its tags
-    FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE, -- deleting a tag also removes it from all trees
+    FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,   -- deleting a tag also removes it from all trees
     PRIMARY KEY (tree_id, tag_id)
 );
 
