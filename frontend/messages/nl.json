@@ -1,6 +1,5 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
-    "helloWorld": "Hallo, {name} vanuit nl!",
     "title": "Titel",
     "description": "Beschrijving",
     "bookname": "Naam boek",
@@ -16,6 +15,18 @@
     "editThisCard": "Bewerk deze kaart",
     "deleteThisCard": "Verwijder deze kaart",
     "editRootnodeLabel": "Bewerk taklabel",
+    "visualEditor": "Visuele editor",
+    "codeEditor": "Code editor",
+    "bold": "Dikgedrukt",
+    "italic": "Schuingedrukt",
+    "headingN": "Koptekst {n}",
+    "math": "Wiskunde",
+    "mathBlock": "Wiskunde blok",
+    "mathSyntaxInfo": "Voor ondersteunde notatie, zie",
+    "blockquote": "Citaatblok",
+    "bulletList": "Opsommingslijst",
+    "orderedList": "Genummerde lijst",
+    "upload": "Upload",
     "moveUp": "Verplaats omhoog",
     "moveDown": "Verplaats naar beneden",
     "deleteRootnode": "Verwijder deze tak",
@@ -136,5 +147,6 @@
     "classroomName": "Naam van klaslokaal",
     "exampleClassroomName": "Wiskunde-B V6A",
     "exampleClassroomDescription": "Welkom leerlingen, in dit klaslokaal zullen jullie meer leren over wiskundige heuristiekbomen.",
-    "owner": "Eigenaar"
+    "owner": "Eigenaar",
+    "heuristicTrees": "Heuristiekbomen"
 }

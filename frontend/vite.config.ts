@@ -10,6 +10,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
+    build: { chunkSizeWarningLimit: 1200 },
     plugins: [
         tailwindcss(),
         sveltekit(),
