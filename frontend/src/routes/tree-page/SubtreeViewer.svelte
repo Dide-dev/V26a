@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import type { CardGetData, CardId } from '$lib/api-wrapper/cards';
+    import type { CardData, CardId } from '$lib/api-wrapper/cards';
     import type { Node, RootNode } from '$lib/api-wrapper/trees';
     import CardViewer from './CardViewer.svelte';
     import SubtreeViewer from './SubtreeViewer.svelte';
@@ -17,7 +17,7 @@
         parentRevealed = true
     }: {
         node: RootNode | Node;
-        cards: Record<CardId, CardGetData>;
+        cards: Record<CardId, CardData>;
         parentRevealed?: boolean;
     } = $props();
 

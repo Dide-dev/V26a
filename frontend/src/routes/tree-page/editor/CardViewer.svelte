@@ -6,11 +6,11 @@
 
 <script lang="ts">
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
-    import type { CardGetData } from '$lib/api-wrapper/cards';
+    import type { CardData } from '$lib/api-wrapper/cards';
     let {
         card
     }: {
-        card: CardGetData;
+        card: CardData;
     } = $props();
 </script>
 
