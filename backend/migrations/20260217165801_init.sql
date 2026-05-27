@@ -30,8 +30,8 @@ CREATE TABLE users
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     email_visible BOOLEAN       NOT NULL DEFAULT FALSE,
     account_type  VARCHAR(32)   NOT NULL DEFAULT 'author',
-    language_code CHAR(2)       NOT NULL DEFAULT 'nl'  -- ISO 639-1
-        FOREIGN KEY (language_code) REFERENCES languages (code)
+    language_code CHAR(2)       NOT NULL DEFAULT 'nl',  -- ISO 639-1
+    FOREIGN KEY (language_code) REFERENCES languages (code)
 );
 
 CREATE TABLE subjects
@@ -66,21 +66,21 @@ CREATE UNIQUE INDEX name_lower on users (LOWER(name));
 CREATE TABLE trees
 (
     id              SERIAL PRIMARY KEY,
-    owner_id        INTEGER      NOT NULL,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_modified   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    published       BOOLEAN      NOT NULL DEFAULT FALSE,
-    times_visited   BIGINT       NOT NULL DEFAULT 0,
-    last_visited    TIMESTAMPTZ           DEFAULT NULL,
-    title           VARCHAR(100) NOT NULL,
-    description     VARCHAR(500)          DEFAULT NULL,
-    book_chapter    VARCHAR(32)           DEFAULT NULL,
-    book_exercise   VARCHAR(32)           DEFAULT NULL,
-    assignment_text VARCHAR(5000)         DEFAULT NULL,
-    structure       JSONB        NOT NULL,
-    language_code   CHAR(2)      NOT NULL DEFAULT 'nl',
-    subject_id      INTEGER               DEFAULT NULL,
-    book_isbn       BIGINT                DEFAULT NULL,
+    owner_id        INTEGER       NOT NULL,
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified   TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published       BOOLEAN       NOT NULL DEFAULT FALSE,
+    times_visited   BIGINT        NOT NULL DEFAULT 0,
+    last_visited    TIMESTAMPTZ            DEFAULT NULL,
+    title           VARCHAR(100)  NOT NULL,
+    description     VARCHAR(500)  NOT NULL DEFAULT '',
+    book_chapter    VARCHAR(32)   NOT NULL DEFAULT '',
+    book_exercise   VARCHAR(32)   NOT NULL DEFAULT '',
+    assignment_text VARCHAR(5000) NOT NULL DEFAULT '',
+    structure       JSONB         NOT NULL,
+    language_code   CHAR(2)       NOT NULL DEFAULT 'nl',
+    subject_id      INTEGER                DEFAULT NULL,
+    book_isbn       BIGINT                 DEFAULT NULL,
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (language_code) REFERENCES languages (code),
     FOREIGN KEY (subject_id) REFERENCES subjects (id),
