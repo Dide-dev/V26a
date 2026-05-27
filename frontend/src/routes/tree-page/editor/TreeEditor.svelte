@@ -125,7 +125,7 @@
 
 <div class="flex h-full w-full flex-col items-start">
     {#if tree === null}
-        <p class="text-green-800">{m.loadingTree()}</p>
+        <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
     {:else}
         <h1 class="ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
         <p class="ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">

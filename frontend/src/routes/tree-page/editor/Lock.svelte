@@ -7,11 +7,15 @@
 <!--component
     This components tries to acquire an editing lock from the backend,
     to ensure no other user (or the same user on a different tab) is editing a tree at the same time.
+
+    Once the lock is aquired, the `children` will be mounted to DOM and rendered in place of this component.
  -->
 <script lang="ts">
     import type { UserId } from '$lib/api-wrapper/users';
     import type { TreeId } from '$lib/api-wrapper/trees';
     import { onMount, type Snippet } from 'svelte';
+    import { m } from '$lib/paraglide/messages';
+    import UserDisplay from '$lib/UserDisplay.svelte';
 
     let {
         treeId,
@@ -59,7 +63,6 @@
     };
 
     let localState = $state({ type: 'waiting' } as LocalState);
-    let hasLock = $derived(localState.type === 'lockAchieved');
 
     let protocol = $derived(window.location.protocol === 'http:' ? 'ws' : 'wss');
     let url = $derived(
@@ -67,7 +70,7 @@
     );
     let websocket: WebSocket;
 
-    onMount(() => {
+    function initializeWebsocket() {
         websocket = new WebSocket(url);
         websocket.onmessage = (event) => {
             let message: BackendMessage = JSON.parse(event.data);
@@ -79,6 +82,17 @@
                 localState = { type: 'serverDisconnected' };
             }
         };
+    }
+
+    function retry() {
+        localState = { type: 'waiting' };
+
+        // Artificial delay so that the user actually sees that there is a retry
+        setTimeout(initializeWebsocket, 200);
+    }
+
+    onMount(() => {
+        initializeWebsocket();
 
         return () => websocket.close();
     });
@@ -101,22 +115,35 @@
     }}
 />
 
-{#if localState.type !== 'lockAchieved'}
-    <div class="flex flex-col gap-2">
-        <!-- TODO: make prettier, add translations -->
-        <p class="font-bold" class:text-red-600={!hasLock} class:text-green-600={hasLock}>
-            {JSON.stringify(localState)}
+{#if localState.type === 'waiting'}
+    <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
+{/if}
+
+{#if localState.type !== 'lockAchieved' && localState.type !== 'waiting'}
+    <div class="m-3 flex flex-col items-center gap-2">
+        <p>
+            {#if localState.type === 'kickedOutBy'}
+                Kicked by <UserDisplay userId={localState.userId} />
+            {:else if localState.type === 'serverDisconnected'}
+                Server disconnected!
+            {:else if localState.type === 'lockFailed'}
+                <UserDisplay userId={localState.activeUser} /> is currently editing this tree! You can
+                force them out, but there could be unsaved changes.
+            {/if}
         </p>
-        {#if localState.type === 'lockFailed'}
-            <button
-                class="rounded bg-blue-300 p-1"
-                onclick={() => {
-                    sendMessage({ type: 'force' });
-                }}
-            >
-                Force kick
-            </button>
-        {/if}
+        <div class="flex gap-2">
+            {#if localState.type === 'lockFailed'}
+                <button
+                    class="rounded bg-red-300 p-1"
+                    onclick={() => {
+                        sendMessage({ type: 'force' });
+                    }}
+                >
+                    Force kick
+                </button>
+            {/if}
+            <button class="rounded bg-blue-300 p-1" onclick={retry}> Retry </button>
+        </div>
     </div>
 {/if}
 
