@@ -123,12 +123,11 @@
     <div class="m-3 flex flex-col items-center gap-2">
         <p>
             {#if localState.type === 'kickedOutBy'}
-                Kicked by <UserDisplay userId={localState.userId} />
+                {m.kickedBy()} <UserDisplay userId={localState.userId} />
             {:else if localState.type === 'serverDisconnected'}
-                Server disconnected!
+                {m.serverDisconnected()}
             {:else if localState.type === 'lockFailed'}
-                <UserDisplay userId={localState.activeUser} /> is currently editing this tree! You can
-                force them out, but there could be unsaved changes.
+                <UserDisplay userId={localState.activeUser} /> {m.otherUserHasLock()}
             {/if}
         </p>
         <div class="flex gap-2">
@@ -139,10 +138,10 @@
                         sendMessage({ type: 'force' });
                     }}
                 >
-                    Force kick
+                    {m.forceKick()}
                 </button>
             {/if}
-            <button class="rounded bg-blue-300 p-1" onclick={retry}> Retry </button>
+            <button class="rounded bg-blue-300 p-1" onclick={retry}>{m.retry()}</button>
         </div>
     </div>
 {/if}
