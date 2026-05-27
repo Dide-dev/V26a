@@ -184,7 +184,7 @@ mod tests {
 
         let rows1 = get_session(&db, "token-1").await.unwrap();
         let rows2 = get_session(&db, "token-2").await.unwrap();
-        
+
         // Deleting multiple sessions would result in multiple rows being empty.
         assert!(rows1.is_none());
         assert!(rows2.is_none());
