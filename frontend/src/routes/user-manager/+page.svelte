@@ -436,7 +436,7 @@
                 {/if}
                 {#if successfulPasswordChange}
                     <p class="text__success" data-testid="password-change-success">
-                        {m.succesfulPasswordChange()}
+                        {m.successfulPasswordChange()}
                     </p>
                 {/if}
             </div>

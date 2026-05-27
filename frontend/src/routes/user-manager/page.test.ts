@@ -438,5 +438,5 @@ test('Submission when all password expectations have been met', async () => {
     const confirmation = screen.getByTestId('password-change-success');
 
     expect(adminChangePassword).toHaveBeenCalled();
-    expect(confirmation.textContent).toBe(m.succesfulPasswordChange());
+    expect(confirmation.textContent).toBe(m.successfulPasswordChange());
 });
