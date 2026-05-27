@@ -15,7 +15,7 @@
     import { appLink } from '$lib';
     import editIcon from '$lib/assets/icons/edit.svg?raw';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
-    import { htmlFromMarkdown } from '$lib/markdown';
+    import { markdownToFinalHtml } from '$lib/rich-text/markdown';
 
     let userInfo = getUserInfo();
 
@@ -96,7 +96,7 @@
                     <p>
                         <!-- Trees from the prototype may contain images. -->
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                        {@html htmlFromMarkdown(tree.metadata.data.assignmentText)}
+                        {@html markdownToFinalHtml(tree.metadata.data.assignmentText)}
                     </p>
                 </div>
                 <div class="flex flex-auto"></div>
