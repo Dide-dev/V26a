@@ -106,6 +106,10 @@
         color: var(--color-blue-800);
     }
 
+    .text__code {
+        background: var(--color-neutral-200);
+    }
+
     .text__error {
         color: var(--color-red-700);
     }
