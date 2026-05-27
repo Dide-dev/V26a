@@ -37,6 +37,48 @@ pub async fn add_card(db: impl PgExecutor<'_>, card_data: &CardAddData) -> Resul
     Ok(card_id)
 }
 
+/// Duplicates a card in the the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `card_id` - The id of the card that needs to be duplicated as [`i32`].
+///
+/// `tree_id` - The id of the tree to which the duplicated card needs to go, as [`i32`].
+///
+/// # Returns
+/// The id assigned to the new card if successful.
+///
+/// # Errors
+/// Returns [`MissingCard`](ApiError::MissingCard) if no card with `card_id` exists.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn duplicate_card(
+    db: impl PgExecutor<'_>,
+    card_id: i32,
+    tree_id: i32,
+) -> Result<i32, ApiError> {
+    query!(
+        "
+            WITH original AS (
+                SELECT front, back
+                FROM cards
+                WHERE id = $1
+            )
+            INSERT INTO cards (tree_id, front, back)
+            SELECT $2, original.front, original.back
+            FROM original
+            RETURNING id
+            ",
+        card_id,
+        tree_id,
+    )
+    .fetch_optional(db)
+    .await?
+    .ok_or(ApiError::MissingCard(card_id))
+    .map(|r| r.id)
+}
+
 /// Remove a card from the database.
 ///
 /// # Arguments
@@ -343,5 +385,21 @@ mod tests {
 
         let found_tree_id = get_tree_of_card(&db, card_id).await;
         assert_eq!(found_tree_id, Ok(tree_id));
+    }
+
+    #[sqlx::test]
+    async fn test_duplicate_card(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = initialize_card(&db, tree_id).await;
+
+        let duplicate_card_id = duplicate_card(&db, card_id, tree_id).await.unwrap();
+        assert_ne!(duplicate_card_id, tree_id);
+
+        let card_text = get_card_text(&db, duplicate_card_id).await.unwrap();
+        let expected_card_text = CardGetData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
+        };
+        assert_eq!(card_text, expected_card_text);
     }
 }
