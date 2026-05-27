@@ -40,7 +40,7 @@ pub enum ApiError {
     MissingTree(i32),
     /// An error to return when a non-existing `user_id` is used to access a user.
     MissingUser(i32),
-    /// An error to return when a non-existing `user_id` is used to access a user.
+    /// An error to return when a non-existing `username` is used to access a user.
     MissingUsername(String),
     /// An error to return when `add_new_image` has been called with an empty body.
     NoImageBodyProvidedException,
