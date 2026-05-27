@@ -11,7 +11,7 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { getTreeWithCards, addCoAuthor, type TreeData } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeData } from '$lib/api-wrapper/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
