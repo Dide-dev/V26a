@@ -120,7 +120,11 @@
         resetInputStates();
 
         const result = await updateUser({
-            data: userData
+            name: userData.name,
+            nickname: userData.nickname,
+            aboutMe: userData.aboutMe,
+            emailVisible: userData.emailVisible,
+            language: userData.language
         });
 
         if (result.type === 'Success') {

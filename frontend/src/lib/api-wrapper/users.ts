@@ -23,7 +23,13 @@ function apiCallGetUser(path: string) {
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
 
-/** The data a user can modify, except email or password*/
+/** The data a user can modify, except email or password
+ *
+ * The data needed to update a user
+ * `accountType` and `enabled` are only updated if a non-null value is passed.
+ * `nickname` and `aboutMe` are always updated, where null values are stored as-is in the
+ * database.
+ */
 export type UserData = {
     name: string;
     nickname: string;
@@ -62,16 +68,6 @@ export type UserGetData = {
     data: UserData;
 };
 
-/**
- * The data needed to update a user
- * `accountType` and `enabled` are only updated if a non-null value is passed.
- * `nickname` and `aboutMe` are always updated, where null values are stored as-is in the
- * database.
- */
-export type UserUpdateData = {
-    data: UserData;
-};
-
 /** The data in the cookie */
 export type UserInfo = {
     /** This corresponds to userid of the current login. */
@@ -106,7 +102,7 @@ export function getOwnUserData(): Promise<UserGetData> {
 
 /** Update a user's own data */
 export function updateUser(
-    newData: UserUpdateData
+    newData: UserData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser(`update`, newData);
 }

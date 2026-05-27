@@ -823,7 +823,7 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
     server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
-            co_author_register_data.name
+            co_author_register_data.data.name
         ))
         .await;
 
@@ -849,7 +849,7 @@ async fn test_authorize_co_author_success(db: PgPool) {
     let response = server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
-            co_author_register_data.name
+            co_author_register_data.data.name
         ))
         .await;
 
@@ -875,7 +875,7 @@ async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
     let response = server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
-            co_author_register_data.name
+            co_author_register_data.data.name
         ))
         .await;
 

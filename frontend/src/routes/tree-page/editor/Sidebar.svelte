@@ -102,7 +102,7 @@
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <TextEditArea
+            <SimpleTextEditArea
                 maxLength={maxInputLengths.frontMaxLength}
                 height={2}
                 bind:valueText={sidebar.editingVersion.front}
@@ -126,7 +126,10 @@
                 </button>
             </div>
             {#if isVisualEditor}
-                <Editor maxLength={maxInputLengths.backMaxLength} bind:valueText={sidebar.editingVersion.back} />
+                <Editor
+                    maxLength={maxInputLengths.backMaxLength}
+                    bind:valueText={sidebar.editingVersion.back}
+                />
             {:else}
                 <SimpleTextEditArea
                     maxLength={maxInputLengths.backMaxLength}

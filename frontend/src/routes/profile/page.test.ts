@@ -16,7 +16,7 @@ import {
     getUserInfo,
     changePassword,
     type UserGetData,
-    type UserUpdateData,
+    type UserData,
     type UserInfo
 } from '$lib/api-wrapper/users';
 
@@ -96,14 +96,12 @@ test('Submission with full data', async () => {
     await user.type(aboutMeInput, 'Some interesting backstory');
     await user.click(screen.getByTestId('confirm-button'));
 
-    const expectedUpdateData: UserUpdateData = {
-        data: {
-            name: 'John_Test',
-            nickname: 'Johnny',
-            aboutMe: 'Some interesting backstory',
-            emailVisible: false,
-            language: 'en'
-        }
+    const expectedUpdateData: UserData = {
+        name: 'John_Test',
+        nickname: 'Johnny',
+        aboutMe: 'Some interesting backstory',
+        emailVisible: false,
+        language: 'en'
     };
     expect(updateUser).toHaveBeenCalledWith(expectedUpdateData);
 });

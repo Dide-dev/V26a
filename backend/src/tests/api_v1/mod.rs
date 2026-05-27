@@ -66,23 +66,21 @@ fn setup(db: PgPool) -> TestServer {
 ///
 /// # Returns
 /// An i32 representing the id of the user created.
-async fn register(test_server: &TestServer, email: String) -> i32 {
+async fn register(test_server: &TestServer, email: String) -> (i32, RegisterData) {
     let mut rng = rand::rng();
     let n: u64 = rng.random();
-    let response = test_server
-        .post("/users/add")
-        .json(&RegisterData {
-            email,
-            password: "a$$word".to_string(),
-            data: UserData {
-                name: format!("John_Test_{n}"),
-                nickname: String::new(),
-                about_me: String::new(),
-                email_visible: false,
-                language: UserLanguage::En,
-            },
-        })
-        .await;
+    let register_data = RegisterData {
+        email,
+        password: "a$$word".to_string(),
+        data: UserData {
+            name: format!("John_Test_{n}"),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::En,
+        },
+    };
+    let response = test_server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
