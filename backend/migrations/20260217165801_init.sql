@@ -30,7 +30,7 @@ CREATE TABLE users
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     email_visible BOOLEAN       NOT NULL DEFAULT FALSE,
     account_type  VARCHAR(32)   NOT NULL DEFAULT 'author',
-    language_code CHAR(2)       NOT NULL DEFAULT 'nl',  -- ISO 639-1
+    language_code CHAR(2)       NOT NULL DEFAULT 'nl', -- ISO 639-1
     FOREIGN KEY (language_code) REFERENCES languages (code)
 );
 
