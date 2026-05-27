@@ -30,6 +30,9 @@ pub struct Config {
     /// Upload images directory
     pub upload_dir: String,
     pub max_upload_size: usize,
+
+    /// Max concurrent classroom sessions (should be no higher than 20)
+    pub max_concurrent_classroom_sessions: usize,
 }
 
 impl Config {
@@ -70,6 +73,11 @@ impl Config {
             .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
             * 1_048_576; // Mebibytes to bytes
 
+        let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASCROOM_SESSIONS")
+            .unwrap_or("10".to_string())
+            .parse::<usize>()
+            .expect("Failed to parse environment variable MAX_CONCURRENT_CLASCROOM_SESSIONS");
+
         Self {
             listening_ip,
             listening_port,
@@ -80,6 +88,7 @@ impl Config {
             jwt_keys,
             upload_dir,
             max_upload_size,
+            max_concurrent_classroom_sessions,
         }
     }
 }

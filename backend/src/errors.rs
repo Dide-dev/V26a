@@ -42,6 +42,9 @@ pub enum ApiError {
     NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
+    /// An error to return when a join code is either not correct or the corresponding classroom is not open.
+    WrongClassroomJoinCode(String),
+    ClassroomIdRetrievalError,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -144,6 +147,14 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
+            ApiError::WrongClassroomJoinCode(join_code) => write!(
+                f,
+                "The join code {join_code} is not connected to a joinable classroom."
+            ),
+            ApiError::ClassroomIdRetrievalError => write!(
+                f,
+                "The classroom id could not be retrieved from the API uri"
+            ),
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -208,7 +219,9 @@ impl ApiError {
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
             | ApiError::NoImageBodyProvidedException
-            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure
+            | ApiError::WrongClassroomJoinCode(_)
+            | ApiError::ClassroomIdRetrievalError => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession

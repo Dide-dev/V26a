@@ -22,7 +22,7 @@ impl std::ops::Deref for ArcState {
     type Target = State;
 
     fn deref(&self) -> &Self::Target {
-        self.0.deref()
+        &self.0
     }
 }
 

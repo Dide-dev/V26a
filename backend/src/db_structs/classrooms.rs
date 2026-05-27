@@ -22,3 +22,20 @@ pub struct ClassroomGeneratedData {
     pub id: i32,
     pub join_code: String,
 }
+
+/// The data that is sent by the user to log in to a classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomUserLoginData {
+    pub join_code: String,
+    pub username: String,
+}
+
+/// The data that is sent to the user after successfully logging in to a classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomLoginResponse {
+    pub id: i32,
+    pub num: i32,
+    pub name: String,
+}

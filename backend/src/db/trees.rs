@@ -915,7 +915,7 @@ mod tests {
 
         let record = query!(
             "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
-            FROM trees 
+            FROM trees
             LEFT JOIN books ON trees.book_isbn = books.isbn
             WHERE id = $1", tree_id)
             .fetch_one(&db)

@@ -4,27 +4,40 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::classrooms::{add_classroom, generate_random_code};
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
-use crate::db_structs::session::Claims;
+use crate::db::classrooms::{
+    add_classroom, add_new_user_to_classroom, generate_random_code, get_name_by_number,
+    validate_join_code,
+};
+use crate::db_structs::classrooms::{
+    ClassroomAddData, ClassroomGeneratedData, ClassroomLoginResponse, ClassroomUserLoginData,
+};
+use crate::db_structs::session::{AllClassroomClaims, Claims, ClassroomClaims};
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
+use axum::extract::State;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
+use axum_extra::extract::CookieJar;
+use axum_extra::extract::cookie::Cookie;
+use chrono::Utc;
+use jsonwebtoken::{Header, Validation, decode, encode};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
-    Router::new().route("/add", post(add_new_classroom))
+    Router::new()
+        .route("/add", post(add_new_classroom))
+        .route("/login", post(classroom_login))
 }
 
 #[utoipa::path(
     post,
     path = "/add",
     context_path = "/api/v1/classrooms",
+    request_body = ClassroomAddData,
     responses(
-        (status = 200, description = "Successfully added new classroom."),
+        (status = 200, description = "Successfully added new classroom.", body = ClassroomGeneratedData),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error."),
     ),
@@ -56,4 +69,233 @@ async fn add_new_classroom(
     let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
 
     Ok(Json(ClassroomGeneratedData { id, join_code }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/login",
+    context_path = "/api/v1/classrooms",
+    request_body = ClassroomUserLoginData,
+    responses(
+        (status = 200, description = "Successfully logged in", body = ClassroomLoginResponse),
+        (status = 400, description = "The join code is not connected to a joinable classroom."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("classroom_sessions" = AllClassroomClaims, Cookie)
+    )
+)]
+/// Logs a user in to a classroom. The user in the front end fills in a join code and a username.
+/// If the username is just a number, treat it as a returning user. Otherwise, treat it as a new user.
+/// This function checks the validity of the join-code and then either creates or logs in a user.
+/// Then, user info and session cookies are created, so the user doesn't have to log in every time.
+///
+/// This API-function should be the only function that deals with the entire `classroom_sessions` cookie.
+/// All other functions will contain /classrooms/{id}, so those can use `ClassroomClaims` where
+/// only the information for that classroom is provided.
+///
+/// # Arguments
+/// `jar` - The collection of cookies of the user.
+///
+/// `classroom_login_data` - The credentials provided to log in, as [`ClassroomUserLoginData`].
+/// Contains the join code and a username.
+///
+/// # Returns
+/// The provided [`CookieJar`] wherein a `session` and `user_info` cookie has been added (if login successful).
+///
+/// A [`bool`] which flags whether the login was successful
+/// (login successful if join-code correct and user number exists or new user created)
+///
+/// # Errors
+/// May return one of these errors:
+/// - [`DatabaseException`](ApiError::DatabaseException)
+/// - [`WrongClassroomJoinCode`](ApiError::WrongClassroomJoinCode)
+/// - [`TokenCreationException`](ApiError::TokenCreationException)
+/// - [`SerdeException`](ApiError::SerdeException)
+async fn classroom_login(
+    jar: CookieJar,
+    Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
+    Json(classroom_login_data): Json<ClassroomUserLoginData>,
+) -> Result<(CookieJar, Json<ClassroomLoginResponse>), ApiError> {
+    // Validate the join code. Also checks if the connected classroom is joinable.
+    let classroom_id = validate_join_code(&db, &classroom_login_data.join_code).await?;
+
+    // Create a (num, name) pair either by creating a new user number or
+    // retrieving the name connected to the existing user number.
+    let (num, name): (i32, String) = match classroom_login_data.username.trim().parse::<i32>() {
+        // Username is num.
+        Ok(num) => (num, {
+            let name = get_name_by_number(&db, &classroom_id, &num).await?;
+            let Some(name) = name else {
+                return Err(ApiError::MissingUser(num));
+            };
+            name
+        }),
+        // Username is name.
+        Err(_) => (
+            add_new_user_to_classroom(
+                get_connection!(db),
+                &classroom_id,
+                classroom_login_data.username.trim(),
+            )
+            .await?,
+            classroom_login_data.username.trim().to_owned(),
+        ),
+    };
+
+    // Retrieve the config.
+    let config = &state.config;
+
+    // Define the classroom claims variable to put in the cookie.
+    let all_classroom_claims = get_classroom_claims(&jar, &state, classroom_id, num, &name);
+
+    // Create the authorization token.
+    let token = encode(
+        &Header::default(),
+        &all_classroom_claims,
+        &config.jwt_keys.encoding,
+    )
+    .map_err(|_| ApiError::TokenCreationException)?;
+
+    // Create the user info
+    let user_info = serde_json::to_string(&all_classroom_claims)?;
+
+    // Age of a cookie (same for the two cookies)
+    let time = time::Duration::new(config.session_duration, 0);
+
+    // Create classroom_sessions cookie. Multiple sessions can be put into this one cookie,
+    // however, only one session is allowed per classroom.
+    let cookie = Cookie::build(("classroom_sessions", token))
+        .path("/api")
+        .secure(true)
+        .max_age(time)
+        .http_only(true);
+
+    // Create classroom_user_infos cookie
+    let user_cookie = Cookie::build(("classroom_user_infos", user_info))
+        .path("/")
+        .secure(true)
+        .max_age(time)
+        .http_only(false);
+
+    // Put both cookies in the jar and return it.
+    // This also overwrites any cookies with the same name already in the jar.
+    Ok((
+        jar.add(cookie).add(user_cookie),
+        Json(ClassroomLoginResponse {
+            id: classroom_id,
+            num,
+            name,
+        }),
+    ))
+}
+
+fn get_classroom_claims(
+    jar: &CookieJar,
+    state: &ArcState,
+    classroom_id: i32,
+    num: i32,
+    name: &str,
+) -> AllClassroomClaims {
+    let config = &state.config;
+    let all_sessions = jar.get("classroom_sessions");
+
+    // If cookie doesn't exist, set classroom claims as default value.
+    let Some(all_sessions) = all_sessions else {
+        println!("Could not find cookie");
+        return default_classroom_claims(classroom_id, num, name, config.session_duration);
+    };
+
+    // Get the token data from the cookie.
+    let token_data = decode::<AllClassroomClaims>(
+        all_sessions.value(),
+        &state.config.jwt_keys.decoding,
+        &Validation::default(),
+    )
+    .ok();
+
+    // If token data is not retrievable from the cookie, set classroom claims as default value.
+    let Some(token_data) = token_data else {
+        println!("Could not decode");
+        return default_classroom_claims(classroom_id, num, name, config.session_duration);
+    };
+
+    let mut claims = token_data.claims;
+
+    // Filter out expired sessions
+    claims.sessions.retain(|s| s.exp > Utc::now().timestamp());
+
+    let existing_session_index = claims.sessions.iter().position(|s| s.id == classroom_id);
+    if let Some(existing_session_index) = existing_session_index {
+        claims.sessions[existing_session_index] = ClassroomClaims {
+            id: classroom_id,
+            num,
+            name: (*name).to_string(),
+            exp: Utc::now().timestamp() + config.session_duration,
+        }
+    } else {
+        // Following code block removes all but n-1 sessions
+        // with the expiration timestamps furthest in the future.
+
+        // Index the expiration dates.
+        let mut indexed: Vec<(usize, i64)> = claims
+            .sessions
+            .iter()
+            .map(|s| &s.exp)
+            .copied()
+            .enumerate()
+            .collect();
+
+        // Sort in descending order.
+        indexed.sort_by_key(|&(_, value)| -value);
+
+        // Get top n-1 (or less if <n elements).
+        let top_n: Vec<usize> = indexed
+            .iter()
+            .take(config.max_concurrent_classroom_sessions - 1)
+            .map(|&(index, _)| index)
+            .collect();
+
+        // Filter claims to only include the n-1 items with the latest expiration timestamps.
+        claims.sessions = top_n
+            .iter()
+            .map(|&i| ClassroomClaims {
+                id: claims.sessions[i].id,
+                num: claims.sessions[i].num,
+                name: claims.sessions[i].name.clone(),
+                exp: claims.sessions[i].exp,
+            })
+            .collect();
+
+        // Push the new session.
+        claims.sessions.push(ClassroomClaims {
+            id: classroom_id,
+            num,
+            name: (*name).to_string(),
+            exp: Utc::now().timestamp() + config.session_duration,
+        });
+    }
+
+    // Return the classroom claims variable and reset the exp.
+    claims.exp = Utc::now().timestamp() + config.session_duration;
+    claims
+}
+
+/// Default value function for the classroom claims variable in the `get_classroom_claims` function.
+fn default_classroom_claims(
+    classroom_id: i32,
+    num: i32,
+    name: &str,
+    session_duration: i64,
+) -> AllClassroomClaims {
+    AllClassroomClaims {
+        sessions: vec![ClassroomClaims {
+            id: classroom_id,
+            num,
+            name: name.to_string(),
+            exp: Utc::now().timestamp() + session_duration,
+        }],
+        exp: Utc::now().timestamp() + session_duration,
+    }
 }
