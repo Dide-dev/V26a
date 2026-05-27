@@ -7,6 +7,7 @@
 @import 'tailwindcss';
 @import '../lib/assets/katex/katex.css';
 
+@plugin '@egoist/tailwindcss-icons';
 @plugin 'flowbite/plugin';
 
 /* Disable dark mode */
@@ -104,6 +105,10 @@
 
     .text__link:active {
         color: var(--color-blue-800);
+    }
+
+    .text__code {
+        background: var(--color-neutral-200);
     }
 
     .text__error {
@@ -349,12 +354,37 @@
     }
 
     p a {
-        color: #36c;
+        color: var(--color-blue-600);
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        &:active {
+            color: var(--color-blue-800);
+        }
     }
 
-    blockquote p {
-        margin-left: 1.5rem;
-        color: #555555;
+    blockquote {
+        padding-top: 3px;
+        padding-bottom: 3px;
+        margin: 4px 0;
+        padding-inline: 1em 2px;
+        position: relative;
+
+        &:before {
+            top: 2px;
+            bottom: 2px;
+            border-inline-start: 0.25em solid #999;
+            content: '';
+            display: block;
+            position: absolute;
+            inset-inline-start: 2px;
+        }
+        p {
+            /*margin-left: 1.5rem;*/
+            color: #444;
+        }
     }
 
     ul li,
@@ -362,11 +392,23 @@
         margin-left: 1.5rem;
     }
 
-    ul {
+    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
         list-style-type: disc;
     }
 
-    ol {
+    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
         list-style-type: decimal;
+    }
+
+    hr {
+        margin: 0.2rem 0;
+    }
+
+    /** For styling broken images that users created in trees. */
+    img:before {
+        border: 1px solid;
+        display: flex;
+        height: 100%;
+        width: 100%;
     }
 }
