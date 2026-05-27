@@ -145,7 +145,6 @@ export type TreeListResponse = {
 
 export type FilterOptions = {
     ownerId: Option<number>;
-    coAuthor: Option<number>;
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
@@ -232,8 +231,8 @@ export function getFilteredList(
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, userId: UserId) {
-    return apiCallPostTree(`${treeId}/authorize/${userId}`, null);
+export function addCoAuthor(treeId: TreeId, username: string) {
+    return apiCallPostTree(`${treeId}/authorize/${username}`, null);
 }
 
 /** Get the list of all languages. */
