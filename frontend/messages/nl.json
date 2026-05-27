@@ -143,5 +143,10 @@
     "admin": "Beheer",
     "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
     "owner": "Eigenaar",
-    "heuristicTrees": "Heuristiekbomen"
+    "heuristicTrees": "Heuristiekbomen",
+    "addCoAuthor": "Voeg co-auteur toe",
+    "successfulAuthorization": "Successvol co-auteur geautoriseerd",
+    "invalidAuthorisationTarget": "De gebruiker die je probeerde te autoriseren lijkt niet te bestaan",
+    "noPermission": "Je hebt geen toestemming om een co-auteur aan deze boom toe te voegen.",
+    "changeCoAuthors": "Verander co-auteurs"
 }
