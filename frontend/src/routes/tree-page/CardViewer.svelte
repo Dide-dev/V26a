@@ -6,13 +6,13 @@
 
 <script lang="ts">
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
-    import type { CardGetData } from '$lib/api-wrapper/cards';
+    import type { CardData } from '$lib/api-wrapper/cards';
     let {
         card,
         revealed = $bindable(),
         parentRevealed
     }: {
-        card: CardGetData;
+        card: CardData;
         revealed: boolean;
         parentRevealed: boolean;
     } = $props();
