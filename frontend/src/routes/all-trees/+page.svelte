@@ -23,7 +23,6 @@
 
     let filterOptions: FilterOptions = $state({
         ownerId: null,
-        coAuthor: null,
         book: [],
         createdAfter: null,
         createdBefore: null,

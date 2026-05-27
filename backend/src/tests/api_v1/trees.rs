@@ -412,9 +412,10 @@ async fn test_remove_card(db: PgPool) {
 async fn test_filter_tree_list(db: PgPool) {
     let server = setup(db);
     let emails = ["test@one".to_owned(), "test@two".to_owned()];
+    // Only take the user_id's.
     let account_ids = [
-        register(&server, emails[0].clone()).await,
-        register(&server, emails[1].clone()).await,
+        register(&server, emails[0].clone()).await.0,
+        register(&server, emails[1].clone()).await.0,
     ];
     login(&server, emails[0].clone()).await;
 
@@ -810,9 +811,12 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
+    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
     server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.name
+        ))
         .await;
 
     let claims = Claims {
@@ -832,9 +836,13 @@ async fn test_authorize_co_author_success(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
+    let (co_author_id, co_author_register_data) =
+        register(&server, "co_author@email.com".to_owned()).await;
     let response = server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.name
+        ))
         .await;
 
     response.assert_status_ok();
@@ -855,9 +863,12 @@ async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
     register(&server, "not_tree_owner@email.com".to_owned()).await;
     login(&server, "not_tree_owner@email.com".to_owned()).await;
 
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
+    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
     let response = server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.name
+        ))
         .await;
 
     response.assert_status_forbidden();
@@ -869,9 +880,9 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_id = 238_574_969;
+    let co_author_username = "Non-existent_user".to_owned();
     let response = server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
         .await;
 
     response.assert_status_bad_request();
