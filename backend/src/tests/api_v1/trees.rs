@@ -17,7 +17,9 @@ use crate::db_structs::trees::{
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
+use crate::tests::api_v1::{
+    create_tree, login, register, register_admin, setup, setup_login, setup_with_options,
+};
 use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::{BTreeMap, HashMap};
@@ -946,4 +948,63 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
         .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
         .await;
     response.assert_status_bad_request();
+}
+
+#[sqlx::test]
+async fn test_acquire_lock(db: PgPool) {
+    use crate::api_v1::trees::edit_lock::{BackendMessage, FrontendMessage};
+    let server = setup_with_options(db.clone(), true);
+    let email1 = "a@localhost".to_owned();
+    let email2 = "b@localhost".to_owned();
+    let user_id1 = register(&server, email1.clone()).await;
+    let user_id2 = register(&server, email2.clone()).await;
+
+    login(&server, email1.clone()).await;
+    let tree_id = create_tree(&server).await;
+    server
+        .post(&format!("/trees/{tree_id}/authorize/{user_id2}"))
+        .await
+        .assert_status_ok();
+
+    let create_ws = async || {
+        let response = server
+            .get_websocket(&format!("/trees/{tree_id}/acquire-edit-lock"))
+            .await;
+        response.assert_status_switching_protocols();
+        response.into_websocket().await
+    };
+
+    // First user 1 has the lock
+    let mut ws1 = create_ws().await;
+    ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
+
+    // User 2 first fails, then forces
+    // (also enforcing that the default active_status is set to true)
+    login(&server, email2.clone()).await;
+    let mut ws2 = create_ws().await;
+    ws2.assert_receive_json(&BackendMessage::LockFailed {
+        active_user: user_id1,
+    })
+    .await;
+    ws2.send_json(&FrontendMessage::Force).await;
+    ws1.assert_receive_json(&BackendMessage::KickedOutBy { user_id: user_id2 })
+        .await;
+    ws2.assert_receive_json(&BackendMessage::LockAchieved).await;
+
+    // User 2 becomes inactive, user 1 kicks out user 2 without forcing
+    ws2.send_json(&FrontendMessage::SetActive {
+        new_active_state: false,
+    })
+    .await;
+    login(&server, email1.clone()).await;
+    ws1 = create_ws().await;
+    ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
+    ws2.assert_receive_json(&BackendMessage::KickedOutBy { user_id: user_id1 })
+        .await;
+
+    // User 1 closes the websocket (by for example leaving page),
+    // the lock is gone, so user 2 doesn't need to force the lock.
+    ws1.close().await;
+    ws2 = create_ws().await;
+    ws2.assert_receive_json(&BackendMessage::LockAchieved).await;
 }

@@ -35,7 +35,7 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     serde_json::from_str(&decoded_value).unwrap()
 }
 
-/// Sets up an API test server with the given mock database.
+/// Sets up an API test server with the given mock database, with default settings.
 ///
 /// # Arguments
 /// `db` - A [`PgPool`] to use for the [`TestServer`].
@@ -43,6 +43,20 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints and saves cookies.
 fn setup(db: PgPool) -> TestServer {
+    setup_with_options(db, false)
+}
+
+/// Sets up an API test server with the given mock database and settings.
+///
+/// # Arguments
+/// `db` - A [`PgPool`] to use for the [`TestServer`].
+///
+/// `http_transport` - Configures the server to use real HTTP comminucation instead of mocking it.
+/// It is more expensive to run this way, but for testing websockets it is required.
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints and saves cookies.
+fn setup_with_options(db: PgPool, http_transport: bool) -> TestServer {
     let temp_dir = tempdir().unwrap();
 
     let mut config = crate::Config::load();
@@ -54,7 +68,17 @@ fn setup(db: PgPool) -> TestServer {
     let router = crate::api_v1::v1_api(state.clone())
         .layer(Extension(db))
         .with_state(state);
-    TestServer::builder().save_cookies().build(router)
+
+    let transport = if http_transport {
+        axum_test::Transport::HttpRandomPort
+    } else {
+        axum_test::Transport::default()
+    };
+
+    TestServer::builder()
+        .transport(transport)
+        .save_cookies()
+        .build(router)
 }
 
 /// Creates an account with the given [`TestServer`]

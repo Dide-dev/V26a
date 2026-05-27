@@ -38,7 +38,7 @@ pub struct TreeEditLock {
     pub kick_out_sender: oneshot::Sender<i32>,
 
     /// Indicates if the user is tabbed out or not.
-    /// Is an arc atomic bool, so that changing this value doesn't need to lock the entire HashMap.
+    /// Is an arc atomic bool, so that changing this value doesn't need to lock the entire `HashMap`.
     pub is_active: Arc<std::sync::atomic::AtomicBool>,
 }
 

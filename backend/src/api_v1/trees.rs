@@ -48,8 +48,10 @@ pub fn trees() -> Router<ArcState> {
         .route("/{tree_id}/duplicate", post(duplicate_tree))
         .route("/{tree_id}/authorize/{username}", post(authorize_co_author))
         .route(
-            "/{tree_id}/aquire-edit-lock",
-            axum::routing::any(edit_lock::aquire_edit_lock),
+            "/{tree_id}/acquire-edit-lock",
+            // This endpoint requires to be wrapped in an [`axum::routing::any`],
+            // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
+            axum::routing::any(edit_lock::acquire_edit_lock),
         )
 }
 

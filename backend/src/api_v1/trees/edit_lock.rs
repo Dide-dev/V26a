@@ -20,6 +20,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tokio::sync::oneshot::Receiver;
+use utoipa::ToSchema;
 
 use crate::{
     db_structs::session::Claims,
@@ -27,9 +28,49 @@ use crate::{
     state::{ArcState, TreeEditLock},
 };
 
-/// Requires to be wrapped in an [`axum::routing::any`],
-/// see the docs of [`WebSocketUpgrade`] for why.
-pub async fn aquire_edit_lock(
+#[utoipa::path(
+    get,
+    path = "/acquire-edit-lock",
+    context_path = "/api/v1/trees/{tree_id}",
+    tag="crate::api_v1::trees",
+    request_body = FrontendMessage,
+    responses(
+        (
+            status = 101,
+            description = "Websocket started. All the messages will be serialized as json into text. See the examples for the types of the messages that can be send.",
+            body = BackendMessage,
+        ),
+        (status = 400, description = "Connection header did not include 'upgrade' or tree_id could not be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// If the user has permissions for the given `tree_id`,
+/// opens a websocket which can be used to acquire the lock.
+///
+/// If the websocket ever closes, then the lock is considered to be lost.
+///
+/// Note that the request body and responses are not the actual http GET request and response bodies,
+/// but they are there for linking to the messages that can be send over the websocket.
+///
+/// # Arguments
+/// `claims` - The claims of the user who sent this request.
+///
+/// `state` - State containing the `tree_edit_locks`.
+///
+/// `tree_id` - The tree of which the edit locks gets acquired.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission
+/// for the given `tree_id`.
+///
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
+///
+pub async fn acquire_edit_lock(
     ws: WebSocketUpgrade,
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -42,26 +83,32 @@ pub async fn aquire_edit_lock(
     Ok(ws.on_upgrade(move |socket| handle_socket_without_lock(socket, state, tree_id, user_id)))
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, PartialEq)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
 pub enum FrontendMessage {
+    /// Will kick out any potential other user, even if they are currenctly active and have unsaved changes.
     Force,
+    /// Set active state. If set to true, any other user trying to acquire the lock will have to click a button to force.
     SetActive { new_active_state: bool },
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, PartialEq)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
 pub enum BackendMessage {
+    /// Lock achieved, it is safe to edit.
     LockAchieved,
+    /// Could not achive lock, because another user is active.
     LockFailed { active_user: i32 },
+    /// Used to have a lock, but another user kicked you out.
+    /// The websocket will be closed by the backend after this message was sent.
     KickedOutBy { user_id: i32 },
 }
 
@@ -96,6 +143,12 @@ impl BackendMessage {
 
 /// This function is **NOT** cancellation safe,
 /// because it calls [`handle_socket_with_lock`]
+///
+/// This function handles a websocket that does not (yet) have a lock.
+/// If no one holds the lock or the other user is inactive, this function
+/// will immediatly set the lock and call `handle_socket_with_lock`.
+///
+/// Otherwise, it will wait until the `FrontendMessage::Force` is received.
 async fn handle_socket_without_lock(
     mut socket: WebSocket,
     state: ArcState,
@@ -157,8 +210,8 @@ async fn handle_socket_without_lock(
                     // the variable `previous` is automatically dropped.
                 }
 
+                // We must drop the MutexGuard since the `handle_socket_with_lock` will run for a long time.
                 std::mem::drop(tree_edit_locks);
-
                 return handle_socket_with_lock(socket, state, is_active, tree_id, my_receiver)
                     .await;
             }
@@ -174,6 +227,10 @@ async fn handle_socket_without_lock(
 
 /// This function is **NOT** cancellation safe,
 /// as it will clean up the `state.tree_edit_locks[tree_id]` before returning when done.
+///
+/// This function handles a websocket that already has the lock.
+/// So it will ignore the `FrontendMessage::Force` message and will update
+/// active state whenever `FrontendMessage::SetActive` is received.
 async fn handle_socket_with_lock(
     mut socket: WebSocket,
     state: ArcState,

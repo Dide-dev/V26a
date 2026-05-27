@@ -63,7 +63,7 @@
 
     let protocol = $derived(window.location.protocol === 'http:' ? 'ws' : 'wss');
     let url = $derived(
-        `${protocol}://${window.location.host}/api/v1/trees/${treeId}/aquire-edit-lock`
+        `${protocol}://${window.location.host}/api/v1/trees/${treeId}/acquire-edit-lock`
     );
     let websocket: WebSocket;
 
