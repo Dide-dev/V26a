@@ -142,5 +142,8 @@
     "admin": "Admin",
     "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
     "owner": "Owner",
-    "heuristicTrees": "Heuristic trees"
+    "heuristicTrees": "Heuristic trees",
+    "addCoAuthor": "Add co-author",
+    "successfulAuthorization": "Successfully authorized co-author",
+    "changeCoAuthors": "Change co-authors"
 }
