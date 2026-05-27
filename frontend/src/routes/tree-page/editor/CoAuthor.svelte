@@ -18,6 +18,7 @@
     }
 
     function cancelEdit() {
+        coAuthorName = '';
         visible = false;
     }
 
@@ -34,17 +35,15 @@
         }
     }
 
-    let coAuthorName: string = $state(null);
+    let coAuthorName: string = $state('');
     let successfullyAddedCoAuthor: boolean = $state(false);
 
     async function handleAddCoAuthor() {
-        let response = await addCoAuthor(treeId, coAuthorName);
+        if (coAuthorName == '') return;
 
-        if (response.type === 'Success') {
-            successfullyAddedCoAuthor = true;
-        } else {
-            throw new Error('ERROR: Unexpected output from API.');
-        }
+        await addCoAuthor(treeId, coAuthorName);
+
+        successfullyAddedCoAuthor = true;
 
         coAuthorName = '';
     }
@@ -84,5 +83,6 @@
             onclick={handleAddCoAuthor}>{m.addCoAuthor()}</button
         >
         <button class="cursor-pointer" onclick={cancelEdit}>{m.cancel()}</button>
+        <button class="cursor-pointer" onclick={cancelEdit}>{m.close()}</button>
     </Popup>
 {/if}
