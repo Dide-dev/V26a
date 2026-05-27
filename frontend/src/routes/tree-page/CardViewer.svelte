@@ -40,7 +40,7 @@
 {#snippet revealedCard(card: CardGetData)}
     <p
         style="--background-color: {openColor}; --hover-color: {openColor}"
-        class="card min-h-card-height-md w-card-width-md overflow-auto border-green-800 p-1 wrap-anywhere"
+        class="card min-h-card-height-md w-card-width-md overflow-x-auto border-green-800 p-1 wrap-anywhere"
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html markdownToFinalHtml(card.back)}
@@ -50,7 +50,7 @@
 {#snippet openableCard(card: CardGetData)}
     <button
         style="--background-color: {closedColor}; --hover-color: {hoverColor}"
-        class="card min-h-card-height-md w-card-width-md text-lg italic text-neutral-200 hover:text-neutral-100 cursor-pointer overflow-auto border-green-800 p-1 text-center wrap-anywhere"
+        class="card min-h-card-height-md w-card-width-md text-lg italic text-neutral-200 hover:text-neutral-100 cursor-pointer overflow-x-auto border-green-800 p-1 text-center wrap-anywhere"
         onclick={makeRevealed}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
