@@ -777,7 +777,7 @@ async fn test_duplicate_tree(db: PgPool) {
 
     // Create two accounts and log in as one of them.
     register(&server, "1@gmail.com".to_owned()).await;
-    let owner_id2 = register(&server, "2@gmail.com".to_owned()).await;
+    let owner_id2 = register(&server, "2@gmail.com".to_owned()).await.0;
     login(&server, "1@gmail.com".to_owned()).await;
 
     let tree_data = TreeData {
