@@ -86,7 +86,12 @@
       {
         "ordinal": 16,
         "name": "owner_name",
-        "type_info": "Varchar"
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        }
       },
       {
         "ordinal": 17,

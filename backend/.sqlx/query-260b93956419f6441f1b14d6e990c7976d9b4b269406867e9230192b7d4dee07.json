@@ -5,7 +5,12 @@
     "columns": [],
     "parameters": {
       "Left": [
-        "Varchar",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
         "Varchar",
         "Varchar",
         "Bool",

@@ -18,7 +18,12 @@
           }
         },
         "Varchar",
-        "Varchar",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
         "Varchar",
         "Varchar",
         "Bool",
