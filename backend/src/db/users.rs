@@ -6,7 +6,8 @@
 
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
-    AdminUpdateData, AllUsersGetData, RegisterData, UserGetData, UserLanguage, UserUpdateData,
+    AccountType, AdminUpdateData, AllUsersGetData, RegisterData, UserData, UserGetAllData,
+    UserGetData, UserLanguage,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -41,13 +42,13 @@ pub async fn add_user(
         "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language_code)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id",
-        user_data.email,
+        user_data.email.to_lowercase(),
         hashed_password,
-        user_data.name,
-        user_data.nickname,
-        user_data.about_me,
-        user_data.email_visible,
-        user_data.language.to_string(),
+        user_data.data.name,
+        user_data.data.nickname,
+        user_data.data.about_me,
+        user_data.data.email_visible,
+        user_data.data.language.to_string(),
     )
     .fetch_one(db)
     .await?
@@ -80,11 +81,52 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 
     Ok(UserGetData {
         email: record.email,
-        name: record.name,
-        nickname: record.nickname,
-        about_me: record.about_me,
-        email_visible: record.email_visible,
-        language: UserLanguage::from_str(record.language_code.as_str())?,
+        data: UserData {
+            name: record.name,
+            nickname: record.nickname,
+            about_me: record.about_me,
+            email_visible: record.email_visible,
+            language: UserLanguage::from_str(record.language_code.as_str())?,
+        },
+    })
+}
+
+/// Query the data for the given user id in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user.
+///
+/// # Returns
+/// A [`UserGetAllData`] object containing the user's data, minus their password.
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_all_data(
+    db: impl PgExecutor<'_>,
+    id: i32,
+) -> Result<UserGetAllData, ApiError> {
+    let record = query!(
+        "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language_code FROM users WHERE id = $1",
+        id,
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(UserGetAllData {
+        email: record.email,
+        data: UserData {
+            name: record.name,
+            nickname: record.nickname,
+            about_me: record.about_me,
+            email_visible: record.email_visible,
+            language: UserLanguage::from_str(record.language_code.as_str())?,
+        },
+        enabled: record.enabled,
+        account_type: AccountType::from_str(record.account_type.as_str())?,
     })
 }
 
@@ -93,7 +135,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// # Arguments
 /// `db` - A connection to a Postgres database.
 ///
-/// `new_data` - The new data to be assigned as [`UserUpdateData`], including the id of the user to be updated.
+/// `new_data` - The new data to be assigned as [`UserData`], including the id of the user to be updated.
 ///
 /// `id` - The id of the user that needs to be updated.
 ///
@@ -105,7 +147,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 pub async fn update_user(
     db: impl PgExecutor<'_>,
     id: i32,
-    new_data: &UserUpdateData,
+    new_data: &UserData,
 ) -> Result<(), ApiError> {
     query!(
         "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5 WHERE id = $6",
@@ -143,14 +185,14 @@ pub async fn admin_update_user(
 ) -> Result<(), ApiError> {
     query!(
         "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5, account_type = $6, enabled = $7, email = $8 WHERE id = $9",
-        new_data.name,
-        new_data.nickname,
-        new_data.about_me,
-        new_data.email_visible,
-        new_data.language.to_string(),
+        new_data.data.name,
+        new_data.data.nickname,
+        new_data.data.about_me,
+        new_data.data.email_visible,
+        new_data.data.language.to_string(),
         new_data.account_type.to_string(),
         new_data.enabled,
-        new_data.email,
+        new_data.email.to_lowercase(),
         id,
     )
     .execute(db)
@@ -314,10 +356,13 @@ pub async fn get_user_by_email(
     db: impl PgExecutor<'_>,
     email: &str,
 ) -> Result<Option<i32>, ApiError> {
-    Ok(query!("SELECT id FROM users WHERE email = $1", email,)
-        .fetch_optional(db)
-        .await?
-        .map(|r| r.id))
+    Ok(query!(
+        "SELECT id FROM users WHERE email = $1",
+        email.to_lowercase(),
+    )
+    .fetch_optional(db)
+    .await?
+    .map(|r| r.id))
 }
 
 /// Checks if a user with a given username exists in the given database.
@@ -336,10 +381,13 @@ pub async fn get_user_by_name(
     db: impl PgExecutor<'_>,
     name: &str,
 ) -> Result<Option<i32>, ApiError> {
-    Ok(query!("SELECT id FROM users WHERE name = $1", name,)
-        .fetch_optional(db)
-        .await?
-        .map(|r| r.id))
+    Ok(query!(
+        "SELECT id FROM users WHERE LOWER(name) = $1",
+        name.to_lowercase(),
+    )
+    .fetch_optional(db)
+    .await?
+    .map(|r| r.id))
 }
 
 /// Checks if a user with a given id exists in the given database.
@@ -367,7 +415,7 @@ mod tests {
     use super::*;
     use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
-    use crate::db_structs::users::{AccountType, RegisterData, UserLanguage, UserUpdateData};
+    use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
     use crate::get_connection_unwrap;
     use sqlx::PgPool;
 
@@ -376,11 +424,13 @@ mod tests {
         let register_data = RegisterData {
             email: "email".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
 
         let user_id = initialize_user(&db, &register_data).await;
@@ -394,11 +444,13 @@ mod tests {
             email: all_found_user_data.email,
             // We test the password separately, as it has been hashed.
             password: register_data.password.clone(),
-            name: all_found_user_data.name,
-            nickname: all_found_user_data.nickname,
-            about_me: all_found_user_data.about_me,
-            email_visible: all_found_user_data.email_visible,
-            language: all_found_user_data.language_code.parse().unwrap(),
+            data: UserData {
+                name: all_found_user_data.name,
+                nickname: all_found_user_data.nickname,
+                about_me: all_found_user_data.about_me,
+                email_visible: all_found_user_data.email_visible,
+                language: all_found_user_data.language_code.parse().unwrap(),
+            },
         };
         assert_eq!(found_register_data, register_data);
 
@@ -418,11 +470,13 @@ mod tests {
         let register_data = RegisterData {
             email: email.clone(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::Nl,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            },
         };
 
         // Assert user does not exist before adding to the database.
@@ -441,29 +495,33 @@ mod tests {
         let register_data = RegisterData {
             email: "hoi@gmail.com".to_owned(),
             password: "password".to_owned(),
-            name: "Not John Smith".to_owned(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::Nl,
+            data: UserData {
+                name: "Not_John_Smith".to_owned(),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            },
         };
 
         let update_data = AdminUpdateData {
             email: "JohnSmith@gmail.com".to_owned(),
-            name: "John Smith".to_owned(),
             enabled: true,
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
+            data: UserData {
+                name: "John_Smith".to_owned(),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            },
             account_type: AccountType::Admin,
-            language: UserLanguage::Nl,
         };
 
         let user_id = initialize_user(&db, &register_data).await;
 
         admin_update_user(&db, user_id, &update_data).await.unwrap();
 
-        let found_user_id = get_user_by_name(&db, &update_data.name).await.unwrap();
+        let found_user_id = get_user_by_name(&db, &update_data.data.name).await.unwrap();
         // Checks whether the users name changed from "Not John Smith" to "John Smith" by checking of the id's are the same.
         assert_eq!(found_user_id, Some(user_id));
     }
@@ -475,11 +533,13 @@ mod tests {
         let register_data = RegisterData {
             email: "hoi@gmail.com".to_owned(),
             password: "password".to_owned(),
-            name: name.clone(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::Nl,
+            data: UserData {
+                name: name.clone(),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            },
         };
 
         // Assert user does not exist before adding to the database.
@@ -502,11 +562,13 @@ mod tests {
         let register_data = RegisterData {
             email: "test@test.com".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::Nl,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            },
         };
         let user_id = initialize_user(&db, &register_data).await;
 
@@ -520,11 +582,13 @@ mod tests {
         let register_data = RegisterData {
             email: "email".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
 
         let user_id = initialize_user(&db, &register_data).await;
@@ -532,11 +596,46 @@ mod tests {
 
         let expected_user_data = UserGetData {
             email: register_data.email,
-            name: register_data.name,
-            nickname: register_data.nickname,
-            about_me: register_data.about_me,
-            email_visible: register_data.email_visible,
-            language: register_data.language,
+            data: UserData {
+                name: register_data.data.name,
+                nickname: register_data.data.nickname,
+                about_me: register_data.data.about_me,
+                email_visible: register_data.data.email_visible,
+                language: register_data.data.language,
+            },
+        };
+
+        assert_eq!(user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_user_all_data(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+        let user_data = get_user_all_data(&db, user_id).await.unwrap();
+
+        let expected_user_data = UserGetAllData {
+            email: register_data.email,
+            enabled: true,
+            account_type: AccountType::Author,
+            data: UserData {
+                name: register_data.data.name,
+                nickname: register_data.data.nickname,
+                about_me: register_data.data.about_me,
+                email_visible: register_data.data.email_visible,
+                language: register_data.data.language,
+            },
         };
 
         assert_eq!(user_data, expected_user_data);
@@ -547,20 +646,24 @@ mod tests {
         let register_data = RegisterData {
             email: "email".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
         let register_data2 = RegisterData {
             email: "email2".to_owned(),
             password: "password2".to_owned(),
-            name: "name2".to_owned(),
-            nickname: "nickname2".to_owned(),
-            about_me: "about_me2".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name2".to_owned(),
+                nickname: "nickname2".to_owned(),
+                about_me: "about_me2".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
         let pagination_options = PaginationOptions::new(1, 5, 1000, 500).unwrap();
 
@@ -574,13 +677,13 @@ mod tests {
             AllUsersGetData {
                 id: 1,
                 email: register_data.email,
-                name: register_data.name,
+                name: register_data.data.name,
                 enabled: true,
             },
             AllUsersGetData {
                 id: 2,
                 email: register_data2.email,
-                name: register_data2.name,
+                name: register_data2.data.name,
                 enabled: true,
             },
         ];
@@ -594,20 +697,24 @@ mod tests {
         let register_data = RegisterData {
             email: "email".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
         let register_data2 = RegisterData {
             email: "email2".to_owned(),
             password: "password2".to_owned(),
-            name: "name2".to_owned(),
-            nickname: "nickname2".to_owned(),
-            about_me: "about_me2".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name2".to_owned(),
+                nickname: "nickname2".to_owned(),
+                about_me: "about_me2".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
         initialize_user(&db, &register_data).await;
 
@@ -621,7 +728,7 @@ mod tests {
         let user_id = initialize_basic_user(&db).await;
 
         // Test not updating the account type and the enabled flag
-        let new_user_data = UserUpdateData {
+        let new_user_data = UserData {
             name: "name".to_owned(),
             nickname: String::new(),
             about_me: String::new(),
@@ -633,7 +740,7 @@ mod tests {
             .fetch_one(&db)
             .await
             .unwrap();
-        let found_update_data = UserUpdateData {
+        let found_update_data = UserData {
             name: all_found_user_data.name,
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
@@ -643,7 +750,7 @@ mod tests {
         assert_eq!(found_update_data, new_user_data);
 
         // Test updating the account type and enabled flag
-        let new_user_data = UserUpdateData {
+        let new_user_data = UserData {
             name: "john smith".to_owned(),
             nickname: "john".to_owned(),
             about_me: "Nothing interesting".to_owned(),
@@ -655,7 +762,7 @@ mod tests {
             .fetch_one(&db)
             .await
             .unwrap();
-        let found_update_data = UserUpdateData {
+        let found_update_data = UserData {
             name: all_found_user_data.name,
             nickname: all_found_user_data.nickname,
             about_me: all_found_user_data.about_me,
@@ -672,11 +779,13 @@ mod tests {
         let register_data = RegisterData {
             email: email.clone(),
             password: "password".to_string(),
-            name: "name".to_string(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_string(),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
         };
 
         initialize_user(get_connection_unwrap!(db), &register_data).await;
@@ -701,11 +810,13 @@ mod tests {
         let register_data = RegisterData {
             email: "email".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
 
         let user_id = initialize_user(&db, &register_data).await;
@@ -753,11 +864,13 @@ mod tests {
         let register_data = RegisterData {
             email: "email".to_owned(),
             password: "password".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
+            data: UserData {
+                name: "name".to_owned(),
+                nickname: "nickname".to_owned(),
+                about_me: "about_me".to_owned(),
+                email_visible: true,
+                language: UserLanguage::En,
+            },
         };
 
         let user_id = initialize_user(&db, &register_data).await;
@@ -774,21 +887,25 @@ mod tests {
         let found_update_data = RegisterData {
             email: all_found_user_data.email,
             password: all_found_user_data.password_hash,
-            name: all_found_user_data.name,
-            nickname: all_found_user_data.nickname,
-            about_me: all_found_user_data.about_me,
-            email_visible: all_found_user_data.email_visible,
-            language: all_found_user_data.language_code.parse().unwrap(),
+            data: UserData {
+                name: all_found_user_data.name,
+                nickname: all_found_user_data.nickname,
+                about_me: all_found_user_data.about_me,
+                email_visible: all_found_user_data.email_visible,
+                language: all_found_user_data.language_code.parse().unwrap(),
+            },
         };
 
         let expected_user_data = RegisterData {
             email: ("deleted").to_string(),
             password: String::new(),
-            name: format!("deleted user_{user_id}"),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: register_data.language,
+            data: UserData {
+                name: format!("deleted user_{user_id}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: register_data.data.language,
+            },
         };
 
         assert!(!all_found_user_data.enabled);

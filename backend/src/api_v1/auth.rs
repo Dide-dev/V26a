@@ -7,6 +7,7 @@
 use crate::ArcState;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::users::get_user;
+use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
@@ -78,6 +79,8 @@ async fn login(
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
     let config = &state.config;
+    login_request.validate_inputs()?;
+
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
@@ -98,8 +101,8 @@ async fn login(
     let user_data = get_user(&db, credentials.user_id).await?;
 
     let user_info_cookie = InfoCookieData {
-        name: user_data.name,
-        nickname: user_data.nickname,
+        name: user_data.data.name,
+        nickname: user_data.data.nickname,
         sub: claims.sub,
         account_type: claims.account_type,
     };

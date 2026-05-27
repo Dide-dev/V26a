@@ -8,6 +8,7 @@ use crate::db::classrooms::{
     add_classroom, add_new_user_to_classroom, generate_random_code, get_name_by_number,
     validate_join_code,
 };
+use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{
     ClassroomAddData, ClassroomGeneratedData, ClassroomLoginResponse, ClassroomUserLoginData,
 };
@@ -64,6 +65,7 @@ async fn add_new_classroom(
     Extension(db): Extension<PgPool>,
     Json(classroom_add_data): Json<ClassroomAddData>,
 ) -> Result<Json<ClassroomGeneratedData>, ApiError> {
+    classroom_add_data.validate_inputs()?;
     let join_code = generate_random_code(get_connection!(db)).await?;
 
     let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;

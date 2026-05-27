@@ -23,10 +23,10 @@ work, and example inputs.
 - [ ] `utoipa` API-documentation has been added or updated for API-endpoints
 - [ ] Files have a UU copyright comment at the top, and a copyright notice on the GUI if applicable
 - [ ] Ran commands.bat or commands.sh to make sure that:
-  * Backend is correctly formatted and does not produce clippy warnings
-  * Backend sqlx queries are up-to-date
-  * Backend has no failing tests
-  * Frontend is correctly formatted and does not produce TS errors or eslint warnings
-  * Frontend has no failing tests
-- [ ] Branch is up-to-date with main
+    * Backend is correctly formatted and does not produce clippy warnings
+    * Backend sqlx queries are up-to-date
+    * Backend has no failing tests
+    * Frontend is correctly formatted and does not produce TS errors or eslint warnings
+    * Frontend has no failing tests
+- [ ] Branch is up-to-date with dev
 - [ ] Story has been moved to 'Review' in YouTrack

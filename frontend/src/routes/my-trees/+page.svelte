@@ -37,7 +37,6 @@
 
         let filterOptions: FilterOptions = {
             ownerId: null,
-            coAuthor: userInfo?.sub ?? 0,
             book: [],
             createdAfter: null,
             createdBefore: null,

@@ -668,7 +668,6 @@ fn apply_tree_filters<'a>(
 ) -> Result<(), ApiError> {
     let TreeFilters {
         owner_id,
-        co_author,
         book,
         created_after,
         created_before,
@@ -699,10 +698,10 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(owner_id)
             .push_unseparated(")");
     }
-    if *editable && let Some(co_author) = co_author {
+    if *editable && let Some(user_id) = user_id {
         separated.push("(owner_id = ");
 
-        separated.push_bind_unseparated(co_author);
+        separated.push_bind_unseparated(user_id);
 
         separated.push_unseparated(
             " OR EXISTS(
@@ -710,7 +709,7 @@ fn apply_tree_filters<'a>(
                 FROM co_authors
                 WHERE co_authors.user_id = ",
         );
-        separated.push_bind_unseparated(co_author);
+        separated.push_bind_unseparated(user_id);
         separated.push_unseparated("))");
     }
     if !book.is_empty() {
@@ -758,7 +757,13 @@ pub async fn get_queried_count(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+    let mut query = QueryBuilder::<Postgres>::new(
+        "SELECT COUNT(*)
+        FROM trees
+        LEFT JOIN books ON books.isbn = trees.book_isbn
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id",
+    );
 
     apply_tree_filters(&mut query, filters, user_id)?;
 
@@ -1150,7 +1155,6 @@ mod tests {
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_id: Some(67),
-            co_author: None,
             book: vec!["0-451-52493-4".to_owned()],
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
