@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import { htmlFromMarkdown } from '$lib/markdown';
+    import { markdownToFinalHtml } from '$lib/rich-text/markdown';
     import type { CardGetData } from '$lib/api-wrapper/cards';
     let {
         card,
@@ -27,15 +27,14 @@
         class="h-fit min-h-9 w-xl overflow-auto border-2 border-green-800 bg-green-50 p-1 wrap-anywhere"
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html htmlFromMarkdown(card.back)}
+        {@html markdownToFinalHtml(card.back)}
     </p>
 {:else if parentRevealed}
     <button
         class="h-fit min-h-9 w-fit max-w-xl min-w-50 cursor-pointer overflow-auto border-2 border-green-800 bg-green-500 p-1 text-center wrap-anywhere"
         onclick={makeRevealed}
     >
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html htmlFromMarkdown(card.front)}
+        {card.front}
     </button>
 {:else}
     <p class="tree-node h-fit min-h-9 w-4 border-2 border-green-800 bg-green-800 p-1"><br /></p>
