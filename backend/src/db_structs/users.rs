@@ -15,9 +15,6 @@ use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
 
-#[cfg(test)]
-use rand::RngExt;
-
 /// Data the user can modify, except email and password.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -71,6 +68,8 @@ pub struct RegisterData {
 #[cfg(test)]
 impl Default for RegisterData {
     fn default() -> Self {
+        use rand::RngExt;
+
         let mut rng = rand::rng();
         let n: u64 = rng.random();
 

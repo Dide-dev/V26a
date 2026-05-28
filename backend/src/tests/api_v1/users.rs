@@ -161,7 +161,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     // Password change request should not have succeeded, therefore the old password should enable a user to log in.
     let login_data = LoginRequestBody {
         email: register_data.email,
-        password: "4$$wOrd!".to_owned(),
+        password: register_data.password,
     };
 
     let response = server.post("/auth/login").json(&login_data).await;

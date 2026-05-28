@@ -118,7 +118,7 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
         .post("/auth/login")
         .json(&LoginRequestBody {
             email,
-            password: "4$$wOrd!".to_string(),
+            password: RegisterData::default().password,
         })
         .await;
     response.assert_status_ok();
