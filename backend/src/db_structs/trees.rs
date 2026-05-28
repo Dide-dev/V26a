@@ -4,8 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::cards::CardGetData;
+use crate::db_structs::Validated;
+use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
+use crate::limits::{
+    TREE_ASSIGNMENT_MAX_LENGTH, TREE_BOOK_CHAPTER_MAX_LENGTH, TREE_BOOK_EDITION_MAX_LENGTH,
+    TREE_BOOK_EXERCISE_MAX_LENGTH, TREE_BOOK_ISBN_MAX_LENGTH, TREE_BOOK_NAME_MAX_LENGTH,
+    TREE_DESCRIPTION_MAX_LENGTH, TREE_TITLE_MAX_LENGTH,
+};
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{FromRow, Row};
@@ -20,7 +26,7 @@ pub struct TreeWithCards {
     pub metadata: TreeMetadata,
     pub structure: TreeStructure,
     /// The `card_id` with the corresponding card.
-    pub cards: BTreeMap<i32, CardGetData>,
+    pub cards: BTreeMap<i32, CardData>,
 }
 
 // We implement this manually, so the example contains a valid example, with `cards` matching the `structure`.
@@ -29,19 +35,23 @@ impl PartialSchema for TreeWithCards {
         ObjectBuilder::new()
             .property("metadata", TreeMetadata::schema())
             .property("structure", TreeStructure::schema())
-            .property("cards", BTreeMap::<i32, CardGetData>::schema())
+            .property("cards", BTreeMap::<i32, CardData>::schema())
             .examples(Some(serde_json::json!({
                 "metadata": {
                     "data": {
-                      "title": "string",
-                      "description": "string",
-                      "bookName": "string",
-                      "bookEdition": "string",
-                      "bookIsbn": "string",
-                      "bookChapter": "string",
-                      "bookExercise": "string",
-                      "assignmentText": "string",
-                      "published": true
+                      "assignmentText": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+                      "bookAuthor": "Serge Lang",
+                      "bookChapter": "VII",
+                      "bookEdition": "3",
+                      "bookExercise": "2",
+                      "bookIsbn": "9780387953854",
+                      "bookName": "Algebra",
+                      "description": "My first tree!",
+                      "languageCode": "nl",
+                      "published": true,
+                      "subjectId": 1,
+                      "tags": ["tag_1", "tag_2"],
+                      "title": "My heuristic tree"
                     },
                     "genData": {
                       "id": 7,
@@ -89,6 +99,12 @@ pub struct TreeStructure {
     pub root_nodes: Vec<RootNode>,
 }
 
+impl Validated for TreeStructure {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        Ok(())
+    }
+}
+
 impl TreeStructure {
     /// Retrieve the card id's in the tree.
     ///
@@ -96,6 +112,14 @@ impl TreeStructure {
     /// The `card_id` of each [`Node`] in the tree as a [`Vec<i32>`].
     pub fn flatten(&self) -> Vec<i32> {
         self.root_nodes.iter().flat_map(RootNode::flatten).collect()
+    }
+
+    /// Check whether a tree structure contains no cards.
+    ///
+    /// # Returns
+    /// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
+    fn is_empty(&self) -> bool {
+        self.flatten().is_empty()
     }
 }
 
@@ -284,6 +308,66 @@ impl FromRow<'_, PgRow> for TreeData {
     }
 }
 
+impl Validated for TreeData {
+    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.title.chars().count() > TREE_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "title",
+                TREE_TITLE_MAX_LENGTH,
+            ));
+        }
+        if self.description.chars().count() > TREE_DESCRIPTION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "description",
+                TREE_DESCRIPTION_MAX_LENGTH,
+            ));
+        }
+        if self.book_name.chars().count() > TREE_BOOK_NAME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookName",
+                TREE_BOOK_NAME_MAX_LENGTH,
+            ));
+        }
+        if self.book_edition.chars().count() > TREE_BOOK_EDITION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookEdition",
+                TREE_BOOK_EDITION_MAX_LENGTH,
+            ));
+        }
+        if self
+            .book_isbn
+            .as_ref()
+            .is_some_and(|s| s.chars().count() > TREE_BOOK_ISBN_MAX_LENGTH)
+        {
+            return Err(ApiError::InputLengthExceeded(
+                "bookIsbn",
+                TREE_BOOK_ISBN_MAX_LENGTH,
+            ));
+        }
+        if self.book_chapter.chars().count() > TREE_BOOK_CHAPTER_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookChapter",
+                TREE_BOOK_CHAPTER_MAX_LENGTH,
+            ));
+        }
+        if self.book_exercise.chars().count() > TREE_BOOK_EXERCISE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookExercise",
+                TREE_BOOK_EXERCISE_MAX_LENGTH,
+            ));
+        }
+        if self.assignment_text.chars().count() > TREE_ASSIGNMENT_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "assignmentText",
+                TREE_ASSIGNMENT_MAX_LENGTH,
+            ));
+        }
+
+        Ok(())
+    }
+}
+
 /// The autogenerated data of the tree.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -333,6 +417,20 @@ pub struct TreeAddData {
     pub tree_structure: TreeStructure,
 }
 
+impl Validated for TreeAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        self.tree_data.validate_inputs()?;
+        self.tree_structure.validate_inputs()?;
+
+        // Trees should be initialized with an empty structure.
+        if !self.tree_structure.is_empty() {
+            return Err(ApiError::NonEmptyStructure);
+        }
+
+        Ok(())
+    }
+}
+
 // We implement this manually, so the example contains a legal, empty structure.
 impl PartialSchema for TreeAddData {
     fn schema() -> RefOr<Schema> {
@@ -341,24 +439,32 @@ impl PartialSchema for TreeAddData {
             .property("treeStructure", TreeStructure::schema())
             .examples(Some(serde_json::json!({
                 "treeData": {
-                  "assignmentText": "string",
-                  "bookChapter": "string",
-                  "bookEdition": "string",
-                  "bookExercise": "string",
-                  "bookIsbn": "string",
-                  "bookName": "string",
-                  "description": "string",
+                  "assignmentText": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+                  "bookAuthor": "Serge Lang",
+                  "bookChapter": "VII",
+                  "bookEdition": "3",
+                  "bookExercise": "2",
+                  "bookIsbn": "9780387953854",
+                  "bookName": "Algebra",
+                  "description": "My first tree!",
+                  "languageCode": "nl",
                   "published": true,
-                  "title": "string"
+                  "subjectId": 1,
+                  "tags": ["tag_1", "tag_2"],
+                  "title": "My heuristic tree"
                 },
                 "treeStructure": {
                   "rootNodes": [
                     {
-                      "label": "string",
+                      "label": "Orientation",
                       "children": []
                     },
                     {
-                      "label": "string",
+                      "label": "Making & executing plans",
+                      "children": []
+                    },
+                    {
+                      "label": "Completion",
                       "children": []
                     }
                   ]
@@ -384,7 +490,6 @@ pub struct TreeListResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TreeFilters {
     pub owner_id: Option<i32>,
-    pub co_author: Option<i32>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]

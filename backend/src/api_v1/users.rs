@@ -12,11 +12,11 @@ use crate::db::users::{
 };
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
-    UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
+use crate::db_structs::Validated;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -51,7 +51,7 @@ pub enum UserResponse {
 
 #[utoipa::path(
     post,
-    path = "/add-new-user",
+    path = "/add",
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
@@ -81,6 +81,8 @@ async fn add_new_user(
     State(state): State<ArcState>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
+    user_data.validate_inputs()?;
+
     let mut transaction = db.begin().await?;
 
     let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
@@ -89,7 +91,7 @@ async fn add_new_user(
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
-    let found_user_id = get_user_by_name(&mut *transaction, &user_data.name).await?;
+    let found_user_id = get_user_by_name(&mut *transaction, &user_data.data.name).await?;
 
     if found_user_id.is_some() {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
@@ -141,7 +143,7 @@ async fn get_own_user_data(
     post,
     path = "/update",
     context_path = "/api/v1/users",
-    request_body = UserUpdateData,
+    request_body = UserData,
     responses(
         (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 400, description = "User with given id cannot be found."),
@@ -157,7 +159,7 @@ async fn get_own_user_data(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `new_data` - The new data of the user, as [`UserUpdateData`].
+/// `new_data` - The new data of the user, as [`UserData`].
 ///
 /// # Returns
 /// Nothing.
@@ -170,8 +172,9 @@ async fn update_user_data(
     mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(new_data): Json<UserUpdateData>,
+    Json(new_data): Json<UserData>,
 ) -> Result<(CookieJar, Json<UserResponse>), ApiError> {
+    new_data.validate_inputs()?;
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
     if let Some(id) = found_user_id
@@ -244,6 +247,8 @@ async fn change_password(
     State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
+    password_change_request.validate_inputs()?;
+
     let credentials = get_user_credentials_by_id(&db, claims.sub)
         .await?
         .ok_or(ApiError::DatabaseException)?;

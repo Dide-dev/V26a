@@ -66,6 +66,9 @@
         <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
             {tree.metadata.data.description}
         </p>
+        <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
+            {tree.metadata.data.assignmentText}
+        </p>
 
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
             {#each tree.structure.rootNodes as root (root)}
