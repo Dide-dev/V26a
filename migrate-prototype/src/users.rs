@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::UserLanguage;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
@@ -25,33 +26,6 @@ pub struct User {
     pub persoonsbeschrijving: Option<String>,
     pub emailvermelding: Option<String>,
     pub language: Option<String>,
-}
-
-#[derive(Debug)]
-pub enum UserLanguage {
-    Nl,
-    En,
-}
-
-impl Display for UserLanguage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            UserLanguage::Nl => write!(f, "nl"),
-            UserLanguage::En => write!(f, "en"),
-        }
-    }
-}
-
-impl FromStr for UserLanguage {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_ref() {
-            "nl" => Ok(UserLanguage::Nl),
-            "en" => Ok(UserLanguage::En),
-            _ => Err("Een taal is niet gelijk aan nl of en".to_owned()),
-        }
-    }
 }
 
 #[derive(Debug)]

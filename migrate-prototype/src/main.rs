@@ -12,6 +12,7 @@ mod users;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sqlx::{QueryBuilder, mysql::MySqlPoolOptions, postgres::PgPoolOptions};
+use std::{fmt::Display, str::FromStr};
 
 use crate::{
     books::create_books, hints::migrate_hints, trees::migrate_trees, users::migrate_users,
@@ -26,17 +27,52 @@ pub struct LoginRequestBody {
     pub password: String,
 }
 
-/// Data needed to add a user to the database.
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RegisterData {
-    pub email: String,
-    pub password: String,
+pub enum UserLanguage {
+    Nl,
+    En,
+}
+
+impl Display for UserLanguage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            UserLanguage::Nl => write!(f, "nl"),
+            UserLanguage::En => write!(f, "en"),
+        }
+    }
+}
+
+impl FromStr for UserLanguage {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_ref() {
+            "nl" => Ok(UserLanguage::Nl),
+            "en" => Ok(UserLanguage::En),
+            _ => Err("Een taal is niet gelijk aan nl of en".to_owned()),
+        }
+    }
+}
+
+/// Data the user can modify, except email and password.
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserData {
     pub name: String,
     pub nickname: String,
     pub about_me: String,
     pub email_visible: bool,
-    pub language: String,
+    pub language: UserLanguage,
+}
+
+/// Data needed to add a user to the database.
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterData {
+    pub email: String,
+    pub password: String,
+    pub data: UserData,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -86,9 +122,9 @@ async fn main() {
 
     println!("Connected to databases");
     
-    migrate_users(&mysql_db, &postgres_db).await;
+    // migrate_users(&mysql_db, &postgres_db).await;
     
-    println!("Migrated users");
+    // println!("Migrated users");
 
     let client = reqwest::ClientBuilder::new()
     .cookie_store(true)
@@ -110,11 +146,12 @@ async fn main() {
         .json(&RegisterData {
             email: migrator_email.clone(),
             password: migrator_password.clone(),
-            name: "PrototypeDBMigrator".to_string(),
+            data: UserData {
+                name: "PrototypeDBMigrator".to_string(),
             nickname: "PDBM".to_string(),
             about_me: "The migrator of the prototype database".to_string(),
             email_visible: false,
-            language: "nl".to_string(),
+            language: UserLanguage::Nl,}
         })
         .send()
         .await
