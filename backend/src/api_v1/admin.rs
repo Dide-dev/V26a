@@ -16,7 +16,9 @@ use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 use crate::db::feedback::{get_all_feedback, get_feedback_count};
-use crate::db_structs::{feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData};
+use crate::db_structs::{
+    Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
+};
 
 use crate::{
     ArcState,
@@ -153,11 +155,12 @@ async fn update_user_data(
     Path(user_id): Path<i32>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
+    new_data.validate_inputs()?;
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
 
-    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+    let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
 
     if let Some(id) = found_user_id
         && id != user_id
@@ -209,6 +212,7 @@ async fn change_password(
     Path(user_id): Path<i32>,
     Json(new_password): Json<AdminPasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
+    new_password.validate_inputs()?;
     update_password(
         &db,
         user_id,

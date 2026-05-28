@@ -8,8 +8,8 @@
 
 use crate::{
     db_structs::users::{
-        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserGetAllData,
-        UserLanguage, UserListResponse,
+        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserData,
+        UserGetAllData, UserLanguage, UserListResponse,
     },
     tests::api_v1::{login, register, register_admin, setup},
 };
@@ -70,11 +70,13 @@ async fn test_get_one_user_admin(db: PgPool) {
     let register_data = RegisterData {
         email: "johnsmith@gmail.com".to_owned(),
         password: "VeryStrongPassword1!".to_owned(),
-        name: "name".to_owned(),
-        nickname: "nickname".to_owned(),
-        about_me: "about_me".to_owned(),
-        email_visible: true,
-        language: UserLanguage::En,
+        data: UserData {
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        },
     };
 
     let response = server.post("/users/add").json(&register_data).await;
@@ -88,13 +90,15 @@ async fn test_get_one_user_admin(db: PgPool) {
     let user_data: UserGetAllData = response.json();
     let expected_user_data = UserGetAllData {
         email: register_data.email.clone(),
-        name: register_data.name,
+        data: UserData {
+            name: register_data.data.name,
+            nickname: register_data.data.nickname,
+            about_me: register_data.data.about_me,
+            email_visible: register_data.data.email_visible,
+            language: register_data.data.language,
+        },
         enabled: true,
-        nickname: register_data.nickname,
-        about_me: register_data.about_me,
-        email_visible: register_data.email_visible,
         account_type: AccountType::Author,
-        language: register_data.language,
     };
     assert_eq!(user_data, expected_user_data);
 }
@@ -105,13 +109,15 @@ async fn test_update_user(db: PgPool) {
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
-        name: "John Smith".to_owned(),
+        data: UserData {
+            name: "John Smith".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        },
         enabled: true,
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
         account_type: AccountType::Admin,
-        language: UserLanguage::Nl,
     };
     // Create two accounts and log in as one of them.
     register(&server, "1@gmail.com".to_owned()).await;

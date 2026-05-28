@@ -56,9 +56,9 @@
     };
 
     const maxInputLengths = {
-        title: 128,
-        description: 256,
-        bookName: 192,
+        title: 100,
+        description: 500,
+        bookName: 64,
         bookEdition: 32,
         bookIsbn: 17,
         bookChapter: 32,

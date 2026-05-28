@@ -15,6 +15,10 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
+    /// An error to return when a name contains characters which fall outside of the accepted standard.
+    IllegalName,
+    /// An error to return when an input provided is too long for the database.
+    InputLengthExceeded(&'static str, usize),
     /// An error to return when a user tries to authorize themselves as a co-author on their own tree.
     InvalidAuthorisationTarget,
     /// An error to return when an invalid image type is attempted to be put in the database.
@@ -114,6 +118,13 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
+            ApiError::IllegalName => write!(f, "Name contains illegal characters."),
+            ApiError::InputLengthExceeded(offending_string, max_length) => {
+                write!(
+                    f,
+                    "Input in field \"{offending_string}\" exceeds the maximum length of {max_length} characters."
+                )
+            }
             ApiError::InvalidAuthorisationTarget => {
                 write!(f, "Cannot authorize this target.")
             }
@@ -206,7 +217,9 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::InvalidAuthorisationTarget
+            ApiError::IllegalName
+            | ApiError::InputLengthExceeded(_, _)
+            | ApiError::InvalidAuthorisationTarget
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
             | ApiError::InvalidPage
