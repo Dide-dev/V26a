@@ -247,6 +247,16 @@ impl FromStr for UserLanguage {
     }
 }
 
+impl UserLanguage {
+    /// Localize 'Copy of' string according to user language.
+    pub fn to_copy_of_text(&self) -> &str {
+        match &self {
+            UserLanguage::Nl => "Kopie van",
+            UserLanguage::En => "Copy of",
+        }
+    }
+}
+
 /// The possible values of the account type field of a user.
 #[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

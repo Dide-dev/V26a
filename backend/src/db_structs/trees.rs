@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db::cards::duplicate_card;
 use crate::db_structs::Validated;
 use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
@@ -14,7 +15,7 @@ use crate::limits::{
 };
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::{FromRow, Row};
+use sqlx::{FromRow, PgConnection, Row};
 use std::collections::BTreeMap;
 use utoipa::openapi::{ObjectBuilder, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
@@ -147,6 +148,26 @@ impl RootNode {
 pub struct Node {
     pub card_id: i32,
     pub children: Vec<Node>,
+}
+
+impl Node {
+    /// Duplicate the card in the database and all children cards.
+    ///
+    /// # Returns
+    /// The new duplicate `Node` with the new `card_id` and the new children as a [`Node`].
+    pub async fn duplicate(&self, db: &mut PgConnection, tree_id: i32) -> Result<Self, ApiError> {
+        let mut duplicate_children = Vec::with_capacity(self.children.len());
+        for child in &self.children {
+            let child = Box::pin(child.duplicate(&mut *db, tree_id)).await?;
+            duplicate_children.push(child);
+        }
+        let new_id = duplicate_card(&mut *db, self.card_id, tree_id).await?;
+
+        Ok(Node {
+            card_id: new_id,
+            children: duplicate_children,
+        })
+    }
 }
 
 // We have to define this ourselves instead of simply deriving it,
