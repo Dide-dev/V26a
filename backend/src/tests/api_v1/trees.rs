@@ -774,9 +774,11 @@ async fn test_duplicate_tree(db: PgPool) {
     let server = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    let owner_id2 = register(&server, "2@gmail.com".to_owned()).await.0;
-    login(&server, "1@gmail.com".to_owned()).await;
+    let account1 = RegisterData::default();
+    let account2 = RegisterData::default();
+    register(&server, &account1).await;
+    let owner_id2 = register(&server, &account2).await;
+    login(&server, account1.email).await;
 
     let tree_data = TreeData {
         title: "test".to_owned(),
@@ -798,7 +800,7 @@ async fn test_duplicate_tree(db: PgPool) {
     let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let id: i32 = response.json();
-    login(&server, "2@gmail.com".to_owned()).await;
+    login(&server, account2.email).await;
 
     let response = server.post("/trees/1/duplicate").await;
     response.assert_status_ok();
