@@ -38,8 +38,6 @@ pub async fn migrate_hints(
         .await
         .unwrap();
 
-    // let mut image_paths = vec![];
-
     let mut new_hints = vec![];
 
     for hint in &hints {
