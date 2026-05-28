@@ -5,15 +5,15 @@
 */
 
 @import 'tailwindcss';
+@import '../lib/assets/katex/katex.css';
 
+@plugin '@egoist/tailwindcss-icons';
 @plugin 'flowbite/plugin';
 
 /* Disable dark mode */
 @custom-variant dark (&:where(.light, .light *));
 
 @source '../../node_modules/flowbite-svelte/dist';
-
-@import '../lib/assets/katex/katex.css';
 
 @theme {
     /* Custom colours */
@@ -42,10 +42,7 @@
 
     --color-neutral-350: oklch(0.78 0 0);
 
-    /* Spacing nav bar */
-    --spacing-nav-normal: calc(var(--spacing) * 40);
-    --spacing-nav-thin: calc(var(--spacing) * 24);
-    --spacing-nav-extra-thin: calc(var(--spacing) * 14);
+    --color-underline: var(--color-black);
 
     /* Text spacing */
     --spacing-text-normal: calc(var(--spacing) * 4);
@@ -53,9 +50,21 @@
     --spacing-text-minor: calc(var(--spacing) * 1);
 
     /* Padding */
+    --spacing-padding-lg: calc(var(--spacing) * 6);
     --spacing-padding-normal: calc(var(--spacing) * 4);
     --spacing-padding-small: calc(var(--spacing) * 2);
     --spacing-padding-minor: calc(var(--spacing) * 1);
+
+    /* Spacing nav bar */
+    --spacing-nav-md: calc(var(--spacing) * 40);
+    --spacing-nav-th: calc(var(--spacing) * 28);
+    --spacing-nav-xt: calc(var(--spacing) * 14);
+
+    /* Spacing footer */
+    --spacing-footer-xl: calc(var(--spacing) * 54);
+    --spacing-footer-lg: calc(var(--spacing) * 40);
+    --spacing-footer-md: calc(var(--spacing) * 32);
+    --spacing-footer-th: calc(var(--spacing) * 20);
 }
 
 @layer base {
@@ -63,7 +72,7 @@
     body {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        min-height: 100vh;
     }
 
     /* General layout classes */
@@ -96,6 +105,10 @@
 
     .text__link:active {
         color: var(--color-blue-800);
+    }
+
+    .text__code {
+        background: var(--color-neutral-200);
     }
 
     .text__error {
@@ -342,12 +355,37 @@
     }
 
     p a {
-        color: #36c;
+        color: var(--color-blue-600);
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        &:active {
+            color: var(--color-blue-800);
+        }
     }
 
-    blockquote p {
-        margin-left: 1.5rem;
-        color: #555555;
+    blockquote {
+        padding-top: 3px;
+        padding-bottom: 3px;
+        margin: 4px 0;
+        padding-inline: 1em 2px;
+        position: relative;
+
+        &:before {
+            top: 2px;
+            bottom: 2px;
+            border-inline-start: 0.25em solid #999;
+            content: '';
+            display: block;
+            position: absolute;
+            inset-inline-start: 2px;
+        }
+        p {
+            /*margin-left: 1.5rem;*/
+            color: #444;
+        }
     }
 
     ul li,
@@ -355,11 +393,23 @@
         margin-left: 1.5rem;
     }
 
-    ul {
+    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
         list-style-type: disc;
     }
 
-    ol {
+    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
         list-style-type: decimal;
+    }
+
+    hr {
+        margin: 0.2rem 0;
+    }
+
+    /** For styling broken images that users created in trees. */
+    img:before {
+        border: 1px solid;
+        display: flex;
+        height: 100%;
+        width: 100%;
     }
 }

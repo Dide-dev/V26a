@@ -4,7 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use sqlx::FromRow;
+use crate::db_structs::Validated;
+use crate::errors::ApiError;
+use crate::limits::{CARD_BACK_MAX_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
@@ -13,8 +15,7 @@ use utoipa::ToSchema;
 #[serde(rename_all = "camelCase")]
 pub struct CardAddData {
     pub tree_id: i32,
-    pub front: String,
-    pub back: String,
+    pub data: CardData,
 }
 
 /// The basic data required to update an existing card.
@@ -22,16 +23,31 @@ pub struct CardAddData {
 #[serde(rename_all = "camelCase")]
 pub struct CardUpdateData {
     pub card_id: i32,
-    pub new_front: String,
-    pub new_back: String,
+    pub data: CardData,
 }
 
 /// The basic data of the card
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CardGetData {
+pub struct CardData {
     pub front: String,
     pub back: String,
+}
+
+impl Validated for CardData {
+    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.front.len() > CARD_FRONT_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "front",
+                CARD_FRONT_MAX_LENGTH,
+            ));
+        }
+        if self.back.len() > CARD_BACK_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("back", CARD_BACK_MAX_LENGTH));
+        }
+        Ok(())
+    }
 }
 
 /// Data for the API-call to add a card to the library.
@@ -40,6 +56,17 @@ pub struct CardGetData {
 pub struct LibraryCardAddData {
     pub title: String,
     pub tags: Vec<String>,
+}
+impl Validated for LibraryCardAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.title.len() > CARD_LIBRARY_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "title",
+                CARD_LIBRARY_TITLE_MAX_LENGTH,
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// Data that is returned when cards are requested from the card library.

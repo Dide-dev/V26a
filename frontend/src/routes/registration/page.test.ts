@@ -10,12 +10,12 @@ import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
-import { addUser } from '$lib/backend/users';
+import { addUser } from '$lib/api-wrapper/users';
 import { goto } from '$app/navigation';
 import { appLink } from '$lib';
 import { getLocale } from '$lib/paraglide/runtime.js';
 
-vi.mock('$lib/backend/users', () => {
+vi.mock('$lib/api-wrapper/users', () => {
     return {
         addUser: vi.fn()
     };
@@ -122,7 +122,7 @@ test('Redirection after successful registration', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');
@@ -144,7 +144,7 @@ test('Submission with correct data', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');
@@ -157,13 +157,15 @@ test('Submission with correct data', async () => {
 
     expect(addUser).toHaveBeenCalledWith(
         expect.objectContaining({
+            data: {
+                name: 'Tree_Maker',
+                nickname: '',
+                aboutMe: '',
+                emailVisible: false,
+                language: getLocale()
+            },
             email: 'test@email.nl',
-            password: 'ThisIsAVerySecureP@ssword123',
-            name: 'Tree Maker',
-            nickname: '',
-            aboutMe: '',
-            emailVisible: false,
-            language: getLocale()
+            password: 'ThisIsAVerySecureP@ssword123'
         })
     );
 });
@@ -190,7 +192,7 @@ test('No submission without repeatPassword', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     await user.click(screen.getByTestId('agreeToTOS'));
@@ -222,7 +224,7 @@ test('No submission without email', async () => {
     render(page);
 
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');
@@ -241,7 +243,7 @@ test('No submission without agreeing to TOS', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');

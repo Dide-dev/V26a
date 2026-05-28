@@ -9,9 +9,9 @@ import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
-import { addTree } from '$lib/backend/trees';
+import { addTree } from '$lib/api-wrapper/trees';
 
-vi.mock('$lib/backend/trees', () => {
+vi.mock('$lib/api-wrapper/trees', () => {
     return {
         addTree: vi.fn()
     };

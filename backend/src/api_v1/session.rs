@@ -5,45 +5,12 @@
 */
 
 use crate::ArcState;
-use crate::db_structs::users::AccountType;
+use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
-use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
-/// A struct containing the [`EncodingKey`] and [`DecodingKey`] used for encoding and decoding the
-/// `JsonWebToken`.
-#[derive(Clone)]
-pub struct Keys {
-    pub encoding: EncodingKey,
-    pub decoding: DecodingKey,
-}
-
-impl Keys {
-    /// Creates a [`Keys`] from an array of bytes.
-    pub fn new(secret: &[u8]) -> Self {
-        Self {
-            encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret),
-        }
-    }
-}
-
-/// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
-/// expiration time.
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct Claims {
-    /// The subject (whom the token refers to).
-    pub sub: i32,
-    /// The expiration time (as UTC timestamp).
-    pub exp: i64,
-    /// the account type
-    pub account_type: AccountType,
-}
+use jsonwebtoken::{Validation, decode};
 
 fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.

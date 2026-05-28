@@ -7,7 +7,7 @@
 //! This module parses all external configuration from environment variables.
 //! For more details, see the '.env.example' file in the root of this repository.
 
-use crate::api_v1::session::Keys;
+use crate::db_structs::session::Keys;
 use bcrypt::DEFAULT_COST;
 use std::env;
 

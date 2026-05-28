@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { addCard, updateCard, type CardGetData, type CardId } from '$lib/backend/cards';
+import { addCard, updateCard, type CardData, type CardId } from '$lib/api-wrapper/cards';
 import {
     type TreeStructure,
     type Node,
@@ -12,7 +12,7 @@ import {
     removeCardFromTree,
     updateTreeStructure,
     type RootNode
-} from '$lib/backend/trees';
+} from '$lib/api-wrapper/trees';
 
 export type TreeHistory = {
     // Used for the API requests
@@ -24,7 +24,7 @@ export type TreeHistory = {
 
     // The cardId's in these two properties must always exist in the database
     currentStructure: TreeStructure;
-    currentCards: Record<CardId, CardGetData>;
+    currentCards: Record<CardId, CardData>;
 
     cardIdMapper: CardIdMapper;
 };
@@ -32,7 +32,7 @@ export type TreeHistory = {
 export function initializeHistory(
     treeId: TreeId,
     structure: TreeStructure,
-    cards: Record<CardId, CardGetData>
+    cards: Record<CardId, CardData>
 ): TreeHistory {
     return {
         treeId,
@@ -98,11 +98,10 @@ export async function doMove(history: TreeHistory, nodeToMove: number[], newLoca
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
 
-export async function doAddCard(history: TreeHistory, location: number[], card: CardGetData) {
+export async function doAddCard(history: TreeHistory, location: number[], card: CardData) {
     const cardId = await addCard({
         treeId: history.treeId,
-        front: card.front,
-        back: card.back
+        data: card
     });
 
     const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
@@ -125,10 +124,10 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
     commitActionLocal(history, newStructure, action);
 }
 
-export async function doEditCard(history: TreeHistory, cardId: CardId, newCard: CardGetData) {
+export async function doEditCard(history: TreeHistory, cardId: CardId, newCard: CardData) {
     const oldCard = history.currentCards[cardId];
 
-    await updateCard({ cardId, newBack: newCard.back, newFront: newCard.front });
+    await updateCard({ cardId, data: newCard });
     const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const action: CardActionUpdate = {
         type: 'cardUpdate',
@@ -255,8 +254,7 @@ async function performActionToBackend(
         case 'cardAdd': {
             const newCardId = await addCard({
                 treeId: history.treeId,
-                front: action.card.front,
-                back: action.card.back
+                data: action.card
             });
 
             history.cardIdMapper.setMapping(action.cardId, newCardId);
@@ -284,8 +282,7 @@ async function performActionToBackend(
         case 'cardUpdate': {
             await updateCard({
                 cardId: action.cardId,
-                newFront: action.newCard.front,
-                newBack: action.newCard.back
+                data: action.newCard
             });
             break;
         }
@@ -411,18 +408,18 @@ type CardActionNone = {
 type CardActionRemove = {
     type: 'cardRemove';
     oldCardId: CardId;
-    oldCard: CardGetData;
+    oldCard: CardData;
 };
 type CardActionAdd = {
     type: 'cardAdd';
     cardId: CardId;
-    card: CardGetData;
+    card: CardData;
 };
 type CardActionUpdate = {
     type: 'cardUpdate';
     cardId: CardId;
-    newCard: CardGetData;
-    oldCard: CardGetData;
+    newCard: CardData;
+    oldCard: CardData;
 };
 
 function actionInverse(action: CardAction): CardAction {

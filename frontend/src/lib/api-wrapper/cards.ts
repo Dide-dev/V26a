@@ -25,18 +25,16 @@ export type LibraryCardId = number;
 /** The basic data of the card, including the tree it belongs to. */
 export type CardAddData = {
     treeId: TreeId;
-    front: string;
-    back: string;
+    data: CardData;
 };
 
 /** The basic data required to update an existing card. */
 export type CardUpdateData = {
     cardId: number;
-    newFront: string;
-    newBack: string;
+    data: CardData;
 };
 
-export type CardGetData = {
+export type CardData = {
     front: string;
     back: string;
 };

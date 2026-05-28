@@ -11,7 +11,7 @@
  -->
 <script lang="ts">
     import iconAdd from '$lib/assets/icons/add.svg?raw';
-    import type { CardGetData } from '$lib/backend/cards';
+    import type { CardData } from '$lib/api-wrapper/cards';
     import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './SubtreeEditor.svelte';
     import type { SideBar } from './Sidebar.svelte';
@@ -63,7 +63,7 @@
         if (dragState !== null) {
             return;
         }
-        let editingVersion: CardGetData = { front: '', back: '' };
+        let editingVersion: CardData = { front: '', back: '' };
         if (sidebar?.type === 'NewCard') {
             // Don't forget what the user typed if the user clicks a different add card.
             editingVersion = sidebar.editingVersion;

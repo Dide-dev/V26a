@@ -7,7 +7,7 @@
 <script lang="ts">
     import { ParaglideMessage } from '@inlang/paraglide-js-svelte';
     import { getLocale } from '$lib/paraglide/runtime.js';
-    import { addUser, type RegisterData } from '$lib/backend/users';
+    import { addUser, type RegisterData } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
@@ -21,13 +21,15 @@
 
     // Page information
     let formData: RegisterData = $state({
+        data: {
+            name: '',
+            nickname: '',
+            aboutMe: '',
+            emailVisible: false,
+            language: getLocale()
+        },
         email: '',
-        password: '',
-        name: '',
-        nickname: '',
-        aboutMe: '',
-        emailVisible: false,
-        language: getLocale()
+        password: ''
     });
     let repeatPassword = $state('');
     let agreedToTOS = $state(false);
@@ -38,22 +40,22 @@
     let formCompleted: boolean = $derived(
         formData.email !== '' &&
             formData.password !== '' &&
-            formData.name !== '' &&
+            formData.data.name !== '' &&
             repeatPassword !== '' &&
             agreedToTOS
     );
 
     const minInputLengths = {
-        name: 2,
+        name: 4,
         nickname: 2,
         email: 0,
         password: 8
     };
 
     const maxInputLengths = {
-        name: 128,
-        nickname: 128,
-        email: 256,
+        name: 32,
+        nickname: 32,
+        email: 128,
         password: 72
     };
 
@@ -127,15 +129,17 @@
             <input
                 id="name"
                 class={[usernameAlreadyExists && 'error', 'input__text']}
-                bind:value={formData.name}
-                name="name"
+                bind:value={formData.data.name}
+                name="username"
                 type="text"
                 data-testid="name"
                 placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
                 minlength={minInputLengths.name}
                 maxlength={maxInputLengths.name}
-                autocomplete="name"
+                autocomplete="username"
                 required
+                pattern="[a-zA-Z0-9._\-]*"
+                title={m.allowedRegex()}
             />
             {#if usernameAlreadyExists}
                 <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
@@ -148,12 +152,13 @@
             <input
                 id="nickname"
                 class="input__text"
-                bind:value={formData.nickname}
-                name="nickname"
+                bind:value={formData.data.nickname}
+                name="name"
                 type="text"
                 placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
                 minlength={minInputLengths.nickname}
                 maxlength={maxInputLengths.nickname}
+                autocomplete="name"
             />
         </div>
         <div>
@@ -219,7 +224,7 @@
                 <input
                     id="emailVisible"
                     class="input__checkbox"
-                    bind:checked={formData.emailVisible}
+                    bind:checked={formData.data.emailVisible}
                     name="emailVisible"
                     type="checkbox"
                 />
