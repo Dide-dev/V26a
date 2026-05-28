@@ -758,7 +758,7 @@ pub async fn duplicate_tree(
     let this_user = get_user(&db, claims.sub).await?;
     new_data.title = format!(
         "{} {}",
-        this_user.language.to_copy_of_text(),
+        this_user.data.language.to_copy_of_text(),
         new_data.title
     );
 

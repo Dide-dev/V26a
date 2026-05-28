@@ -410,7 +410,7 @@ mod tests {
         assert_ne!(duplicate_card_id, tree_id);
 
         let card_text = get_card_text(&db, duplicate_card_id).await.unwrap();
-        let expected_card_text = CardGetData {
+        let expected_card_text = CardData {
             front: "front".to_owned(),
             back: "back".to_owned(),
         };
