@@ -311,25 +311,25 @@ impl FromRow<'_, PgRow> for TreeData {
 impl Validated for TreeData {
     /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.title.len() > TREE_TITLE_MAX_LENGTH {
+        if self.title.chars().count() > TREE_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "title",
                 TREE_TITLE_MAX_LENGTH,
             ));
         }
-        if self.description.len() > TREE_DESCRIPTION_MAX_LENGTH {
+        if self.description.chars().count() > TREE_DESCRIPTION_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "description",
                 TREE_DESCRIPTION_MAX_LENGTH,
             ));
         }
-        if self.book_name.len() > TREE_BOOK_NAME_MAX_LENGTH {
+        if self.book_name.chars().count() > TREE_BOOK_NAME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookName",
                 TREE_BOOK_NAME_MAX_LENGTH,
             ));
         }
-        if self.book_edition.len() > TREE_BOOK_EDITION_MAX_LENGTH {
+        if self.book_edition.chars().count() > TREE_BOOK_EDITION_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookEdition",
                 TREE_BOOK_EDITION_MAX_LENGTH,
@@ -338,26 +338,26 @@ impl Validated for TreeData {
         if self
             .book_isbn
             .as_ref()
-            .is_some_and(|s| s.len() > TREE_BOOK_ISBN_MAX_LENGTH)
+            .is_some_and(|s| s.chars().count() > TREE_BOOK_ISBN_MAX_LENGTH)
         {
             return Err(ApiError::InputLengthExceeded(
                 "bookIsbn",
                 TREE_BOOK_ISBN_MAX_LENGTH,
             ));
         }
-        if self.book_chapter.len() > TREE_BOOK_CHAPTER_MAX_LENGTH {
+        if self.book_chapter.chars().count() > TREE_BOOK_CHAPTER_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookChapter",
                 TREE_BOOK_CHAPTER_MAX_LENGTH,
             ));
         }
-        if self.book_exercise.len() > TREE_BOOK_EXERCISE_MAX_LENGTH {
+        if self.book_exercise.chars().count() > TREE_BOOK_EXERCISE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookExercise",
                 TREE_BOOK_EXERCISE_MAX_LENGTH,
             ));
         }
-        if self.assignment_text.len() > TREE_ASSIGNMENT_MAX_LENGTH {
+        if self.assignment_text.chars().count() > TREE_ASSIGNMENT_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "assignmentText",
                 TREE_ASSIGNMENT_MAX_LENGTH,

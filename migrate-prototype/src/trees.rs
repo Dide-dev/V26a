@@ -85,9 +85,9 @@ pub async fn migrate_trees(
 ) {
     let bomen = query_as!(
         Boom,
-        "SELECT boom_id, timestamp, user_id, laatst_gewijzigd, gepubliceerd, 
-        aantal_bezoeken as `aantal_bezoeken: u32`, laatst_bezocht, titel, boek, 
-        deel, hoofdstuk, opgavenummer, omschrijving, opgavetekst, plaatje, 
+        "SELECT boom_id, timestamp, user_id, laatst_gewijzigd, gepubliceerd,
+        aantal_bezoeken as `aantal_bezoeken: u32`, laatst_bezocht, titel, boek,
+        deel, hoofdstuk, opgavenummer, omschrijving, opgavetekst, plaatje,
         orientatiefase, planfase, afrondfase
         FROM `bomen`"
     )
@@ -147,7 +147,7 @@ pub async fn migrate_trees(
             last_visited: boom
                 .laatst_bezocht
                 .map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-            title: recover_string(&boom.titel),
+            title: recover_string(&boom.titel).chars().take(100).collect(),
             description: boom
                 .omschrijving
                 .clone()
@@ -207,7 +207,6 @@ pub async fn migrate_trees(
     });
 
     let postgres_query = query_builder.build();
-
     postgres_query.execute(postgres_db).await.unwrap();
 
     for tree in new_trees {
