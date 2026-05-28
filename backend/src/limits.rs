@@ -12,6 +12,8 @@ pub const CARD_LIBRARY_TITLE_MAX_LENGTH: usize = 100;
 // Classroom data limits
 pub const CLASSROOM_TITLE_MAX_LENGTH: usize = 32;
 pub const CLASSROOM_DESCRIPTION_MAX_LENGTH: usize = 256;
+pub const LESSON_TITLE_MAX_LENGTH: usize = 32;
+pub const LESSON_DESCRIPTION_MAX_LENGTH: usize = 128;
 
 // Credential data limits
 pub const EMAIL_MAX_LENGTH: usize = 128;

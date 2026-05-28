@@ -5,7 +5,7 @@
 */
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
-use crate::limits::{CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH};
+use crate::limits::{CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH, LESSON_DESCRIPTION_MAX_LENGTH};
 use sqlx::FromRow;
 use utoipa::ToSchema;
 
@@ -52,4 +52,16 @@ pub struct LessonAddData {
     #[serde(default)]
     pub description: String,
     pub published: bool,
+}
+
+impl Validated for LessonAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.name.len() > LESSON_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("name", LESSON_TITLE_MAX_LENGTH));
+        }
+        if self.description.len() > LESSON_DESCRIPTION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("description", LESSON_DESCRIPTION_MAX_LENGTH));
+        }
+        Ok(())
+    }
 }

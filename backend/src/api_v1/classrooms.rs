@@ -4,13 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::classrooms::{add_classroom, generate_random_code};
+use crate::db::classrooms::{add_classroom, generate_random_code, add_lesson};
 use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
+use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
@@ -65,7 +66,12 @@ async fn add_new_classroom(
 async fn add_new_lesson(
     claims: Claims,
     Extension(db): Extension<PgPool>,
+    Path(classroom_id): Path<i32>,
     Json(lesson_add_data): Json<LessonAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    Ok(Json(1))
+    lesson_add_data.validate_inputs()?;
+    //TODO: add permission verification and documentation of db, db_struct, and api
+    let id = add_lesson(get_connection!(db), &lesson_add_data, classroom_id).await?;
+
+    Ok(Json(id))
 }
