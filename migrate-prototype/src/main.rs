@@ -121,15 +121,15 @@ async fn main() {
         .expect("failed to run prototype database migration");
 
     println!("Connected to databases");
-    
+
     migrate_users(&mysql_db, &postgres_db).await;
-    
+
     println!("Migrated users");
 
     let client = reqwest::ClientBuilder::new()
-    .cookie_store(true)
-    .build()
-    .unwrap();
+        .cookie_store(true)
+        .build()
+        .unwrap();
 
     println!("Created client");
 
@@ -148,10 +148,11 @@ async fn main() {
             password: migrator_password.clone(),
             data: UserData {
                 name: "PrototypeDBMigrator".to_string(),
-            nickname: "PDBM".to_string(),
-            about_me: "The migrator of the prototype database".to_string(),
-            email_visible: false,
-            language: UserLanguage::Nl,}
+                nickname: "PDBM".to_string(),
+                about_me: "The migrator of the prototype database".to_string(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            },
         })
         .send()
         .await
