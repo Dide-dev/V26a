@@ -136,7 +136,7 @@
                     {#if tree.metadata.data.bookIsbn !== null}
                         <a
                             href={appLink(`/all-trees?isbn=${tree.metadata.data.bookIsbn}`)}
-                            class="flex w-fit self-end *:*:flex-col"
+                            class="mt-text-minor flex w-fit self-end *:*:flex-col"
                         >
                             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                                 <h2 class="w-fit self-end text-lg font-semibold text-neutral-800">
