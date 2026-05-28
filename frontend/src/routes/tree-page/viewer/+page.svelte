@@ -108,26 +108,28 @@
                 </div>
             </div>
             <div class="mt-text-small flex flex-auto flex-row">
-                <div class="flex flex-col">
-                    <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
-                        {m.assignmentText()}
-                    </p>
-                    <p class="*:inline">
-                        <!-- Trees from the prototype may contain images. -->
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                        {@html markdownToFinalHtml(assignmentText)}
-                        {#if tree.metadata.data.assignmentText.length > 128}
-                            <button
-                                onclick={() => {
-                                    showFullAssignment = !showFullAssignment;
-                                }}
-                                class="text__link"
-                            >
-                                {showFullAssignment ? m.showLess() : m.showMore()}
-                            </button>
-                        {/if}
-                    </p>
-                </div>
+                {#if assignmentText !== ''}
+                    <div class="flex flex-col">
+                        <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
+                            {m.assignmentText()}
+                        </p>
+                        <p class="*:inline">
+                            <!-- Trees from the prototype may contain images. -->
+                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                            {@html markdownToFinalHtml(assignmentText)}
+                            {#if tree.metadata.data.assignmentText.length > 128 && !assignmentIncludesImage}
+                                <button
+                                    onclick={() => {
+                                        showFullAssignment = !showFullAssignment;
+                                    }}
+                                    class="text__link"
+                                >
+                                    {showFullAssignment ? m.showLess() : m.showMore()}
+                                </button>
+                            {/if}
+                        </p>
+                    </div>
+                {/if}
                 <div class="flex flex-auto"></div>
                 <div class="mr-4 flex min-w-1/3 flex-col text-right">
                     {#if tree.metadata.data.bookIsbn !== null}
@@ -141,16 +143,24 @@
                                 </h2>
                             </AnimatedUnderline>
                         </a>
-                        <p class="italic">
-                            {m.writtenBy({ name: tree.metadata.data.bookAuthor })}
-                        </p>
+                        {#if tree.metadata.data.bookAuthor !== ''}
+                            <p class="italic">
+                                {m.writtenBy({ name: tree.metadata.data.bookAuthor })}
+                            </p>
+                        {/if}
                         <p>
                             {m.bookEdition()}
-                            {tree.metadata.data.bookEdition},
+                            {tree.metadata.data.bookEdition !== ''
+                                ? tree.metadata.data.bookEdition
+                                : '?'},
                             {m.bookChapter()}
-                            {tree.metadata.data.bookChapter},
+                            {tree.metadata.data.bookChapter !== ''
+                                ? tree.metadata.data.bookChapter
+                                : '?'},
                             {m.bookExercise()}
-                            {tree.metadata.data.bookExercise}
+                            {tree.metadata.data.bookExercise !== ''
+                                ? tree.metadata.data.bookExercise
+                                : '?'}
                         </p>
                     {/if}
                 </div>
