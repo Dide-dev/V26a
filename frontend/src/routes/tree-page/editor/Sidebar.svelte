@@ -8,7 +8,7 @@
     This sidebar is currently only used for the card editing, but could be used for more later.
  -->
 <script lang="ts">
-    import type { CardGetData } from '$lib/api-wrapper/cards';
+    import type { CardData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
     import Editor from '$lib/rich-text/Editor.svelte';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
@@ -25,12 +25,14 @@
     export type SideBar = {
         type: 'NewCard' | 'EditCard';
         location: number[];
-        editingVersion: CardGetData;
+        editingVersion: CardData;
         errorMessage?: string;
     };
 
-    const frontMaxLength = 250;
-    const backMaxLength = 5000;
+    const maxInputLengths = {
+        frontMaxLength: 250,
+        backMaxLength: 5000
+    };
 
     let isVisualEditor = $state(true);
 
@@ -55,12 +57,16 @@
             return;
         }
 
-        if (sidebar.editingVersion.front.length > frontMaxLength) {
-            sidebar.errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
+        if (sidebar.editingVersion.front.length > maxInputLengths.frontMaxLength) {
+            sidebar.errorMessage = m.frontTextCharacterLimit({
+                limit: maxInputLengths.frontMaxLength
+            });
             return;
         }
-        if (sidebar.editingVersion.back.length > backMaxLength) {
-            sidebar.errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
+        if (sidebar.editingVersion.back.length > maxInputLengths.backMaxLength) {
+            sidebar.errorMessage = m.backTextCharacterLimit({
+                limit: maxInputLengths.backMaxLength
+            });
             return;
         }
         sidebar.errorMessage = '';
@@ -97,7 +103,7 @@
 
             <p>Front</p>
             <SimpleTextEditArea
-                maxLength={frontMaxLength}
+                maxLength={maxInputLengths.frontMaxLength}
                 height={2}
                 bind:valueText={sidebar.editingVersion.front}
             />
@@ -120,10 +126,13 @@
                 </button>
             </div>
             {#if isVisualEditor}
-                <Editor maxLength={backMaxLength} bind:valueText={sidebar.editingVersion.back} />
+                <Editor
+                    maxLength={maxInputLengths.backMaxLength}
+                    bind:valueText={sidebar.editingVersion.back}
+                />
             {:else}
                 <SimpleTextEditArea
-                    maxLength={backMaxLength}
+                    maxLength={maxInputLengths.backMaxLength}
                     height="full"
                     bind:valueText={sidebar.editingVersion.back}
                 />
