@@ -11,7 +11,7 @@ CREATE TABLE lessons
     order_number        INTEGER         NOT NULL,
     created_at          TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     name                VARCHAR(32)     NOT NULL,
-    description         VARCHAR(256)    NOT NULL    DEFAULT '',
+    description         VARCHAR(128)    NOT NULL    DEFAULT '',
     published           BOOLEAN         NOT NULL    DEFAULT FALSE,
 
     FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE

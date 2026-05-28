@@ -48,6 +48,8 @@ pub mod test {
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::RegisterData;
     use sqlx::{PgConnection, PgExecutor, query};
+    use crate::db::classrooms::generate_random_code;
+    use crate::db_structs::classrooms::ClassroomAddData;
 
     /// Initialize a database with a user and a tree.
     ///
@@ -219,5 +221,32 @@ pub mod test {
         .await
         .unwrap()
         .id
+    }
+
+    pub async fn initialize_classroom(
+        db: &mut PgConnection,
+        owner_id: i32,
+    ) -> i32 {
+        let classroom_data = ClassroomAddData {
+            name: "Classroom".to_string(),
+            description: "Classroom".to_string(),
+        };
+        initialize_classroom_with_data(db, owner_id, &classroom_data, None).await
+    }
+
+    pub async fn initialize_classroom_with_data(
+        db: &mut PgConnection,
+        owner_id: i32,
+        classroom_add_data: &ClassroomAddData,
+        join_code: Option<String>,
+    ) -> i32 {
+        let join_code = join_code.unwrap_or(generate_random_code(db).await.unwrap());
+        query!(
+            "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
+            owner_id,
+            classroom_add_data.name,
+            classroom_add_data.description,
+            join_code,
+        ).fetch_one(db).await.unwrap().id
     }
 }

@@ -95,26 +95,31 @@ pub async fn add_classroom(
 }
 
 pub async fn add_lesson(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     lesson_add_data: &LessonAddData,
     classroom_id: i32,
 ) -> Result<i32, ApiError> {
-    let id: i32 = query!(
-        "INSERT INTO lessons (classroom_id, order_number, name, description, published) VALUES ($1, ((SELECT MAX(order_number) FROM lessons WHERE classroom_id=$1)+1), $2, $3, $4) RETURNING id",
+    let order_number: Option<i32> = query!(
+        "SELECT MAX(order_number) FROM lessons WHERE classroom_id=$1",
         classroom_id,
+    ).fetch_one(&mut *db).await?.max;
+    let id: i32 = query!(
+        "INSERT INTO lessons (classroom_id, order_number, name, description, published) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+        classroom_id,
+        (order_number.unwrap_or(0))+1,
         lesson_add_data.name,
         lesson_add_data.description,
         lesson_add_data.published,
-    ).fetch_one(db).await?.id;
+    ).fetch_one(&mut *db).await?.id;
 
     Ok(id)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{add_classroom, generate_random_code};
-    use crate::db::test::initialize_db;
-    use crate::db_structs::classrooms::ClassroomAddData;
+    use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code};
+    use crate::db::test::{initialize_classroom, initialize_classroom_with_data, initialize_db};
+    use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query};
 
@@ -147,5 +152,31 @@ mod tests {
 
         assert_eq!(found_classroom_add_data, classroom_add_data);
         assert_eq!(found_classroom_data.join_code, join_code);
+    }
+
+    #[sqlx::test]
+    async fn test_add_lesson(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
+
+        let lesson_add_data = LessonAddData {
+            name: "Lesson".to_string(),
+            description: "My very first lesson".to_string(),
+            published: false,
+        };
+
+        let id1 = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id).await.unwrap();
+        let id2 = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id).await.unwrap();
+        let found_lesson_data1 = query!("SELECT * FROM lessons WHERE id = $1", id1).fetch_one(&db).await.unwrap();
+        let found_lesson_data2 = query!("SELECT  * FROM lessons WHERE id = $1", id2).fetch_one(&db).await.unwrap();
+
+        let found_lesson_add_data = LessonAddData {
+            name: found_lesson_data1.name,
+            description: found_lesson_data1.description,
+            published: found_lesson_data1.published,
+        };
+
+        assert_eq!(found_lesson_add_data, lesson_add_data);
+        assert_eq!(found_lesson_data1.order_number + 1, found_lesson_data2.order_number);
     }
 }
