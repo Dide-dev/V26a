@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import { apiCallGet, apiCallPost } from './index';
 import {
     type UserId,
@@ -53,6 +59,10 @@ export function getAllUserData(pageOptions: PaginationOptions): Promise<UserList
     return apiCallGetAdmin(`all-user-data?${params}`);
 }
 
+/** Get the data of a specific user */
+export function getUserAllData(userId: UserId): Promise<UserAllData> {
+    return apiCallGetAdmin(`users/${userId}`);
+}
 /** Update the data of a user */
 export function updateUserData(
     userId: UserId,

@@ -6,7 +6,8 @@
 
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
-    AdminUpdateData, AllUsersGetData, RegisterData, UserGetData, UserLanguage, UserUpdateData,
+    AccountType, AdminUpdateData, AllUsersGetData, RegisterData, UserGetAllData, UserGetData,
+    UserLanguage, UserUpdateData,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -84,6 +85,43 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
         nickname: record.nickname,
         about_me: record.about_me,
         email_visible: record.email_visible,
+        language: UserLanguage::from_str(record.language_code.as_str())?,
+    })
+}
+
+/// Query the data for the given user id in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user.
+///
+/// # Returns
+/// A [`UserGetAllData`] object containing the user's data, minus their password.
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_all_data(
+    db: impl PgExecutor<'_>,
+    id: i32,
+) -> Result<UserGetAllData, ApiError> {
+    let record = query!(
+        "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language_code FROM users WHERE id = $1",
+        id,
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(UserGetAllData {
+        email: record.email,
+        name: record.name,
+        enabled: record.enabled,
+        nickname: record.nickname,
+        about_me: record.about_me,
+        email_visible: record.email_visible,
+        account_type: AccountType::from_str(record.account_type.as_str())?,
         language: UserLanguage::from_str(record.language_code.as_str())?,
     })
 }
@@ -536,6 +574,35 @@ mod tests {
             nickname: register_data.nickname,
             about_me: register_data.about_me,
             email_visible: register_data.email_visible,
+            language: register_data.language,
+        };
+
+        assert_eq!(user_data, expected_user_data);
+    }
+
+    #[sqlx::test]
+    async fn test_get_user_all_data(db: PgPool) {
+        let register_data = RegisterData {
+            email: "email".to_owned(),
+            password: "password".to_owned(),
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        };
+
+        let user_id = initialize_user(&db, &register_data).await;
+        let user_data = get_user_all_data(&db, user_id).await.unwrap();
+
+        let expected_user_data = UserGetAllData {
+            email: register_data.email,
+            name: register_data.name,
+            enabled: true,
+            nickname: register_data.nickname,
+            about_me: register_data.about_me,
+            email_visible: register_data.email_visible,
+            account_type: AccountType::Author,
             language: register_data.language,
         };
 

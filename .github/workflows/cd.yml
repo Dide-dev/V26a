@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create .env file
+      - name: Overwrite .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: Add redirect to Caddyfile
@@ -34,7 +34,3 @@ jobs:
 
       - name: Deploy
         run: docker compose --profile prod up -d
-
-      - name: Remove env file
-        if: always()
-        run: rm -f .env
