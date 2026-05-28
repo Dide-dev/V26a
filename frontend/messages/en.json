@@ -129,5 +129,6 @@
     "pageNotFound": "This page could not be found",
     "account": "Account",
     "admin": "Admin",
-    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences"
+    "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
+    "owner": "Owner"
 }
