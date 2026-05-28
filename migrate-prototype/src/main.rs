@@ -122,9 +122,9 @@ async fn main() {
 
     println!("Connected to databases");
     
-    // migrate_users(&mysql_db, &postgres_db).await;
+    migrate_users(&mysql_db, &postgres_db).await;
     
-    // println!("Migrated users");
+    println!("Migrated users");
 
     let client = reqwest::ClientBuilder::new()
     .cookie_store(true)
