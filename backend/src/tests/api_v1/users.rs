@@ -10,7 +10,7 @@ use crate::api_v1::auth::LoginResponse;
 use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
+    PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
 };
 use crate::tests::api_v1::{TestState, login, register, register_email, setup};
 use sqlx::PgPool;
@@ -30,7 +30,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         language: UserLanguage::En,
     };
 
-    let user_id = register(&test_state, &register_data).await;
+    register(&test_state, &register_data).await;
     let server = test_state.server;
 
     let expected_user_data = UserGetData {
@@ -66,14 +66,9 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
-        account_type: None,
-        enabled: None,
     };
 
-    let response = server
-        .post(&format!("/users/update/{user_id}"))
-        .json(&update_data)
-        .await;
+    let response = server.post("/users/update").json(&update_data).await;
     response.assert_status_ok();
 
     let expected_user_data = UserGetData {

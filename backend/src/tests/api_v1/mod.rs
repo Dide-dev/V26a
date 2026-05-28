@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+mod admin;
 mod auth;
 mod cards;
 mod classrooms;
