@@ -103,7 +103,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 async fn test_successful_password_change(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email.clone()).await;
 
@@ -139,7 +139,7 @@ async fn test_successful_password_change(db: PgPool) {
 async fn test_change_password_incorrect_old_password(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email.clone()).await;
 
@@ -176,7 +176,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     let user_id = register(&server, &register_data).await;
     login(&server, register_data.email).await;
 
@@ -195,9 +195,9 @@ async fn test_delete_own_user(db: PgPool) {
 async fn test_delete_other_user(db: PgPool) {
     let server = setup(db);
 
-    let account1 = RegisterData::default();
+    let account1 = RegisterData::test_values();
     let user_id_1 = register(&server, &account1).await;
-    let account2 = RegisterData::default();
+    let account2 = RegisterData::test_values();
     register(&server, &account2).await;
     login(&server, account2.email).await;
 
@@ -212,7 +212,7 @@ async fn test_delete_other_user(db: PgPool) {
 async fn test_delete_nonexistent_user(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
 

@@ -118,7 +118,7 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
         .post("/auth/login")
         .json(&LoginRequestBody {
             email,
-            password: RegisterData::default().password,
+            password: RegisterData::test_values().password,
         })
         .await;
     response.assert_status_ok();
@@ -137,7 +137,7 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
 async fn setup_login(db: PgPool) -> TestServer {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
 
@@ -179,7 +179,7 @@ mod tests {
     async fn test_normal_login(db: PgPool) {
         let server = setup(db);
 
-        let register_data = RegisterData::default();
+        let register_data = RegisterData::test_values();
         register(&server, &register_data).await;
         let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
@@ -192,7 +192,7 @@ mod tests {
         let conn = get_connection_unwrap!(db);
         let server = setup(db);
 
-        let register_data = RegisterData::default();
+        let register_data = RegisterData::test_values();
         register_admin(&server, conn, &register_data).await;
         let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");

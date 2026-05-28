@@ -169,14 +169,14 @@ async fn test_unpublished_trees(db: PgPool) {
     response.assert_status_unauthorized();
     assert_eq!(response.text(), ApiError::MissingAuthentication.to_string());
 
-    let second_user_data = RegisterData::default();
+    let second_user_data = RegisterData::test_values();
     register(&server, &second_user_data).await;
     login(&server, second_user_data.email).await;
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
 
-    let admin_user_data = RegisterData::default();
+    let admin_user_data = RegisterData::test_values();
     register_admin(&server, conn, &admin_user_data).await;
     login(&server, admin_user_data.email).await;
     let response = server.get(&endpoint).await;
@@ -418,8 +418,8 @@ async fn test_remove_card(db: PgPool) {
 async fn test_filter_tree_list(db: PgPool) {
     let server = setup(db);
 
-    let account1 = RegisterData::default();
-    let account2 = RegisterData::default();
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
     let account_id1 = register(&server, &account1).await;
     let account_id2 = register(&server, &account2).await;
     login(&server, account1.email.clone()).await;
@@ -774,8 +774,8 @@ async fn test_duplicate_tree(db: PgPool) {
     let server = setup(db);
 
     // Create two accounts and log in as one of them.
-    let account1 = RegisterData::default();
-    let account2 = RegisterData::default();
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
     register(&server, &account1).await;
     let owner_id2 = register(&server, &account2).await;
     login(&server, account1.email).await;
@@ -863,7 +863,7 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
     let tree_id: i32 = create_tree(&server).await;
-    let co_author_data = RegisterData::default();
+    let co_author_data = RegisterData::test_values();
     register(&server, &co_author_data).await;
     server
         .post(&format!(
@@ -888,7 +888,7 @@ async fn test_authorize_co_author_success(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
     let tree_id: i32 = create_tree(&server).await;
-    let co_author_data = RegisterData::default();
+    let co_author_data = RegisterData::test_values();
     let co_author_id = register(&server, &co_author_data).await;
     let response = server
         .post(&format!(
@@ -911,11 +911,11 @@ async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
     let tree_id: i32 = create_tree(&server).await;
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
 
-    let co_author_register_data = RegisterData::default();
+    let co_author_register_data = RegisterData::test_values();
     register(&server, &co_author_register_data).await;
     let response = server
         .post(&format!(

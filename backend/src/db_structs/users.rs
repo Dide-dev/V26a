@@ -66,8 +66,8 @@ pub struct RegisterData {
 }
 
 #[cfg(test)]
-impl Default for RegisterData {
-    fn default() -> Self {
+impl RegisterData {
+    pub fn test_values() -> Self {
         use rand::RngExt;
 
         let mut rng = rand::rng();

@@ -15,7 +15,7 @@ use sqlx::PgPool;
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     let user_id = register(&server, &register_data).await;
     let response = login(&server, register_data.email).await;
     let cookie = response.cookie("user_info");
@@ -31,7 +31,7 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::default();
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     let response = login(&server, register_data.email).await;
     let original_cookie = response.cookie("user_info");

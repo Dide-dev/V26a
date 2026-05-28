@@ -30,7 +30,7 @@ async fn test_get_feedback(db: PgPool) {
     let conn = get_connection_unwrap!(db);
     let server = setup(db);
 
-    let admin_data = RegisterData::default();
+    let admin_data = RegisterData::test_values();
     register_admin(&server, conn, &admin_data).await;
     login(&server, admin_data.email).await;
 
@@ -59,7 +59,7 @@ async fn test_get_no_feedback(db: PgPool) {
     let conn = get_connection_unwrap!(db);
     let server = setup(db);
 
-    let admin_data = RegisterData::default();
+    let admin_data = RegisterData::test_values();
     register_admin(&server, conn, &admin_data).await;
     login(&server, admin_data.email).await;
 
