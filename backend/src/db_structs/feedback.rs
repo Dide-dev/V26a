@@ -34,10 +34,10 @@ pub struct FeedbackListResponse {
 
 impl Validated for FeedbackData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.email.len() > EMAIL_MAX_LENGTH {
+        if self.email.chars().count() > EMAIL_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
         }
-        if self.feedback.len() > FEEDBACK_MAX_LENGTH {
+        if self.feedback.chars().count() > FEEDBACK_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "feedback",
                 FEEDBACK_MAX_LENGTH,

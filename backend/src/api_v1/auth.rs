@@ -54,15 +54,10 @@ pub struct LoginResponse {
         (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
         (status = 500, description = "Internal server error."),
     ),
-    params(
-        ("claims" = Claims, Cookie),
-    )
 )]
 /// Login to an account if the given credentials are valid.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
-///
 /// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
 ///
 /// # Returns
