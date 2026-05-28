@@ -87,15 +87,15 @@
                         {/if}
                     </div>
                 </div>
-                <p class="-mt-1 italic *:*:inline">
+                <span class="-mt-2 italic *:*:inline">
                     {m.madeBy()}:
-                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 3)">
+                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 4)">
                         <a
                             href={appLink(`/all-trees?owner=${tree.metadata.genData.ownerId}`)}
                             class="text-black">{tree.metadata.linkedData.ownerName}</a
                         >
                     </AnimatedUnderline>
-                </p>
+                </span>
                 <p class="font-semibold text-neutral-600">
                     {tree.metadata.data.description}
                 </p>
