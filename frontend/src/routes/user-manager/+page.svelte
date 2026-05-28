@@ -45,13 +45,15 @@
     });
     let userDataPromise: UserAllData = $state({
         email: '',
-        name: '',
+        data: {
+            name: '',
+            nickname: '',
+            aboutMe: '',
+            emailVisible: true,
+            language: 'nl'
+        },
         enabled: true,
-        nickname: '',
-        aboutMe: '',
-        emailVisible: true,
-        accountType: 'author',
-        language: 'nl'
+        accountType: 'author'
     });
 
     let repeatPassword = $state('');
@@ -157,14 +159,11 @@
 
         const result = await updateUserData(id, {
             email: userData.email,
-            name: userData.name,
+            data: userData.data,
             enabled: userData.enabled,
-            nickname: userData.nickname,
-            aboutMe: userData.aboutMe,
-            emailVisible: userData.emailVisible,
-            accountType: userData.accountType,
-            language: userData.language
+            accountType: userData.accountType
         });
+
         if (result.type === 'Success') {
             emailAlreadyExists = false;
             usernameAlreadyExists = false;
@@ -295,7 +294,7 @@
                             usernameAlreadyExists && 'error',
                             'input__text'
                         ]}
-                        bind:value={userData.name}
+                        bind:value={userData.data.name}
                         name="name"
                         type="text"
                         data-testid="name"
@@ -318,7 +317,7 @@
                     <input
                         id="nickname"
                         class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
-                        bind:value={userData.nickname}
+                        bind:value={userData.data.nickname}
                         name="nickname"
                         type="text"
                         placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
@@ -335,7 +334,7 @@
                 <textarea
                     id="aboutMe"
                     class={[!inputsChanged.aboutMeChanged && 'inactive', 'input__long_text']}
-                    bind:value={userData.aboutMe}
+                    bind:value={userData.data.aboutMe}
                     name="aboutMe"
                     placeholder={m.optional()}
                     minlength={minInputLengths.aboutMe}
@@ -353,7 +352,7 @@
                 <select
                     id="language"
                     class={[!inputsChanged.languageChanged && 'inactive', 'input__select']}
-                    bind:value={userData.language}
+                    bind:value={userData.data.language}
                     oninput={() => {
                         inputsChanged.languageChanged = true;
                     }}

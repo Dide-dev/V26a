@@ -40,14 +40,17 @@ afterEach(() => {
 test('No submission without name', async () => {
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
+
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
@@ -73,13 +76,15 @@ test('Submission with full data', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -105,13 +110,15 @@ test('Submission with full data', async () => {
 
     const expectedUpdateData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: 'Some interesting backstory',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: 'Some interesting backstory',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     expect(updateUserData).toHaveBeenCalledWith(1, expectedUpdateData);
 });
@@ -121,13 +128,15 @@ test('New password without upper case letter shows error', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -162,13 +171,15 @@ test('New password without lower case letter shows error', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -203,13 +214,15 @@ test('New password without special character shows error', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -244,13 +257,15 @@ test('New password without number shows error', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -285,13 +300,15 @@ test('Differing new password and repeat password shows error', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -326,13 +343,15 @@ test('No submission without new password', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -362,13 +381,15 @@ test('No submission without repeat password', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
@@ -401,13 +422,15 @@ test('Submission when all password expectations have been met', async () => {
 
     const userData: UserAllData = {
         email: 'john@test.com',
-        name: 'John Test',
+        data: {
+            name: 'John Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        },
         enabled: true,
-        nickname: 'Johnny',
-        aboutMe: '',
-        emailVisible: false,
-        accountType: 'author',
-        language: 'en'
+        accountType: 'author'
     };
     const mockGetUser = vi.mocked(getUserAllData);
     mockGetUser.mockResolvedValue(userData);
