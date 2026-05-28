@@ -29,7 +29,9 @@
      * @remarks If the assignment text includes an image, the text is never cut short.
      */
     let assignmentText = $derived(
-        showFullAssignment || assignmentIncludesImage
+        showFullAssignment ||
+            assignmentIncludesImage ||
+            tree!.metadata.data.assignmentText.length <= 128
             ? tree!.metadata.data.assignmentText
             : tree!.metadata.data.assignmentText.slice(0, 128) + '...'
     );
