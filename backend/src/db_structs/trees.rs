@@ -266,6 +266,7 @@ pub struct TreeData {
     pub published: bool,
 }
 
+#[cfg(test)]
 impl Default for TreeData {
     fn default() -> Self {
         Self {

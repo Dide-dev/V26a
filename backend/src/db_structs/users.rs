@@ -10,6 +10,7 @@ use crate::limits::{
     EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NICKNAME_MAX_LENGTH,
 };
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -63,6 +64,26 @@ pub struct RegisterData {
     pub email: String,
     pub password: String,
     pub data: UserData,
+}
+
+#[cfg(test)]
+impl Default for RegisterData {
+    fn default() -> Self {
+        let mut rng = rand::rng();
+        let n: u64 = rng.random();
+
+        RegisterData {
+            email: format!("test{n}@localhost"),
+            password: "4$$wOrd!".to_owned(),
+            data: UserData {
+                name: format!("John_Test_{n}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        }
+    }
 }
 
 impl Validated for RegisterData {

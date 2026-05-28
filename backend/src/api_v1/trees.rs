@@ -567,7 +567,6 @@ pub async fn get_list(
             trees: Vec::new(),
         }));
     }
-    dbg!(trees_count);
     let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
 
     transaction.commit().await?;

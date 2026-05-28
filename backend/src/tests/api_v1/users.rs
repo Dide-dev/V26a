@@ -103,13 +103,12 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 async fn test_successful_password_change(db: PgPool) {
     let server = setup(db);
 
-    let email = "test@test.nl";
-
-    register(&server, email.to_owned()).await;
-    login(&server, email.to_owned()).await;
+    let register_data = RegisterData::default();
+    register(&server, &register_data).await;
+    login(&server, register_data.email.clone()).await;
 
     let change_password_data = PasswordChangeRequestBody {
-        old_password: "a$$word".to_owned(),
+        old_password: register_data.password,
         new_password: "Pa$$word".to_owned(),
     };
 
@@ -124,7 +123,7 @@ async fn test_successful_password_change(db: PgPool) {
     assert!(body.succeeded);
 
     let login_data = LoginRequestBody {
-        email: email.to_owned(),
+        email: register_data.email,
         password: change_password_data.new_password,
     };
 
@@ -140,12 +139,11 @@ async fn test_successful_password_change(db: PgPool) {
 async fn test_change_password_incorrect_old_password(db: PgPool) {
     let server = setup(db);
 
-    let email = "test@test.nl";
+    let register_data = RegisterData::default();
+    register(&server, &register_data).await;
+    login(&server, register_data.email.clone()).await;
 
-    register(&server, email.to_owned()).await;
-    login(&server, email.to_owned()).await;
-
-    // The default password set is `a$$word`, hence this request should fail.
+    // The default password set is `4$$wOrd!`, hence this request should fail.
     let change_password_data = PasswordChangeRequestBody {
         old_password: "Pa$$word".to_owned(),
         new_password: "NewPa$$word".to_owned(),
@@ -162,8 +160,8 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
     // Password change request should not have succeeded, therefore the old password should enable a user to log in.
     let login_data = LoginRequestBody {
-        email: email.to_owned(),
-        password: "a$$word".to_owned(),
+        email: register_data.email,
+        password: "4$$wOrd!".to_owned(),
     };
 
     let response = server.post("/auth/login").json(&login_data).await;
@@ -177,10 +175,10 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
-    let email = "monkaS@gmail.com".to_owned();
-    let user_id = register(&server, email.clone()).await.0;
 
-    login(&server, email.clone()).await;
+    let register_data = RegisterData::default();
+    let user_id = register(&server, &register_data).await;
+    login(&server, register_data.email).await;
 
     let response = server
         .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
@@ -196,11 +194,12 @@ async fn test_delete_own_user(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_other_user(db: PgPool) {
     let server = setup(db);
-    let email1 = "user1@gmail.com".to_owned();
-    let user_id_1 = register(&server, email1.clone()).await.0;
-    let email2 = "user2@gmail.com".to_owned();
-    register(&server, email2.clone()).await;
-    login(&server, email2.clone()).await;
+
+    let account1 = RegisterData::default();
+    let user_id_1 = register(&server, &account1).await;
+    let account2 = RegisterData::default();
+    register(&server, &account2).await;
+    login(&server, account2.email).await;
 
     let response = server
         .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
@@ -212,9 +211,10 @@ async fn test_delete_other_user(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_nonexistent_user(db: PgPool) {
     let server = setup(db);
-    let email = "swag@gmail.com".to_owned();
-    register(&server, email.clone()).await;
-    login(&server, email.clone()).await;
+
+    let register_data = RegisterData::default();
+    register(&server, &register_data).await;
+    login(&server, register_data.email).await;
 
     let response = server
         .delete("/users/99999/delete?deleteOwnedTrees=false")
