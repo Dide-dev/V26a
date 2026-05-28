@@ -9,16 +9,17 @@
 use crate::db_structs::users::{
     AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, UserLanguage,
 };
-use crate::tests::api_v1::{login, register, setup};
+use crate::tests::api_v1::{login, register_email, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_get_all_users(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    register_email(&test_state, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "2@gmail.com".to_owned()).await;
 
     let response = server.get("/admin/all-user-data").await;
@@ -28,7 +29,7 @@ async fn test_get_all_users(db: PgPool) {
 
 #[sqlx::test]
 async fn test_update_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
@@ -41,8 +42,9 @@ async fn test_update_user(db: PgPool) {
         language: UserLanguage::Nl,
     };
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    register_email(&test_state, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "2@gmail.com".to_owned()).await;
 
     let response = server
@@ -55,14 +57,15 @@ async fn test_update_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_change_password(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let new_password = AdminPasswordChangeRequestBody {
         new_password: "Banaan123!".to_owned(),
     };
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    register_email(&test_state, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "2@gmail.com".to_owned()).await;
 
     let response = server

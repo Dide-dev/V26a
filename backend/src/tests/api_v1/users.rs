@@ -89,102 +89,6 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_get_all_users(db: PgPool) {
-    let test_state = setup(db);
-
-    // Create two accounts and log in as one of them.
-    register_email(&test_state, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
-    let server = test_state.server;
-    login(&server, "2@gmail.com".to_owned()).await;
-
-    let response = server.get("/admin/all-user-data").await;
-    // It should fail because the user is not an admin
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_update_other_user(db: PgPool) {
-    let test_state = setup(db);
-
-    // Create two accounts and log in as one of them.
-    let user_id_1 = register_email(&test_state, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
-    let server = test_state.server;
-    login(&server, "2@gmail.com".to_owned()).await;
-
-    // Update the other user's data.
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::Nl,
-        account_type: None,
-        enabled: None,
-    };
-
-    let response = server
-        .post(&format!("/users/update/{user_id_1}"))
-        .json(&update_data)
-        .await;
-    // Changing the other user's data should fail.
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_change_account_type(db: PgPool) {
-    let test_state = setup(db);
-    let user_id = register_email(&test_state, "test@gmail.com".to_owned()).await;
-    let server = test_state.server;
-    login(&server, "test@gmail.com".to_owned()).await;
-
-    // Update our own user data
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::Nl,
-        account_type: Some(AccountType::Admin),
-        enabled: None,
-    };
-
-    let response = server
-        .post(&format!("/users/update/{user_id}"))
-        .json(&update_data)
-        .await;
-    // Making ourselves admin should fail.
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_change_enabled_flag(db: PgPool) {
-    let test_state = setup(db);
-    let user_id = register_email(&test_state, "test@gmail.com".to_owned()).await;
-    let server = test_state.server;
-    login(&server, "test@gmail.com".to_owned()).await;
-
-    // Update our own user data
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::Nl,
-        account_type: None,
-        enabled: Some(false),
-    };
-
-    let response = server
-        .post(&format!("/users/update/{user_id}"))
-        .json(&update_data)
-        .await;
-    // Disabling our own account should fail.
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
 async fn test_successful_password_change(db: PgPool) {
     let test_state = setup(db);
 
@@ -414,7 +318,7 @@ async fn test_update_pending_user(db: PgPool) {
         email_visible: false,
         language: UserLanguage::En,
     };
-    let real_user_id = register(&test_state, &verified_user).await;
+    register(&test_state, &verified_user).await;
 
     let server = test_state.server;
     let response = server
@@ -438,13 +342,8 @@ async fn test_update_pending_user(db: PgPool) {
         about_me: "I'm still bob".to_string(),
         email_visible: false,
         language: UserLanguage::En,
-        account_type: None,
-        enabled: None,
     };
-    let response = server
-        .post(&format!("/users/update/{real_user_id}"))
-        .json(&updated_user)
-        .await;
+    let response = server.post("/users/update").json(&updated_user).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();

@@ -31,7 +31,7 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let test_state = setup(db);
     let email = "SidneyMonster@sesamestreet.com".to_owned();
-    let user_id = register_email(&test_state, email.clone()).await;
+    register_email(&test_state, email.clone()).await;
     let server = test_state.server;
     let response = login(&server, email).await;
     let original_cookie = response.cookie("user_info");
