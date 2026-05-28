@@ -553,11 +553,8 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 0
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_id1
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -577,11 +574,8 @@ async fn test_filter_tree_list(db: PgPool) {
     // All trees from user 0 using filter
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_id1
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -596,11 +590,8 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 1
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_id2
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id2}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();

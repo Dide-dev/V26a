@@ -10,11 +10,13 @@ use crate::limits::{
     EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NICKNAME_MAX_LENGTH,
 };
-use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
+
+#[cfg(test)]
+use rand::RngExt;
 
 /// Data the user can modify, except email and password.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
