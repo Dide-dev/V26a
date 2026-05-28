@@ -22,6 +22,18 @@
     let userAllowedToEdit = $state(false);
     let tree: TreeWithCards | null = $state(null);
 
+    let showFullAssignment = $state(false);
+    let assignmentIncludesImage = $state(false);
+    /** The assignment text cut short depending on the state of `showFullAssignment`.
+     *
+     * @remarks If the assignment text includes an image, the text is never cut short.
+     */
+    let assignmentText = $derived(
+        showFullAssignment || assignmentIncludesImage
+            ? tree!.metadata.data.assignmentText
+            : tree!.metadata.data.assignmentText.slice(0, 128) + '...'
+    );
+
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
 
@@ -40,6 +52,9 @@
         }
 
         tree = await getTreeWithCards(id);
+
+        let htmlAssignment = markdownToFinalHtml(tree.metadata.data.assignmentText);
+        assignmentIncludesImage = htmlAssignment.includes('<img');
 
         const isOwner = tree.metadata.genData.ownerId === userInfo?.sub;
         const isAdmin = userInfo?.accountType === 'admin';
@@ -92,15 +107,27 @@
             </div>
             <div class="mt-text-small flex flex-auto flex-row">
                 <div class="flex flex-col">
-                    <p class="mt-text-minor text-lg font-semibold">{m.assignmentText()}</p>
-                    <p>
+                    <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
+                        {m.assignmentText()}
+                    </p>
+                    <p class="*:inline">
                         <!-- Trees from the prototype may contain images. -->
                         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                        {@html markdownToFinalHtml(tree.metadata.data.assignmentText)}
+                        {@html markdownToFinalHtml(assignmentText)}
+                        {#if tree.metadata.data.assignmentText.length > 128}
+                            <button
+                                onclick={() => {
+                                    showFullAssignment = !showFullAssignment;
+                                }}
+                                class="text__link"
+                            >
+                                {showFullAssignment ? m.showLess() : m.showMore()}
+                            </button>
+                        {/if}
                     </p>
                 </div>
                 <div class="flex flex-auto"></div>
-                <div class="mr-4 flex flex-col text-right">
+                <div class="mr-4 flex min-w-1/3 flex-col text-right">
                     {#if tree.metadata.data.bookIsbn !== null}
                         <a
                             href={appLink(`/all-trees?isbn=${tree.metadata.data.bookIsbn}`)}
