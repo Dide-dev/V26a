@@ -18,6 +18,7 @@ use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::db_structs::{feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData};
 use axum::extract::{Path, State};
 
+use crate::db::users::get_user_by_email;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
@@ -149,18 +150,32 @@ async fn get_all_user_data(
 async fn update_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
+    State(state): State<ArcState>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
 
-    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+    // This lock should not be released until the user is updated.
+    let pending_accounts = state.pending_accounts.lock().await;
 
-    if let Some(id) = found_user_id
-        && id != user_id
-    {
+    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+    let found_pending_username = pending_accounts
+        .values()
+        .any(|r| r.register_data.name.to_lowercase() == new_data.name.to_lowercase());
+
+    if found_user_id.is_some_and(|id| id != user_id) || found_pending_username {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
+    }
+
+    let found_user_id = get_user_by_email(&db, &new_data.email).await?;
+    let found_pending_email = pending_accounts
+        .values()
+        .any(|r| r.register_data.email.to_lowercase() == new_data.email.to_lowercase());
+
+    if found_user_id.is_some_and(|id| id != user_id) || found_pending_email {
+        return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
     admin_update_user(&db, user_id, &new_data).await?;

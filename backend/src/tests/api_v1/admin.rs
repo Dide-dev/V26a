@@ -6,10 +6,12 @@
 
 #![cfg(test)]
 
+use crate::api_v1::users::UserResponse;
 use crate::db_structs::users::{
-    AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, UserLanguage,
+    AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserLanguage,
 };
-use crate::tests::api_v1::{login, register_email, setup};
+use crate::get_connection_unwrap;
+use crate::tests::api_v1::{login, register, register_admin, register_email, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -53,6 +55,84 @@ async fn test_update_user(db: PgPool) {
         .await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_admin_update_pending_user(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
+
+    let admin_email = "admin@localhost".to_owned();
+    register_admin(&test_state, conn, admin_email.clone()).await;
+
+    let other_user_email = "johnsmith@localhost".to_string();
+    let other_user = RegisterData {
+        email: other_user_email.clone(),
+        password: "a$$word".to_string(),
+        name: "first".to_string(),
+        nickname: "bob".to_string(),
+        about_me: "I'm bob".to_string(),
+        email_visible: false,
+        language: UserLanguage::En,
+    };
+    let other_user_id = register(&test_state, &other_user).await;
+
+    let server = test_state.server;
+    let pending_user_email = "janedoe@gmail.com".to_owned();
+    let response = server
+        .post("/users/add")
+        .json(&RegisterData {
+            email: pending_user_email.clone(),
+            password: "VeryStrongPassword1!".to_owned(),
+            name: "second".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        })
+        .await;
+    response.assert_status_ok();
+
+    login(&server, admin_email.clone()).await;
+    // Test username already used
+    let updated_user = AdminUpdateData {
+        email: other_user_email.clone(),
+        name: "second".to_string(),
+        enabled: true,
+        nickname: "bob".to_string(),
+        about_me: "I'm still bob".to_string(),
+        email_visible: false,
+        account_type: AccountType::Admin,
+        language: UserLanguage::En,
+    };
+    let response = server
+        .post(&format!("/admin/users/{other_user_id}/update-data"))
+        .json(&updated_user)
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::UsernameAlreadyUsed);
+
+    // Test email already used
+    let updated_user = AdminUpdateData {
+        email: pending_user_email.clone(),
+        name: "first".to_string(),
+        enabled: true,
+        nickname: "bob".to_string(),
+        about_me: "I'm still bob".to_string(),
+        email_visible: false,
+        account_type: AccountType::Admin,
+        language: UserLanguage::En,
+    };
+    let response = server
+        .post(&format!("/admin/users/{other_user_id}/update-data"))
+        .json(&updated_user)
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::EmailAlreadyUsed);
 }
 
 #[sqlx::test]
