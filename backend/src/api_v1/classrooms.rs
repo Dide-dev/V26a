@@ -12,7 +12,7 @@ use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{
     ClassroomAddData, ClassroomGeneratedData, ClassroomLoginResponse, ClassroomUserLoginData,
 };
-use crate::db_structs::session::{AllClassroomClaims, Claims, ClassroomClaims};
+use crate::db_structs::session::{AllClassroomClaims, Claims, ClaimsType, ClassroomClaims};
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
@@ -129,10 +129,7 @@ async fn classroom_login(
         // Username is num.
         Ok(num) => (num, {
             let name = get_name_by_number(&db, &classroom_id, &num).await?;
-            let Some(name) = name else {
-                return Err(ApiError::MissingUser(num));
-            };
-            name
+            name.ok_or(ApiError::MissingUser(num))?
         }),
         // Username is name.
         Err(_) => (
@@ -168,7 +165,7 @@ async fn classroom_login(
 
     // Create classroom_sessions cookie. Multiple sessions can be put into this one cookie,
     // however, only one session is allowed per classroom.
-    let cookie = Cookie::build(("classroom_sessions", token))
+    let cookie = Cookie::build((AllClassroomClaims::get_cookie_name(), token))
         .path("/api")
         .secure(true)
         .max_age(time)
@@ -193,20 +190,36 @@ async fn classroom_login(
     ))
 }
 
+/// This function is to be used only in the `classroom_login` function.
+/// As opposed to `FromRequestParts` of `ClassroomClaims`, which retrieves only the appropriate
+/// classroom session, this function extracts all active classroom sessions from the `CookieJar`.
+/// This function also adds a new session to the `CookieJar`, after performing operations on
+/// the sessions in the jar to make sure the resulting `CookieJar` will be valid.
 fn get_classroom_claims(
     jar: &CookieJar,
     state: &ArcState,
     classroom_id: i32,
     num: i32,
-    name: &str,
+    name: &String,
 ) -> AllClassroomClaims {
     let config = &state.config;
-    let all_sessions = jar.get("classroom_sessions");
+    let all_sessions = jar.get(AllClassroomClaims::get_cookie_name());
+
+    let new_classroom_claims = ClassroomClaims {
+        id: classroom_id,
+        num,
+        name: (*name).clone(),
+        exp: Utc::now().timestamp() + config.session_duration,
+    };
+    let default_all_classroom_claims = AllClassroomClaims {
+        sessions: vec![new_classroom_claims.clone()],
+        exp: Utc::now().timestamp() + config.session_duration,
+    };
 
     // If cookie doesn't exist, set classroom claims as default value.
     let Some(all_sessions) = all_sessions else {
         println!("Could not find cookie");
-        return default_classroom_claims(classroom_id, num, name, config.session_duration);
+        return default_all_classroom_claims;
     };
 
     // Get the token data from the cookie.
@@ -220,7 +233,7 @@ fn get_classroom_claims(
     // If token data is not retrievable from the cookie, set classroom claims as default value.
     let Some(token_data) = token_data else {
         println!("Could not decode");
-        return default_classroom_claims(classroom_id, num, name, config.session_duration);
+        return default_all_classroom_claims;
     };
 
     let mut claims = token_data.claims;
@@ -230,74 +243,19 @@ fn get_classroom_claims(
 
     let existing_session_index = claims.sessions.iter().position(|s| s.id == classroom_id);
     if let Some(existing_session_index) = existing_session_index {
-        claims.sessions[existing_session_index] = ClassroomClaims {
-            id: classroom_id,
-            num,
-            name: (*name).to_string(),
-            exp: Utc::now().timestamp() + config.session_duration,
-        }
+        claims.sessions[existing_session_index] = new_classroom_claims.clone();
     } else {
-        // Following code block removes all but n-1 sessions
-        // with the expiration timestamps furthest in the future.
-
-        // Index the expiration dates.
-        let mut indexed: Vec<(usize, i64)> = claims
+        // Sort the sessions on expiration date and take only the 9 latest.
+        claims.sessions.sort_by_key(|s| -s.exp);
+        claims
             .sessions
-            .iter()
-            .map(|s| &s.exp)
-            .copied()
-            .enumerate()
-            .collect();
-
-        // Sort in descending order.
-        indexed.sort_by_key(|&(_, value)| -value);
-
-        // Get top n-1 (or less if <n elements).
-        let top_n: Vec<usize> = indexed
-            .iter()
-            .take(config.max_concurrent_classroom_sessions - 1)
-            .map(|&(index, _)| index)
-            .collect();
-
-        // Filter claims to only include the n-1 items with the latest expiration timestamps.
-        claims.sessions = top_n
-            .iter()
-            .map(|&i| ClassroomClaims {
-                id: claims.sessions[i].id,
-                num: claims.sessions[i].num,
-                name: claims.sessions[i].name.clone(),
-                exp: claims.sessions[i].exp,
-            })
-            .collect();
+            .truncate(config.max_concurrent_classroom_sessions - 1);
 
         // Push the new session.
-        claims.sessions.push(ClassroomClaims {
-            id: classroom_id,
-            num,
-            name: (*name).to_string(),
-            exp: Utc::now().timestamp() + config.session_duration,
-        });
+        claims.sessions.push(new_classroom_claims);
     }
 
     // Return the classroom claims variable and reset the exp.
     claims.exp = Utc::now().timestamp() + config.session_duration;
     claims
-}
-
-/// Default value function for the classroom claims variable in the `get_classroom_claims` function.
-fn default_classroom_claims(
-    classroom_id: i32,
-    num: i32,
-    name: &str,
-    session_duration: i64,
-) -> AllClassroomClaims {
-    AllClassroomClaims {
-        sessions: vec![ClassroomClaims {
-            id: classroom_id,
-            num,
-            name: name.to_string(),
-            exp: Utc::now().timestamp() + session_duration,
-        }],
-        exp: Utc::now().timestamp() + session_duration,
-    }
 }

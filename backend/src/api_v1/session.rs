@@ -158,7 +158,7 @@ impl FromRequestParts<ArcState> for ClassroomClaims {
         // Get session corresponding to the correct classroom id
         let classroom_claims = all_classroom_claims
             .sessions
-            .iter()
+            .into_iter()
             .find(|s| s.id == classroom_id);
 
         // Check if a session exists for this classroom
@@ -171,13 +171,7 @@ impl FromRequestParts<ArcState> for ClassroomClaims {
             return Err(ApiError::ExpiredSession);
         }
 
-        // Cannot just put Ok(*classroom_claims) because name needs to be cloned
-        Ok(ClassroomClaims {
-            id: classroom_claims.id,
-            num: classroom_claims.num,
-            name: classroom_claims.name.clone(),
-            exp: classroom_claims.exp,
-        })
+        Ok(classroom_claims)
     }
 }
 

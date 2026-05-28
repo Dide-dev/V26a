@@ -65,7 +65,7 @@ pub struct AllClassroomClaims {
 
 /// The classroom claims contained in a JWT (JSON Web Token).
 /// Specifies the user number, user name and the expiration time.
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomClaims {
     /// The classroom id
