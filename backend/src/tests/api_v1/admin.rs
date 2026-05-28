@@ -6,18 +6,20 @@
 
 #![cfg(test)]
 
+use crate::api_v1::users::UserResponse;
 use crate::{
     db_structs::users::{
         AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserGetAllData,
         UserLanguage, UserListResponse,
     },
-    tests::api_v1::{login, register, register_admin, setup},
+    get_connection_unwrap,
+    tests::api_v1::{login, register, register_admin, register_email, setup},
 };
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_get_all_users_non_admin(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
     register_email(&test_state, "1@gmail.com".to_owned()).await;
@@ -32,11 +34,12 @@ async fn test_get_all_users_non_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_all_users_admin(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
-    register_admin(&server, &db, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    register_admin(&test_state, &db, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "1@gmail.com".to_owned()).await;
 
     let response = server.get("/admin/all-user-data").await;
@@ -48,11 +51,12 @@ async fn test_get_all_users_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_one_user_non_admin(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
+    register_email(&test_state, "1@gmail.com".to_owned()).await;
+    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let server = test_state.server;
     login(&server, "2@gmail.com".to_owned()).await;
 
     let response = server.get("/admin/users/1").await;
@@ -62,10 +66,10 @@ async fn test_get_one_user_non_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_one_user_admin(db: PgPool) {
-    let server = setup(db.clone());
+    let test_server = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
-    register_admin(&server, &db, "1@gmail.com".to_owned()).await;
+    register_admin(&test_server, &db, "1@gmail.com".to_owned()).await;
 
     // Create an account
     let register_data = RegisterData {
@@ -77,10 +81,9 @@ async fn test_get_one_user_admin(db: PgPool) {
         email_visible: true,
         language: UserLanguage::En,
     };
+    register(&test_server, &register_data).await;
 
-    let response = server.post("/users/add").json(&register_data).await;
-    response.assert_status_ok();
-
+    let server = test_server.server;
     login(&server, "1@gmail.com".to_owned()).await;
 
     let response = server.get("/admin/users/2").await;
