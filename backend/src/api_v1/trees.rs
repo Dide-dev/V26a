@@ -708,7 +708,7 @@ pub async fn get_all_subjects(
     context_path = "/api/v1/trees",
 
     responses(
-        (status = 200, description = "Successfully retrieved the list of subjects.", body = Vec<String>),
+        (status = 200, description = "Successfully duplicated the tree.", body = i32),
         (status = 400, description = "Tree with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
