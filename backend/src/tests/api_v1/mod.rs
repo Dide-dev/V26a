@@ -53,9 +53,9 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
 
 /// Sets up an API test server with the given mock database and application config.
 /// The following settings will be overridden:
-/// - upload_dir,
-/// - bcrypt_cost,
-/// - mailer
+/// - `upload_dir`,
+/// - `bcrypt_cost`,
+/// - `mailer`
 ///
 /// # Arguments
 /// `db` - A [`PgPool`] to use for the [`TestServer`].
@@ -132,7 +132,7 @@ async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
         .await;
     response.assert_status_ok();
 
-    let response = try_verify(&test_state, register_data.email.clone()).await;
+    let response = try_verify(test_state, register_data.email.clone()).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
@@ -222,7 +222,7 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
 async fn setup_login(db: PgPool) -> TestServer {
     let test_state = setup(db);
 
-    let test_email = "testing@gmail.com".to_owned();
+    let test_email = "testing@localhost".to_owned();
     register_email(&test_state, test_email.clone()).await;
 
     let server = test_state.server;

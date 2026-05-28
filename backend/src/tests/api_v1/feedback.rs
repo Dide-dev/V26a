@@ -26,13 +26,14 @@ async fn test_add_feedback(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_feedback(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
     register_admin(
-        &server,
+        &test_state,
         get_connection_unwrap!(db),
         "testing@gmail.com".to_owned(),
     )
     .await;
+    let server = test_state.server;
     login(&server, "testing@gmail.com".to_owned()).await;
 
     let feedback_data = FeedbackData {
@@ -48,7 +49,7 @@ async fn test_get_feedback(db: PgPool) {
 
     let requested_feedback: FeedbackListResponse = response.json();
     assert_eq!(requested_feedback.feedback_total, 1);
-    assert!(requested_feedback.feedback.len() == 1);
+    assert_eq!(requested_feedback.feedback.len(), 1);
 
     let feedback = &requested_feedback.feedback[0];
     assert_eq!(feedback.email, feedback_data.email);
@@ -57,13 +58,14 @@ async fn test_get_feedback(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_no_feedback(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
     register_admin(
-        &server,
+        &test_state,
         get_connection_unwrap!(db),
         "testing@gmail.com".to_owned(),
     )
     .await;
+    let server = test_state.server;
     login(&server, "testing@gmail.com".to_owned()).await;
 
     let response = server.get("/admin/get-feedback?page=1&size=10").await;

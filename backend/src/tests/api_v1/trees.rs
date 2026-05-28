@@ -17,7 +17,9 @@ use crate::db_structs::trees::{
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{create_tree, login, register, register_email, register_admin, setup, setup_login};
+use crate::tests::api_v1::{
+    create_tree, login, register_admin, register_email, setup, setup_login,
+};
 use axum_test::TestServer;
 use sqlx::PgPool;
 use std::collections::{BTreeMap, HashMap};
@@ -814,11 +816,16 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_verify_tree_permission_co_author(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
 
+    let test_email = "testing@localhost".to_owned();
+    register_email(&test_state, test_email.clone()).await;
+    let co_author_id = register_email(&test_state, "co_author@email.com".to_owned()).await;
+
+    let server = test_state.server;
+    login(&server, test_email).await;
     let tree_id: i32 = create_tree(&server).await;
-
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
     server
         .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
         .await;
@@ -829,25 +836,30 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
+    let result = verify_tree_permissions(conn, tree_id, claims).await;
 
     assert!(result.is_ok());
 }
 
 #[sqlx::test]
 async fn test_authorize_co_author_success(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
 
+    let test_email = "testing@localhost".to_owned();
+    register_email(&test_state, test_email.clone()).await;
+    let co_author_id = register_email(&test_state, "co_author@email.com".to_owned()).await;
+
+    let server = test_state.server;
+    login(&server, test_email).await;
     let tree_id: i32 = create_tree(&server).await;
-
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
     let response = server
         .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
         .await;
 
     response.assert_status_ok();
 
-    let is_co_author = is_co_author_of_tree(&db, &tree_id, &co_author_id)
+    let is_co_author = is_co_author_of_tree(conn, &tree_id, &co_author_id)
         .await
         .unwrap();
 
@@ -856,14 +868,19 @@ async fn test_authorize_co_author_success(db: PgPool) {
 
 #[sqlx::test]
 async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let test_state = setup(db);
 
+    let owner_email = "tree_owner@email.com".to_owned();
+    let not_owner_email = "not_tree_owner@email.com".to_owned();
+    register_email(&test_state, owner_email.clone()).await;
+    register_email(&test_state, not_owner_email.clone()).await;
+    let co_author_id = register_email(&test_state, "co_author@email.com".to_owned()).await;
+
+    let server = test_state.server;
+    login(&server, owner_email).await;
     let tree_id: i32 = create_tree(&server).await;
+    login(&server, not_owner_email).await;
 
-    register(&server, "not_tree_owner@email.com".to_owned()).await;
-    login(&server, "not_tree_owner@email.com".to_owned()).await;
-
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
     let response = server
         .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
         .await;
