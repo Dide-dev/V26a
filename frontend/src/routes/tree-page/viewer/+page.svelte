@@ -73,7 +73,7 @@
         <p class="text-green-800">{m.loadingTree()}</p>
     {:else}
         <div class="ml-1.5 flex w-[calc(100%-1.5*var(--spacing))] flex-col">
-            <div class="flex flex-col">
+            <div class="flex flex-col md:w-2/3">
                 <div class="flex">
                     <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
                     <div class="flex flex-col justify-center">
@@ -98,7 +98,7 @@
                         >
                     </AnimatedUnderline>
                 </span>
-                <p class="font-semibold text-neutral-600">
+                <p class="font-semibold wrap-anywhere text-neutral-600">
                     {tree.metadata.data.description}
                 </p>
                 <div class="mt-1 flex flex-row">
@@ -109,14 +109,16 @@
             </div>
             <div class="mt-text-small flex flex-auto flex-row">
                 {#if assignmentText !== ''}
-                    <div class="flex flex-col">
+                    <div class="flex w-2/3 flex-col">
                         <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
                             {m.assignmentText()}
                         </p>
                         <p class="*:inline">
                             <!-- Trees from the prototype may contain images. -->
-                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                            {@html markdownToFinalHtml(assignmentText)}
+                            <span class="inline wrap-anywhere *:inline">
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html markdownToFinalHtml(assignmentText)}
+                            </span>
                             {#if tree.metadata.data.assignmentText.length > 128 && !assignmentIncludesImage}
                                 <button
                                     onclick={() => {
@@ -130,8 +132,7 @@
                         </p>
                     </div>
                 {/if}
-                <div class="flex flex-auto"></div>
-                <div class="mr-4 flex min-w-1/3 flex-col text-right">
+                <div class="mr-4 flex w-1/3 flex-col text-right">
                     {#if tree.metadata.data.bookIsbn !== null}
                         <a
                             href={appLink(`/all-trees?isbn=${tree.metadata.data.bookIsbn}`)}
