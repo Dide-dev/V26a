@@ -51,7 +51,7 @@ pub enum UserResponse {
 
 #[utoipa::path(
     post,
-    path = "/add-new-user",
+    path = "/add",
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
