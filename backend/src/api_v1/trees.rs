@@ -10,7 +10,7 @@ use crate::db::trees::{
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
     language_exists, subject_exists,
 };
-use crate::db::users::user_id_exists;
+use crate::db::users::get_user_by_name;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
@@ -27,6 +27,7 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use sqlx::{PgConnection, PgPool};
 
+use crate::db_structs::Validated;
 use std::collections::HashMap;
 
 /// Creates an `Axum` [`Router`] for the trees category.
@@ -41,7 +42,7 @@ pub fn trees() -> Router<ArcState> {
         .route("/update-data", post(update_tree_data))
         .route("/get-all-languages", get(get_all_languages))
         .route("/get-all-subjects", get(get_all_subjects))
-        .route("/{tree_id}/authorize/{user_id}", post(authorize_co_author))
+        .route("/{tree_id}/authorize/{username}", post(authorize_co_author))
 }
 
 #[utoipa::path(
@@ -88,9 +89,8 @@ async fn add_new_tree(
     Extension(db): Extension<PgPool>,
     Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
-    if !is_tree_structure_empty(&tree_add_data.tree_structure) {
-        return Err(ApiError::NonEmptyStructure);
-    }
+    tree_add_data.validate_inputs()?;
+
     let mut transaction = db.begin().await?;
     if !language_exists(&mut *transaction, &tree_add_data.tree_data.language_code).await? {
         return Err(ApiError::MissingLanguage(
@@ -150,14 +150,6 @@ async fn remove_tree(
     verify_tree_permissions(get_connection!(db), tree_id, claims).await?;
 
     db::trees::remove_tree(&db, tree_id).await
-}
-
-/// Check whether a tree structure contains no cards.
-///
-/// # Returns
-/// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
-fn is_tree_structure_empty(tree_structure: &TreeStructure) -> bool {
-    tree_structure.flatten().is_empty()
 }
 
 #[utoipa::path(
@@ -382,6 +374,7 @@ async fn update_tree_data(
     Extension(db): Extension<PgPool>,
     Json(tree_update_data): Json<TreeUpdateData>,
 ) -> Result<(), ApiError> {
+    tree_update_data.new_data.validate_inputs()?;
     let mut transaction = db.begin().await?;
 
     // Verify the tree's existence and the user's permissions.
@@ -589,37 +582,41 @@ pub async fn get_list(
 
 #[utoipa::path(
     post,
-    path = "{tree_id}/authorize/{user_id}",
+    path = "{tree_id}/authorize/{username}",
     context_path = "/api/v1/trees/",
     responses(
         (status = 200, description = "Co-author successfully added to the tree."),
-        (status = 400, description = "Tree or user with given id cannot be found."),
+        (status = 400, description = "Tree with given id or user with username cannot be found,
+                                        or tree owner is being authorised."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
         ("tree_id" = i32, Path),
-        ("user_id" = i32, Path),
+        ("username" = String, Path),
         ("session" = Claims, Cookie),
     )
 )]
 /// Add a user to a tree to make them a co-author.
 ///
-/// Only the owner of the given tree or an admin can add a user to be co-author of the tree.
+/// Only the owner of the given tree or an admin can add a user to become a co-author of the tree.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
 /// `tree_id` - The id of the tree for which a co-author will be added.
 ///
-/// `user_id` - The user to become co-author.
+/// `username` - The user to become co-author.
 ///
 /// # Returns
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+/// Returns [`InvalidAuthorisationTarget`](ApiError::InvalidAuthorisationTarget) if the owner of the
+/// tree is being authorized as co-author.
+///
+/// Returns [`MissingUser`](ApiError::MissingUsername) if the given username does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
 ///
@@ -629,19 +626,22 @@ pub async fn get_list(
 async fn authorize_co_author(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path((tree_id, user_id)): Path<(i32, i32)>,
+    Path((tree_id, username)): Path<(i32, String)>,
 ) -> Result<(), ApiError> {
-    if !user_id_exists(&db, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
+    let Some(user_id) = get_user_by_name(&db, &username).await? else {
+        return Err(ApiError::MissingUsername(username));
+    };
+
+    let owner_id = get_tree_owner(&db, tree_id)
+        .await?
+        .ok_or(ApiError::MissingTree(tree_id))?;
+
+    if user_id == owner_id {
+        return Err(ApiError::InvalidAuthorisationTarget);
     }
 
     // A user can only add a co-author to their own tree, unless they are an admin.
-    if claims.sub
-        != get_tree_owner(&db, tree_id)
-            .await?
-            .ok_or(ApiError::MissingTree(tree_id))?
-        && claims.account_type != AccountType::Admin
-    {
+    if claims.sub != owner_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 

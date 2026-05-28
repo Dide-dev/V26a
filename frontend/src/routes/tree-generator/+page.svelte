@@ -41,7 +41,7 @@
             return;
         }
         userData = await getOwnUserData();
-        treeData.languageCode = userData.language;
+        treeData.languageCode = userData.data.language;
         languages = await getAllLanguages();
         subjects = await getAllSubjects();
     });
@@ -104,7 +104,7 @@
                 type="text"
                 data-testid="title"
                 placeholder={m.examplePlaceholderRequired({
-                    value: m.exampleTitle({ name: userData?.name ?? '' })
+                    value: m.exampleTitle({ name: userData?.data.name ?? '' })
                 })}
                 minlength={minInputLengths.title}
                 maxlength={maxInputLengths.title}

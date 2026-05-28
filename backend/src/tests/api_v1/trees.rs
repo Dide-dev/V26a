@@ -8,7 +8,7 @@
 
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
+use crate::db_structs::cards::{CardAddData, CardData, CardUpdateData};
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
@@ -192,8 +192,10 @@ async fn test_deleting_trees_works(db: PgPool) {
     // We also add a card, to ensure that it does not prevent the tree from being deleted.
     let card_add_data = CardAddData {
         tree_id,
-        front: "abc".to_owned(),
-        back: "def".to_owned(),
+        data: CardData {
+            front: "abc".to_owned(),
+            back: "def".to_owned(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -216,8 +218,10 @@ async fn test_deleting_trees_works(db: PgPool) {
         .post("/cards/update")
         .json(&CardUpdateData {
             card_id,
-            new_front: String::new(),
-            new_back: String::new(),
+            data: CardData {
+                front: String::new(),
+                back: String::new(),
+            },
         })
         .await;
     response.assert_status_bad_request();
@@ -309,8 +313,10 @@ async fn test_remove_card(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id,
-        front: String::new(),
-        back: "heuristic".to_string(),
+        data: CardData {
+            front: String::new(),
+            back: "heuristic".to_string(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -325,9 +331,9 @@ async fn test_remove_card(db: PgPool) {
     let mut expected_btree = BTreeMap::new();
     expected_btree.insert(
         card_id,
-        CardGetData {
-            front: card_add_data.front,
-            back: card_add_data.back,
+        CardData {
+            front: card_add_data.data.front,
+            back: card_add_data.data.back,
         },
     );
 
@@ -412,9 +418,10 @@ async fn test_remove_card(db: PgPool) {
 async fn test_filter_tree_list(db: PgPool) {
     let server = setup(db);
     let emails = ["test@one".to_owned(), "test@two".to_owned()];
+    // Only take the user_id's.
     let account_ids = [
-        register(&server, emails[0].clone()).await,
-        register(&server, emails[1].clone()).await,
+        register(&server, emails[0].clone()).await.0,
+        register(&server, emails[1].clone()).await.0,
     ];
     login(&server, emails[0].clone()).await;
 
@@ -620,14 +627,16 @@ async fn test_update_and_get_tree(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let card_get_data = CardGetData {
+    let card_get_data = CardData {
         front: String::new(),
         back: "heuristic".to_string(),
     };
     let card_add_data = CardAddData {
         tree_id,
-        front: card_get_data.front.clone(),
-        back: card_get_data.back.clone(),
+        data: CardData {
+            front: card_get_data.front.clone(),
+            back: card_get_data.back.clone(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -810,9 +819,12 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
+    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
     server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
         .await;
 
     let claims = Claims {
@@ -832,9 +844,13 @@ async fn test_authorize_co_author_success(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
+    let (co_author_id, co_author_register_data) =
+        register(&server, "co_author@email.com".to_owned()).await;
     let response = server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
         .await;
 
     response.assert_status_ok();
@@ -855,9 +871,12 @@ async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
     register(&server, "not_tree_owner@email.com".to_owned()).await;
     login(&server, "not_tree_owner@email.com".to_owned()).await;
 
-    let co_author_id = register(&server, "co_author@email.com".to_owned()).await;
+    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
     let response = server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
         .await;
 
     response.assert_status_forbidden();
@@ -869,9 +888,9 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_id = 238_574_969;
+    let co_author_username = "Non-existent_user".to_owned();
     let response = server
-        .post(&format!("/trees/{tree_id}/authorize/{co_author_id}"))
+        .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
         .await;
 
     response.assert_status_bad_request();
