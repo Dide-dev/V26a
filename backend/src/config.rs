@@ -76,7 +76,7 @@ impl Config {
         let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASSROOM_SESSIONS")
             .unwrap_or("10".to_string())
             .parse::<usize>()
-            .expect("Failed to parse environment variable MAX_CONCURRENT_CLASCROOM_SESSIONS");
+            .expect("Failed to parse environment variable MAX_CONCURRENT_CLASSROOM_SESSIONS");
 
         Self {
             listening_ip,

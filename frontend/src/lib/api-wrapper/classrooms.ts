@@ -33,6 +33,7 @@ export type ClassroomUserLoginData = {
 export type ClassroomLoginResponse = {
     id: ClassroomId;
     num: number;
+    name: string;
 };
 
 /** Add a classroom to the database */

@@ -214,7 +214,7 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
         let cookie = response.cookie("classroom_user_infos");
         let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
 
-        assert_eq!(cookie_data.sessions.len(), if i < 10 { i } else { 10 });
+        assert_eq!(cookie_data.sessions.len(), i.min(10));
         assert_eq!(
             cookie_data.sessions.last().unwrap().id,
             classroom_created_data.id

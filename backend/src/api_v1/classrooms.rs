@@ -105,7 +105,7 @@ async fn add_new_classroom(
 /// # Returns
 /// The provided [`CookieJar`] wherein a `session` and `user_info` cookie has been added (if login successful).
 ///
-/// A [`bool`] which flags whether the login was successful
+/// A [`ClassroomLoginResponse`] which returns the classroom id, the user number and the user name.
 /// (login successful if join-code correct and user number exists or new user created)
 ///
 /// # Errors
@@ -193,8 +193,8 @@ async fn classroom_login(
 /// This function is to be used only in the `classroom_login` function.
 /// As opposed to `FromRequestParts` of `ClassroomClaims`, which retrieves only the appropriate
 /// classroom session, this function extracts all active classroom sessions from the `CookieJar`.
-/// This function also adds a new session to the `CookieJar`, after performing operations on
-/// the sessions in the jar to make sure the resulting `CookieJar` will be valid.
+/// This function also adds a new session to the collection of active sessions, after performing
+/// operations on the collection of sessions to make sure the resulting collection of active sessions is valid.
 fn get_classroom_claims(
     jar: &CookieJar,
     state: &ArcState,
