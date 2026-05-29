@@ -43,9 +43,7 @@ test('No submission without name', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -79,9 +77,7 @@ test('Submission with full data', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -113,9 +109,7 @@ test('Submission with full data', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: 'Some interesting backstory',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: 'Some interesting backstory'
         },
         enabled: true,
         accountType: 'author'
@@ -131,9 +125,7 @@ test('New password without upper case letter shows error', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -174,9 +166,7 @@ test('New password without lower case letter shows error', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -217,9 +207,7 @@ test('New password without special character shows error', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -260,9 +248,7 @@ test('New password without number shows error', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -303,9 +289,7 @@ test('Differing new password and repeat password shows error', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -346,9 +330,7 @@ test('No submission without new password', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -384,9 +366,7 @@ test('No submission without repeat password', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -425,9 +405,7 @@ test('Submission when all password expectations have been met', async () => {
         data: {
             name: 'John Test',
             nickname: 'Johnny',
-            aboutMe: '',
-            emailVisible: false,
-            language: 'en'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'

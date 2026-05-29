@@ -5,7 +5,6 @@
 -->
 
 <script lang="ts">
-    import { locales } from '$lib/paraglide/runtime.js';
     import {
         getUserAllData,
         type UserAllData,
@@ -48,9 +47,7 @@
         data: {
             name: '',
             nickname: '',
-            aboutMe: '',
-            emailVisible: true,
-            language: 'nl'
+            aboutMe: ''
         },
         enabled: true,
         accountType: 'author'
@@ -347,23 +344,6 @@
                 ></textarea>
             </div>
             <h2 class="page__heading">{m.accountSettings()}</h2>
-            <div>
-                <label for="language">{m.language()}</label>
-                <select
-                    id="language"
-                    class={[!inputsChanged.languageChanged && 'inactive', 'input__select']}
-                    bind:value={userData.data.language}
-                    oninput={() => {
-                        inputsChanged.languageChanged = true;
-                    }}
-                >
-                    {#each locales as value (value)}
-                        <option class={['input__select_option']}>
-                            {value}
-                        </option>
-                    {/each}
-                </select>
-            </div>
             <div>
                 <label for="accountType">{m.account()}</label>
                 <select

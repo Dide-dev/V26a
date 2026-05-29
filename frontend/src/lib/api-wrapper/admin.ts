@@ -11,7 +11,7 @@ import {
     type UserEmailInvalid,
     type UsernameInvalid,
     type ChangePasswordResponse,
-    type UserData
+    type UserGeneralData
 } from './users';
 import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
@@ -36,7 +36,7 @@ export type AllUsersGetData = {
 /** The data of the user that is returned when requesting the data of one user */
 export type UserAllData = {
     email: string;
-    data: UserData;
+    data: UserGeneralData;
     enabled: boolean;
     accountType: string;
 };
