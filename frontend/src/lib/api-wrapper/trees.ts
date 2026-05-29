@@ -5,7 +5,7 @@
 */
 
 import type { CardData, CardId } from './cards';
-import { apiCallPost, apiCallGet, apiCallDelete } from './index';
+import { apiCallPost, apiCallGet, apiCallDelete, apiCallDuplicate } from './index';
 import type { Option } from './types';
 import type { UserId } from './users';
 import type { PaginationOptions } from '$lib/pagination';
@@ -22,6 +22,10 @@ function apiCallGetTree(path: string) {
 
 function apiCallDeleteTree(path: string) {
     return apiCallDelete(prefix + path);
+}
+
+function apiCallDuplicateTree(path: string) {
+    return apiCallDuplicate(prefix + path);
 }
 
 export type TreeId = number;
@@ -240,6 +244,11 @@ export function getFilteredList(
 ): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
     return apiCallGetTree(`get-list?${params}`);
+}
+
+/** Duplicates a tree */
+export function duplicateTree(treeId: TreeId): Promise<void> {
+    return apiCallDuplicateTree(`${treeId}/duplicate`);
 }
 
 /** Add user as co-author to a tree. */

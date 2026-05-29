@@ -10,12 +10,13 @@ use crate::db::trees::{
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
     language_exists, subject_exists,
 };
+use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    Language, Subject, TreeAddData, TreeFilters, TreeListResponse, TreeRemoveCardData,
-    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Node, RootNode, Subject, TreeAddData, TreeFilters, TreeListResponse,
+    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
@@ -44,6 +45,7 @@ pub fn trees() -> Router<ArcState> {
         .route("/update-data", post(update_tree_data))
         .route("/get-all-languages", get(get_all_languages))
         .route("/get-all-subjects", get(get_all_subjects))
+        .route("/{tree_id}/duplicate", post(duplicate_tree))
         .route("/{tree_id}/authorize/{username}", post(authorize_co_author))
 }
 
@@ -149,7 +151,7 @@ async fn remove_tree(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<(), ApiError> {
-    verify_tree_permissions(get_connection!(db), tree_id, claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
 
     db::trees::remove_tree(&db, tree_id).await
 }
@@ -201,7 +203,7 @@ async fn update_tree_structure(
     Json(tree_update_data): Json<TreeUpdateStructureData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(get_connection!(db), tree_update_data.id, claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_update_data.id, &claims).await?;
 
     let mut transaction = db.begin().await?;
 
@@ -270,7 +272,7 @@ async fn remove_card_from_tree(
     Json(tree_card_removal_data): Json<TreeRemoveCardData>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(get_connection!(db), tree_card_removal_data.tree_id, claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_card_removal_data.tree_id, &claims).await?;
 
     let mut transaction = db.begin().await?;
 
@@ -380,7 +382,7 @@ async fn update_tree_data(
     let mut transaction = db.begin().await?;
 
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(&mut transaction, tree_update_data.id, claims).await?;
+    verify_tree_permissions(&mut transaction, tree_update_data.id, &claims).await?;
 
     if !language_exists(&mut *transaction, &tree_update_data.new_data.language_code).await? {
         return Err(ApiError::MissingLanguage(
@@ -457,7 +459,7 @@ async fn get_tree_with_cards(
             return Err(ApiError::MissingAuthentication);
         };
 
-        verify_tree_permissions(get_connection!(db), tree_id, claims).await?;
+        verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
     }
 
     let tree_cards = get_tree_cards(&db, tree_id).await?;
@@ -494,7 +496,7 @@ async fn get_tree_with_cards(
 pub async fn verify_tree_permissions(
     db: &mut PgConnection,
     tree_id: i32,
-    claims: Claims,
+    claims: &Claims,
 ) -> Result<(), ApiError> {
     // Check whether the tree exists.
     let owner_id = get_tree_owner(&mut *db, tree_id)
@@ -707,4 +709,100 @@ pub async fn get_all_subjects(
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<HashMap<String, Vec<Subject>>>, ApiError> {
     Ok(Json(get_subjects(&db).await?))
+}
+
+#[utoipa::path(
+    post,
+    path = "/{tree_id}/duplicate",
+    context_path = "/api/v1/trees",
+
+    responses(
+        (status = 200, description = "Successfully duplicated the tree.", body = i32),
+        (status = 400, description = "Tree with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+    )
+
+)]
+/// Duplicates a tree.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_id` - Tree to duplicate.
+///
+/// # Returns
+/// The id assigned to the new tree.
+///
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
+///
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user is not logged in.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to duplicate the tree
+/// for the given `tree_id`.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn duplicate_tree(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(tree_id): Path<i32>,
+) -> Result<Json<i32>, ApiError> {
+    let mut transaction = db.begin().await?;
+
+    let (metadata, structure) = db_get_tree_all_data(&mut transaction, tree_id)
+        .await?
+        .ok_or(ApiError::MissingTree(tree_id))?;
+
+    if !metadata.data.published {
+        verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    }
+    let mut new_data = metadata.data;
+    new_data.published = false;
+    let this_user = get_user(&db, claims.sub).await?;
+    new_data.title = format!(
+        "{} {}",
+        this_user.data.language.to_copy_of_text(),
+        new_data.title
+    );
+
+    let tree_add_data = TreeAddData {
+        tree_data: new_data,
+        tree_structure: structure.clone(),
+    };
+    let new_tree_id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
+
+    let mut new_structure: Vec<RootNode> = Vec::with_capacity(structure.root_nodes.len());
+    for root_node in structure.root_nodes {
+        let mut duplicate_children: Vec<Node> = Vec::with_capacity((root_node.children).len());
+        for child in &root_node.children {
+            duplicate_children.push(child.duplicate(&mut transaction, new_tree_id).await?);
+        }
+        new_structure.push(RootNode {
+            label: root_node.label.clone(),
+            children: duplicate_children,
+        });
+    }
+
+    let tree_update_data = TreeUpdateStructureData {
+        id: new_tree_id,
+        new_structure: TreeStructure {
+            root_nodes: new_structure,
+        },
+    };
+    update_structure_if_valid(
+        &mut transaction,
+        tree_update_data.id,
+        tree_update_data.new_structure,
+    )
+    .await?;
+
+    transaction.commit().await?;
+
+    Ok(Json(new_tree_id))
 }

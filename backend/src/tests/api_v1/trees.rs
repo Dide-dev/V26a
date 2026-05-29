@@ -781,6 +781,59 @@ async fn test_get_subjects(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_duplicate_tree(db: PgPool) {
+    let server = setup(db);
+
+    // Create two accounts and log in as one of them.
+    register(&server, "1@gmail.com".to_owned()).await;
+    let owner_id2 = register(&server, "2@gmail.com".to_owned()).await.0;
+    login(&server, "1@gmail.com".to_owned()).await;
+
+    let tree_data = TreeData {
+        title: "test".to_owned(),
+        published: true,
+        ..Default::default()
+    };
+
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_structure_add_data = tree_structure.clone();
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure: tree_structure_add_data,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_ok();
+    let id: i32 = response.json();
+    login(&server, "2@gmail.com".to_owned()).await;
+
+    let response = server.post("/trees/1/duplicate").await;
+    response.assert_status_ok();
+    let id2: i32 = response.json();
+    assert_eq!(id2, id + 1);
+
+    let response = server.get(&format!("/trees/get-with-cards/{id2}")).await;
+    let tree_with_cards: TreeWithCards = response.json();
+    let tree_data2 = tree_with_cards.metadata.data;
+    let expected_tree_data = TreeData {
+        title: "Copy of test".to_owned(),
+        ..Default::default()
+    };
+    assert_eq!(tree_data2, expected_tree_data);
+    let tree_gen_data = tree_with_cards.metadata.gen_data;
+    assert_eq!(tree_gen_data.owner_id, owner_id2);
+    let tree_structure2 = tree_with_cards.structure;
+    assert_eq!(
+        tree_structure.root_nodes.len(),
+        tree_structure2.root_nodes.len()
+    );
+}
+
+#[sqlx::test]
 async fn test_verify_tree_permission_owner(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
@@ -792,7 +845,7 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
 
     assert!(result.is_ok());
 }
@@ -809,7 +862,7 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
         account_type: AccountType::Admin,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
 
     assert!(result.is_ok());
 }
@@ -834,7 +887,7 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
 
     assert!(result.is_ok());
 }

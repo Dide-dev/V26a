@@ -65,6 +65,24 @@ export async function apiCallPost(path: string, body: unknown) {
     }
 }
 
+/** This function is for the rest of the backend to call upon, do not call from UI! */
+export async function apiCallDuplicate(path: string) {
+    const response = await fetch(prefix + path, {
+        method: 'POST'
+    });
+
+    if (!(await checkResponse(response))) {
+        return;
+    }
+
+    // Only return if some content is sent back
+    if (response.headers.get('Content-Type') === 'application/json') {
+        return await response.json();
+    } else {
+        return null;
+    }
+}
+
 export async function apiCallPostFile(path: string, file: File) {
     // Content-Type is inferred by the browser.
     const response = await fetch(prefix + path, {
