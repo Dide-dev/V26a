@@ -39,7 +39,7 @@ async fn test_login_fail(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_success(db: PgPool) {
     let server = setup(db);
-    let _user_id = register(&server, "Caesar@gmail.com".to_owned()).await;
+    register(&server, "Caesar@gmail.com".to_owned()).await;
     login(&server, "Caesar@gmail.com".to_owned()).await;
 
     let response = server.post("/auth/logout").await;
@@ -55,7 +55,7 @@ async fn test_logout_success(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_failure(db: PgPool) {
     let server = setup(db);
-    let _user_id = register(&server, "Caesar@gmail.com".to_owned()).await;
+    register(&server, "Caesar@gmail.com".to_owned()).await;
 
     // logout is not possible without a valid session.
     server.post("/auth/logout").await.assert_status_forbidden();
