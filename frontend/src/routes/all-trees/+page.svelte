@@ -51,6 +51,11 @@
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
     }
 
+    function changePageSize() {
+        thisPage = 1;
+        loadTrees();
+    }
+
     function prevPage() {
         thisPage -= 1;
         loadTrees();
@@ -123,7 +128,7 @@
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
-                onchange={loadTrees}
+                onchange={changePageSize}
             >
                 <option value="5">5</option>
                 <option value="10">10</option>
