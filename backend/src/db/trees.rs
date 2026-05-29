@@ -438,7 +438,7 @@ pub async fn db_get_tree_all_data(
     tree_id: i32,
 ) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
-        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags
+        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
         LEFT JOIN users ON users.id = trees.owner_id
@@ -482,6 +482,7 @@ pub async fn db_get_tree_all_data(
         linked_data: TreeLinkedData {
             owner_name: field.owner_name,
             subject_name: field.subject_name,
+            co_authors: field.co_authors.unwrap_or(Vec::new()),
         },
     };
 
@@ -510,6 +511,66 @@ pub async fn get_tree_owner(
         .map(|r| r.owner_id);
 
     Ok(owner)
+}
+
+/// Check whether a user is a co-author of a tree.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree of which the owner is queried.
+///
+/// `co_author_id` - The id of the given co-author.
+///
+/// # Returns
+/// A boolean, indicating whether the given user is indeed a co-author of the given tree.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn is_co_author_of_tree(
+    db: impl PgExecutor<'_>,
+    tree_id: &i32,
+    co_author_id: &i32,
+) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM co_authors WHERE tree_id = $1 AND user_id = $2)",
+        tree_id,
+        co_author_id
+    )
+    .fetch_one(db)
+    .await?
+    .exists
+    .ok_or(ApiError::DatabaseException)
+}
+
+/// Add a co-author to a tree.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree to which a co-author should be added.
+///
+/// `co_author_id` - The id of the user that should be added as co-author.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_co_author(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    co_author_id: i32,
+) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO co_authors (tree_id, user_id)
+        VALUES ($1, $2)",
+        tree_id,
+        co_author_id
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
@@ -611,15 +672,24 @@ fn apply_tree_filters<'a>(
         created_after,
         created_before,
         show_own_private,
+        editable,
     } = filters;
 
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
     separated.push("(published = true");
     if *show_own_private && let Some(user_id) = user_id {
-        separated.push_unseparated(" OR (published = false AND owner_id = ");
+        separated.push_unseparated(" OR (published = false AND (owner_id = ");
         separated.push_bind_unseparated(user_id);
-        separated.push_unseparated(")");
+
+        separated.push_unseparated(
+            " OR EXISTS(
+                SELECT 1
+                FROM co_authors
+                WHERE co_authors.user_id = ",
+        );
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated(")))");
     }
     separated.push_unseparated(")");
     if let Some(owner_id) = owner_id {
@@ -627,6 +697,20 @@ fn apply_tree_filters<'a>(
             .push("(owner_id = ")
             .push_bind_unseparated(owner_id)
             .push_unseparated(")");
+    }
+    if *editable && let Some(user_id) = user_id {
+        separated.push("(owner_id = ");
+
+        separated.push_bind_unseparated(user_id);
+
+        separated.push_unseparated(
+            " OR EXISTS(
+                SELECT 1
+                FROM co_authors
+                WHERE co_authors.user_id = ",
+        );
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated("))");
     }
     if !book.is_empty() {
         let parsed_isbns = book
@@ -673,7 +757,13 @@ pub async fn get_queried_count(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+    let mut query = QueryBuilder::<Postgres>::new(
+        "SELECT COUNT(*)
+        FROM trees
+        LEFT JOIN books ON books.isbn = trees.book_isbn
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id",
+    );
 
     apply_tree_filters(&mut query, filters, user_id)?;
 
@@ -709,7 +799,7 @@ pub async fn get_queried_list(
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new(
         r#"
-        SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+        SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
         FROM trees
         LEFT JOIN books ON books.isbn = trees.book_isbn
         LEFT JOIN users ON users.id = trees.owner_id
@@ -830,7 +920,7 @@ mod tests {
 
         let record = query!(
             "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
-            FROM trees 
+            FROM trees
             LEFT JOIN books ON trees.book_isbn = books.isbn
             WHERE id = $1", tree_id)
             .fetch_one(&db)
@@ -1069,11 +1159,12 @@ mod tests {
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
             show_own_private: true,
+            editable: false,
         };
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_isbn = ANY($3)) AND (trees.created_at >= $4) AND (trees.created_at <= $5)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (owner_id = $3) AND (book_isbn = ANY($4)) AND (trees.created_at >= $5) AND (trees.created_at <= $6)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -1383,5 +1474,70 @@ mod tests {
             .map(|d| d.gen_data.id)
             .collect::<Vec<_>>();
         assert_eq!(book_tree_id_list, vec![book_tree_id]);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_exists(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let co_author_id = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "co_author@email.com",
+            "password_hash",
+            "co_author"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        add_co_author(&db, tree_id, co_author_id).await.unwrap();
+
+        let result = is_co_author_of_tree(&db, &tree_id, &co_author_id)
+            .await
+            .unwrap();
+
+        assert!(result);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_not_exists(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let other_user = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "other_user@email.com",
+            "password_hash",
+            "other_user"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        let result = is_co_author_of_tree(&db, &tree_id, &other_user)
+            .await
+            .unwrap();
+
+        assert!(!result);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_duplicate_insert(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let co_author_id = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "co_author@email.com",
+            "password_hash",
+            "co_author"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        add_co_author(&db, tree_id, co_author_id).await.unwrap();
+
+        let result = add_co_author(&db, tree_id, co_author_id).await;
+
+        assert!(result.is_err());
     }
 }

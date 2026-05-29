@@ -3,6 +3,9 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+use crate::db_structs::Validated;
+use crate::errors::ApiError;
+use crate::limits::{CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH};
 use sqlx::FromRow;
 use utoipa::ToSchema;
 
@@ -13,6 +16,24 @@ pub struct ClassroomAddData {
     pub name: String,
     #[serde(default)]
     pub description: String,
+}
+
+impl Validated for ClassroomAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.name.chars().count() > CLASSROOM_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "title",
+                CLASSROOM_TITLE_MAX_LENGTH,
+            ));
+        }
+        if self.description.chars().count() > CLASSROOM_DESCRIPTION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "description",
+                CLASSROOM_DESCRIPTION_MAX_LENGTH,
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// The data that is returned to the user after creation of the classroom.

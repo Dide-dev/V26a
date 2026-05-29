@@ -8,10 +8,11 @@
     This sidebar is currently only used for the card editing, but could be used for more later.
  -->
 <script lang="ts">
-    import type { CardGetData } from '$lib/api-wrapper/cards';
+    import type { CardData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
+    import Editor from '$lib/rich-text/Editor.svelte';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
-    import TextEditArea from './TextEditArea.svelte';
+    import SimpleTextEditArea from './SimpleTextEditArea.svelte';
 
     let {
         sidebar = $bindable(),
@@ -24,12 +25,16 @@
     export type SideBar = {
         type: 'NewCard' | 'EditCard';
         location: number[];
-        editingVersion: CardGetData;
+        editingVersion: CardData;
         errorMessage?: string;
     };
 
-    const frontMaxLength = 250;
-    const backMaxLength = 5000;
+    const maxInputLengths = {
+        frontMaxLength: 250,
+        backMaxLength: 5000
+    };
+
+    let isVisualEditor = $state(true);
 
     async function finishEdit() {
         let node = followIndexNode(history.currentStructure, sidebar!.location);
@@ -46,20 +51,22 @@
         if (sidebar === null) {
             return;
         }
-        sidebar.editingVersion.front = sidebar.editingVersion.front.trim();
-        sidebar.editingVersion.back = sidebar.editingVersion.back.trim();
 
         if (sidebar.editingVersion.back.length === 0) {
             sidebar.errorMessage = m.backTextRequired();
             return;
         }
 
-        if (sidebar.editingVersion.front.length > frontMaxLength) {
-            sidebar.errorMessage = m.frontTextCharacterLimit({ limit: frontMaxLength });
+        if (sidebar.editingVersion.front.length > maxInputLengths.frontMaxLength) {
+            sidebar.errorMessage = m.frontTextCharacterLimit({
+                limit: maxInputLengths.frontMaxLength
+            });
             return;
         }
-        if (sidebar.editingVersion.back.length > backMaxLength) {
-            sidebar.errorMessage = m.backTextCharacterLimit({ limit: backMaxLength });
+        if (sidebar.editingVersion.back.length > maxInputLengths.backMaxLength) {
+            sidebar.errorMessage = m.backTextCharacterLimit({
+                limit: maxInputLengths.backMaxLength
+            });
             return;
         }
         sidebar.errorMessage = '';
@@ -80,7 +87,7 @@
         }
     }
 
-    export const htmlWidth: number = 350;
+    export const htmlWidth: number = 600;
     export const htmlHeight: number = 650;
 </script>
 
@@ -89,26 +96,48 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             style="height: {htmlHeight}px;"
-            class="pointer-events-auto sticky top-0 z-50 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
+            class="pointer-events-auto sticky top-0 z-30 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
             {onkeydown}
         >
             <h1>{m.editThisCard()}</h1>
 
             <p>Front</p>
-            <TextEditArea
-                maxLength={frontMaxLength}
+            <SimpleTextEditArea
+                maxLength={maxInputLengths.frontMaxLength}
                 height={2}
-                hasMenubar={false}
                 bind:valueText={sidebar.editingVersion.front}
             />
             <div class="h-5"></div>
             <p>Back</p>
-            <TextEditArea
-                maxLength={backMaxLength}
-                height="full"
-                hasMenubar={true}
-                bind:valueText={sidebar.editingVersion.back}
-            />
+            <div class="m-1 flex gap-2 rounded bg-white p-1">
+                <button
+                    class="cursor-pointer rounded p-1"
+                    class:bg-green-500={isVisualEditor === true}
+                    onclick={() => (isVisualEditor = true)}
+                >
+                    {m.visualEditor()}
+                </button>
+                <button
+                    class="cursor-pointer rounded p-1"
+                    class:bg-green-500={isVisualEditor === false}
+                    onclick={() => (isVisualEditor = false)}
+                >
+                    {m.codeEditor()}
+                </button>
+            </div>
+            {#if isVisualEditor}
+                <Editor
+                    maxLength={maxInputLengths.backMaxLength}
+                    bind:valueText={sidebar.editingVersion.back}
+                />
+            {:else}
+                <SimpleTextEditArea
+                    maxLength={maxInputLengths.backMaxLength}
+                    height="full"
+                    bind:valueText={sidebar.editingVersion.back}
+                />
+            {/if}
+            <div class="h-5"></div>
             {#if sidebar.errorMessage}
                 <p class="text-red-600">{sidebar.errorMessage}</p>
             {/if}

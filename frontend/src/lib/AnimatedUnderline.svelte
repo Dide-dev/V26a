@@ -6,7 +6,7 @@
 
 <!--
     @component
-    Render an animated underline effect below the children.
+    Render an animated underline effect below the first child.
 
     Wrapper object automatically grows to fill its container.
 
@@ -26,7 +26,7 @@
 <style>
     .animated_underline {
         /* Must be global to affect the rendered children. */
-        > :global(*) {
+        > :global(*:first-child) {
             position: relative;
 
             /* The underline */
@@ -45,7 +45,7 @@
             }
         }
         /* Must be global to affect the rendered children. */
-        &:hover > :global(*::after) {
+        &:hover > :global(*:first-child::after) {
             /* Grow to full width. */
             width: 100%;
         }

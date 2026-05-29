@@ -4,7 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db_structs::Validated;
 use crate::db_structs::users::AccountType;
+use crate::errors::ApiError;
+use crate::limits::{EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -13,6 +16,22 @@ use utoipa::ToSchema;
 pub struct LoginRequestBody {
     pub email: String,
     pub password: String,
+}
+
+impl Validated for LoginRequestBody {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.email.chars().count() > EMAIL_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
+        }
+        if self.password.len() > PASSWORD_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "password",
+                PASSWORD_MAX_LENGTH,
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 /// User information to check password and permissions.

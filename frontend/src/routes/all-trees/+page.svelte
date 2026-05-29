@@ -26,7 +26,8 @@
         book: [],
         createdAfter: null,
         createdBefore: null,
-        showOwnPrivate: true
+        showOwnPrivate: true,
+        editable: null
     });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,

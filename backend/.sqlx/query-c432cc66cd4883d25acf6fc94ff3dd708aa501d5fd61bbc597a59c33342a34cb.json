@@ -21,12 +21,7 @@
       {
         "ordinal": 2,
         "name": "name",
-        "type_info": {
-          "Custom": {
-            "name": "citext",
-            "kind": "Simple"
-          }
-        }
+        "type_info": "Varchar"
       },
       {
         "ordinal": 3,

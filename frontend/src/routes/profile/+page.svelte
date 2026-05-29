@@ -11,7 +11,7 @@
         getUserInfo,
         updateUser,
         changePassword,
-        type UserGetData,
+        type UserData,
         type ChangePasswordData
     } from '$lib/api-wrapper/users';
     import {
@@ -67,17 +67,17 @@
 
     const minInputLengths = {
         email: 0,
-        name: 2,
+        name: 4,
         nickname: 2,
         aboutMe: 0,
         password: 8
     };
 
     const maxInputLengths = {
-        email: 256,
-        name: 128,
-        nickname: 128,
-        aboutMe: 160,
+        email: 128,
+        name: 32,
+        nickname: 32,
+        aboutMe: 512,
         password: 72
     };
 
@@ -101,7 +101,7 @@
         successfulPasswordChange = false;
     }
 
-    async function handleSubmit(event: SubmitEvent, userData: UserGetData) {
+    async function handleSubmit(event: SubmitEvent, userData: UserData) {
         event.preventDefault();
 
         if (!formChanged) {
@@ -119,14 +119,12 @@
         usernameAlreadyExists = false;
         resetInputStates();
 
-        const result = await updateUser(userInfo.sub, {
+        const result = await updateUser({
             name: userData.name,
             nickname: userData.nickname,
             aboutMe: userData.aboutMe,
             emailVisible: userData.emailVisible,
-            language: userData.language,
-            accountType: null,
-            enabled: null
+            language: userData.language
         });
 
         if (result.type === 'Success') {
@@ -216,7 +214,7 @@
         <form
             data-testid="profile-form"
             class={[formChanged && 'completed']}
-            onsubmit={(event) => handleSubmit(event, userData)}
+            onsubmit={(event) => handleSubmit(event, userData.data)}
         >
             <h1 class="page__title">{m.profile()}</h1>
             <h2 class="page__heading">{m.general()}</h2>
@@ -254,8 +252,8 @@
                             usernameAlreadyExists && 'error',
                             'input__text'
                         ]}
-                        bind:value={userData.name}
-                        name="name"
+                        bind:value={userData.data.name}
+                        name="username"
                         type="text"
                         data-testid="name"
                         placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
@@ -277,8 +275,8 @@
                     <input
                         id="nickname"
                         class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
-                        bind:value={userData.nickname}
-                        name="nickname"
+                        bind:value={userData.data.nickname}
+                        name="name"
                         type="text"
                         placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
                         minlength={minInputLengths.nickname}
@@ -294,7 +292,7 @@
                 <textarea
                     id="aboutMe"
                     class={[!inputsChanged.aboutMeChanged && 'inactive', 'input__long_text']}
-                    bind:value={userData.aboutMe}
+                    bind:value={userData.data.aboutMe}
                     name="aboutMe"
                     placeholder={m.optional()}
                     minlength={minInputLengths.aboutMe}
@@ -312,7 +310,7 @@
                 <select
                     id="language"
                     class={[!inputsChanged.languageChanged && 'inactive', 'input__select']}
-                    bind:value={userData.language}
+                    bind:value={userData.data.language}
                     oninput={() => {
                         inputsChanged.languageChanged = true;
                     }}
@@ -328,7 +326,7 @@
                 <input
                     id="emailVisible"
                     class={[!inputsChanged.emailVisibleChanged && 'inactive', 'input__checkbox']}
-                    bind:checked={userData.emailVisible}
+                    bind:checked={userData.data.emailVisible}
                     name="emailVisible"
                     type="checkbox"
                     oninput={() => {
@@ -410,7 +408,7 @@
                 {/if}
                 {#if successfulPasswordChange}
                     <p class="text__success" data-testid="password-change-success">
-                        {m.succesfulPasswordChange()}
+                        {m.successfulPasswordChange()}
                     </p>
                 {/if}
             </div>

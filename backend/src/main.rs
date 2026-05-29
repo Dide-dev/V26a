@@ -11,6 +11,7 @@ mod config;
 mod db;
 mod db_structs;
 mod errors;
+mod limits;
 mod state;
 mod tests;
 

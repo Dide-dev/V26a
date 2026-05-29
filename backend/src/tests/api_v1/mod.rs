@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+mod admin;
 mod auth;
 mod cards;
 mod classrooms;
@@ -17,11 +18,13 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::users::{RegisterData, UserLanguage};
+use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
+use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use percent_encoding::percent_decode_str;
+use rand::RngExt;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
@@ -63,19 +66,21 @@ fn setup(db: PgPool) -> TestServer {
 ///
 /// # Returns
 /// An i32 representing the id of the user created.
-async fn register(test_server: &TestServer, email: String) -> i32 {
-    let response = test_server
-        .post("/users/add")
-        .json(&RegisterData {
-            email,
-            password: "a$$word".to_string(),
-            name: format!("John Test {}", uuid::Uuid::new_v4()),
+async fn register(test_server: &TestServer, email: String) -> (i32, RegisterData) {
+    let mut rng = rand::rng();
+    let n: u64 = rng.random();
+    let register_data = RegisterData {
+        email,
+        password: "a$$word".to_string(),
+        data: UserData {
+            name: format!("John_Test_{n}"),
             nickname: String::new(),
             about_me: String::new(),
             email_visible: false,
             language: UserLanguage::En,
-        })
-        .await;
+        },
+    };
+    let response = test_server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
@@ -83,7 +88,8 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
-    user_id
+
+    (user_id, register_data)
 }
 
 /// Creates an admin account with the given [`TestServer`]
@@ -96,9 +102,13 @@ async fn register(test_server: &TestServer, email: String) -> i32 {
 /// `email` - The new admin's email address.
 ///
 /// # Returns
-/// An i32 representing the id of the admin created.
-async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email: String) -> i32 {
-    let user_id = register(test_server, email).await;
+/// A tuple containing the id of the admin user created and the [`RegisterData`] used.
+async fn register_admin(
+    test_server: &TestServer,
+    db: impl PgExecutor<'_>,
+    email: String,
+) -> (i32, RegisterData) {
+    let (user_id, register_data) = register(test_server, email).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -108,7 +118,7 @@ async fn register_admin(test_server: &TestServer, db: impl PgExecutor<'_>, email
     .await
     .unwrap();
 
-    user_id
+    (user_id, register_data)
 }
 
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.
@@ -146,6 +156,29 @@ async fn setup_login(db: PgPool) -> TestServer {
     login(&server, test_email).await;
 
     server
+}
+
+/// Creates a basic tree that can be used in tests.
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// # Returns
+/// An i32 representing the tree's id.
+async fn create_tree(test_server: &TestServer) -> i32 {
+    let tree_data = TreeData::default();
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = test_server.post("/trees/add").json(&tree_add_data).await;
+    response.json()
 }
 
 #[cfg(test)]

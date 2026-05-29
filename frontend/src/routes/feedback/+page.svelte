@@ -13,6 +13,16 @@
         feedback: ''
     });
 
+    const minInputLengths = {
+        email: 1,
+        feedback: 6
+    };
+
+    const maxInputLengths = {
+        email: 128,
+        feedback: 5000
+    };
+
     let successfulSubmission: boolean = $state(false);
 
     async function handleSubmit(event: SubmitEvent) {
@@ -50,6 +60,8 @@
                 autocomplete="email"
                 placeholder={m.optionalPlaceholder({ value: m.yourEmail() })}
                 data-testid="email"
+                maxLength={maxInputLengths.email}
+                minLength={minInputLengths.email}
             />
         </div>
         <div>
@@ -63,10 +75,12 @@
                 data-testid="feedback"
                 placeholder={m.yourFeedback()}
                 required
+                maxLength={maxInputLengths.feedback}
+                minLength={minInputLengths.feedback}
             ></textarea>
             {#if successfulSubmission}
                 <p class="text__success" data-testid="submission-success">
-                    {m.succesfulFeedbackSubmission()}
+                    {m.successfulFeedbackSubmission()}
                 </p>
             {/if}
         </div>

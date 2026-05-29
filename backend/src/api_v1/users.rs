@@ -13,11 +13,11 @@ use crate::db::users::{
 };
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserGetData,
-    UserUpdateData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
+use crate::db_structs::Validated;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -34,7 +34,7 @@ pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/add", post(add_new_user).layer(rate_limit_layer(5, 20)))
         .route("/me", get(get_own_user_data))
-        .route("/update/{user_id}", post(update_user_data))
+        .route("/update", post(update_user_data))
         .route("/change-password", post(change_password))
         .route("/{user_id}/delete", delete(delete_user_data))
 }
@@ -52,7 +52,7 @@ pub enum UserResponse {
 
 #[utoipa::path(
     post,
-    path = "/add-new-user",
+    path = "/add",
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
@@ -74,6 +74,8 @@ pub enum UserResponse {
 /// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
+///
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_user(
@@ -81,6 +83,8 @@ async fn add_new_user(
     State(state): State<ArcState>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
+    user_data.validate_inputs()?;
+
     let mut transaction = db.begin().await?;
 
     let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
@@ -89,7 +93,7 @@ async fn add_new_user(
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
-    let found_user_id = get_user_by_name(&mut *transaction, &user_data.name).await?;
+    let found_user_id = get_user_by_name(&mut *transaction, &user_data.data.name).await?;
 
     if found_user_id.is_some() {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
@@ -124,6 +128,8 @@ async fn add_new_user(
 /// The user's data as [`UserGetData`].
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
+///
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
 /// invalid or corrupted.
 ///
@@ -137,67 +143,40 @@ async fn get_own_user_data(
 
 #[utoipa::path(
     post,
-    path = "/update/{user_id}",
+    path = "/update",
     context_path = "/api/v1/users",
-    request_body = UserUpdateData,
+    request_body = UserData,
     responses(
         (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
         ("session" = Claims, Cookie),
-        ("user_id" = i32, Path),
     )
 )]
-/// Update a user's data in the database.
-///
-/// A normal user can only update their own data, only an admin can change other user's data.
-/// Certain fields can only be updated by admins in general, namely `account_type` and `enabled`.
+/// Update a user's own data in the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `user_id` - The user for whom to update their data.
-///
-/// `new_data` - The new data of the user, as [`UserUpdateData`]. The `account_type` and `enabled`
-/// fields are only updated if passed, and if the user has permission to do so.
+/// `new_data` - The new data of the user, as [`UserData`].
 ///
 /// # Returns
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
-///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
-/// the given user's data, or to update one of the specified fields.
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
     mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
-    Json(new_data): Json<UserUpdateData>,
+    Json(new_data): Json<UserData>,
 ) -> Result<(CookieJar, Json<UserResponse>), ApiError> {
-    // A user can only update another user's data if they are an administrator.
-    if claims.sub != user_id && claims.account_type != AccountType::Admin {
-        return Err(ApiError::NoPermission);
-    }
-
-    // The account type and enabled flag can only be changed by an admin.
-    if (new_data.account_type.is_some() || new_data.enabled.is_some())
-        && claims.account_type != AccountType::Admin
-    {
-        return Err(ApiError::NoPermission);
-    }
-
-    if !user_id_exists(&db, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
-    }
-
+    new_data.validate_inputs()?;
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
     if let Some(id) = found_user_id
@@ -206,13 +185,13 @@ async fn update_user_data(
         return Ok((jar, Json(UserResponse::UsernameAlreadyUsed)));
     }
 
-    update_user(&db, user_id, &new_data).await?;
+    update_user(&db, claims.sub, &new_data).await?;
 
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
         sub: claims.sub,
-        account_type: new_data.account_type.unwrap_or(claims.account_type),
+        account_type: claims.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
     let time = Duration::seconds(claims.exp - Utc::now().timestamp());
@@ -224,7 +203,12 @@ async fn update_user_data(
     // `add` automatically replaces the cookie values, `remove` sets the cookie to an empty value and the maxAge to 0.
     jar = jar.add(user_cookie);
 
-    Ok((jar, Json(UserResponse::Success { user_id })))
+    Ok((
+        jar,
+        Json(UserResponse::Success {
+            user_id: claims.sub,
+        }),
+    ))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -265,6 +249,8 @@ async fn change_password(
     State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
+    password_change_request.validate_inputs()?;
+
     let credentials = get_user_credentials_by_id(&db, claims.sub)
         .await?
         .ok_or(ApiError::DatabaseException)?;
@@ -324,6 +310,8 @@ async fn change_password(
 /// The (cookie) jar that is empty.
 ///
 /// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
+///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete
