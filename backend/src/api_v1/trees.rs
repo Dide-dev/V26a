@@ -627,7 +627,7 @@ pub enum AuthorizeCoAuthorResponse {
 /// [`UsernameDoesNotExist`](AuthorizeCoAuthorResponse::UsernameDoesNotExist) if no user with the corresponding given username can be found, or
 /// [`UserAlreadyAuthorized`](AuthorizeCoAuthorResponse::UserAlreadyAuthorized) if the user has already been authorized as co-author, or is the owner of the tree, otherwise
 /// [`Success`](AuthorizeCoAuthorResponse::Success), meaning the user has successfully been authorized as co-author.
-/// 
+///
 /// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
 ///

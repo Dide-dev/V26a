@@ -13,7 +13,7 @@
 -->
 
 <script lang="ts">
-    import { addCoAuthor, type TreeId } from '$lib/api-wrapper/trees';
+    import { addCoAuthor, type TreeId, type CoAuthorizeResponse } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
 
@@ -44,27 +44,12 @@
     }
 
     let coAuthorName: string = $state('');
-    let successfullyAddedCoAuthor: boolean = $state(false);
-    let usernameDoesNotExist: boolean = $state(false);
-    let userAlreadyAuthorized: boolean = $state(false);
+    let apiResponse: CoAuthorizeResponse | null = $state(null);
 
     async function handleAddCoAuthor() {
         if (coAuthorName === '') return;
-        successfullyAddedCoAuthor = false;
-        usernameDoesNotExist = false;
-        userAlreadyAuthorized = false;
 
-        let response = await addCoAuthor(treeId, coAuthorName);
-
-        if (response.type === 'Success') {
-            successfullyAddedCoAuthor = true;
-        } else if (response.type === 'UsernameDoesNotExist') {
-            usernameDoesNotExist = true;
-        } else if (response.type === 'UserAlreadyAuthorized') {
-            userAlreadyAuthorized = true;
-        } else {
-            throw new Error('ERROR: Unexpected output from API.');
-        }
+        apiResponse = await addCoAuthor(treeId, coAuthorName);
 
         coAuthorName = '';
     }
@@ -83,7 +68,7 @@
 
 {#if visible}
     <Popup>
-        <div class="mb-3 flex gap-3" data-testid="co-author-popup">
+        <div class="mb-3 flex w-64 flex-col" data-testid="co-author-popup">
             <div class="w-64">
                 <label for="coAuthorName">{m.addCoAuthor()}</label>
                 <input
@@ -93,18 +78,18 @@
                     placeholder={m.examplePlaceholder({ value: m.exampleName() })}
                 />
             </div>
+            {#if apiResponse?.type === 'Success'}
+                <p class="text__success" data-testid="authorization-success">
+                    {m.successfulAuthorization()}
+                </p>
+            {/if}
+            {#if apiResponse?.type === 'UsernameDoesNotExist'}
+                <p class="text__error" data-testid="error">{m.invalidAuthorisationTarget()}</p>
+            {/if}
+            {#if apiResponse?.type === 'UserAlreadyAuthorized'}
+                <p class="text__error" data-testid="error">{m.userAlreadyAuthorized()}</p>
+            {/if}
         </div>
-        {#if successfullyAddedCoAuthor}
-            <p class="text__success" data-testid="authorization-success">
-                {m.successfulAuthorization()}
-            </p>
-        {/if}
-        {#if usernameDoesNotExist}
-            <p class="text__error" data-testid="error">{m.invalidAuthorisationTarget()}</p>
-        {/if}
-        {#if userAlreadyAuthorized}
-            <p class="text__error" data-testid="error">{m.userAlreadyAuthorized()}</p>
-        {/if}
         <button
             class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white"
             onclick={handleAddCoAuthor}>{m.addCoAuthor()}</button

@@ -197,17 +197,10 @@ export function isNullOrEmpty(value: unknown): boolean {
     return value == null || (Array.isArray(value) && value.length === 0);
 }
 
-export type CoAuthorizationSuccess = {
-    type: 'Success';
-};
-
-export type UsernameDoesNotExist = {
-    type: 'UsernameDoesNotExist';
-};
-
-export type UserAlreadyAuthorized = {
-    type: 'UserAlreadyAuthorized';
-};
+export type CoAuthorizeResponse =
+    | { type: 'Success' }
+    | { type: 'UsernameDoesNotExist' }
+    | { type: 'UserAlreadyAuthorized' };
 
 export function getPaginationAndFilterParams(
     pageOptions: PaginationOptions,
@@ -252,10 +245,7 @@ export function duplicateTree(treeId: TreeId): Promise<void> {
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(
-    treeId: TreeId,
-    username: string
-): Promise<CoAuthorizationSuccess | UsernameDoesNotExist | UserAlreadyAuthorized> {
+export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`${treeId}/authorize/${username}`, null);
 }
 
