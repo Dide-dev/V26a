@@ -27,6 +27,7 @@
 
     function closeEdit() {
         coAuthorName = '';
+        apiResponse = null;
         visible = false;
     }
 
@@ -56,7 +57,7 @@
 </script>
 
 <button class="cursor-pointer rounded-sm bg-emerald-500 p-1" onclick={onEditCoAuthorsButtonClick}>
-    {m.changeCoAuthors()}
+    {m.manageCoAuthors()}
 </button>
 
 <!--
