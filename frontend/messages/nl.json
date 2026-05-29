@@ -146,5 +146,8 @@
     "admin": "Beheer",
     "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
     "owner": "Eigenaar",
-    "heuristicTrees": "Heuristiekbomen"
+    "heuristicTrees": "Heuristiekbomen",
+    "numberOfFeedback": "Hoeveelheid feedback per pagina",
+    "noFeedbackFound": "Geen feedback gevonden",
+    "feedbackAddDate": "Datum van geven"
 }

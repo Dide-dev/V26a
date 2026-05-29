@@ -146,5 +146,8 @@
     "admin": "Admin",
     "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
     "owner": "Owner",
-    "heuristicTrees": "Heuristic trees"
+    "heuristicTrees": "Heuristic trees",
+    "numberOfFeedback": "How much feedback per page",
+    "noFeedbackFound": "No feedback found",
+    "feedbackAddDate": "Date given"
 }

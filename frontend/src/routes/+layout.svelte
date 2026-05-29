@@ -87,6 +87,10 @@
                             {
                                 href: '/user-list',
                                 text: m.userList()
+                            },
+                            {
+                                href: '/admin-feedback',
+                                text: 'Feedback'
                             }
                         ]
                     })
