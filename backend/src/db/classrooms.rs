@@ -156,7 +156,7 @@ pub async fn add_lesson(
 #[cfg(test)]
 mod tests {
     use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code};
-    use crate::db::test::{initialize_classroom, initialize_classroom_with_data, initialize_db};
+    use crate::db::test::{initialize_classroom, initialize_db};
     use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query};

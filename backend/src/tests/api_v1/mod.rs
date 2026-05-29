@@ -28,6 +28,7 @@ use rand::RngExt;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
@@ -179,6 +180,22 @@ async fn create_tree(test_server: &TestServer) -> i32 {
     };
     let response = test_server.post("/trees/add").json(&tree_add_data).await;
     response.json()
+}
+
+/// Creates a basic classroom that can be used in tests.
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// # Returns
+/// An i32 representing the classroom's id.
+async fn create_classroom(test_server: &TestServer) -> i32 {
+    let classroom_data = ClassroomAddData {
+        name: "Classroom".to_string(),
+        description: "Classroom description".to_string(),
+    };
+    let response = test_server.post("/classrooms/add").json(&classroom_data).await;
+    response.json::<ClassroomGeneratedData>().id
 }
 
 #[cfg(test)]
