@@ -180,7 +180,7 @@
     {/if}
 
     {#if children.length > 0}
-        <LineDrawer>
+        <LineDrawer alwaysFullWidth={true}>
             <!-- Here the html gets recursive as we render the 'node.children' -->
             {#each children as child (child)}
                 {#if child.isFake}

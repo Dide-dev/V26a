@@ -44,7 +44,7 @@
         </div>
     {/if}
 
-    <LineDrawings numberOfChildren={node.children.length}>
+    <LineDrawings alwaysFullWidth={false}>
         <!-- Here the html gets recursive as we render the 'node.children' -->
         {#each node.children as child_node (child_node)}
             <SubtreeViewer node={child_node} {cards} distanceFromRevealed={distance + 1} />

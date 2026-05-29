@@ -16,16 +16,16 @@
     import { lineOffset, strokeWidth, svgWidth } from './lineConstants';
 
     let {
-        numberOfChildren,
+        alwaysFullWidth,
         children
     }: {
-        numberOfChildren: number;
+        alwaysFullWidth: boolean;
         children: Snippet;
     } = $props();
 
     let svgHeight = $state(0);
 
-    let container: Element;
+    let container = $state(undefined as Element | undefined);
     let svgLines: SvgLine[] = $state([]);
     type SvgLine = {
         x1: number;
@@ -34,7 +34,11 @@
         y2: number;
     };
 
-    let width = $derived(numberOfChildren > 1 ? svgWidth : svgWidth / 2);
+    let width = $derived(
+        alwaysFullWidth || container === undefined || container.children.length > 1
+            ? svgWidth
+            : svgWidth / 2
+    );
 
     function redrawLines() {
         svgLines = [];
