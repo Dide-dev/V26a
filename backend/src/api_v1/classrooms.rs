@@ -4,18 +4,18 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::classrooms::{add_classroom, generate_random_code, add_lesson, get_classroom_owner};
+use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code, get_classroom_owner};
 use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
+use crate::db_structs::users::AccountType;
 use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::{PgConnection, PgPool};
-use crate::db_structs::users::AccountType;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
@@ -137,9 +137,7 @@ pub async fn verify_classroom_permissions(
     let owner_id = get_classroom_owner(&mut *db, classroom_id)
         .await?
         .ok_or(ApiError::MissingClassroom(classroom_id))?;
-    if claims.account_type == AccountType::Admin
-        || claims.sub == owner_id
-    {
+    if claims.account_type == AccountType::Admin || claims.sub == owner_id {
         Ok(())
     } else {
         Err(ApiError::NoPermission)

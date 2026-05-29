@@ -9,11 +9,11 @@
 use crate::api_v1::classrooms::verify_classroom_permissions;
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
 use crate::db_structs::session::Claims;
-use crate::tests::api_v1::{create_classroom, setup, setup_login, register, login};
-use sqlx::PgPool;
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
+use crate::tests::api_v1::{create_classroom, login, register, setup, setup_login};
+use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_new_classroom(db: PgPool) {
@@ -66,7 +66,9 @@ async fn test_new_lesson(db: PgPool) {
 
     let lesson_add_data = LessonAddData {
         name: "Booleans 101".to_string(),
-        description: "In today's lesson we will explore the exciting possibilities of the Boolean Data Type".to_string(),
+        description:
+            "In today's lesson we will explore the exciting possibilities of the Boolean Data Type"
+                .to_string(),
         published: false,
     };
 
@@ -114,7 +116,8 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    let result = verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
+    let result =
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
     assert!(result.is_ok());
 }
 
@@ -129,6 +132,7 @@ async fn test_verify_classroom_permission_admin(db: PgPool) {
         account_type: AccountType::Admin,
     };
 
-    let result = verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
+    let result =
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
     assert!(result.is_ok());
 }

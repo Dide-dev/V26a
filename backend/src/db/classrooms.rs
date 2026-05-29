@@ -110,10 +110,13 @@ pub async fn get_classroom_owner(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
 ) -> Result<Option<i32>, ApiError> {
-    let owner = query!("SELECT owner_id FROM classrooms WHERE id = $1", classroom_id,)
-        .fetch_optional(db)
-        .await?
-        .map(|r| r.owner_id);
+    let owner = query!(
+        "SELECT owner_id FROM classrooms WHERE id = $1",
+        classroom_id,
+    )
+    .fetch_optional(db)
+    .await?
+    .map(|r| r.owner_id);
 
     Ok(owner)
 }
@@ -140,7 +143,10 @@ pub async fn add_lesson(
     let order_number: Option<i32> = query!(
         "SELECT MAX(order_number) FROM lessons WHERE classroom_id=$1",
         classroom_id,
-    ).fetch_one(&mut *db).await?.max;
+    )
+    .fetch_one(&mut *db)
+    .await?
+    .max;
     let id: i32 = query!(
         "INSERT INTO lessons (classroom_id, order_number, name, description, published) VALUES ($1, $2, $3, $4, $5) RETURNING id",
         classroom_id,
@@ -155,7 +161,9 @@ pub async fn add_lesson(
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code, get_classroom_owner};
+    use crate::db::classrooms::{
+        add_classroom, add_lesson, generate_random_code, get_classroom_owner,
+    };
     use crate::db::test::{initialize_classroom, initialize_db};
     use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::get_connection_unwrap;
@@ -197,7 +205,9 @@ mod tests {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
         let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
 
-        let found_owner_id = get_classroom_owner(get_connection_unwrap!(db), classroom_id).await.unwrap();
+        let found_owner_id = get_classroom_owner(get_connection_unwrap!(db), classroom_id)
+            .await
+            .unwrap();
         assert_eq!(found_owner_id, Some(user_id));
     }
 
@@ -212,10 +222,20 @@ mod tests {
             published: false,
         };
 
-        let id1 = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id).await.unwrap();
-        let id2 = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id).await.unwrap();
-        let found_lesson_data1 = query!("SELECT * FROM lessons WHERE id = $1", id1).fetch_one(&db).await.unwrap();
-        let found_lesson_data2 = query!("SELECT  * FROM lessons WHERE id = $1", id2).fetch_one(&db).await.unwrap();
+        let id1 = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id)
+            .await
+            .unwrap();
+        let id2 = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id)
+            .await
+            .unwrap();
+        let found_lesson_data1 = query!("SELECT * FROM lessons WHERE id = $1", id1)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        let found_lesson_data2 = query!("SELECT  * FROM lessons WHERE id = $1", id2)
+            .fetch_one(&db)
+            .await
+            .unwrap();
 
         let found_lesson_add_data = LessonAddData {
             name: found_lesson_data1.name,
@@ -224,6 +244,9 @@ mod tests {
         };
 
         assert_eq!(found_lesson_add_data, lesson_add_data);
-        assert_eq!(found_lesson_data1.order_number + 1, found_lesson_data2.order_number);
+        assert_eq!(
+            found_lesson_data1.order_number + 1,
+            found_lesson_data2.order_number
+        );
     }
 }

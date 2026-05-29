@@ -18,6 +18,7 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
 use axum::Extension;
@@ -28,7 +29,6 @@ use rand::RngExt;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
@@ -194,7 +194,10 @@ async fn create_classroom(test_server: &TestServer) -> i32 {
         name: "Classroom".to_string(),
         description: "Classroom description".to_string(),
     };
-    let response = test_server.post("/classrooms/add").json(&classroom_data).await;
+    let response = test_server
+        .post("/classrooms/add")
+        .json(&classroom_data)
+        .await;
     response.json::<ClassroomGeneratedData>().id
 }
 

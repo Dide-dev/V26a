@@ -153,7 +153,9 @@ impl Display for ApiError {
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
             ),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
-            ApiError::MissingClassroom(id) => write!(f, "The classroom with id {id} could not be found."),
+            ApiError::MissingClassroom(id) => {
+                write!(f, "The classroom with id {id} could not be found.")
+            }
             ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
             ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),

@@ -43,13 +43,13 @@ macro_rules! get_connection_unwrap {
 
 #[cfg(test)]
 pub mod test {
+    use crate::db::classrooms::generate_random_code;
     use crate::db::trees::parse_isbn;
     use crate::db_structs::cards::{CardAddData, CardData};
+    use crate::db_structs::classrooms::ClassroomAddData;
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::RegisterData;
     use sqlx::{PgConnection, PgExecutor, query};
-    use crate::db::classrooms::generate_random_code;
-    use crate::db_structs::classrooms::ClassroomAddData;
 
     /// Initialize a database with a user and a tree.
     ///
@@ -223,10 +223,7 @@ pub mod test {
         .id
     }
 
-    pub async fn initialize_classroom(
-        db: &mut PgConnection,
-        owner_id: i32,
-    ) -> i32 {
+    pub async fn initialize_classroom(db: &mut PgConnection, owner_id: i32) -> i32 {
         let classroom_data = ClassroomAddData {
             name: "Classroom".to_string(),
             description: "Classroom".to_string(),
