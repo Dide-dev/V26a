@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH original AS (\n                SELECT front, back\n                FROM cards\n                WHERE id = $1\n            )\n            INSERT INTO cards (tree_id, front, back)\n            SELECT $2, original.front, original.back\n            FROM original\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1533f8593f966d0196ecd155ee18bb244a15e4ed68efa2c65c58a83a205c1977"
+}
