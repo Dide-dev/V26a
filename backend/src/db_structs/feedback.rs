@@ -3,6 +3,9 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+use crate::db_structs::Validated;
+use crate::errors::ApiError;
+use crate::limits::{EMAIL_MAX_LENGTH, FEEDBACK_MAX_LENGTH};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
@@ -27,4 +30,19 @@ pub struct FeedbackGetData {
 pub struct FeedbackListResponse {
     pub feedback_total: i32,
     pub feedback: Vec<FeedbackGetData>,
+}
+
+impl Validated for FeedbackData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.email.chars().count() > EMAIL_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
+        }
+        if self.feedback.chars().count() > FEEDBACK_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "feedback",
+                FEEDBACK_MAX_LENGTH,
+            ));
+        }
+        Ok(())
+    }
 }

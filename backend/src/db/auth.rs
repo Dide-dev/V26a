@@ -29,7 +29,7 @@ pub async fn get_user_credentials_by_email(
 ) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
         "SELECT id, password_hash, account_type FROM users WHERE email = $1",
-        email
+        email.to_lowercase()
     )
     .fetch_optional(db)
     .await?;

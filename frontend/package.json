@@ -46,14 +46,26 @@
         "vitest-browser-svelte": "^2.0.2"
     },
     "dependencies": {
+        "@egoist/tailwindcss-icons": "^1.9.2",
+        "@iconify-json/lucide": "^1.2.107",
         "@inlang/paraglide-js-svelte": "^1.0.2",
         "@sveltejs/adapter-node": "^5.5.4",
+        "@types/hast": "^3.0.4",
+        "@types/mdast": "^4.0.4",
         "flowbite-svelte": "^1.33.1",
+        "hast-util-to-mdast": "^10.1.2",
+        "katex": "^0.16.45",
+        "mdast-util-to-hast": "^13.2.1",
+        "prosekit": "^0.20.2",
         "rehype-katex": "^7.0.1",
+        "rehype-parse": "^9.0.1",
+        "rehype-remark": "^10.0.1",
+        "rehype-sanitize": "^6.0.0",
         "rehype-stringify": "^10.0.1",
-        "remark-html": "^16.0.1",
         "remark-math": "^6.0.0",
         "remark-parse": "^11.0.0",
-        "remark-rehype": "^11.1.2"
+        "remark-rehype": "^11.1.2",
+        "remark-stringify": "^11.0.0",
+        "unist-util-visit-parents": "^6.0.2"
     }
 }

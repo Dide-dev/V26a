@@ -45,7 +45,7 @@ macro_rules! get_connection_unwrap {
 #[cfg(test)]
 pub mod test {
     use crate::db::trees::parse_isbn;
-    use crate::db_structs::cards::CardAddData;
+    use crate::db_structs::cards::{CardAddData, CardData};
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::RegisterData;
     use sqlx::{PgConnection, PgExecutor, query};
@@ -89,11 +89,11 @@ pub mod test {
             "INSERT INTO users (email, password_hash, name, nickname, about_me, email_visible, language_code) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
             register_data.email,
             password_hash,
-            register_data.name,
-            register_data.nickname,
-            register_data.about_me,
-            register_data.email_visible,
-            register_data.language.to_string(),
+            register_data.data.name,
+            register_data.data.nickname,
+            register_data.data.about_me,
+            register_data.data.email_visible,
+            register_data.data.language.to_string(),
         )
         .fetch_one(db)
         .await
@@ -188,8 +188,10 @@ pub mod test {
     pub async fn initialize_card(db: impl PgExecutor<'_>, tree_id: i32) -> i32 {
         let card_add_data = CardAddData {
             tree_id,
-            front: "front".to_owned(),
-            back: "back".to_owned(),
+            data: CardData {
+                front: "front".to_owned(),
+                back: "back".to_owned(),
+            },
         };
 
         initialize_card_with_data(db, &card_add_data).await
@@ -211,8 +213,8 @@ pub mod test {
         query!(
             "INSERT INTO cards (tree_id, back, front) VALUES ($1, $2, $3) RETURNING id",
             card_data.tree_id,
-            card_data.back,
-            card_data.front,
+            card_data.data.back,
+            card_data.data.front,
         )
         .fetch_one(db)
         .await
