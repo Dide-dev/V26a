@@ -18,7 +18,6 @@ use crate::db_structs::users::{
 use crate::errors::ApiError;
 
 use crate::db_structs::Validated;
-use crate::errors::ApiError::MissingAuthentication;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -187,10 +186,13 @@ async fn update_user_data(
 
     update_user(&db, claims.sub, &new_data).await?;
 
-    let session_token = jar.get("session").ok_or(MissingAuthentication)?.value();
+    let session_token = jar
+        .get("session")
+        .ok_or(ApiError::MissingAuthentication)?
+        .value();
     let old_exp = get_session(&db, session_token)
         .await?
-        .ok_or(MissingAuthentication)?
+        .ok_or(ApiError::MissingAuthentication)?
         .exp;
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
