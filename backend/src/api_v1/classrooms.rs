@@ -66,8 +66,9 @@ async fn add_new_classroom(
 
 #[utoipa::path(
     post,
-    path = "/{id}/add-lesson",
+    path = "/{classroom_id}/add-lesson",
     context_path = "/api/v1/classrooms",
+    request_body = LessonAddData,
     responses(
         (status = 200, description = "Successfully added new lesson."),
         (status = 400, description = "Classroom with given id cannot be found."),
