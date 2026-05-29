@@ -908,6 +908,8 @@ async fn test_authorize_co_author_success(db: PgPool) {
         .await;
 
     response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(response_body, AuthorizeCoAuthorResponse::Success);
 
     let is_co_author = is_co_author_of_tree(&db, &tree_id, &co_author_id)
         .await
@@ -947,9 +949,41 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
         .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
         .await;
 
+    response.assert_status_ok();
     let response_body: AuthorizeCoAuthorResponse = response.json();
     assert_eq!(
         response_body,
         AuthorizeCoAuthorResponse::UsernameDoesNotExist
+    );
+}
+
+#[sqlx::test]
+async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    register(&server, "not_tree_owner@email.com".to_owned()).await;
+
+    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
+    server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(
+        response_body,
+        AuthorizeCoAuthorResponse::UserAlreadyAuthorized
     );
 }
