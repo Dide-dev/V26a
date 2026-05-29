@@ -23,13 +23,13 @@ pub struct ClassroomAddData {
 
 impl Validated for ClassroomAddData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.name.len() > CLASSROOM_TITLE_MAX_LENGTH {
+        if self.name.chars().count() > CLASSROOM_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "title",
                 CLASSROOM_TITLE_MAX_LENGTH,
             ));
         }
-        if self.description.len() > CLASSROOM_DESCRIPTION_MAX_LENGTH {
+        if self.description.chars().count() > CLASSROOM_DESCRIPTION_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "description",
                 CLASSROOM_DESCRIPTION_MAX_LENGTH,

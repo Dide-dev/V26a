@@ -37,13 +37,13 @@ pub struct CardData {
 impl Validated for CardData {
     /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.front.len() > CARD_FRONT_MAX_LENGTH {
+        if self.front.chars().count() > CARD_FRONT_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "front",
                 CARD_FRONT_MAX_LENGTH,
             ));
         }
-        if self.back.len() > CARD_BACK_MAX_LENGTH {
+        if self.back.chars().count() > CARD_BACK_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("back", CARD_BACK_MAX_LENGTH));
         }
         Ok(())
@@ -59,7 +59,7 @@ pub struct LibraryCardAddData {
 }
 impl Validated for LibraryCardAddData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.title.len() > CARD_LIBRARY_TITLE_MAX_LENGTH {
+        if self.title.chars().count() > CARD_LIBRARY_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "title",
                 CARD_LIBRARY_TITLE_MAX_LENGTH,
