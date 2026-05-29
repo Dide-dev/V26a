@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+use crate::api_v1::trees::AuthorizeCoAuthorResponse;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::{CardAddData, CardData, CardUpdateData};
@@ -893,5 +894,9 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
         .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
         .await;
 
-    response.assert_status_bad_request();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(
+        response_body,
+        AuthorizeCoAuthorResponse::UsernameDoesNotExist
+    );
 }

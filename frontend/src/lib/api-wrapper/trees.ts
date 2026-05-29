@@ -193,6 +193,18 @@ export function isNullOrEmpty(value: unknown): boolean {
     return value == null || (Array.isArray(value) && value.length === 0);
 }
 
+export type CoAuthorizationSuccess = {
+    type: 'Success';
+};
+
+export type UsernameDoesNotExist = {
+    type: 'UsernameDoesNotExist';
+};
+
+export type UserAlreadyAuthorized = {
+    type: 'UserAlreadyAuthorized';
+};
+
 export function getPaginationAndFilterParams(
     pageOptions: PaginationOptions,
     filterOptions: FilterOptions
@@ -231,7 +243,10 @@ export function getFilteredList(
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, username: string) {
+export function addCoAuthor(
+    treeId: TreeId,
+    username: string
+): Promise<CoAuthorizationSuccess | UsernameDoesNotExist | UserAlreadyAuthorized> {
     return apiCallPostTree(`${treeId}/authorize/${username}`, null);
 }
 

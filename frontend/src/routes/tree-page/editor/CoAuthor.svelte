@@ -4,6 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
+<!--
+    @component
+    Render a pop-up allowing the user to add new co-authors, to be used on the edit-tree page.
+
+    ## Params
+    - `treeId`  - The id of the tree to which the co-authors will be added, corresponding to the tree currently open in the edit-tree page.
+-->
+
 <script lang="ts">
     import { addCoAuthor, type TreeId } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
@@ -17,7 +25,7 @@
         visible = true;
     }
 
-    function cancelEdit() {
+    function closeEdit() {
         coAuthorName = '';
         visible = false;
     }
@@ -37,13 +45,26 @@
 
     let coAuthorName: string = $state('');
     let successfullyAddedCoAuthor: boolean = $state(false);
+    let usernameDoesNotExist: boolean = $state(false);
+    let userAlreadyAuthorized: boolean = $state(false);
 
     async function handleAddCoAuthor() {
-        if (coAuthorName == '') return;
+        if (coAuthorName === '') return;
+        successfullyAddedCoAuthor = false;
+        usernameDoesNotExist = false;
+        userAlreadyAuthorized = false;
 
-        await addCoAuthor(treeId, coAuthorName);
+        let response = await addCoAuthor(treeId, coAuthorName);
 
-        successfullyAddedCoAuthor = true;
+        if (response.type === 'Success') {
+            successfullyAddedCoAuthor = true;
+        } else if (response.type === 'UsernameDoesNotExist') {
+            usernameDoesNotExist = true;
+        } else if (response.type === 'UserAlreadyAuthorized') {
+            userAlreadyAuthorized = true;
+        } else {
+            throw new Error('ERROR: Unexpected output from API.');
+        }
 
         coAuthorName = '';
     }
@@ -64,13 +85,13 @@
     <Popup>
         <div class="mb-3 flex gap-3" data-testid="co-author-popup">
             <div class="w-64">
-                <label
-                    >{m.addCoAuthor()}<input
-                        class="w-full rounded border p-1"
-                        bind:value={coAuthorName}
-                        placeholder={m.examplePlaceholder({ value: m.exampleName() })}
-                    /></label
-                >
+                <label for="coAuthorName">{m.addCoAuthor()}</label>
+                <input
+                    id="coAuthorName"
+                    class="w-full rounded border p-1"
+                    bind:value={coAuthorName}
+                    placeholder={m.examplePlaceholder({ value: m.exampleName() })}
+                />
             </div>
         </div>
         {#if successfullyAddedCoAuthor}
@@ -78,11 +99,16 @@
                 {m.successfulAuthorization()}
             </p>
         {/if}
+        {#if usernameDoesNotExist}
+            <p class="text__error" data-testid="error">{m.invalidAuthorisationTarget()}</p>
+        {/if}
+        {#if userAlreadyAuthorized}
+            <p class="text__error" data-testid="error">{m.userAlreadyAuthorized()}</p>
+        {/if}
         <button
             class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white"
             onclick={handleAddCoAuthor}>{m.addCoAuthor()}</button
         >
-        <button class="cursor-pointer" onclick={cancelEdit}>{m.cancel()}</button>
-        <button class="cursor-pointer" onclick={cancelEdit}>{m.close()}</button>
+        <button class="cursor-pointer" onclick={closeEdit}>{m.close()}</button>
     </Popup>
 {/if}

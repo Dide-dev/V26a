@@ -25,7 +25,9 @@ use axum::extract::Path;
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
+use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
+use utoipa::ToSchema;
 
 use crate::db_structs::Validated;
 use std::collections::HashMap;
@@ -580,14 +582,24 @@ pub async fn get_list(
     Ok(Json(list))
 }
 
+#[derive(Serialize, Deserialize, ToSchema, PartialEq, Eq, Debug)]
+#[serde(tag = "type")]
+pub enum AuthorizeCoAuthorResponse {
+    /// Return body signaling that the user has been successfully added to the tree as co-author.
+    Success,
+    /// Return body signaling that the given username does not correspond with a user in the database.
+    UsernameDoesNotExist,
+    /// Return body signaling that the given user is already a co-author to the tree, or the owner of the tree.
+    UserAlreadyAuthorized,
+}
+
 #[utoipa::path(
     post,
     path = "{tree_id}/authorize/{username}",
     context_path = "/api/v1/trees/",
     responses(
-        (status = 200, description = "Co-author successfully added to the tree."),
-        (status = 400, description = "Tree with given id or user with username cannot be found,
-                                        or tree owner is being authorised."),
+        (status = 200, description = "Successfully attempted to add co-author to tree.", body = AuthorizeCoAuthorResponse, content_type = "application/json"),
+        (status = 400, description = "Tree with given id or user with username cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
@@ -610,14 +622,11 @@ pub async fn get_list(
 /// `username` - The user to become co-author.
 ///
 /// # Returns
-/// Nothing.
+/// [`Success`](AuthorizeCoAuthorResponse::Success)
+/// if the user to be authorized exists, or [`UsernameDoesNotExist`](AuthorizeCoAuthorResponse::UsernameDoesNotExist) otherwise.
+/// if the has not already been authorized, or the owner of the tree, or [`UserAlreadyAuthorized`](AuthorizeCoAuthorResponse::UserAlreadyAuthorized) otherwise.
 ///
 /// # Errors
-/// Returns [`InvalidAuthorisationTarget`](ApiError::InvalidAuthorisationTarget) if the owner of the
-/// tree is being authorized as co-author.
-///
-/// Returns [`MissingUser`](ApiError::MissingUsername) if the given username does not exist.
-///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree to which the user is added as co-author does not exist.
@@ -627,17 +636,17 @@ async fn authorize_co_author(
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Path((tree_id, username)): Path<(i32, String)>,
-) -> Result<(), ApiError> {
+) -> Result<Json<AuthorizeCoAuthorResponse>, ApiError> {
     let Some(user_id) = get_user_by_name(&db, &username).await? else {
-        return Err(ApiError::MissingUsername(username));
+        return Ok(Json(AuthorizeCoAuthorResponse::UsernameDoesNotExist));
     };
 
     let owner_id = get_tree_owner(&db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if user_id == owner_id {
-        return Err(ApiError::InvalidAuthorisationTarget);
+    if user_id == owner_id || is_co_author_of_tree(&db, &tree_id, &user_id).await? {
+        return Ok(Json(AuthorizeCoAuthorResponse::UserAlreadyAuthorized));
     }
 
     // A user can only add a co-author to their own tree, unless they are an admin.
@@ -647,7 +656,7 @@ async fn authorize_co_author(
 
     add_co_author(&db, tree_id, user_id).await?;
 
-    Ok(())
+    Ok(Json(AuthorizeCoAuthorResponse::Success))
 }
 
 #[utoipa::path(
