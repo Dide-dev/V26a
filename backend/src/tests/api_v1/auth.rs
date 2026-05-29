@@ -42,7 +42,7 @@ async fn test_logout_success(db: PgPool) {
     let user_id = register(&server, "Caesar@gmail.com".to_owned()).await;
     login(&server, "Caesar@gmail.com".to_owned()).await;
 
-    let response = server.post(&format!("/auth/logout")).await;
+    let response = server.post("/auth/logout").await;
 
     response.assert_status_ok();
     // Checks if a cookie is unset.
@@ -59,7 +59,7 @@ async fn test_logout_failure(db: PgPool) {
 
     // logout is not possible without a valid session.
     server
-        .post(&format!("/auth/logout"))
+        .post!("/auth/logout")
         .await
         .assert_status_forbidden();
 }
