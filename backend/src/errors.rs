@@ -163,9 +163,9 @@ impl Display for ApiError {
             //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
-            //----------------------//
-            // 429: TOO MANY REQUEST //
-            //----------------------//
+            //------------------------//
+            // 429: TOO MANY REQUESTS //
+            //------------------------//
             ApiError::RateLimitExceeded => write!(f, "You are sending too many requests."),
 
             //----------------------------//
