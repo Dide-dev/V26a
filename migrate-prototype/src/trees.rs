@@ -229,7 +229,7 @@ fn parse_structure(old_format: String) -> Vec<Node> {
     while i != tree.len() {
         let (_, num) = parse_block(tree[i]);
 
-        let (children, new_i) = add_next(&tree, i, 'a');
+        let (children, new_i) = add_next(&tree, i + 1, 'a');
 
         nodes.push(Node {
             card_id: num,
@@ -252,7 +252,7 @@ fn add_next(tree: &Vec<&str>, begin: usize, depth: char) -> (Vec<Node>, usize) {
         let (next_depth, num) = parse_block(tree[begin]);
 
         if next_depth <= depth {
-            return (children, begin + 1);
+            return (children, begin);
         }
         let (node_children, new_begin) = add_next(tree, begin + 1, next_depth);
 

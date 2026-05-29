@@ -14,7 +14,7 @@ use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
     TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
-use crate::db_structs::users::AccountType;
+use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
@@ -169,16 +169,16 @@ async fn test_unpublished_trees(db: PgPool) {
     response.assert_status_unauthorized();
     assert_eq!(response.text(), ApiError::MissingAuthentication.to_string());
 
-    let second_user_email = "second_user@localhost";
-    register(&server, second_user_email.to_owned()).await;
-    login(&server, second_user_email.to_owned()).await;
+    let second_user_data = RegisterData::test_values();
+    register(&server, &second_user_data).await;
+    login(&server, second_user_data.email).await;
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
 
-    let admin_user_email = "admin@localhost";
-    register_admin(&server, conn, admin_user_email.to_owned()).await;
-    login(&server, admin_user_email.to_owned()).await;
+    let admin_user_data = RegisterData::test_values();
+    register_admin(&server, conn, &admin_user_data).await;
+    login(&server, admin_user_data.email).await;
     let response = server.get(&endpoint).await;
     response.assert_status_ok();
 }
@@ -417,13 +417,12 @@ async fn test_remove_card(db: PgPool) {
 #[sqlx::test]
 async fn test_filter_tree_list(db: PgPool) {
     let server = setup(db);
-    let emails = ["test@one".to_owned(), "test@two".to_owned()];
-    // Only take the user_id's.
-    let account_ids = [
-        register(&server, emails[0].clone()).await.0,
-        register(&server, emails[1].clone()).await.0,
-    ];
-    login(&server, emails[0].clone()).await;
+
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let account_id1 = register(&server, &account1).await;
+    let account_id2 = register(&server, &account2).await;
+    login(&server, account1.email.clone()).await;
 
     let trees_data = vec![
         TreeData {
@@ -495,7 +494,7 @@ async fn test_filter_tree_list(db: PgPool) {
         .collect::<Vec<_>>();
     assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
-    login(&server, emails[1].clone()).await;
+    login(&server, account2.email.clone()).await;
     let other_user_trees_data = vec![
         TreeData {
             book_isbn: Some("9780306406157".to_string()),
@@ -554,11 +553,8 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 0
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_ids[0]
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -573,16 +569,13 @@ async fn test_filter_tree_list(db: PgPool) {
         vec![trees_data[1].clone(), trees_data[0].clone()]
     );
 
-    login(&server, emails[0].clone()).await;
+    login(&server, account1.email).await;
 
     // All trees from user 0 using filter
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_ids[0]
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -597,11 +590,8 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 1
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_ids[1]
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id2}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -784,9 +774,11 @@ async fn test_duplicate_tree(db: PgPool) {
     let server = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    let owner_id2 = register(&server, "2@gmail.com".to_owned()).await.0;
-    login(&server, "1@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&server, &account1).await;
+    let owner_id2 = register(&server, &account2).await;
+    login(&server, account1.email).await;
 
     let tree_data = TreeData {
         title: "test".to_owned(),
@@ -808,7 +800,7 @@ async fn test_duplicate_tree(db: PgPool) {
     let response = server.post("/trees/add").json(&tree_add_data).await;
     response.assert_status_ok();
     let id: i32 = response.json();
-    login(&server, "2@gmail.com".to_owned()).await;
+    login(&server, account2.email).await;
 
     let response = server.post("/trees/1/duplicate").await;
     response.assert_status_ok();
@@ -871,12 +863,12 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
     let tree_id: i32 = create_tree(&server).await;
-
-    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
+    let co_author_data = RegisterData::test_values();
+    register(&server, &co_author_data).await;
     server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
-            co_author_register_data.data.name
+            co_author_data.data.name
         ))
         .await;
 
@@ -896,13 +888,12 @@ async fn test_authorize_co_author_success(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
     let tree_id: i32 = create_tree(&server).await;
-
-    let (co_author_id, co_author_register_data) =
-        register(&server, "co_author@email.com".to_owned()).await;
+    let co_author_data = RegisterData::test_values();
+    let co_author_id = register(&server, &co_author_data).await;
     let response = server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
-            co_author_register_data.data.name
+            co_author_data.data.name
         ))
         .await;
 
@@ -920,11 +911,12 @@ async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
     let server = setup_login(db.clone()).await;
 
     let tree_id: i32 = create_tree(&server).await;
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email).await;
 
-    register(&server, "not_tree_owner@email.com".to_owned()).await;
-    login(&server, "not_tree_owner@email.com".to_owned()).await;
-
-    let co_author_register_data = register(&server, "co_author@email.com".to_owned()).await.1;
+    let co_author_register_data = RegisterData::test_values();
+    register(&server, &co_author_register_data).await;
     let response = server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
