@@ -94,6 +94,44 @@ pub async fn add_classroom(
     Ok(id)
 }
 
+/// Get the id of the owner of a classroom.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `classroom_id` - The id of the classroom of which the owner is queried.
+///
+/// # Returns
+/// The id of the owner of the classroom as a [`Some`] if the classroom exists, or a [`None`] if it doesn't.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_classroom_owner(
+    db: impl PgExecutor<'_>,
+    classroom_id: i32,
+) -> Result<Option<i32>, ApiError> {
+    let owner = query!("SELECT owner_id FROM classrooms WHERE id = $1", classroom_id,)
+        .fetch_optional(db)
+        .await?
+        .map(|r| r.owner_id);
+
+    Ok(owner)
+}
+
+/// Adds a lesson to the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `lesson_add_data` - The data for the lesson in the form of [`LessonAddData`].
+///
+/// `classroom_id` - The id of the classroom to which the lesson will belong.
+///
+/// # Returns
+/// The id of the lesson.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_lesson(
     db: &mut PgConnection,
     lesson_add_data: &LessonAddData,

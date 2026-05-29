@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::classrooms::{add_classroom, generate_random_code, add_lesson};
+use crate::db::classrooms::{add_classroom, generate_random_code, add_lesson, get_classroom_owner};
 use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
 use crate::db_structs::session::Claims;
@@ -14,7 +14,8 @@ use crate::{ArcState, get_connection};
 use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
+use crate::db_structs::users::AccountType;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
@@ -63,6 +64,38 @@ async fn add_new_classroom(
     Ok(Json(ClassroomGeneratedData { id, join_code }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/{id}/add-lesson",
+    context_path = "/api/v1/classrooms",
+    responses(
+        (status = 200, description = "Successfully added new lesson."),
+        (status = 400, description = "Classroom with given id cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("classroom_id" = i32, Path),
+    )
+)]
+/// Adds a lesson to the database.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `lesson_add_data` - The data for the lesson in the form of [`LessonAddData`].
+///
+/// `classroom_id` - The id of the classroom to which the lesson needs to belong.
+///
+/// # Returns
+/// The id assigned to the new lesson
+///
+/// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_lesson(
     claims: Claims,
     Extension(db): Extension<PgPool>,
@@ -70,8 +103,44 @@ async fn add_new_lesson(
     Json(lesson_add_data): Json<LessonAddData>,
 ) -> Result<Json<i32>, ApiError> {
     lesson_add_data.validate_inputs()?;
-    //TODO: add permission verification and documentation of db, db_struct, and api
+    // Check if the classroom exists and the user is permitted to perform this action.
+    verify_classroom_permissions(get_connection!(db), classroom_id, claims).await?;
     let id = add_lesson(get_connection!(db), &lesson_add_data, classroom_id).await?;
 
     Ok(Json(id))
+}
+
+/// Checks whether the classroom exists and if it is owned by the user, or if the user is an admin.
+/// As of now this function does not take into account eventual collaborators as this is currently not implemented for classrooms,
+/// this function would need to be updated if this were the case in the future.
+///
+/// # Arguments
+/// `classroom_id` - The id of the classroom whose ownership needs to be verified.
+///
+/// `claims` - The session cookie of the user, used to verify ownership.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to modify the classroom for the given `classroom_id`.
+///
+/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if there is no classroom with `classroom_id`.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn verify_classroom_permissions(
+    db: &mut PgConnection,
+    classroom_id: i32,
+    claims: Claims,
+) -> Result<(), ApiError> {
+    let owner_id = get_classroom_owner(&mut *db, classroom_id)
+        .await?
+        .ok_or(ApiError::MissingClassroom(classroom_id))?;
+    if claims.account_type == AccountType::Admin
+        || claims.sub == owner_id
+    {
+        Ok(())
+    } else {
+        Err(ApiError::NoPermission)
+    }
 }
