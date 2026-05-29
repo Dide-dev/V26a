@@ -139,7 +139,7 @@ pub async fn validate_join_code(db: impl PgExecutor<'_>, join_code: &str) -> Res
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_new_user_to_classroom(
     db: &mut PgConnection,
-    classroom_id: &i32,
+    classroom_id: i32,
     name: &str,
 ) -> Result<i32, ApiError> {
     let mut transaction = (*db).begin().await?;
@@ -191,8 +191,8 @@ pub async fn add_new_user_to_classroom(
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn get_name_by_number(
     db: impl PgExecutor<'_>,
-    classroom_id: &i32,
-    user_id: &i32,
+    classroom_id: i32,
+    user_id: i32,
 ) -> Result<Option<String>, ApiError> {
     let name_record = query!(
         "SELECT name FROM classroom_users WHERE classroom_id = $1 AND id = $2",
@@ -293,11 +293,11 @@ mod tests {
 
         let name = "Gelicenseerd radiozendamateur".to_owned();
 
-        let user_num = add_new_user_to_classroom(get_connection_unwrap!(db), &id, &name).await;
+        let user_num = add_new_user_to_classroom(get_connection_unwrap!(db), id, &name).await;
 
         assert!(user_num.is_ok());
 
-        let found_user_name = get_name_by_number(&db, &id, &user_num.unwrap())
+        let found_user_name = get_name_by_number(&db, id, user_num.unwrap())
             .await
             .unwrap();
 

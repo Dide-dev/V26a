@@ -19,14 +19,3 @@ CREATE TABLE classrooms
     --^ counter for the student id within the classroom, to allow IDs to stay low for the student
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
-
-CREATE TABLE classroom_users
-(
-    id                      SERIAL PRIMARY KEY,
-    classroom_id            INTEGER             NOT NULL,
-    name                    VARCHAR(32)         NOT NULL,
-    --^ name is once again not UNIQUE, not even within a classroom,
-    -- because users are identified by their id_within_classroom in a classroom.
-    id_within_classroom     INTEGER             NOT NULL,
-    FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE
-);

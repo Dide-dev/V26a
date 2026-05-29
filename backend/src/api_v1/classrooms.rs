@@ -128,14 +128,14 @@ async fn classroom_login(
     let (num, name): (i32, String) = match classroom_login_data.username.trim().parse::<i32>() {
         // Username is num.
         Ok(num) => (num, {
-            let name = get_name_by_number(&db, &classroom_id, &num).await?;
+            let name = get_name_by_number(&db, classroom_id, num).await?;
             name.ok_or(ApiError::MissingUser(num))?
         }),
         // Username is name.
         Err(_) => (
             add_new_user_to_classroom(
                 get_connection!(db),
-                &classroom_id,
+                classroom_id,
                 classroom_login_data.username.trim(),
             )
             .await?,

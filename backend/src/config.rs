@@ -73,7 +73,7 @@ impl Config {
             .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
             * 1_048_576; // Mebibytes to bytes
 
-        let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASCROOM_SESSIONS")
+        let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASSROOM_SESSIONS")
             .unwrap_or("10".to_string())
             .parse::<usize>()
             .expect("Failed to parse environment variable MAX_CONCURRENT_CLASCROOM_SESSIONS");
