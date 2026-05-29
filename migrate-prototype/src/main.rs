@@ -221,6 +221,7 @@ fn recover_string(old_str: &str) -> String {
         .replace("â€", "”")
         .replace("â€¢", "•")
         .replace("É¸", "ɸ")
+        .replace("$$", "\n$$\n")
         // Update links to old images
         .replace(r#"src=\""#, "src=")
         .replace(r#"\" alt"#, " alt")

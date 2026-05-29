@@ -104,6 +104,28 @@ pub struct RegisterData {
     pub data: UserData,
 }
 
+#[cfg(test)]
+impl RegisterData {
+    pub fn test_values() -> Self {
+        use rand::RngExt;
+
+        let mut rng = rand::rng();
+        let n: u64 = rng.random();
+
+        RegisterData {
+            email: format!("test{n}@localhost"),
+            password: "4$$wOrd!".to_owned(),
+            data: UserData {
+                name: format!("John_Test_{n}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        }
+    }
+}
+
 impl Validated for RegisterData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
