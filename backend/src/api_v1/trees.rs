@@ -601,7 +601,7 @@ pub enum AuthorizeCoAuthorResponse {
     context_path = "/api/v1/trees/",
     responses(
         (status = 200, description = "Successfully attempted to add co-author to tree.", body = AuthorizeCoAuthorResponse, content_type = "application/json"),
-        (status = 400, description = "Tree with given id or user with username cannot be found."),
+        (status = 400, description = "Tree with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
@@ -624,10 +624,10 @@ pub enum AuthorizeCoAuthorResponse {
 /// `username` - The user to become co-author.
 ///
 /// # Returns
-/// [`Success`](AuthorizeCoAuthorResponse::Success)
-/// if the user to be authorized exists, or [`UsernameDoesNotExist`](AuthorizeCoAuthorResponse::UsernameDoesNotExist) otherwise.
-/// if the has not already been authorized, or the owner of the tree, or [`UserAlreadyAuthorized`](AuthorizeCoAuthorResponse::UserAlreadyAuthorized) otherwise.
-///
+/// [`UsernameDoesNotExist`](AuthorizeCoAuthorResponse::UsernameDoesNotExist) if no user with the corresponding given username can be found, or
+/// [`UserAlreadyAuthorized`](AuthorizeCoAuthorResponse::UserAlreadyAuthorized) if the user has already been authorized as co-author, or is the owner of the tree, otherwise
+/// [`Success`](AuthorizeCoAuthorResponse::Success), meaning the user has successfully been authorized as co-author.
+/// 
 /// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to add a co-author to the tree.
 ///
@@ -639,21 +639,21 @@ async fn authorize_co_author(
     Extension(db): Extension<PgPool>,
     Path((tree_id, username)): Path<(i32, String)>,
 ) -> Result<Json<AuthorizeCoAuthorResponse>, ApiError> {
-    let Some(user_id) = get_user_by_name(&db, &username).await? else {
-        return Ok(Json(AuthorizeCoAuthorResponse::UsernameDoesNotExist));
-    };
-
     let owner_id = get_tree_owner(&db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if user_id == owner_id || is_co_author_of_tree(&db, &tree_id, &user_id).await? {
-        return Ok(Json(AuthorizeCoAuthorResponse::UserAlreadyAuthorized));
-    }
-
     // A user can only add a co-author to their own tree, unless they are an admin.
     if claims.sub != owner_id && claims.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
+    }
+
+    let Some(user_id) = get_user_by_name(&db, &username).await? else {
+        return Ok(Json(AuthorizeCoAuthorResponse::UsernameDoesNotExist));
+    };
+
+    if user_id == owner_id || is_co_author_of_tree(&db, &tree_id, &user_id).await? {
+        return Ok(Json(AuthorizeCoAuthorResponse::UserAlreadyAuthorized));
     }
 
     add_co_author(&db, tree_id, user_id).await?;
