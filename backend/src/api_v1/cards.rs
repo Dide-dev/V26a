@@ -70,7 +70,7 @@ async fn add_new_card(
 ) -> Result<Json<i32>, ApiError> {
     card_data.data.validate_inputs()?;
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_permissions(get_connection!(db), card_data.tree_id, claims).await?;
+    verify_tree_permissions(get_connection!(db), card_data.tree_id, &claims).await?;
 
     let id = add_card(&db, &card_data).await?;
 
@@ -122,7 +122,7 @@ async fn update_existing_card(
     let tree_id = get_tree_of_card(&db, card_data.card_id).await?;
 
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_permissions(get_connection!(db), tree_id, claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
 
     update_card(get_connection!(db), &card_data).await?;
 
@@ -179,7 +179,7 @@ async fn add_card_to_library(
     let tree_id = get_tree_of_card(&db, card_id).await?;
 
     // Verify tree exists and user is owner of tree
-    verify_tree_permissions(get_connection!(db), tree_id, claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
 
     // Retrieves the front and back of the card
     let card_text = get_card_text(&db, card_id).await?;
