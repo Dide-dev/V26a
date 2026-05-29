@@ -128,7 +128,7 @@ async fn add_new_lesson(
 /// Returns [`MissingClassroom`](ApiError::MissingClassroom) if there is no classroom with `classroom_id`.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-async fn verify_classroom_permissions(
+pub async fn verify_classroom_permissions(
     db: &mut PgConnection,
     classroom_id: i32,
     claims: Claims,

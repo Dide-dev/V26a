@@ -155,8 +155,8 @@ pub async fn add_lesson(
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code};
-    use crate::db::test::{initialize_classroom, initialize_classroom_with_data, initialize_db};
+    use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code, get_classroom_owner};
+    use crate::db::test::{initialize_classroom, initialize_db};
     use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query};
@@ -190,6 +190,15 @@ mod tests {
 
         assert_eq!(found_classroom_add_data, classroom_add_data);
         assert_eq!(found_classroom_data.join_code, join_code);
+    }
+
+    #[sqlx::test]
+    async fn test_get_classroom_owner(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
+
+        let found_owner_id = get_classroom_owner(get_connection_unwrap!(db), classroom_id).await.unwrap();
+        assert_eq!(found_owner_id, Some(user_id));
     }
 
     #[sqlx::test]
