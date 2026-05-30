@@ -9,7 +9,7 @@
 use crate::api_v1::classrooms::verify_classroom_permissions;
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
 use crate::db_structs::session::Claims;
-use crate::db_structs::users::AccountType;
+use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_classroom, login, register, setup, setup_login};
@@ -94,9 +94,9 @@ async fn test_new_lesson(db: PgPool) {
     response.assert_status_unauthorized();
     response.assert_text(ApiError::MissingAuthentication.to_string());
 
-    let other_user_email = "ClassroomBandit@ThievesGuildOfAmerica.org";
-    register(&server, other_user_email.to_owned()).await;
-    login(&server, other_user_email.to_owned()).await;
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email).await;
     let response = server
         .post(&format!("/classrooms/{classroom_id}/add-lesson"))
         .json(&lesson_add_data)
