@@ -96,13 +96,13 @@ async fn login(
     };
 
     // The age of a cookie (same for the two cookies)
-    let expires_at: i64 = config.session_duration;
+    let time: i64 = config.session_duration;
 
     create_session(
         &db,
         &token,
         credentials.user_id,
-        Utc::now() + chrono::Duration::seconds(expires_at),
+        Utc::now() + chrono::Duration::seconds(time),
     )
     .await?;
 
@@ -120,13 +120,13 @@ async fn login(
     let cookie = Cookie::build(("session", token))
         .path("/api/")
         .secure(true)
-        .max_age(Duration::seconds(expires_at))
+        .max_age(Duration::seconds(time))
         .http_only(true);
 
     let user_cookie = Cookie::build(("user_info", user_info))
         .path("/")
         .secure(true)
-        .max_age(Duration::seconds(expires_at))
+        .max_age(Duration::seconds(time))
         .http_only(false);
 
     Ok((
