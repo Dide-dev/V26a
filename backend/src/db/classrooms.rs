@@ -8,7 +8,7 @@ use crate::errors::ApiError;
 use chrono::Utc;
 use rand::prelude::*;
 use rand::rngs::SysRng;
-use sqlx::{Connection, PgConnection, PgExecutor, query};
+use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -194,19 +194,13 @@ pub async fn get_name_by_number(
     classroom_id: i32,
     user_id: i32,
 ) -> Result<Option<String>, ApiError> {
-    let name_record = query!(
+    Ok(query_scalar!(
         "SELECT name FROM classroom_users WHERE classroom_id = $1 AND id = $2",
         classroom_id,
         user_id
     )
     .fetch_optional(db)
-    .await?;
-
-    if let Some(name_record) = name_record {
-        return Ok(Some(name_record.name));
-    }
-
-    Ok(None)
+    .await?)
 }
 
 #[cfg(test)]
