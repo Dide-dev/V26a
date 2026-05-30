@@ -20,8 +20,8 @@
     let formCompleted: boolean = $derived(loginData.email !== '' && loginData.password !== '');
 
     const minInputLengths = {
-        email: 0,
-        password: 8
+        email: 3,
+        password: 1 // In the case an old account has a password shorter than the current imposed minimum.
     };
 
     const maxInputLengths = {

@@ -66,7 +66,7 @@
     );
 
     const minInputLengths = {
-        email: 0,
+        email: 3,
         name: 4,
         nickname: 2,
         aboutMe: 0,

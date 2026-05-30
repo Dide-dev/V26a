@@ -19,6 +19,8 @@ pub enum ApiError {
     IllegalName,
     /// An error to return when an input provided is too long for the database.
     InputLengthExceeded(&'static str, usize),
+    /// An error to return when an input provided is too short to be valid.
+    InputLengthNotMet(&'static str, usize),
     /// An error to return when a user tries to authorize themselves as a co-author on their own tree.
     InvalidAuthorisationTarget,
     /// An error to return when an invalid image type is attempted to be put in the database.
@@ -125,6 +127,12 @@ impl Display for ApiError {
                     "Input in field \"{offending_string}\" exceeds the maximum length of {max_length} characters."
                 )
             }
+            ApiError::InputLengthNotMet(offending_string, min_length) => {
+                write!(
+                    f,
+                    "Input in field \"{offending_string}\" does not meet the minimum length of {min_length} characters."
+                )
+            }
             ApiError::InvalidAuthorisationTarget => {
                 write!(f, "Cannot authorize this target.")
             }
@@ -219,6 +227,7 @@ impl ApiError {
         match &self {
             ApiError::IllegalName
             | ApiError::InputLengthExceeded(_, _)
+            | ApiError::InputLengthNotMet(_, _)
             | ApiError::InvalidAuthorisationTarget
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
