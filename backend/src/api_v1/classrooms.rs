@@ -91,10 +91,14 @@ async fn add_new_classroom(
 /// `classroom_id` - The id of the classroom to which the lesson needs to belong.
 ///
 /// # Returns
-/// The id assigned to the new lesson
+/// The id assigned to the new lesson.
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
+///
+/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if the classroom to which the lesson should be added does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add lessons to the classroom.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_lesson(
