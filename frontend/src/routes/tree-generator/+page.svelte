@@ -26,6 +26,7 @@
         type UserGetData,
         type UserInfo
     } from '$lib/api-wrapper/users';
+    import Editor from '$lib/rich-text/Editor.svelte';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 
@@ -265,17 +266,11 @@
             <label for="assignmentText">
                 {m.description()}
             </label>
-            <textarea
-                id="assignmentText"
-                class="input__long_text min-h-25"
-                bind:value={treeData.assignmentText}
-                name="assignment"
-                data-testid="assignment"
-                placeholder={m.examplePlaceholder({ value: m.exampleAssignment() })}
-                minlength={minInputLengths.assignmentText}
-                maxlength={maxInputLengths.assignmentText}
-            ></textarea>
+            <Editor
+                maxLength={maxInputLengths.assignmentText}
+                bind:valueText={treeData.assignmentText}
+            />
         </div>
-        <button>{m.createTree()}</button>
+        <button type="submit">{m.createTree()}</button>
     </form>
 </div>

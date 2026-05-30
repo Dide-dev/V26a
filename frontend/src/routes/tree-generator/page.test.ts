@@ -5,7 +5,7 @@
 */
 
 import { render, screen } from '@testing-library/svelte';
-import { test, vi, afterEach, expect } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
@@ -28,6 +28,9 @@ vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
 vi.mock('$app/navigation', () => ({
     goto: vi.fn()
 }));
+beforeEach(() => {
+    Element.prototype.getAnimations = () => [];
+});
 afterEach(() => {
     vi.resetAllMocks();
 });
@@ -63,8 +66,6 @@ test('Submission with correct data', async () => {
     await user.type(chapterInput, 'chapter 1');
     const excerciseInput = screen.getByTestId('exercise');
     await user.type(excerciseInput, 'exercise 1');
-    const assignmentTextInput = screen.getByTestId('assignment');
-    await user.type(assignmentTextInput, 'assignment text');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
     expect(addTree).toHaveBeenCalledWith(
@@ -78,7 +79,6 @@ test('Submission with correct data', async () => {
             bookIsbn: '9781408883464',
             bookChapter: 'chapter 1',
             bookExercise: 'exercise 1',
-            assignmentText: 'assignment text',
             published: false
         })
     );

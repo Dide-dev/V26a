@@ -251,7 +251,8 @@
             gap: var(--spacing);
         }
 
-        button {
+        button[type='submit'],
+        button[type='reset'] {
             padding: var(--spacing-padding-minor);
             border-radius: var(--radius-md);
             border-width: 2px;
@@ -263,8 +264,8 @@
             border-color: currentColor;
         }
 
-        &.completed button,
-        button.always__active {
+        &.completed button[type='submit'],
+        button[type='reset'] {
             color: var(--color-black);
             background-color: var(--color-neutral-200);
             border-color: var(--color-neutral-600);

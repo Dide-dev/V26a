@@ -18,6 +18,7 @@
         type TreeId,
         type TreeLinkedData
     } from '$lib/api-wrapper/trees';
+    import Editor from '$lib/rich-text/Editor.svelte';
     import { tryParseISBN, tryParseTags } from '$lib/treeMetadata';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
@@ -35,6 +36,13 @@
     onMount(async () => {
         languages = await getAllLanguages();
         subjects = await getAllSubjects();
+    });
+
+    // This is used to work around the fact that the Editor component does not support
+    // oninput handlers like regular html elements.
+    $effect(() => {
+        if (treeData.assignmentText !== prevTreeData.assignmentText)
+            inputsChanged.assignmentChanged = true;
     });
 
     let inputsChanged = $state({
@@ -131,11 +139,11 @@
     }
 
     // Restores treeData to its original value.
-    function cancelEdit(): boolean {
+    function cancelEdit(e: MouseEvent) {
+        e.preventDefault();
         treeData = { ...prevTreeData };
         visible = false;
         resetInputStates();
-        return false;
     }
 
     function onEditMetadataButtonClick() {
@@ -236,20 +244,10 @@
                     </div>
                     <div>
                         <label for="assignment">{m.assignment()}</label>
-                        <textarea
-                            id="assignment"
-                            class={[
-                                !inputsChanged.assignmentChanged && 'inactive',
-                                'input__long_text',
-                                'w-full',
-                                'min-h-30'
-                            ]}
-                            bind:value={treeData.assignmentText}
-                            placeholder={m.examplePlaceholder({ value: m.exampleAssignment() })}
-                            oninput={() => {
-                                inputsChanged.assignmentChanged = true;
-                            }}
-                        ></textarea>
+                        <Editor
+                            maxLength={maxInputLengths.assignmentText}
+                            bind:valueText={treeData.assignmentText}
+                        />
                     </div>
                     <div>
                         <label for="language">{m.language()} *</label>
@@ -434,7 +432,7 @@
             </div>
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
                 <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
-                <button class="always__active" onclick={cancelEdit}>{m.cancel()}</button>
+                <button type="reset" onclick={cancelEdit}>{m.cancel()}</button>
             </div>
         </form>
     </Popup>

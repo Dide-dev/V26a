@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/svelte';
 import { userEvent } from '@testing-library/user-event';
-import { expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 import MetaData from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 
@@ -46,6 +46,10 @@ vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
 vi.mock('$app/state', () => ({
     page: { url: { searchParams: { get: () => '1' } } }
 }));
+
+beforeEach(() => {
+    Element.prototype.getAnimations = () => [];
+});
 
 test('dropdown is hidden by default', () => {
     render(MetaData);

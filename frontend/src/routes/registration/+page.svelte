@@ -257,6 +257,6 @@
                 </label>
             </div>
         </div>
-        <button>{m.register()}</button>
+        <button type="submit">{m.register()}</button>
     </form>
 </div>
