@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::db::cards::duplicate_card;
 use crate::db_structs::Validated;
 use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
@@ -14,7 +15,7 @@ use crate::limits::{
 };
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::{FromRow, Row};
+use sqlx::{FromRow, PgConnection, Row};
 use std::collections::BTreeMap;
 use utoipa::openapi::{ObjectBuilder, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
@@ -149,6 +150,26 @@ pub struct Node {
     pub children: Vec<Node>,
 }
 
+impl Node {
+    /// Duplicate the card in the database and all children cards.
+    ///
+    /// # Returns
+    /// The new duplicate `Node` with the new `card_id` and the new children as a [`Node`].
+    pub async fn duplicate(&self, db: &mut PgConnection, tree_id: i32) -> Result<Self, ApiError> {
+        let mut duplicate_children = Vec::with_capacity(self.children.len());
+        for child in &self.children {
+            let child = Box::pin(child.duplicate(&mut *db, tree_id)).await?;
+            duplicate_children.push(child);
+        }
+        let new_id = duplicate_card(&mut *db, self.card_id, tree_id).await?;
+
+        Ok(Node {
+            card_id: new_id,
+            children: duplicate_children,
+        })
+    }
+}
+
 // We have to define this ourselves instead of simply deriving it,
 // because of the cyclic definition of `Node`.
 impl PartialSchema for Node {
@@ -266,6 +287,7 @@ pub struct TreeData {
     pub published: bool,
 }
 
+#[cfg(test)]
 impl Default for TreeData {
     fn default() -> Self {
         Self {
@@ -311,25 +333,25 @@ impl FromRow<'_, PgRow> for TreeData {
 impl Validated for TreeData {
     /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.title.len() > TREE_TITLE_MAX_LENGTH {
+        if self.title.chars().count() > TREE_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "title",
                 TREE_TITLE_MAX_LENGTH,
             ));
         }
-        if self.description.len() > TREE_DESCRIPTION_MAX_LENGTH {
+        if self.description.chars().count() > TREE_DESCRIPTION_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "description",
                 TREE_DESCRIPTION_MAX_LENGTH,
             ));
         }
-        if self.book_name.len() > TREE_BOOK_NAME_MAX_LENGTH {
+        if self.book_name.chars().count() > TREE_BOOK_NAME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookName",
                 TREE_BOOK_NAME_MAX_LENGTH,
             ));
         }
-        if self.book_edition.len() > TREE_BOOK_EDITION_MAX_LENGTH {
+        if self.book_edition.chars().count() > TREE_BOOK_EDITION_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookEdition",
                 TREE_BOOK_EDITION_MAX_LENGTH,
@@ -338,26 +360,26 @@ impl Validated for TreeData {
         if self
             .book_isbn
             .as_ref()
-            .is_some_and(|s| s.len() > TREE_BOOK_ISBN_MAX_LENGTH)
+            .is_some_and(|s| s.chars().count() > TREE_BOOK_ISBN_MAX_LENGTH)
         {
             return Err(ApiError::InputLengthExceeded(
                 "bookIsbn",
                 TREE_BOOK_ISBN_MAX_LENGTH,
             ));
         }
-        if self.book_chapter.len() > TREE_BOOK_CHAPTER_MAX_LENGTH {
+        if self.book_chapter.chars().count() > TREE_BOOK_CHAPTER_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookChapter",
                 TREE_BOOK_CHAPTER_MAX_LENGTH,
             ));
         }
-        if self.book_exercise.len() > TREE_BOOK_EXERCISE_MAX_LENGTH {
+        if self.book_exercise.chars().count() > TREE_BOOK_EXERCISE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "bookExercise",
                 TREE_BOOK_EXERCISE_MAX_LENGTH,
             ));
         }
-        if self.assignment_text.len() > TREE_ASSIGNMENT_MAX_LENGTH {
+        if self.assignment_text.chars().count() > TREE_ASSIGNMENT_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "assignmentText",
                 TREE_ASSIGNMENT_MAX_LENGTH,

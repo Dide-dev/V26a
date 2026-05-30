@@ -135,6 +135,9 @@
     "exampleBookChapter": "VII",
     "exampleExercise": "2",
     "exampleAssignment": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+    "writtenBy": "written by {name}",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "noAccount": "No account yet? Register for an account here.",
     "invalidISBN": "Please enter a valid ISBN of length 10 or 13",
     "general": "General",
@@ -150,6 +153,12 @@
     "account": "Account",
     "admin": "Admin",
     "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
+    "classroom": "Classroom",
+    "classroomAdd": "Add classroom",
+    "classroomDashboard": "Dashboard",
+    "classroomName": "Name of classroom",
+    "exampleClassroomName": "Math 101",
+    "exampleClassroomDescription": "Welcome students, in this classroom you will learn more about mathematical heuristic trees.",
     "owner": "Owner",
     "heuristicTrees": "Heuristic trees"
 }

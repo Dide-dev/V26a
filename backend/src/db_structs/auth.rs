@@ -20,7 +20,7 @@ pub struct LoginRequestBody {
 
 impl Validated for LoginRequestBody {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.email.len() > EMAIL_MAX_LENGTH {
+        if self.email.chars().count() > EMAIL_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
         }
         if self.password.len() > PASSWORD_MAX_LENGTH {

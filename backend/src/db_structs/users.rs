@@ -29,16 +29,16 @@ pub struct UserData {
 impl Validated for UserData {
     /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.name.len() > USER_NAME_MAX_LENGTH {
+        if self.name.chars().count() > USER_NAME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("name", USER_NAME_MAX_LENGTH));
         }
-        if self.nickname.len() > USER_NICKNAME_MAX_LENGTH {
+        if self.nickname.chars().count() > USER_NICKNAME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "nickname",
                 USER_NICKNAME_MAX_LENGTH,
             ));
         }
-        if self.about_me.len() > USER_ABOUT_ME_MAX_LENGTH {
+        if self.about_me.chars().count() > USER_ABOUT_ME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "aboutMe",
                 USER_ABOUT_ME_MAX_LENGTH,
@@ -65,11 +65,33 @@ pub struct RegisterData {
     pub data: UserData,
 }
 
+#[cfg(test)]
+impl RegisterData {
+    pub fn test_values() -> Self {
+        use rand::RngExt;
+
+        let mut rng = rand::rng();
+        let n: u64 = rng.random();
+
+        RegisterData {
+            email: format!("test{n}@localhost"),
+            password: "4$$wOrd!".to_owned(),
+            data: UserData {
+                name: format!("John_Test_{n}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        }
+    }
+}
+
 impl Validated for RegisterData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
 
-        if self.email.len() > EMAIL_MAX_LENGTH {
+        if self.email.chars().count() > EMAIL_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
         }
         if self.password.len() > PASSWORD_MAX_LENGTH {
@@ -104,7 +126,7 @@ pub struct AdminUpdateData {
 impl Validated for AdminUpdateData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
-        if self.email.len() > EMAIL_MAX_LENGTH {
+        if self.email.chars().count() > EMAIL_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
         }
         Ok(())
@@ -220,6 +242,16 @@ impl FromStr for UserLanguage {
             "nl" => Ok(UserLanguage::Nl),
             "en" => Ok(UserLanguage::En),
             _ => Err(ApiError::InvalidDataFound),
+        }
+    }
+}
+
+impl UserLanguage {
+    /// Localize 'Copy of' string according to user language.
+    pub fn to_copy_of_text(&self) -> &str {
+        match &self {
+            UserLanguage::Nl => "Kopie van",
+            UserLanguage::En => "Copy of",
         }
     }
 }

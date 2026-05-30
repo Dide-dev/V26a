@@ -4,7 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-CREATE TABLE co_authors(
+CREATE TABLE co_authors
+(
     tree_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     PRIMARY KEY (tree_id, user_id),
