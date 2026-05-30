@@ -20,12 +20,11 @@ use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
-use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
+use crate::db_structs::users::RegisterData;
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use percent_encoding::percent_decode_str;
-use rand::RngExt;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
@@ -67,20 +66,7 @@ fn setup(db: PgPool) -> TestServer {
 ///
 /// # Returns
 /// An i32 representing the id of the user created.
-async fn register(test_server: &TestServer, email: String) -> (i32, RegisterData) {
-    let mut rng = rand::rng();
-    let n: u64 = rng.random();
-    let register_data = RegisterData {
-        email,
-        password: "a$$word".to_string(),
-        data: UserData {
-            name: format!("John_Test_{n}"),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::En,
-        },
-    };
+async fn register(test_server: &TestServer, register_data: &RegisterData) -> i32 {
     let response = test_server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
 
@@ -90,7 +76,7 @@ async fn register(test_server: &TestServer, email: String) -> (i32, RegisterData
         panic!("Something unexpected failed while adding a user")
     };
 
-    (user_id, register_data)
+    user_id
 }
 
 /// Creates an admin account with the given [`TestServer`]
@@ -107,9 +93,9 @@ async fn register(test_server: &TestServer, email: String) -> (i32, RegisterData
 async fn register_admin(
     test_server: &TestServer,
     db: impl PgExecutor<'_>,
-    email: String,
-) -> (i32, RegisterData) {
-    let (user_id, register_data) = register(test_server, email).await;
+    register_data: &RegisterData,
+) -> i32 {
+    let user_id = register(test_server, register_data).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -119,7 +105,7 @@ async fn register_admin(
     .await
     .unwrap();
 
-    (user_id, register_data)
+    user_id
 }
 
 /// Log in as a user on the [`TestServer`], setting the proper cookie for usage with protected endpoints.
@@ -133,7 +119,7 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
         .post("/auth/login")
         .json(&LoginRequestBody {
             email,
-            password: "a$$word".to_string(),
+            password: RegisterData::test_values().password,
         })
         .await;
     response.assert_status_ok();
@@ -152,9 +138,9 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
 async fn setup_login(db: PgPool) -> TestServer {
     let server = setup(db);
 
-    let test_email = "testing@gmail.com".to_owned();
-    register(&server, test_email.clone()).await;
-    login(&server, test_email).await;
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email).await;
 
     server
 }
@@ -204,7 +190,7 @@ async fn create_classroom(test_server: &TestServer) -> i32 {
 #[cfg(test)]
 mod tests {
     use crate::db_structs::session::InfoCookieData;
-    use crate::db_structs::users::AccountType;
+    use crate::db_structs::users::{AccountType, RegisterData};
     use crate::get_connection_unwrap;
     use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
     use sqlx::PgPool;
@@ -213,9 +199,9 @@ mod tests {
     async fn test_normal_login(db: PgPool) {
         let server = setup(db);
 
-        let user_email = "user@localhost";
-        register(&server, user_email.to_owned()).await;
-        let res = login(&server, user_email.to_owned()).await;
+        let register_data = RegisterData::test_values();
+        register(&server, &register_data).await;
+        let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Author);
@@ -226,9 +212,9 @@ mod tests {
         let conn = get_connection_unwrap!(db);
         let server = setup(db);
 
-        let admin_email = "admin@localhost";
-        register_admin(&server, conn, admin_email.to_owned()).await;
-        let res = login(&server, admin_email.to_owned()).await;
+        let register_data = RegisterData::test_values();
+        register_admin(&server, conn, &register_data).await;
+        let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Admin);
