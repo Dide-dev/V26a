@@ -38,15 +38,6 @@ pub struct LoginResponse {
     pub succeeded: bool,
 }
 
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie.
-///
-/// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
-///
-/// # Error
-/// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 #[utoipa::path(
     post,
     path = "/login",
@@ -57,7 +48,7 @@ pub struct LoginResponse {
         (status = 500, description = "Internal server error."),
     ),
 )]
-/// Login to an account if the given credentials are valid.
+/// Login to an account if the given credentials are valid. It takes a [`LoginRequestBody`], and on success sets a session cookie.
 ///
 /// # Arguments
 /// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
@@ -67,7 +58,7 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException), [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,
@@ -103,14 +94,19 @@ async fn login(
         let mut rng = rand::rng();
         Alphanumeric.sample_string(&mut rng, 64)
     };
-    let expires_at = Utc::now() + chrono::Duration::seconds(config.session_duration);
 
-    create_session(&db, &token, credentials.user_id, expires_at).await?;
+    // The age of a cookie (same for the two cookies)
+    let expires_at: i64 = config.session_duration;
+
+    create_session(
+        &db,
+        &token,
+        credentials.user_id,
+        Utc::now() + chrono::Duration::seconds(expires_at),
+    )
+    .await?;
 
     let user_info = serde_json::to_string(&user_info_cookie)?;
-
-    // Age of a cookie (same for the two cookies)
-    let time = Duration::seconds(config.session_duration);
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
@@ -124,13 +120,13 @@ async fn login(
     let cookie = Cookie::build(("session", token))
         .path("/api/")
         .secure(true)
-        .max_age(time)
+        .max_age(Duration::seconds(expires_at))
         .http_only(true);
 
     let user_cookie = Cookie::build(("user_info", user_info))
         .path("/")
         .secure(true)
-        .max_age(time)
+        .max_age(Duration::seconds(expires_at))
         .http_only(false);
 
     Ok((
@@ -166,14 +162,10 @@ async fn login(
 ///
 /// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete the session.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn logout(
     mut jar: CookieJar,
     Extension(db): Extension<PgPool>,
 ) -> Result<CookieJar, ApiError> {
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
-
     let token = jar
         .get("session")
         .ok_or(ApiError::NoPermission)?
@@ -181,17 +173,12 @@ async fn logout(
         .to_string();
 
     // Unvalidate the session.
-    delete_session(&mut *transaction, &token).await?;
+    delete_session(&db, &token).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     jar = jar
         .remove(Cookie::from("session"))
         .remove(Cookie::from("user_info"));
-
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
 
     Ok(jar)
 }
