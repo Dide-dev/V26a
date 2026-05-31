@@ -5,10 +5,11 @@
 */
 
 use crate::db_structs::users::AccountType;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
+/// The claims specifies the subject (user id) and the
 /// expiration time.
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -29,4 +30,12 @@ pub struct InfoCookieData {
     pub nickname: String,
     pub sub: i32,
     pub account_type: AccountType,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Session {
+    pub token: String,
+    pub user_id: i32,
+    pub expires_at: DateTime<Utc>,
 }

@@ -47,7 +47,7 @@ async fn test_logout_success(db: PgPool) {
     let response = server.post("/auth/logout").await;
 
     response.assert_status_ok();
-    // Checks if a cookie is unset.
+    // Checks if a header exists that will unset the cookie.
     assert!(response.headers().contains_key("set-cookie"));
 
     // Check that the session is unvalidated.

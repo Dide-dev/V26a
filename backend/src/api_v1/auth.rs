@@ -16,8 +16,6 @@ use axum::extract::State;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
-use chrono::Utc;
-use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use time::Duration;
@@ -66,7 +64,6 @@ async fn login(
     State(state): State<ArcState>,
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
-    let config = &state.config;
     login_request.validate_inputs()?;
 
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
@@ -82,31 +79,16 @@ async fn login(
 
     let user_data = get_user(&db, credentials.user_id).await?;
 
-    let user_info_cookie = InfoCookieData {
+    let user_info = InfoCookieData {
         name: user_data.data.name,
         nickname: user_data.data.nickname,
         sub: credentials.user_id,
         account_type: credentials.account_type,
     };
 
-    // Create the authorization token.
-    let token = {
-        let mut rng = rand::rng();
-        Alphanumeric.sample_string(&mut rng, 64)
-    };
+    let session = create_session(&db, credentials.user_id, state.config.session_duration).await?;
 
-    // The age of a cookie (same for the two cookies)
-    let time: i64 = config.session_duration;
-
-    create_session(
-        &db,
-        &token,
-        credentials.user_id,
-        Utc::now() + chrono::Duration::seconds(time),
-    )
-    .await?;
-
-    let user_info = serde_json::to_string(&user_info_cookie)?;
+    let user_info_serialised = serde_json::to_string(&user_info)?;
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
@@ -117,20 +99,23 @@ async fn login(
     // `MaxAge`: After this much time has passed, the browser will automatically delete the cookie.
     // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
 
-    let cookie = Cookie::build(("session", token))
+    // The age of a cookie (same for the two cookies)
+    let time = Duration::seconds(state.config.session_duration);
+
+    let cookie = Cookie::build(("session", session.token))
         .path("/api/")
         .secure(true)
-        .max_age(Duration::seconds(time))
+        .max_age(time)
         .http_only(true);
 
-    let user_cookie = Cookie::build(("user_info", user_info))
+    let user_info_cookie = Cookie::build(("user_info", user_info_serialised))
         .path("/")
         .secure(true)
-        .max_age(Duration::seconds(time))
+        .max_age(time)
         .http_only(false);
 
     Ok((
-        jar.add(cookie).add(user_cookie),
+        jar.add(cookie).add(user_info_cookie),
         Json(LoginResponse { succeeded: true }),
     ))
 }

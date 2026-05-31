@@ -1,7 +1,8 @@
-use crate::db_structs::session::Claims;
+use crate::db_structs::session::{Claims, Session};
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
+use rand::distr::{Alphanumeric, SampleString};
 use sqlx::{PgExecutor, query};
 use std::str::FromStr;
 
@@ -47,8 +48,6 @@ pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `token` - The opaque session token to store.
-///
 /// `user_id` - The user this session belongs to.
 ///
 /// `expires_at` - When the session expires.
@@ -57,10 +56,16 @@ pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn create_session(
     db: impl PgExecutor<'_>,
-    token: &str,
     user_id: i32,
-    expires_at: DateTime<Utc>,
-) -> Result<(), ApiError> {
+    session_duration: i64,
+) -> Result<Session, ApiError> {
+    // Create the authorization token. The opaque session token to store.
+    let token = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
+    let expires_at = Utc::now() + chrono::Duration::seconds(session_duration);
+
     query!(
         "INSERT INTO session (token, user_id, expires_at) VALUES ($1, $2, $3)",
         token,
@@ -70,7 +75,11 @@ pub async fn create_session(
     .execute(db)
     .await?;
 
-    Ok(())
+    Ok(Session {
+        token,
+        user_id,
+        expires_at,
+    })
 }
 
 /// Delete a session from the database.
@@ -90,7 +99,7 @@ pub async fn delete_session(db: impl PgExecutor<'_>, token: &str) -> Result<(), 
     Ok(())
 }
 
-/// Delete all sessions of an user from the database.
+/// Delete all sessions of a user from the database.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -116,14 +125,10 @@ mod tests {
     #[sqlx::test]
     async fn test_get_session(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
-        let expires_at = Utc::now() + chrono::Duration::hours(1);
-        let token = "donut-token";
 
-        create_session(&db, token, user_id, expires_at)
-            .await
-            .unwrap();
+        let session = create_session(&db, user_id, 3600).await.unwrap();
 
-        let claims = get_session(&db, token).await.unwrap().unwrap();
+        let claims = get_session(&db, &session.token).await.unwrap().unwrap();
 
         // Validates if the user is in claims, meaning the session is returned if it is true.
         assert_eq!(claims.sub, user_id);
@@ -132,16 +137,12 @@ mod tests {
     #[sqlx::test]
     async fn test_create_session(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
-        let expires_at = Utc::now() + chrono::Duration::hours(1);
-        let token = "test-token";
 
-        create_session(&db, token, user_id, expires_at)
-            .await
-            .unwrap();
+        let session = create_session(&db, user_id, 3600).await.unwrap();
 
         let row = query!(
             "SELECT token, user_id, expires_at FROM session WHERE token = $1",
-            token
+            session.token
         )
         .fetch_one(&db)
         .await
@@ -154,39 +155,30 @@ mod tests {
     #[sqlx::test]
     async fn test_delete_session(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
-        let expires_at = Utc::now() + chrono::Duration::hours(1);
-        let token = "test-token";
 
-        create_session(&db, token, user_id, expires_at)
-            .await
-            .unwrap();
-        delete_session(&db, token).await.unwrap();
+        let session = create_session(&db, user_id, 3600).await.unwrap();
 
-        let row = get_session(&db, token).await.unwrap();
+        delete_session(&db, &session.token).await.unwrap();
 
-        // Deleting the session is equal to deleting a row of session table. So no row should be present.
-        assert!(row.is_none());
+        let claims: Option<Claims> = get_session(&db, &session.token).await.unwrap();
+
+        assert!(claims.is_none());
     }
 
     #[sqlx::test]
     async fn test_delete_all_sessions(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
-        let expires_at = Utc::now() + chrono::Duration::hours(1);
 
-        create_session(&db, "token-1", user_id, expires_at)
-            .await
-            .unwrap();
-        create_session(&db, "token-2", user_id, expires_at)
-            .await
-            .unwrap();
+        create_session(&db, user_id, 3600).await.unwrap();
+        create_session(&db, user_id, 3600).await.unwrap();
 
         delete_all_sessions(&db, user_id).await.unwrap();
 
-        let rows1 = get_session(&db, "token-1").await.unwrap();
-        let rows2 = get_session(&db, "token-2").await.unwrap();
+        let claims1 = get_session(&db, "token-1").await.unwrap();
+        let claims2 = get_session(&db, "token-2").await.unwrap();
 
         // Deleting multiple sessions would result in multiple rows being empty.
-        assert!(rows1.is_none());
-        assert!(rows2.is_none());
+        assert!(claims1.is_none());
+        assert!(claims2.is_none());
     }
 }
