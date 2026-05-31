@@ -77,6 +77,7 @@
     "invalidCredentials": "Email or password is invalid. Please try again.",
     "passwordsNotTheSame": "Passwords are not the same.",
     "profile": "Profile",
+    "profileOf": "Profile of user {id}",
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
     "add": "Add",
