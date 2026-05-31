@@ -114,7 +114,10 @@
         tagsInputError = null;
     }
 
-    async function saveData() {
+    async function saveData(e: SubmitEvent) {
+        // This prevents the default event handler from clearing the page's search parameters.
+        e.preventDefault();
+
         if (!formChanged) return;
 
         let newData: TreeData = { ...treeData };
@@ -130,11 +133,11 @@
             tagsInputError = result;
             return;
         }
-        treeData.tags = result;
+        newData.tags = result;
 
         await updateTreeMetaData({ id: treeId, newData });
         visible = false;
-        prevTreeData = { ...treeData };
+        prevTreeData = { ...newData };
         resetInputStates();
     }
 

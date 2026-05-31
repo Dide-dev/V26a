@@ -88,16 +88,14 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            // TODO: redirect to tree list
-            await goto(appLink('/'));
+            await goto(appLink('/all-trees'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            // TODO: redirect to tree list
-            await goto(appLink('/'));
+            await goto(appLink('/all-trees'));
             return;
         }
 
