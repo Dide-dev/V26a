@@ -23,6 +23,9 @@ export function tryParseTags(tags: string): string[] | string {
     if (list.some((t) => /\s/.test(t))) {
         return m.noWhitespaceInTags();
     }
+    if (list.some((t) => !/^[a-zA-Z0-9._-]+$/.test(t))) {
+        return m.validTagCharacters();
+    }
     return list;
 }
 

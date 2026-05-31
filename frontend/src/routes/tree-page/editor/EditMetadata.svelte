@@ -78,7 +78,7 @@
     );
 
     let isbnInvalid: boolean = $state(false);
-    let tagsInputError: string | null = $state(null);
+    let tagsInputError: string = $state('');
     let tagsInput: string = $state(prevTreeData.tags.join(', '));
     let treeData: TreeData = $state({
         title: prevTreeData.title,
@@ -111,7 +111,7 @@
         inputsChanged.assignmentChanged = false;
         inputsChanged.publishedChanged = false;
         isbnInvalid = false;
-        tagsInputError = null;
+        tagsInputError = '';
     }
 
     async function saveData(e: SubmitEvent) {
@@ -162,7 +162,7 @@
 
         // The form submit keyboard shortcut
         if (event.ctrlKey && event.key == 'Enter') {
-            saveData();
+            saveData(new SubmitEvent('submit'));
         }
     }
 </script>
@@ -212,7 +212,11 @@
                         <div class="input__container">
                             <input
                                 id="tags"
-                                class={[!inputsChanged.tagsChanged && 'inactive', 'input__text']}
+                                class={[
+                                    !inputsChanged.tagsChanged && 'inactive',
+                                    tagsInputError !== '' && 'error',
+                                    'input__text'
+                                ]}
                                 type="text"
                                 bind:value={tagsInput}
                                 placeholder={m.examplePlaceholder({ value: m.exampleTags() })}
@@ -358,7 +362,7 @@
                                 ]}
                                 type="text"
                                 bind:value={treeData.bookAuthor}
-                                placeholder={m.examplePlaceholder({ value: m.exampleName() })}
+                                placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
                                 oninput={() => {
                                     inputsChanged.bookAuthorChanged = true;
                                 }}

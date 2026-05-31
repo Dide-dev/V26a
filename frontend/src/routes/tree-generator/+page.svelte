@@ -48,7 +48,7 @@
     });
 
     let tagsInput: string = $state('');
-    let tagsInputError: string | null = $state(null);
+    let tagsInputError: string = $state('');
     let treeData: TreeData = $state({
         title: '',
         description: '',
@@ -129,7 +129,7 @@
             <label for="tags">{m.tags()}</label>
             <input
                 id="tags"
-                class="input__text"
+                class={[tagsInputError !== '' && 'error', 'input__text']}
                 bind:value={tagsInput}
                 name="tags"
                 type="text"
@@ -208,7 +208,7 @@
                 name="bookAuthor"
                 type="text"
                 data-testid="bookAuthor"
-                placeholder={m.examplePlaceholder({ value: m.exampleName() })}
+                placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
                 minlength={minInputLengths.bookAuthor}
                 maxlength={maxInputLengths.bookAuthor}
             />
