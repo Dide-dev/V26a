@@ -154,7 +154,10 @@
     "exampleClassroomDescription": "Welcome students, in this classroom you will learn more about mathematical heuristic trees.",
     "owner": "Owner",
     "heuristicTrees": "Heuristic trees",
-    "numberOfFeedback": "How much feedback per page",
     "noFeedbackFound": "No feedback found",
-    "feedbackAddDate": "Date given"
+    "feedbackAddDate": "Date submitted",
+    "numberPerPage": "Number of {n} per page:",
+    "feedbackEntries": "feedback entries",
+    "users": "users",
+    "treesUncapitalized": "trees"
 }

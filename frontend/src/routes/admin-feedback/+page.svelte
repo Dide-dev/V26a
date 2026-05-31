@@ -57,7 +57,7 @@
     <div class="flex-col">
         <!-- Change the number of feedback entries per page -->
         <label>
-            {m.numberOfFeedback()}
+            {m.numberPerPage({ n: m.feedbackEntries() })}
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
