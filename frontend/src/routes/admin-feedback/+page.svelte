@@ -21,10 +21,15 @@
     });
 
     let feedbackListResponse: null | FeedbackListResponse = $state(null);
+    let expanded = $state<Record<number, boolean>>({});
+
+    function getFeedbackText(feedback: string, expanded: boolean) {
+        return expanded || feedback.length <= 200 ? feedback : feedback.slice(0, 200) + '...';
+    }
 
     let prevPageExists = $derived(thisPage > 1);
     let nextPageExists = $derived.by(() => {
-        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        // For some reason svelte does not understand the type of feedbackListResponse so we have to manually cast it.
         const total = (feedbackListResponse as FeedbackListResponse | null)?.feedbackTotal ?? 0;
         return thisPage < calcTotalPages(total, pageSizeNumber);
     });
@@ -91,7 +96,7 @@
             <tbody>
                 {#each feedbackListResponse?.feedback as feedback (feedback.feedbackId)}
                     <tr>
-                        <td class="min-w-5 pr-4 align-text-top wrap-anywhere">
+                        <td class="min-w-10 pr-4 align-text-top wrap-anywhere">
                             {#if feedback.email == '' || feedback.email == null}
                                 -
                             {:else}
@@ -101,8 +106,19 @@
                                 >
                             {/if}
                         </td>
-                        <td class="max-w-125 pr-4 align-text-top wrap-anywhere"
-                            >{feedback.feedback}</td
+                        <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere">
+                            {getFeedbackText(feedback.feedback, expanded[feedback.feedbackId])}
+                            {#if feedback.feedback.length > 200}
+                                <button
+                                    onclick={() => {
+                                        expanded[feedback.feedbackId] =
+                                            !expanded[feedback.feedbackId];
+                                    }}
+                                    class="text__link"
+                                >
+                                    {expanded[feedback.feedbackId] ? m.showLess() : m.showMore()}
+                                </button>
+                            {/if}</td
                         >
                         <td class="pr-4 align-text-top">
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy -->
