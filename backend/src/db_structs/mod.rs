@@ -90,9 +90,87 @@ pub fn validate_email(email: &str) -> Result<(), ApiError> {
     if email.chars().count() < EMAIL_MIN_LENGTH {
         return Err(ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH));
     }
-    if email.split_terminator('@').count() < 2 {
+    if email.split_terminator('@').count() < 2 || email.starts_with('@') {
         return Err(ApiError::IllegalEmailAddress);
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
+    #[test]
+    fn test_validate_password() {
+        let valid_data = RegisterData::test_values();
+
+        let response = valid_data.validate_inputs();
+
+        assert!(response.is_ok());
+
+        let mut invalid_data = RegisterData {
+            email: "valid@email.com".to_owned(),
+            password: "no_good".to_owned(),
+            data: UserData {
+                name: "Jantje_Deeg".to_owned(),
+                nickname: "Jantje junior Deeg de tweede".to_owned(),
+                about_me: "Ik ben Jantje \"jr\" Deeg de 2e, niet te verwarren met de 3e".to_owned(),
+                email_visible: true,
+                language: UserLanguage::Nl,
+            },
+        };
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(
+            response.unwrap_err(),
+            ApiError::InputLengthNotMet("password", PASSWORD_MIN_LENGTH)
+        );
+        invalid_data.password = "Grabbelton123".to_owned();
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(response.unwrap_err(), ApiError::IllegalPassword);
+        invalid_data.password =
+            "Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123"
+                .to_owned();
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(
+            response.unwrap_err(),
+            ApiError::InputLengthExceeded("password", PASSWORD_MAX_LENGTH)
+        );
+    }
+
+    #[test]
+    fn test_validate_email() {
+        let valid_data = RegisterData::test_values();
+        let response = valid_data.validate_inputs();
+        assert!(response.is_ok());
+
+        let mut invalid_data = RegisterData {
+            email: "Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123@grabbelton.com".to_owned(),
+            password: "A$$word123".to_owned(),
+            data: UserData {
+                name: "Jantje_Deeg".to_owned(),
+                nickname: "Jantje junior Deeg de derde".to_owned(),
+                about_me: "Ik ben Jantje \"jr\" Deeg de 3e, niet te verwarren met de 2e".to_owned(),
+                email_visible: true,
+                language: UserLanguage::Nl,
+            }
+        };
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(
+            response.unwrap_err(),
+            ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH)
+        );
+        invalid_data.email = "brood@".to_owned();
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(response.unwrap_err(), ApiError::IllegalEmailAddress);
+        invalid_data.email = "@brood".to_owned();
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(response.unwrap_err(), ApiError::IllegalEmailAddress);
+    }
 }
