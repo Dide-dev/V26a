@@ -14,6 +14,8 @@ use crate::{
     },
     errors::ApiError,
 };
+use chrono::{DateTime, Utc};
+use sqlx::query_builder::Separated;
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
@@ -660,9 +662,6 @@ pub async fn is_structure_valid(
 ///
 /// # Errors
 /// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the filters contain an invalid ISBN.
-///
-/// # To future developers
-/// This function can and will become too big, good luck if that happens!
 fn apply_tree_filters<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
     filters: &'a TreeFilters,
@@ -702,6 +701,7 @@ fn apply_tree_filters<'a>(
 
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
+
     // Check if we should NOT show all trees.
     if !(*show_private && is_admin) {
         separated.push("(published = true");
@@ -722,13 +722,59 @@ fn apply_tree_filters<'a>(
 
         separated.push_unseparated(")");
     }
+    apply_tree_filters_owner_name(&mut separated, owner_name.as_ref());
+    apply_tree_filters_editable(&mut separated, *editable, option_user_id);
+    apply_tree_filters_books(&mut separated, book)?;
+    apply_tree_filters_tags(&mut separated, tag);
+    apply_tree_filters_language_code(&mut separated, language_code.as_ref());
+    apply_tree_filters_subject(&mut separated, subject.as_ref());
+    apply_tree_filters_created_time(
+        &mut separated,
+        created_after.as_ref(),
+        created_before.as_ref(),
+    );
+
+    Ok(())
+}
+
+/// Adds the filters related to the owner of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `owner_name` - A filter specifying who should own the trees shown.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_owner_name<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    owner_name: Option<&'args String>,
+) {
     if let Some(owner_name) = owner_name {
         separated
             .push("(users.name = ")
             .push_bind_unseparated(owner_name)
             .push_unseparated(")");
     }
-    if *editable && let Some(user_id) = option_user_id {
+}
+
+/// Adds the filters related to the editability of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `editable` - A filter specifying whether the user wants to see only editable trees.
+///
+/// `option_user_id` - The logged-in user performing the filter, optional.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_editable(
+    separated: &mut Separated<'_, '_, Postgres, &str>,
+    editable: bool,
+    option_user_id: Option<i32>,
+) {
+    if editable && let Some(user_id) = option_user_id {
         separated.push("(owner_id = ");
 
         separated.push_bind_unseparated(user_id);
@@ -742,8 +788,26 @@ fn apply_tree_filters<'a>(
         separated.push_bind_unseparated(user_id);
         separated.push_unseparated("))");
     }
-    if !book.is_empty() {
-        let parsed_isbns = book
+}
+
+/// Adds the filters related to the books of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `books` - A filter specifying what books should have trees shown.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the filters contain an invalid ISBN.
+fn apply_tree_filters_books<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    books: &'args [String],
+) -> Result<(), ApiError> {
+    if !books.is_empty() {
+        let parsed_isbns = books
             .iter()
             .map(|isbn| parse_isbn(isbn))
             .collect::<Result<Vec<_>, _>>()?;
@@ -752,8 +816,25 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(parsed_isbns)
             .push_unseparated("))");
     }
+
+    Ok(())
+}
+
+/// Adds the filters related to the tags of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `tags` - A filter specifying the tags a tree should have.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_tags<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    tags: &'args [String],
+) {
     // requested_tags is defined in tree_list_query_tag_cte() for improved efficiency
-    if !tag.is_empty() {
+    if !tags.is_empty() {
         separated.push(
             r"trees.id IN (
                 SELECT tree_id
@@ -765,18 +846,66 @@ fn apply_tree_filters<'a>(
             )",
         );
     }
+}
+
+/// Adds the filters related to the language of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `language_code` - A filter specifying the language code representing the tree's language.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_language_code<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    language_code: Option<&'args String>,
+) {
     if let Some(language_code) = language_code {
         separated
             .push("(trees.language_code = ")
             .push_bind_unseparated(language_code)
             .push_unseparated(")");
     }
+}
+
+/// Adds the filters related to the subject of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `subject` - A filter specifying the subject a tree should be about
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_subject<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    subject: Option<&'args String>,
+) {
     if let Some(subject) = subject {
         separated
             .push("(subjects.name = ")
             .push_bind_unseparated(subject)
             .push_unseparated(")");
     }
+}
+
+/// Adds the filters related to the creation time of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `created_after` - A filter specifying the time a tree should have been created after.
+///
+/// `created_before` - A filter specifying the time a tree should have been created before.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_created_time<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    created_after: Option<&'args DateTime<Utc>>,
+    created_before: Option<&'args DateTime<Utc>>,
+) {
     if let Some(created_after) = created_after {
         separated
             .push("(trees.created_at >= ")
@@ -789,8 +918,6 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
     }
-
-    Ok(())
 }
 
 const TREE_LIST_QUERY_JOINS: &str = r"
