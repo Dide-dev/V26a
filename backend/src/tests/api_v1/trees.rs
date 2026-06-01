@@ -19,7 +19,7 @@ use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
 use axum_test::TestServer;
-use sqlx::PgPool;
+use sqlx::{PgPool, query_scalar};
 use std::collections::{BTreeMap, HashMap};
 
 async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
@@ -416,6 +416,7 @@ async fn test_remove_card(db: PgPool) {
 
 #[sqlx::test]
 async fn test_filter_tree_list(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
     let server = setup(db);
 
     let account1 = RegisterData::test_values();
@@ -424,9 +425,14 @@ async fn test_filter_tree_list(db: PgPool) {
     register(&server, &account2).await;
     login(&server, account1.email.clone()).await;
 
+    let subject_id = query_scalar!("SELECT id FROM subjects WHERE name = 'Wiskunde A'")
+        .fetch_one(conn)
+        .await
+        .unwrap();
     let trees_data = vec![
         TreeData {
             published: true,
+            subject_id: Some(subject_id),
             ..Default::default()
         },
         TreeData {
@@ -549,6 +555,27 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_bad_request();
     response.assert_text(ApiError::InvalidIsbn.to_string());
+
+    // Subject that has trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&subject=Wiskunde%20A")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[0].clone(),]);
+
+    // Subject that has no trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&subject=Wiskunde%20B")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
 
     // All public trees from user 0
     let response = server
