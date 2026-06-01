@@ -527,6 +527,8 @@ pub struct TreeFilters {
     #[serde(default)]
     pub show_own_private: bool,
     #[serde(default)]
+    pub show_private: bool,
+    #[serde(default)]
     pub editable: bool,
 }
 

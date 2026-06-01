@@ -421,8 +421,10 @@ async fn test_filter_tree_list(db: PgPool) {
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
+    let admin_account = RegisterData::test_values();
     register(&server, &account1).await;
     register(&server, &account2).await;
+    register_admin(&server, &mut *conn, &admin_account).await;
     login(&server, account1.email.clone()).await;
 
     let subject_id = query_scalar!("SELECT id FROM subjects WHERE name = 'Wiskunde A'")
@@ -706,6 +708,49 @@ async fn test_filter_tree_list(db: PgPool) {
         .map(|t| t.data)
         .collect::<Vec<_>>();
     assert_eq!(requested_trees_data, vec![other_user_trees_data[0].clone()]);
+
+    // All trees as non-admin (should only show public trees)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showPrivate=true")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        requested_trees_data,
+        vec![
+            other_user_trees_data[0].clone(),
+            trees_data[1].clone(),
+            trees_data[0].clone()
+        ]
+    );
+
+    // All trees as admin
+    login(&server, admin_account.email).await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showPrivate=true")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        requested_trees_data,
+        vec![
+            other_user_trees_data[1].clone(),
+            other_user_trees_data[0].clone(),
+            trees_data[2].clone(),
+            trees_data[1].clone(),
+            trees_data[0].clone(),
+        ]
+    );
 }
 
 #[sqlx::test]

@@ -558,18 +558,16 @@ pub async fn get_list(
 ) -> Result<Json<TreeListResponse>, ApiError> {
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
-    let optional_user_id = claims.map(|c| c.sub);
-
     let mut transaction = db.begin().await?;
 
-    let trees_count = get_queried_count(&mut *transaction, &filters, optional_user_id).await?;
+    let trees_count = get_queried_count(&mut *transaction, &filters, claims.as_ref()).await?;
     if trees_count == 0 {
         return Ok(Json(TreeListResponse {
             total_trees: 0,
             trees: Vec::new(),
         }));
     }
-    let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
+    let trees = get_queried_list(&mut *transaction, &page, &filters, claims.as_ref()).await?;
 
     transaction.commit().await?;
 
