@@ -30,6 +30,10 @@ pub struct Config {
     /// Upload images directory
     pub upload_dir: String,
     pub max_upload_size: usize,
+
+    /// Ratelimiter config (minute)
+    pub rate_limit_per_minute: u64,
+    pub rate_limit_burst_size: u32,
 }
 
 impl Config {
@@ -63,6 +67,17 @@ impl Config {
                 .expect("Environment variable JWT_SECRET must be set")
                 .as_bytes(),
         );
+
+        let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
+            .unwrap_or("30".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
+
+        let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
+            .unwrap_or("40".to_string())
+            .parse::<u32>()
+            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
+
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
             .unwrap_or("10".to_string())
@@ -80,6 +95,8 @@ impl Config {
             jwt_keys,
             upload_dir,
             max_upload_size,
+            rate_limit_per_minute,
+            rate_limit_burst_size,
         }
     }
 }
