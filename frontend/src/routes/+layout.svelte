@@ -32,10 +32,8 @@
     });
 
     function handleWindowError(event: Event) {
-        if (event instanceof ErrorEvent) {
+        if (event instanceof ErrorEvent && event.error !== undefined) {
             errors.push(event.error);
-        } else {
-            errors.push(new Error('Unknown window error.'));
         }
     }
     function handleError(err: PromiseRejectionEvent) {
