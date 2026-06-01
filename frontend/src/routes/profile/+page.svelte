@@ -413,8 +413,8 @@
                 {/if}
             </div>
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
-                <button data-testid="confirm-button">{m.confirmChanges()}</button>
-                <button onclick={handleCancel}>{m.cancel()}</button>
+                <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
+                <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
         </form>
     {/await}

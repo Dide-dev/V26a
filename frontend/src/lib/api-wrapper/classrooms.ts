@@ -7,7 +7,7 @@
 import { apiCallPost } from '$lib/api-wrapper/index';
 import type { Option } from '$lib/api-wrapper/types';
 
-const prefix = '/classrooms';
+const prefix = 'classrooms/';
 
 function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);

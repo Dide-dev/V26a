@@ -97,7 +97,7 @@
                 required
             />
         </div>
-        <button>{m.login()}</button>
+        <button type="submit">{m.login()}</button>
         {#if loginFailed}
             <p class="text__error">{m.invalidCredentials()}</p>
         {/if}
