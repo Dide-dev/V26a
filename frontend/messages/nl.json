@@ -77,6 +77,7 @@
     "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde.",
     "profile": "Profiel",
+    "profileOf": "Profiel van gebruiker {id}",
     "confirmChanges": "Bevestig wijzigingen",
     "edit": "Bewerk",
     "add": "Voeg toe",
@@ -145,6 +146,12 @@
     "account": "Account",
     "admin": "Beheer",
     "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
+    "classroom": "Klaslokaal",
+    "classroomAdd": "Creëer klaslokaal",
+    "classroomDashboard": "Dashboard",
+    "classroomName": "Naam van klaslokaal",
+    "exampleClassroomName": "Wiskunde-B V6A",
+    "exampleClassroomDescription": "Welkom leerlingen, in dit klaslokaal zullen jullie meer leren over wiskundige heuristiekbomen.",
     "owner": "Eigenaar",
     "heuristicTrees": "Heuristiekbomen"
 }

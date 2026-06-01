@@ -76,6 +76,17 @@
                             text: m.createTree()
                         }
                     ]
+                }),
+                // Can be changed when additional front-end classroom functionalities are added.
+                new NavLink({
+                    defaultHref: '/classrooms/add',
+                    text: m.classroom(),
+                    children: [
+                        {
+                            href: '/classrooms/add',
+                            text: m.classroomAdd()
+                        }
+                    ]
                 })
             );
             if (userInfo.accountType == 'admin') {
