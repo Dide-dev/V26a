@@ -1362,11 +1362,6 @@ mod tests {
             no_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
-        let user_claims = Claims {
-            sub: 123,
-            exp: 0,
-            account_type: AccountType::Author,
-        };
         let admin_claims = Claims {
             sub: 123,
             exp: 0,
@@ -1403,6 +1398,15 @@ mod tests {
             partial_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true) AND (users.name = $1) AND (trees.created_at >= $2)"
         );
+    }
+
+    #[test]
+    fn test_apply_tree_filters_own_unpublished_trees() {
+        let user_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Author,
+        };
 
         // check if show_own_private gets made properly
         let mut show_own_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -1454,6 +1458,20 @@ mod tests {
             hide_own_private_with_id_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
+    }
+
+    #[test]
+    fn test_apply_tree_filters_unpublished_trees() {
+        let user_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Author,
+        };
+        let admin_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Admin,
+        };
 
         // Check if show_private gets made properly
         let mut show_private_no_admin_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
