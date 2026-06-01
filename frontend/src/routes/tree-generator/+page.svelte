@@ -72,21 +72,23 @@
         event.preventDefault();
         isbnInvalid = false;
 
+        const newData: TreeData = { ...treeData };
+
         const isbn = tryParseISBN(treeData.bookIsbn);
         if (isbn === null) {
             isbnInvalid = true;
             return;
         }
-        treeData.bookIsbn = isbn === '' ? null : isbn;
+        newData.bookIsbn = isbn === '' ? null : isbn;
 
         const result = tryParseTags(tagsInput);
         if (typeof result === 'string') {
             tagsInputError = result;
             return;
         }
-        treeData.tags = result;
+        newData.tags = result;
 
-        const treeId = await addTree(treeData);
+        const treeId = await addTree(newData);
         await goto(appLink(`/tree-page/editor?id=${treeId}`));
     }
 </script>
@@ -181,86 +183,88 @@
                 <p class="text__error" data-testid="error">{m.invalidISBN()}</p>
             {/if}
         </div>
-        <div class={[treeData.bookIsbn === '' && 'hidden']}>
-            <label for="bookName">
-                {m.title()}
-            </label>
-            <input
-                id="bookName"
-                class="input__text"
-                bind:value={treeData.bookName}
-                name="bookName"
-                type="text"
-                data-testid="bookname"
-                placeholder={m.examplePlaceholder({ value: m.exampleBookName() })}
-                minlength={minInputLengths.bookName}
-                maxlength={maxInputLengths.bookName}
-            />
-        </div>
-        <div class={[treeData.bookIsbn === '' && 'hidden']}>
-            <label for="bookAuthor">
-                {m.author()}
-            </label>
-            <input
-                id="bookAuthor"
-                class="input__text"
-                bind:value={treeData.bookAuthor}
-                name="bookAuthor"
-                type="text"
-                data-testid="bookAuthor"
-                placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
-                minlength={minInputLengths.bookAuthor}
-                maxlength={maxInputLengths.bookAuthor}
-            />
-        </div>
-        <div class={[treeData.bookIsbn === '' && 'hidden']}>
-            <label for="bookEdition">
-                {m.edition()}
-            </label>
-            <input
-                id="bookEdition"
-                class="input__text"
-                bind:value={treeData.bookEdition}
-                name="bookEdition"
-                type="text"
-                data-testid="bookEdition"
-                placeholder={m.examplePlaceholder({ value: m.exampleBookEdition() })}
-                minlength={minInputLengths.bookEdition}
-                maxlength={maxInputLengths.bookEdition}
-            />
-        </div>
-        <div class={[treeData.bookIsbn === '' && 'hidden']}>
-            <label for="bookChapter">
-                {m.chapter()}
-            </label>
-            <input
-                id="bookChapter"
-                class="input__text"
-                bind:value={treeData.bookChapter}
-                name="chapter"
-                type="text"
-                data-testid="chapter"
-                placeholder={m.examplePlaceholder({ value: m.exampleBookChapter() })}
-                minlength={minInputLengths.bookChapter}
-                maxlength={maxInputLengths.bookChapter}
-            />
-        </div>
-        <div class={[treeData.bookIsbn === '' && 'hidden']}>
-            <label for="exercise">
-                {m.exercise()}
-            </label>
-            <input
-                id="exercise"
-                class="input__text"
-                bind:value={treeData.bookExercise}
-                name="exercise"
-                type="text"
-                data-testid="exercise"
-                placeholder={m.examplePlaceholder({ value: m.exampleExercise() })}
-                minlength={minInputLengths.bookExercise}
-                maxlength={maxInputLengths.bookExercise}
-            />
-        </div>
+        {#if treeData.bookIsbn !== ''}
+            <div>
+                <label for="bookName">
+                    {m.title()}
+                </label>
+                <input
+                    id="bookName"
+                    class="input__text"
+                    bind:value={treeData.bookName}
+                    name="bookName"
+                    type="text"
+                    data-testid="bookname"
+                    placeholder={m.examplePlaceholder({ value: m.exampleBookName() })}
+                    minlength={minInputLengths.bookName}
+                    maxlength={maxInputLengths.bookName}
+                />
+            </div>
+            <div>
+                <label for="bookAuthor">
+                    {m.author()}
+                </label>
+                <input
+                    id="bookAuthor"
+                    class="input__text"
+                    bind:value={treeData.bookAuthor}
+                    name="bookAuthor"
+                    type="text"
+                    data-testid="bookAuthor"
+                    placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
+                    minlength={minInputLengths.bookAuthor}
+                    maxlength={maxInputLengths.bookAuthor}
+                />
+            </div>
+            <div>
+                <label for="bookEdition">
+                    {m.edition()}
+                </label>
+                <input
+                    id="bookEdition"
+                    class="input__text"
+                    bind:value={treeData.bookEdition}
+                    name="bookEdition"
+                    type="text"
+                    data-testid="bookEdition"
+                    placeholder={m.examplePlaceholder({ value: m.exampleBookEdition() })}
+                    minlength={minInputLengths.bookEdition}
+                    maxlength={maxInputLengths.bookEdition}
+                />
+            </div>
+            <div>
+                <label for="bookChapter">
+                    {m.chapter()}
+                </label>
+                <input
+                    id="bookChapter"
+                    class="input__text"
+                    bind:value={treeData.bookChapter}
+                    name="chapter"
+                    type="text"
+                    data-testid="chapter"
+                    placeholder={m.examplePlaceholder({ value: m.exampleBookChapter() })}
+                    minlength={minInputLengths.bookChapter}
+                    maxlength={maxInputLengths.bookChapter}
+                />
+            </div>
+            <div>
+                <label for="exercise">
+                    {m.exercise()}
+                </label>
+                <input
+                    id="exercise"
+                    class="input__text"
+                    bind:value={treeData.bookExercise}
+                    name="exercise"
+                    type="text"
+                    data-testid="exercise"
+                    placeholder={m.examplePlaceholder({ value: m.exampleExercise() })}
+                    minlength={minInputLengths.bookExercise}
+                    maxlength={maxInputLengths.bookExercise}
+                />
+            </div>
+        {/if}
         <h2 class="page__heading">{m.assignment()}</h2>
         <div>
             <label for="assignmentText">

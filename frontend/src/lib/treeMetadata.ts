@@ -24,7 +24,7 @@ export function tryParseTags(tags: string): string[] | string {
         return m.noWhitespaceInTags();
     }
     if (list.some((t) => !/^[a-zA-Z0-9._-]+$/.test(t))) {
-        return m.validTagCharacters();
+        return m.allowedRegex({ field: m.tags() });
     }
     return list;
 }

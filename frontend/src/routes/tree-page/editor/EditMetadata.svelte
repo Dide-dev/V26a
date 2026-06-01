@@ -137,7 +137,8 @@
 
         await updateTreeMetaData({ id: treeId, newData });
         visible = false;
-        prevTreeData = { ...newData };
+        prevTreeData = { ...newData, bookIsbn: newData.bookIsbn === null ? '' : newData.bookIsbn };
+        treeData = { ...prevTreeData };
         resetInputStates();
     }
 
@@ -331,110 +332,121 @@
                             <p class="text__error">{m.invalidISBN()}</p>
                         {/if}
                     </div>
-                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
-                        <label for="bookName">{m.bookName()}</label>
-                        <div class="input__container">
-                            <input
-                                id="bookName"
-                                class={[
-                                    !inputsChanged.bookNameChanged && 'inactive',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={treeData.bookName}
-                                placeholder={m.examplePlaceholder({ value: m.exampleBookName() })}
-                                oninput={() => {
-                                    inputsChanged.bookNameChanged = true;
-                                }}
-                                minlength={minInputLengths.bookName}
-                                maxlength={maxInputLengths.bookName}
-                            />
+                    {#if treeData.bookIsbn !== ''}
+                        <div>
+                            <label for="bookName">{m.bookName()}</label>
+                            <div class="input__container">
+                                <input
+                                    id="bookName"
+                                    class={[
+                                        !inputsChanged.bookNameChanged && 'inactive',
+                                        'input__text'
+                                    ]}
+                                    type="text"
+                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                                    bind:value={treeData.bookName}
+                                    placeholder={m.examplePlaceholder({
+                                        value: m.exampleBookName()
+                                    })}
+                                    oninput={() => {
+                                        inputsChanged.bookNameChanged = true;
+                                    }}
+                                    minlength={minInputLengths.bookName}
+                                    maxlength={maxInputLengths.bookName}
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
-                        <label for="author">{m.author()}</label>
-                        <div class="input__container">
-                            <input
-                                id="author"
-                                class={[
-                                    !inputsChanged.bookAuthorChanged && 'inactive',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={treeData.bookAuthor}
-                                placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
-                                oninput={() => {
-                                    inputsChanged.bookAuthorChanged = true;
-                                }}
-                                minlength={minInputLengths.bookAuthor}
-                                maxlength={maxInputLengths.bookAuthor}
-                            />
+                        <div>
+                            <label for="author">{m.author()}</label>
+                            <div class="input__container">
+                                <input
+                                    id="author"
+                                    class={[
+                                        !inputsChanged.bookAuthorChanged && 'inactive',
+                                        'input__text'
+                                    ]}
+                                    type="text"
+                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                                    bind:value={treeData.bookAuthor}
+                                    placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
+                                    oninput={() => {
+                                        inputsChanged.bookAuthorChanged = true;
+                                    }}
+                                    minlength={minInputLengths.bookAuthor}
+                                    maxlength={maxInputLengths.bookAuthor}
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
-                        <label for="edition">{m.edition()}</label>
-                        <div class="input__container">
-                            <input
-                                id="edition"
-                                class={[
-                                    !inputsChanged.bookEditionChanged && 'inactive',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={treeData.bookEdition}
-                                placeholder={m.examplePlaceholder({
-                                    value: m.exampleBookEdition()
-                                })}
-                                oninput={() => {
-                                    inputsChanged.bookEditionChanged = true;
-                                }}
-                                minlength={minInputLengths.bookEdition}
-                                maxlength={maxInputLengths.bookEdition}
-                            />
+                        <div>
+                            <label for="edition">{m.edition()}</label>
+                            <div class="input__container">
+                                <input
+                                    id="edition"
+                                    class={[
+                                        !inputsChanged.bookEditionChanged && 'inactive',
+                                        'input__text'
+                                    ]}
+                                    type="text"
+                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                                    bind:value={treeData.bookEdition}
+                                    placeholder={m.examplePlaceholder({
+                                        value: m.exampleBookEdition()
+                                    })}
+                                    oninput={() => {
+                                        inputsChanged.bookEditionChanged = true;
+                                    }}
+                                    minlength={minInputLengths.bookEdition}
+                                    maxlength={maxInputLengths.bookEdition}
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
-                        <label for="chapter">{m.chapter()}</label>
-                        <div class="input__container">
-                            <input
-                                id="chapter"
-                                class={[
-                                    !inputsChanged.bookChapterChanged && 'inactive',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={treeData.bookChapter}
-                                placeholder={m.examplePlaceholder({
-                                    value: m.exampleBookChapter()
-                                })}
-                                oninput={() => {
-                                    inputsChanged.bookChapterChanged = true;
-                                }}
-                                minlength={minInputLengths.bookChapter}
-                                maxlength={maxInputLengths.bookChapter}
-                            />
+                        <div>
+                            <label for="chapter">{m.chapter()}</label>
+                            <div class="input__container">
+                                <input
+                                    id="chapter"
+                                    class={[
+                                        !inputsChanged.bookChapterChanged && 'inactive',
+                                        'input__text'
+                                    ]}
+                                    type="text"
+                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                                    bind:value={treeData.bookChapter}
+                                    placeholder={m.examplePlaceholder({
+                                        value: m.exampleBookChapter()
+                                    })}
+                                    oninput={() => {
+                                        inputsChanged.bookChapterChanged = true;
+                                    }}
+                                    minlength={minInputLengths.bookChapter}
+                                    maxlength={maxInputLengths.bookChapter}
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div class={[treeData.bookIsbn === '' && 'hidden']}>
-                        <label for="exercise">{m.exercise()}</label>
-                        <div class="input__container">
-                            <input
-                                id="exercise"
-                                class={[
-                                    !inputsChanged.bookExerciseChanged && 'inactive',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={treeData.bookExercise}
-                                placeholder={m.examplePlaceholder({ value: m.exampleExercise() })}
-                                oninput={() => {
-                                    inputsChanged.bookExerciseChanged = true;
-                                }}
-                                minlength={minInputLengths.bookExercise}
-                                maxlength={maxInputLengths.bookExercise}
-                            />
+                        <div>
+                            <label for="exercise">{m.exercise()}</label>
+                            <div class="input__container">
+                                <input
+                                    id="exercise"
+                                    class={[
+                                        !inputsChanged.bookExerciseChanged && 'inactive',
+                                        'input__text'
+                                    ]}
+                                    type="text"
+                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                                    bind:value={treeData.bookExercise}
+                                    placeholder={m.examplePlaceholder({
+                                        value: m.exampleExercise()
+                                    })}
+                                    oninput={() => {
+                                        inputsChanged.bookExerciseChanged = true;
+                                    }}
+                                    minlength={minInputLengths.bookExercise}
+                                    maxlength={maxInputLengths.bookExercise}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    {/if}
                 </div>
             </div>
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">

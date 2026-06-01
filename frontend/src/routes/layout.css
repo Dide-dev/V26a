@@ -142,7 +142,7 @@
             text-underline-offset: 4px;
             text-decoration: underline var(--color-neutral-350) 2px;
 
-            &::placeholder {
+            &:not(:disabled)::placeholder {
                 padding-bottom: 2px;
                 text-underline-offset: 4px;
                 text-decoration: underline var(--color-neutral-350) 2px;
@@ -177,7 +177,7 @@
         .input__container:has(.input__text.inactive:not(:focus)) {
             position: relative;
 
-            &::before {
+            &:has(:not(:disabled))::before {
                 content: '';
                 position: absolute;
                 left: 0;

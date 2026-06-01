@@ -81,12 +81,12 @@ test('cancel restores original values', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    await user.clear(screen.getByLabelText(m.bookName()));
-    await user.type(screen.getByLabelText(m.bookName()), 'Changed Book');
+    await user.clear(screen.getByLabelText(m.description()));
+    await user.type(screen.getByLabelText(m.description()), 'Changed Description');
     await user.click(screen.getByText(m.cancel()));
 
     await user.click(screen.getByText(m.editMetadata()));
-    expect((screen.getByLabelText(m.bookName()) as HTMLInputElement).value).toBe('Monkey');
+    expect((screen.getByLabelText(m.description()) as HTMLInputElement).value).toBe('gerdgreg');
 });
 
 test('save calls updateTreeMetaData with correct data', async () => {
@@ -96,13 +96,13 @@ test('save calls updateTreeMetaData with correct data', async () => {
 
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
-    await user.clear(screen.getByLabelText(m.bookName()));
-    await user.type(screen.getByLabelText(m.bookName()), 'New Apple');
+    await user.clear(screen.getByLabelText(m.description()));
+    await user.type(screen.getByLabelText(m.description()), 'New Apple');
     await user.click(screen.getByText(m.confirmChanges()));
 
     expect(updateTreeMetaData).toHaveBeenCalledWith({
         id: 1,
-        newData: expect.objectContaining({ bookName: 'New Apple' })
+        newData: expect.objectContaining({ description: 'New Apple' })
     });
 });
 
@@ -113,7 +113,7 @@ test('dropdown closes after save', async () => {
     await screen.findByText(m.editMetadata());
     await user.click(screen.getByText(m.editMetadata()));
     // Change one of the fields so that the confirm button is enabled.
-    await user.type(screen.getByLabelText(m.bookName()), 'Changed Book');
+    await user.type(screen.getByLabelText(m.description()), 'Changed Description');
     await user.click(screen.getByText(m.confirmChanges()));
     expect(screen.queryByTestId('metadata-popup')).toBeNull();
 });

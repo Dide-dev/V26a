@@ -139,7 +139,7 @@
                 autocomplete="username"
                 required
                 pattern="[a-zA-Z0-9._\-]*"
-                title={m.allowedRegex()}
+                title={m.allowedRegex({ field: m.names() })}
             />
             {#if usernameAlreadyExists}
                 <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
