@@ -432,11 +432,13 @@ async fn test_filter_tree_list(db: PgPool) {
     let trees_data = vec![
         TreeData {
             published: true,
+            language_code: "nl".to_owned(),
             subject_id: Some(subject_id),
             ..Default::default()
         },
         TreeData {
             book_isbn: Some("9780061120084".to_string()),
+            language_code: "fr".to_owned(),
             published: true,
             ..Default::default()
         },
@@ -555,6 +557,27 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_bad_request();
     response.assert_text(ApiError::InvalidIsbn.to_string());
+
+    // Language that has trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&languageCode=fr")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[1].clone(),]);
+
+    // Language that has no trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&languageCode=hi")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
 
     // Subject that has trees
     let response = server

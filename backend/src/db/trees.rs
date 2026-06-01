@@ -669,6 +669,7 @@ fn apply_tree_filters<'a>(
     let TreeFilters {
         owner_name,
         book,
+        language_code,
         subject,
         created_after,
         created_before,
@@ -722,6 +723,12 @@ fn apply_tree_filters<'a>(
             .push("(book_isbn = ANY(")
             .push_bind_unseparated(parsed_isbns)
             .push_unseparated("))");
+    }
+    if let Some(language_code) = language_code {
+        separated
+            .push("(trees.language_code = ")
+            .push_bind_unseparated(language_code)
+            .push_unseparated(")");
     }
     if let Some(subject) = subject {
         separated
@@ -1171,6 +1178,7 @@ mod tests {
         let all_filters = TreeFilters {
             owner_name: Some("67".to_owned()),
             book: vec!["0-451-52493-4".to_owned()],
+            language_code: Some("nl".to_owned()),
             subject: Some("Wiskunde A".to_owned()),
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
@@ -1180,7 +1188,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND (subjects.name = $5) AND (trees.created_at >= $6) AND (trees.created_at <= $7)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
