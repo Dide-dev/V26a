@@ -1,4 +1,4 @@
-use crate::db_structs::session::{Claims, Session};
+use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use chrono::Utc;
@@ -23,7 +23,7 @@ use std::str::FromStr;
 pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<Claims>, ApiError> {
     let row = query!(
         "SELECT s.user_id, u.account_type, s.expires_at AS exp
-         FROM session s
+         FROM sessions s
          JOIN users u ON u.id = s.user_id
          WHERE s.token = $1 AND s.expires_at > NOW()",
         token
@@ -58,7 +58,7 @@ pub async fn create_session(
     db: impl PgExecutor<'_>,
     user_id: i32,
     session_duration: i64,
-) -> Result<Session, ApiError> {
+) -> Result<String, ApiError> {
     // Create the authorization token. The opaque session token to store.
     let token = {
         let mut rng = rand::rng();
@@ -67,7 +67,7 @@ pub async fn create_session(
     let expires_at = Utc::now() + chrono::Duration::seconds(session_duration);
 
     query!(
-        "INSERT INTO session (token, user_id, expires_at) VALUES ($1, $2, $3)",
+        "INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)",
         token,
         user_id,
         expires_at,
@@ -75,11 +75,7 @@ pub async fn create_session(
     .execute(db)
     .await?;
 
-    Ok(Session {
-        token,
-        user_id,
-        expires_at,
-    })
+    Ok(token)
 }
 
 /// Delete a session from the database.
@@ -92,7 +88,7 @@ pub async fn create_session(
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn delete_session(db: impl PgExecutor<'_>, token: &str) -> Result<(), ApiError> {
-    query!("DELETE FROM session WHERE token = $1", token,)
+    query!("DELETE FROM sessions WHERE token = $1", token,)
         .execute(db)
         .await?;
 
@@ -109,7 +105,15 @@ pub async fn delete_session(db: impl PgExecutor<'_>, token: &str) -> Result<(), 
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn delete_all_sessions(db: impl PgExecutor<'_>, user_id: i32) -> Result<(), ApiError> {
-    query!("DELETE FROM session WHERE user_id = $1", user_id,)
+    query!("DELETE FROM sessions WHERE user_id = $1", user_id,)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn delete_all_sessions_except(db: impl PgExecutor<'_>, user_id: i32, token: &str) -> Result<(), ApiError> {
+    query!("DELETE FROM sessions WHERE user_id = $1 AND token != $2", user_id, token)
         .execute(db)
         .await?;
 
@@ -141,7 +145,7 @@ mod tests {
         let session = create_session(&db, user_id, 3600).await.unwrap();
 
         let row = query!(
-            "SELECT token, user_id, expires_at FROM session WHERE token = $1",
+            "SELECT token, user_id, expires_at FROM sessions WHERE token = $1",
             session.token
         )
         .fetch_one(&db)

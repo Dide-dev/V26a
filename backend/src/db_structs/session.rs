@@ -31,11 +31,3 @@ pub struct InfoCookieData {
     pub sub: i32,
     pub account_type: AccountType,
 }
-
-#[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct Session {
-    pub token: String,
-    pub user_id: i32,
-    pub expires_at: DateTime<Utc>,
-}

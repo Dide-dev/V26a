@@ -7,7 +7,7 @@
 use crate::ArcState;
 use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
-use crate::db::session::delete_all_sessions;
+use crate::db::session::{delete_all_sessions, delete_all_sessions_except};
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
@@ -237,6 +237,8 @@ pub struct ChangePasswordResponse {
 /// Changes a password in the database.
 ///
 /// # Arguments
+/// `jar` - The jar with the cookies (`user_info` & session).
+/// 
 /// `password_change_request` - A struct containing the user's old password and the new password.
 ///
 /// # Returns
@@ -247,6 +249,7 @@ pub struct ChangePasswordResponse {
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
     claims: Claims,
+    jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
@@ -275,8 +278,14 @@ async fn change_password(
     )
     .await?;
 
+    let token = jar
+        .get("session")
+        .ok_or(ApiError::MissingAuthentication)?
+        .value()
+        .to_string();
+
     // All sessions of the account are invalidated if password is changed.
-    delete_all_sessions(&db, claims.sub).await?;
+    delete_all_sessions_except(&db, claims.sub, &token).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }

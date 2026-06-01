@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO session (token, user_id, expires_at) VALUES ($1, $2, $3)",
+  "query": "INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "41881ec94f2d038dfd326572cabb569ec327ab4fe96e6e13d45eb433e11ddde1"
+  "hash": "ff6ad6ed65230c4b4a598ed3f005b886e82e9167c613e2ea287f2d5e1dc21ad0"
 }

@@ -51,6 +51,7 @@ async fn check_if_admin(
 }
 
 /// Creates an `Axum` [`Router`] for the user category.
+/// All paths are going through a middleware to check if the user is an admin.
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
         .route("/all-user-data", get(get_all_user_data))
@@ -208,7 +209,6 @@ async fn update_user_data(
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
-    claims: Claims,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Path(user_id): Path<i32>,
@@ -224,7 +224,7 @@ async fn change_password(
     .await?;
 
     // All sessions of the account are invalidated if password is changed.
-    delete_all_sessions(&db, claims.sub).await?;
+    delete_all_sessions(&db, user_id).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }

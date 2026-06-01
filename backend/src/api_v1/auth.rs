@@ -82,7 +82,6 @@ async fn login(
     }
 
     let user_data = get_user(&db, credentials.user_id).await?;
-
     let user_info = InfoCookieData {
         name: user_data.data.name,
         nickname: user_data.data.nickname,
@@ -90,7 +89,8 @@ async fn login(
         account_type: credentials.account_type,
     };
 
-    let session = create_session(&db, credentials.user_id, state.config.session_duration).await?;
+    let session_duration = state.config.session_duration;
+    let token = create_session(&db, credentials.user_id, session_duration).await?;
 
     let user_info_serialised = serde_json::to_string(&user_info)?;
 
@@ -104,18 +104,18 @@ async fn login(
     // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
 
     // The age of a cookie (same for the two cookies)
-    let time = Duration::seconds(state.config.session_duration);
+    let duration = Duration::seconds(session_duration);
 
-    let cookie = Cookie::build(("session", session.token))
+    let cookie = Cookie::build(("session", token))
         .path("/api/")
         .secure(true)
-        .max_age(time)
+        .max_age(duration)
         .http_only(true);
 
     let user_info_cookie = Cookie::build(("user_info", user_info_serialised))
         .path("/")
         .secure(true)
-        .max_age(time)
+        .max_age(duration)
         .http_only(false);
 
     Ok((
