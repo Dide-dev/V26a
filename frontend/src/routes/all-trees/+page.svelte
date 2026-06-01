@@ -9,11 +9,14 @@
     import {
         type FilterOptions,
         type TreeListResponse,
-        getFilteredList
+        getFilteredList,
+        duplicateTree
     } from '$lib/api-wrapper/trees';
     import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
+    import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
+    import { goto } from '$app/navigation';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
@@ -46,6 +49,11 @@
     onMount(async () => {
         await loadTrees();
     });
+
+    async function duplicateThisTree(id: number) {
+        let newTreeId = await duplicateTree(id);
+        await goto(appLink(`/tree-page/editor?id=${newTreeId}`));
+    }
 
     async function loadTrees() {
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
@@ -170,6 +178,17 @@
                         <td class="pr-4">
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy -->
                             {timeFormat.format(new Date(tree.genData.createdAt))}
+                        </td>
+                        <td class="min-w-2 hover:fill-blue-800">
+                            <button
+                                onclick={() => duplicateThisTree(tree.genData.id)}
+                                aria-label="duplicate"
+                                class:cursor-pointer={true}
+                                class="flex self-end"
+                            >
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html iconDuplicate}
+                            </button>
                         </td>
                     </tr>
                 {/each}
