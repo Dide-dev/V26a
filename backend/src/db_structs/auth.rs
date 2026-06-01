@@ -4,10 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::Validated;
 use crate::db_structs::users::AccountType;
+use crate::db_structs::{Validated, validate_email};
 use crate::errors::ApiError;
-use crate::limits::{EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, EMAIL_MIN_LENGTH, PASSWORD_LOGIN_MIN_LENGTH};
+use crate::limits::{PASSWORD_LOGIN_MIN_LENGTH, PASSWORD_MAX_LENGTH};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -20,9 +20,8 @@ pub struct LoginRequestBody {
 
 impl Validated for LoginRequestBody {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.email.chars().count() > EMAIL_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
-        }
+        validate_email(&self.email)?;
+
         if self.password.chars().count() > PASSWORD_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "password",
@@ -30,11 +29,11 @@ impl Validated for LoginRequestBody {
             ));
         }
 
-        if self.email.chars().count() < EMAIL_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("email", EMAIL_MAX_LENGTH));
-        }
         if self.password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("password", PASSWORD_LOGIN_MIN_LENGTH));
+            return Err(ApiError::InputLengthNotMet(
+                "password",
+                PASSWORD_LOGIN_MIN_LENGTH,
+            ));
         }
 
         Ok(())

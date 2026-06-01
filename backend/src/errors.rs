@@ -15,6 +15,8 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
+    /// An error to return when an email address does not contain 3 characters, of which 1 must be an '@' symbol.
+    IllegalEmailAddress,
     /// An error to return when a name contains characters which fall outside of the accepted standard.
     IllegalName,
     /// An error to return when a password does not contain the appropriate characters.
@@ -128,6 +130,9 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
+            ApiError::IllegalEmailAddress => {
+                write!(f, "Email address does not follow pattern 'name@domain'.")
+            }
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
             ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
             ApiError::InputLengthExceeded(offending_string, max_length) => {
@@ -239,7 +244,8 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::IllegalName
+            ApiError::IllegalEmailAddress
+            | ApiError::IllegalName
             | ApiError::IllegalPassword
             | ApiError::InputLengthExceeded(_, _)
             | ApiError::InputLengthNotMet(_, _)

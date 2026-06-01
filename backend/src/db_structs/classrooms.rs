@@ -5,7 +5,9 @@
 */
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
-use crate::limits::{CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH};
+use crate::limits::{
+    CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
+};
 use sqlx::FromRow;
 use utoipa::ToSchema;
 
@@ -32,11 +34,14 @@ impl Validated for ClassroomAddData {
                 CLASSROOM_DESCRIPTION_MAX_LENGTH,
             ));
         }
-        
+
         if self.name.chars().count() < CLASSROOM_TITLE_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("title", CLASSROOM_TITLE_MIN_LENGTH));
+            return Err(ApiError::InputLengthNotMet(
+                "title",
+                CLASSROOM_TITLE_MIN_LENGTH,
+            ));
         }
-        
+
         Ok(())
     }
 }

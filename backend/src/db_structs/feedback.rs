@@ -3,9 +3,9 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::Validated;
+use crate::db_structs::{Validated, validate_email};
 use crate::errors::ApiError;
-use crate::limits::{EMAIL_MAX_LENGTH, FEEDBACK_MAX_LENGTH, EMAIL_MIN_LENGTH, FEEDBACK_MIN_LENGTH};
+use crate::limits::{FEEDBACK_MAX_LENGTH, FEEDBACK_MIN_LENGTH};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
@@ -34,23 +34,21 @@ pub struct FeedbackListResponse {
 
 impl Validated for FeedbackData {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.email.chars().count() > EMAIL_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
+        if self.email != String::new() {
+            validate_email(&self.email)?;
         }
+
         if self.feedback.chars().count() > FEEDBACK_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "feedback",
                 FEEDBACK_MAX_LENGTH,
             ));
         }
-        
-        if self.email.chars().count() < EMAIL_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH));
-        }
+
         if self.feedback.chars().count() < FEEDBACK_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet("feedback", FEEDBACK_MIN_LENGTH));
         }
-        
+
         Ok(())
     }
 }
