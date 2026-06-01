@@ -516,6 +516,8 @@ pub struct TreeFilters {
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
     pub book: Vec<String>,
+    #[serde(default)]
+    pub tag: Vec<String>,
     pub language_code: Option<String>,
     pub subject: Option<String>,
     pub created_after: Option<DateTime<Utc>>,

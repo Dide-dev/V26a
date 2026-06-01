@@ -669,6 +669,7 @@ fn apply_tree_filters<'a>(
     let TreeFilters {
         owner_name,
         book,
+        tag,
         language_code,
         subject,
         created_after,
@@ -724,6 +725,19 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(parsed_isbns)
             .push_unseparated("))");
     }
+    // requested_tags is defined in tree_list_query_tag_cte() for improved efficiency
+    if !tag.is_empty() {
+        separated.push(
+            r"trees.id IN (
+                SELECT tree_id
+                FROM tree_tags
+                WHERE tag_id IN (SELECT id FROM requested_tags)
+                GROUP BY tree_id
+                HAVING COUNT(DISTINCT tag_id) =
+                       (SELECT COUNT(*) FROM requested_tags)
+            )",
+        );
+    }
     if let Some(language_code) = language_code {
         separated
             .push("(trees.language_code = ")
@@ -759,6 +773,19 @@ const TREE_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN subjects ON subjects.id = trees.subject_id
 ";
 
+fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+    query
+        .push(
+            r"
+            WITH requested_tags AS (
+                SELECT id
+                FROM tags
+                WHERE name = ANY(",
+        )
+        .push_bind(tags)
+        .push("))");
+}
+
 /// Get the amount of trees satisfying some filters.
 ///
 /// # Arguments
@@ -778,7 +805,11 @@ pub async fn get_queried_count(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*)");
+    let mut query = QueryBuilder::<Postgres>::new("");
+    if !filters.tag.is_empty() {
+        tree_list_query_tag_cte(&mut query, &filters.tag);
+    }
+    query.push("SELECT COUNT(*)");
     query.push(TREE_LIST_QUERY_JOINS);
 
     apply_tree_filters(&mut query, filters, user_id)?;
@@ -813,7 +844,11 @@ pub async fn get_queried_list(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new(
+    let mut query = QueryBuilder::<Postgres>::new("");
+    if !filters.tag.is_empty() {
+        tree_list_query_tag_cte(&mut query, &filters.tag);
+    }
+    query.push(
         r#"
     SELECT trees.*,
        users.name                                                     AS owner_name,
@@ -1178,6 +1213,7 @@ mod tests {
         let all_filters = TreeFilters {
             owner_name: Some("67".to_owned()),
             book: vec!["0-451-52493-4".to_owned()],
+            tag: vec!["funky".to_owned()],
             language_code: Some("nl".to_owned()),
             subject: Some("Wiskunde A".to_owned()),
             created_after: Some(DateTime::<Utc>::MIN_UTC),
@@ -1188,7 +1224,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");

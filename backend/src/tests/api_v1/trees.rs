@@ -434,11 +434,13 @@ async fn test_filter_tree_list(db: PgPool) {
             published: true,
             language_code: "nl".to_owned(),
             subject_id: Some(subject_id),
+            tags: vec!["Coco".to_owned(), "Fork".to_owned()],
             ..Default::default()
         },
         TreeData {
             book_isbn: Some("9780061120084".to_string()),
             language_code: "fr".to_owned(),
+            tags: vec!["Fork".to_owned(), "Gargoyle".to_owned()],
             published: true,
             ..Default::default()
         },
@@ -557,6 +559,49 @@ async fn test_filter_tree_list(db: PgPool) {
         .await;
     response.assert_status_bad_request();
     response.assert_text(ApiError::InvalidIsbn.to_string());
+
+    // Multiple tags
+    let response = server
+        .get("/trees/get-list?page=1&size=100&tag=Coco&tag=Fork")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[0].clone(),]);
+
+    // Multiple tags, incorrectly formatted (gets parsed as single string)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&tag=Coco,Fork")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
+
+    // One tag (out of multiple)
+    let response = server.get("/trees/get-list?page=1&size=100&tag=Fork").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        requested_trees_data,
+        vec![trees_data[1].clone(), trees_data[0].clone(),]
+    );
+
+    // Too many tags (no results)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&tag=Coco&tag=Fork&tag=Gargoyle")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
 
     // Language that has trees
     let response = server
