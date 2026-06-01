@@ -7,19 +7,19 @@
 use crate::ArcState;
 use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
-use crate::db::session::{delete_all_sessions, get_session};
+use crate::db::session::delete_all_sessions;
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
 };
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
 use crate::db_structs::Validated;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
@@ -37,7 +37,7 @@ pub fn users() -> Router<ArcState> {
         .route("/me", get(get_own_user_data))
         .route("/update", post(update_user_data))
         .route("/change-password", post(change_password))
-        .route("/{user_id}/delete", delete(delete_user_data))
+        .route("/delete", delete(delete_user_data))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -188,14 +188,7 @@ async fn update_user_data(
 
     update_user(&db, claims.sub, &new_data).await?;
 
-    let session_token = jar
-        .get("session")
-        .ok_or(ApiError::MissingAuthentication)?
-        .value();
-    let old_exp = get_session(&db, session_token)
-        .await?
-        .ok_or(ApiError::MissingAuthentication)?
-        .exp;
+    let old_exp = claims.exp;
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
@@ -282,22 +275,23 @@ async fn change_password(
     )
     .await?;
 
+    // All sessions of the account are invalidated if password is changed.
+    delete_all_sessions(&db, claims.sub).await?;
+
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
 
 #[utoipa::path(
     delete,
-    path = "/{user_id}/delete",
+    path = "/delete",
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("user_id" = i32, Path),
         ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
         ("session" = Claims, Cookie),
     )
@@ -307,11 +301,7 @@ async fn change_password(
 /// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
 ///
 /// # Arguments
-/// `jar` - The jar with the cookies (`user_info` & session).
-///
 /// `claims` - The session cookie of the user.
-///
-/// `user_id` - The user to delete.
 ///
 /// `deleteOwnedTrees` - Delete all the trees of the user.
 ///
@@ -323,39 +313,28 @@ async fn change_password(
 ///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete
-/// the user.
-///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
     mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
     Query(delete): Query<DeleteOwnedTrees>,
 ) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await?;
 
-    if !user_id_exists(&mut *transaction, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
+    if !user_id_exists(&mut *transaction, claims.sub).await? {
+        return Err(ApiError::MissingUser(claims.sub));
     }
 
-    // A user can only delete their own account unless they are an admin.
-    if claims.sub != user_id && claims.account_type != AccountType::Admin {
-        return Err(ApiError::NoPermission);
-    }
+    delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
-    delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
+    // Unvalidate all the sessions based on userid.
+    delete_all_sessions(&mut *transaction, claims.sub).await?;
 
-    if claims.sub == user_id {
-        // Unvalidate all the sessions based on userid.
-        delete_all_sessions(&mut *transaction, claims.sub).await?;
-
-        // Unset the cookies by changing the date to a time in the past.
-        jar = jar
-            .remove(Cookie::from("session"))
-            .remove(Cookie::from("user_info"));
-    }
+    // Unset the cookies by changing the date to a time in the past.
+    jar = jar
+        .remove(Cookie::from("session"))
+        .remove(Cookie::from("user_info"));
 
     transaction.commit().await?;
 

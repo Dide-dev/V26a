@@ -177,12 +177,10 @@ async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
 
     let register_data = RegisterData::test_values();
-    let user_id = register(&server, &register_data).await;
+    let _user_id = register(&server, &register_data).await;
     login(&server, register_data.email).await;
 
-    let response = server
-        .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
-        .await;
+    let response = server.delete("/users/delete?deleteOwnedTrees=false").await;
 
     response.assert_status_ok();
 
@@ -194,33 +192,10 @@ async fn test_delete_own_user(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_delete_other_user(db: PgPool) {
-    let server = setup(db);
-
-    let account1 = RegisterData::test_values();
-    let user_id_1 = register(&server, &account1).await;
-    let account2 = RegisterData::test_values();
-    register(&server, &account2).await;
-    login(&server, account2.email).await;
-
-    let response = server
-        .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
-        .await;
-
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
 async fn test_delete_nonexistent_user(db: PgPool) {
     let server = setup(db);
 
-    let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
-    login(&server, register_data.email).await;
+    let response = server.delete("/users/delete?deleteOwnedTrees=false").await;
 
-    let response = server
-        .delete("/users/99999/delete?deleteOwnedTrees=false")
-        .await;
-
-    response.assert_status_bad_request();
+    response.assert_status_unauthorized();
 }

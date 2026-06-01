@@ -131,37 +131,33 @@ async fn login(
     responses(
         (status = 200, description = "User data successfully logged out."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
         ("session" = Claims, Cookie),
     )
 )]
-/// Logout a user from the database.
-/// A user can only logout their own account, if the user itself exist.
+/// Logs out a user and deletes their session on the backend.
 ///
 /// # Arguments
 /// `jar` - The jar with the cookies (`user_info` & session).
-///
-/// `user_id` - The user to logout.
 ///
 /// # Returns
 /// The (cookie) jar that is empty.
 ///
 /// # Errors
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete the session.
+/// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
 async fn logout(
     mut jar: CookieJar,
     Extension(db): Extension<PgPool>,
 ) -> Result<CookieJar, ApiError> {
     let token = jar
         .get("session")
-        .ok_or(ApiError::NoPermission)?
+        .ok_or(ApiError::MissingAuthentication)?
         .value()
         .to_string();
 
-    // Unvalidate the session.
+    // Invalidate the session.
     delete_session(&db, &token).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.

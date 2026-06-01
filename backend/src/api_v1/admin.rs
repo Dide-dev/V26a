@@ -15,7 +15,10 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db::feedback::{get_all_feedback, get_feedback_count};
+use crate::db::{
+    feedback::{get_all_feedback, get_feedback_count},
+    session::delete_all_sessions,
+};
 use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
 };
@@ -205,6 +208,7 @@ async fn update_user_data(
 /// May return a [`HashException`](ApiError::HashException) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
+    claims: Claims,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Path(user_id): Path<i32>,
@@ -218,6 +222,9 @@ async fn change_password(
         state.config.bcrypt_cost,
     )
     .await?;
+
+    // All sessions of the account are invalidated if password is changed.
+    delete_all_sessions(&db, claims.sub).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }

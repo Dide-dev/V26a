@@ -61,7 +61,10 @@ async fn test_logout_failure(db: PgPool) {
     register(&server, &register_data).await;
 
     // logout is not possible without a valid session.
-    server.post("/auth/logout").await.assert_status_forbidden();
+    server
+        .post("/auth/logout")
+        .await
+        .assert_status_unauthorized();
 }
 
 #[sqlx::test]
