@@ -170,24 +170,24 @@ pub struct PasswordChangeRequestBody {
 
 impl Validated for PasswordChangeRequestBody {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.old_password.len() > PASSWORD_MAX_LENGTH {
+        if self.old_password.chars().count() > PASSWORD_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "oldPassword",
                 PASSWORD_MAX_LENGTH,
             ));
         }
-        if self.new_password.len() > PASSWORD_MAX_LENGTH {
+        if self.new_password.chars().count() > PASSWORD_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "newPassword",
                 PASSWORD_MAX_LENGTH,
             ));
         }
-
+        
         if self.old_password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("old_password", PASSWORD_LOGIN_MIN_LENGTH));
+            return Err(ApiError::InputLengthNotMet("oldPassword", PASSWORD_LOGIN_MIN_LENGTH));
         }
         if self.new_password.chars().count() < PASSWORD_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("new_password", PASSWORD_MIN_LENGTH));
+            return Err(ApiError::InputLengthNotMet("newPassword", PASSWORD_MIN_LENGTH));
         }
 
         Ok(())
@@ -209,6 +209,11 @@ impl Validated for AdminPasswordChangeRequestBody {
                 PASSWORD_MAX_LENGTH,
             ));
         }
+
+        if self.new_password.chars().count() < PASSWORD_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("newPassword", PASSWORD_MIN_LENGTH));
+        }
+
         Ok(())
     }
 }
