@@ -5,7 +5,7 @@
 */
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
-use crate::limits::{EMAIL_MAX_LENGTH, FEEDBACK_MAX_LENGTH};
+use crate::limits::{EMAIL_MAX_LENGTH, FEEDBACK_MAX_LENGTH, EMAIL_MIN_LENGTH, FEEDBACK_MIN_LENGTH};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
@@ -43,6 +43,14 @@ impl Validated for FeedbackData {
                 FEEDBACK_MAX_LENGTH,
             ));
         }
+        
+        if self.email.chars().count() < EMAIL_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH));
+        }
+        if self.feedback.chars().count() < FEEDBACK_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("feedback", FEEDBACK_MIN_LENGTH));
+        }
+        
         Ok(())
     }
 }

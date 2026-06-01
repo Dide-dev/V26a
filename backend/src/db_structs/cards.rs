@@ -6,7 +6,7 @@
 
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
-use crate::limits::{CARD_BACK_MAX_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH};
+use crate::limits::{CARD_BACK_MAX_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH, CARD_BACK_MIN_LENGTH, CARD_LIBRARY_TITLE_MIN_LENGTH};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
@@ -46,6 +46,11 @@ impl Validated for CardData {
         if self.back.chars().count() > CARD_BACK_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("back", CARD_BACK_MAX_LENGTH));
         }
+        
+        if self.back.chars().count() < CARD_BACK_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("back", CARD_BACK_MIN_LENGTH));
+        }
+        
         Ok(())
     }
 }
@@ -64,6 +69,10 @@ impl Validated for LibraryCardAddData {
                 "title",
                 CARD_LIBRARY_TITLE_MAX_LENGTH,
             ));
+        }
+        
+        if self.title.chars().count() < CARD_LIBRARY_TITLE_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("title", CARD_LIBRARY_TITLE_MIN_LENGTH));
         }
         Ok(())
     }
