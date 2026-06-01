@@ -15,6 +15,38 @@ use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
 
+fn validate_password(password: &str, field_name: &'static str) -> Result<(), ApiError> {
+    if password.chars().count() > PASSWORD_MAX_LENGTH {
+        return Err(ApiError::InputLengthExceeded(
+            field_name,
+            PASSWORD_MAX_LENGTH,
+        ));
+    }
+    if password.chars().count() < PASSWORD_MIN_LENGTH {
+        return Err(ApiError::InputLengthNotMet(field_name, PASSWORD_MIN_LENGTH));
+    }
+    let mut lower = false;
+    let mut upper = false;
+    let mut special = false;
+    let mut number = false;
+    for char in password.chars() {
+        if char.is_lowercase() {lower = true;}
+        if char.is_uppercase() {upper = true;}
+        if char.is_ascii_punctuation() {special = true;}
+        if char.is_ascii_digit() {number = true;}
+
+        if lower && upper && special && number {
+            break;
+        }
+    }
+
+    if !(lower && upper && special && number) {
+        return Err(ApiError::IllegalPassword);
+    }
+
+    Ok(())
+}
+
 /// Data the user can modify, except email and password.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -47,7 +79,7 @@ impl Validated for UserData {
         if self.name.chars().count() < USER_NAME_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet("name", USER_NAME_MIN_LENGTH));
         }
-        if self.nickname.chars().count() < USER_NICKNAME_MIN_LENGTH {
+        if self.nickname != String::new() && self.nickname.chars().count() < USER_NICKNAME_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet("nickname", USER_NICKNAME_MIN_LENGTH));
         }
 
@@ -72,7 +104,6 @@ pub struct UserGeneralData {
 }
 
 impl Validated for UserGeneralData {
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.name.chars().count() > USER_NAME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("name", USER_NAME_MAX_LENGTH));
@@ -88,6 +119,13 @@ impl Validated for UserGeneralData {
                 "aboutMe",
                 USER_ABOUT_ME_MAX_LENGTH,
             ));
+        }
+
+        if self.name.chars().count() < USER_NAME_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("name", USER_NAME_MIN_LENGTH));
+        }
+        if self.nickname != String::new() && self.nickname.chars().count() < USER_NICKNAME_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("nickname", USER_NICKNAME_MIN_LENGTH));
         }
 
         for char in self.name.chars() {
@@ -139,19 +177,12 @@ impl Validated for RegisterData {
         if self.email.chars().count() > EMAIL_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
         }
-        if self.password.chars().count() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "password",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
 
         if self.email.chars().count() < EMAIL_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH));
         }
-        if self.password.chars().count() < PASSWORD_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("password", PASSWORD_MIN_LENGTH));
-        }
+
+        validate_password(&self.password, "password")?;
 
         Ok(())
     }
@@ -237,19 +268,11 @@ impl Validated for PasswordChangeRequestBody {
                 PASSWORD_MAX_LENGTH,
             ));
         }
-        if self.new_password.chars().count() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "newPassword",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
         
         if self.old_password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet("oldPassword", PASSWORD_LOGIN_MIN_LENGTH));
         }
-        if self.new_password.chars().count() < PASSWORD_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("newPassword", PASSWORD_MIN_LENGTH));
-        }
+        validate_password(&self.new_password, "newPassword")?;
 
         Ok(())
     }
@@ -264,16 +287,7 @@ pub struct AdminPasswordChangeRequestBody {
 
 impl Validated for AdminPasswordChangeRequestBody {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.new_password.len() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "newPassword",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
-
-        if self.new_password.chars().count() < PASSWORD_MIN_LENGTH {
-            return Err(ApiError::InputLengthNotMet("newPassword", PASSWORD_MIN_LENGTH));
-        }
+        validate_password(&self.new_password, "newPassword")?;
 
         Ok(())
     }

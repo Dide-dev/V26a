@@ -291,7 +291,7 @@ pub struct TreeData {
 impl Default for TreeData {
     fn default() -> Self {
         Self {
-            title: String::new(),
+            title: "title".to_string(),
             language_code: "nl".to_owned(),
             tags: Vec::new(),
             description: String::new(),

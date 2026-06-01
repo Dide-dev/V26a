@@ -17,6 +17,8 @@ pub enum ApiError {
     //------------------//
     /// An error to return when a name contains characters which fall outside of the accepted standard.
     IllegalName,
+    /// An error to return when a password does not contain the appropriate characters.
+    IllegalPassword,
     /// An error to return when an input provided is too long for the database.
     InputLengthExceeded(&'static str, usize),
     /// An error to return when an input provided is too short to be valid.
@@ -127,6 +129,7 @@ impl Display for ApiError {
             // 400: BAD REQUEST //
             //------------------//
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
+            ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
             ApiError::InputLengthExceeded(offending_string, max_length) => {
                 write!(
                     f,
@@ -237,6 +240,7 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::IllegalName
+            | ApiError::IllegalPassword
             | ApiError::InputLengthExceeded(_, _)
             | ApiError::InputLengthNotMet(_, _)
             | ApiError::InvalidAuthorisationTarget

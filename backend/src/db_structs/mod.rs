@@ -17,9 +17,5 @@ pub mod users;
 /// A trait that can be implemented on structs that have inputs that need to be validated.
 pub trait Validated {
     /// Validates the inputs for a struct, returning [`Ok`] if valid, or an [`ApiError`] if not.
-    /// 
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
-    /// 
-    /// Returns a [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError>;
 }
