@@ -5,6 +5,7 @@
 */
 
 use crate::ArcState;
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::session::{delete_all_sessions, get_session};
 use crate::db::users::{
@@ -32,7 +33,7 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<ArcState> {
     Router::new()
-        .route("/add", post(add_new_user))
+        .route("/add", post(add_new_user).layer(rate_limit_layer(5, 20)))
         .route("/me", get(get_own_user_data))
         .route("/update", post(update_user_data))
         .route("/change-password", post(change_password))
@@ -59,6 +60,7 @@ pub enum UserResponse {
         (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     )
 )]

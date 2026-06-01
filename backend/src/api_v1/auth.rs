@@ -5,6 +5,7 @@
 */
 
 use crate::ArcState;
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
 use crate::db::users::get_user;
@@ -24,7 +25,7 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
     Router::new()
-        .route("/login", post(login))
+        .route("/login", post(login).layer(rate_limit_layer(15, 30)))
         .route("/logout", post(logout))
 }
 
@@ -43,6 +44,7 @@ pub struct LoginResponse {
     request_body = LoginRequestBody,
     responses(
         (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
 )]
@@ -58,6 +60,8 @@ pub struct LoginResponse {
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException), [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
