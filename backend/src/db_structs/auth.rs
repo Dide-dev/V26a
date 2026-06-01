@@ -7,7 +7,7 @@
 use crate::db_structs::Validated;
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
-use crate::limits::{EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH};
+use crate::limits::{EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, EMAIL_MIN_LENGTH, PASSWORD_LOGIN_MIN_LENGTH};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -23,11 +23,18 @@ impl Validated for LoginRequestBody {
         if self.email.chars().count() > EMAIL_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
         }
-        if self.password.len() > PASSWORD_MAX_LENGTH {
+        if self.password.chars().count() > PASSWORD_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
                 "password",
                 PASSWORD_MAX_LENGTH,
             ));
+        }
+
+        if self.email.chars().count() < EMAIL_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("email", EMAIL_MAX_LENGTH));
+        }
+        if self.password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("password", PASSWORD_LOGIN_MIN_LENGTH));
         }
 
         Ok(())

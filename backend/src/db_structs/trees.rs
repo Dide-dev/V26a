@@ -11,7 +11,7 @@ use crate::errors::ApiError;
 use crate::limits::{
     TREE_ASSIGNMENT_MAX_LENGTH, TREE_BOOK_CHAPTER_MAX_LENGTH, TREE_BOOK_EDITION_MAX_LENGTH,
     TREE_BOOK_EXERCISE_MAX_LENGTH, TREE_BOOK_ISBN_MAX_LENGTH, TREE_BOOK_NAME_MAX_LENGTH,
-    TREE_DESCRIPTION_MAX_LENGTH, TREE_TITLE_MAX_LENGTH,
+    TREE_DESCRIPTION_MAX_LENGTH, TREE_TITLE_MAX_LENGTH, TREE_BOOK_ISBN_MIN_LENGTH, TREE_TITLE_MIN_LENGTH
 };
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -383,6 +383,13 @@ impl Validated for TreeData {
                 "assignmentText",
                 TREE_ASSIGNMENT_MAX_LENGTH,
             ));
+        }
+        
+        if self.title.chars().count() < TREE_TITLE_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("title", TREE_TITLE_MIN_LENGTH));
+        }
+        if self.book_isbn.as_ref().is_some_and(|s| {s.chars().count() < TREE_BOOK_ISBN_MIN_LENGTH}) {
+            return Err(ApiError::InputLengthNotMet("bookIsbn", TREE_BOOK_ISBN_MIN_LENGTH));
         }
 
         Ok(())
