@@ -84,7 +84,7 @@
                 </p>
             {/if}
         </div>
-        <button data-testid="submit-feedback-button">{m.submitFeedback()}</button>
+        <button type="submit" data-testid="submit-feedback-button">{m.submitFeedback()}</button>
     </form>
 </div>
 <br />

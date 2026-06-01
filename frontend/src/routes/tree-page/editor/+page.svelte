@@ -11,7 +11,7 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { getTreeWithCards, type TreeData } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeData, type TreeLinkedData } from '$lib/api-wrapper/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
@@ -83,6 +83,7 @@
     let id: number | null = null;
     let tree: {
         data: TreeData;
+        linkedData: TreeLinkedData;
         history: TreeHistory;
         sidebar: null | SideBar;
         sidebarElement: null | SidebarComponent;
@@ -92,22 +93,21 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            // TODO: redirect to tree list
-            await goto(appLink('/'));
+            await goto(appLink('/all-trees'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            // TODO: redirect to tree list
-            await goto(appLink('/'));
+            await goto(appLink('/all-trees'));
             return;
         }
 
         const fetchedTree = await getTreeWithCards(id);
         tree = {
             data: fetchedTree.metadata.data,
+            linkedData: fetchedTree.metadata.linkedData,
             history: initializeHistory(
                 fetchedTree.metadata.genData.id,
                 fetchedTree.structure,
@@ -162,7 +162,11 @@
         </p>
 
         <div class="m-2 flex gap-2">
-            <EditMetadata treeId={tree.history.treeId} bind:prevTreeData={tree.data} />
+            <EditMetadata
+                treeId={tree.history.treeId}
+                bind:prevTreeData={tree.data}
+                treeLinkedData={tree.linkedData}
+            />
             <button
                 class={[
                     'rounded-sm bg-emerald-500 p-1',
