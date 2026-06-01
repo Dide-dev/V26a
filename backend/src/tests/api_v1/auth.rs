@@ -7,6 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
+use crate::db::session::get_session;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
@@ -15,7 +16,7 @@ use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_login_fail(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db.clone());
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
 
@@ -34,24 +35,40 @@ async fn test_login_fail(db: PgPool) {
     assert!(!response.headers().contains_key("set-cookie"));
 
     // Checks that there is no valid session present.
+    let session = get_session(&db, "expected_token").await.unwrap();
+    assert!(session.is_none());
     server.get("/users/me").await.assert_status_unauthorized();
 }
 
 #[sqlx::test]
 async fn test_logout_success(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db.clone());
+
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
+
     login(&server, register_data.email.clone()).await;
 
     let response = server.post("/auth/logout").await;
 
-    response.assert_status_ok();
+    let cookie = response.headers().get("set-cookie").unwrap().clone();
+
+    // extract token
+    let token = cookie
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .strip_prefix("session=")
+        .unwrap();
+
     // Checks if a header exists that will unset the cookie.
     assert!(response.headers().contains_key("set-cookie"));
 
-    // Check that the session is unvalidated.
-    server.get("/users/me").await.assert_status_unauthorized();
+    // Check that the session is invalidated.
+    let session = get_session(&db, token).await.unwrap();
+    assert!(session.is_none());
 }
 
 #[sqlx::test]

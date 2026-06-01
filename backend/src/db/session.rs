@@ -50,7 +50,7 @@ pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<
 ///
 /// `user_id` - The user this session belongs to.
 ///
-/// `expires_at` - When the session expires.
+/// `session_duration` - The total amount of time the session persists.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -205,22 +205,24 @@ mod tests {
         assert!(claims2.is_none());
     }
 
-    // #[sqlx::test]
-    // async fn delete_all_sessions_except(db: PgPool) {
-    //     let user_id = initialize_basic_user(&db).await;
+    #[sqlx::test]
+    async fn test_delete_all_sessions_except(db: PgPool) {
+        let user_id = initialize_basic_user(&db).await;
 
-    //     let session1 = create_session(&db, user_id, 3600).await.unwrap();
-    //     let session2 = create_session(&db, user_id, 3600).await.unwrap();
+        let session1 = create_session(&db, user_id, 3600).await.unwrap();
+        let session2 = create_session(&db, user_id, 3600).await.unwrap();
 
-    //     delete_all_sessions_except(&db, user_id, session1).await.unwrap();
+        delete_all_sessions_except(&db, user_id, &session1)
+            .await
+            .unwrap();
 
-    //     let claims1 = get_session(&db, &session1).await.unwrap();
-    //     let claims2 = get_session(&db, &session2).await.unwrap();
+        let claims1 = get_session(&db, &session1).await.unwrap();
+        let claims2 = get_session(&db, &session2).await.unwrap();
 
-    //     // This session is the exception and should not be deleted.
-    //     assert!(claims1.is_some());
+        // This session is the exception and should not be deleted.
+        assert!(claims1.is_some());
 
-    //     // This session should be deleted.
-    //     assert!(claims2.is_none());
-    // }
+        // This session should be deleted.
+        assert!(claims2.is_none());
+    }
 }

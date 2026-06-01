@@ -173,6 +173,44 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_password_change_invalidates_other_sessions(db: PgPool) {
+    let server = setup(db.clone());
+
+    let register_data = RegisterData::test_values();
+    let user_id = register(&server, &register_data).await;
+
+    // Create two sessions.
+    login(&server, register_data.email.clone()).await;
+    login(&server, register_data.email.clone()).await;
+
+    // Check that two sessions exist before password change.
+    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+    assert_eq!(sessions.len(), 2);
+
+    // Change password.
+    server
+        .post("/users/change-password")
+        .json(&PasswordChangeRequestBody {
+            old_password: register_data.password,
+            new_password: "Pa$$word".to_owned(),
+        })
+        .await
+        .assert_status_ok();
+
+    // Checks that only one session is left. That means other sessions are invalidated.
+    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+    assert_eq!(sessions.len(), 1);
+}
+
+#[sqlx::test]
 async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
 
@@ -189,6 +227,35 @@ async fn test_delete_own_user(db: PgPool) {
 
     // Check that sessions are unvalidated.
     server.get("/users/me").await.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
+    let server = setup(db.clone());
+
+    let register_data = RegisterData::test_values();
+    let user_id = register(&server, &register_data).await;
+    login(&server, register_data.email.clone()).await;
+    login(&server, register_data.email.clone()).await;
+
+    // Checks two sessions exist before deletion.
+    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions.len(), 2);
+
+    server
+        .delete("/users/delete?deleteOwnedTrees=false")
+        .await
+        .assert_status_ok();
+
+    // Check that all sessions are invalidated. The amount of sessions should be equal to 0 then.
+    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions.len(), 0);
 }
 
 #[sqlx::test]

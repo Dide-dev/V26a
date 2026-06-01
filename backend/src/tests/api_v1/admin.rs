@@ -146,3 +146,42 @@ async fn test_change_password(db: PgPool) {
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
+
+#[sqlx::test]
+async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
+    let server = setup(db.clone());
+
+    // Create a regular user with two sessions.
+    let user_account = RegisterData::test_values();
+    let user_id = register(&server, &user_account).await;
+    login(&server, user_account.email.clone()).await;
+    login(&server, user_account.email.clone()).await;
+
+    // Check two sessions exist.
+    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions.len(), 2);
+
+    // Login as admin.
+    let admin_account = RegisterData::test_values();
+    register_admin(&server, &db, &admin_account).await;
+    login(&server, admin_account.email).await;
+
+    // Change the user's password as admin.
+    server
+        .post(&format!("/admin/users/{user_id}/update-password"))
+        .json(&AdminPasswordChangeRequestBody {
+            new_password: "Pa$$word".to_owned(),
+        })
+        .await
+        .assert_status_ok();
+
+    // Verify all sessions are invalidated. The amount of sessions is 0 if alle sessions are invalidated.
+    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions.len(), 0);
+}
