@@ -82,7 +82,6 @@ impl Config {
             .parse::<usize>()
             .expect("Failed to parse environment variable MAX_CONCURRENT_CLASSROOM_SESSIONS");
 
-
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
             .unwrap_or("30".to_string())
             .parse::<u64>()
