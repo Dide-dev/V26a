@@ -80,7 +80,7 @@
 <div class="flex w-full justify-center">
     <div class="flex-col">
         <!-- Filter options -->
-        <form class="flex w-md flex-col gap-2" onsubmit={loadTrees}>
+        <form class="completed flex w-md flex-col gap-2" onsubmit={loadTrees}>
             <b>{m.creationDate()}</b>
             <div class="flex">
                 <label class="m-1 flex-1/2">
@@ -119,7 +119,7 @@
                     bind:value={filterOptions.ownerId}
                 />
             </label>
-            <button>{m.applyFilters()}</button>
+            <button type="submit">{m.applyFilters()}</button>
         </form>
 
         <!-- Change the number of trees per page -->
