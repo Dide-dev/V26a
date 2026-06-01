@@ -33,6 +33,10 @@ pub struct Config {
 
     /// Max concurrent classroom sessions (should be no higher than 20)
     pub max_concurrent_classroom_sessions: usize,
+
+    /// Ratelimiter config (minute)
+    pub rate_limit_per_minute: u64,
+    pub rate_limit_burst_size: u32,
 }
 
 impl Config {
@@ -78,6 +82,17 @@ impl Config {
             .parse::<usize>()
             .expect("Failed to parse environment variable MAX_CONCURRENT_CLASSROOM_SESSIONS");
 
+
+        let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
+            .unwrap_or("30".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
+
+        let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
+            .unwrap_or("40".to_string())
+            .parse::<u32>()
+            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
+
         Self {
             listening_ip,
             listening_port,
@@ -89,6 +104,8 @@ impl Config {
             upload_dir,
             max_upload_size,
             max_concurrent_classroom_sessions,
+            rate_limit_per_minute,
+            rate_limit_burst_size,
         }
     }
 }

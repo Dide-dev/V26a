@@ -5,6 +5,7 @@
 */
 
 use crate::ArcState;
+use crate::api_v1::rate_limit_layer;
 use crate::db::feedback::add_feedback;
 use crate::db_structs::Validated;
 use crate::db_structs::feedback::FeedbackData;
@@ -15,7 +16,10 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
 pub fn feedback() -> Router<ArcState> {
-    Router::new().route("/provide", post(provide_feedback))
+    Router::new().route(
+        "/provide",
+        post(provide_feedback).layer(rate_limit_layer(5, 10)),
+    )
 }
 
 #[utoipa::path(
@@ -25,6 +29,7 @@ pub fn feedback() -> Router<ArcState> {
     request_body = FeedbackData,
     responses(
         (status = 200, description = "Feedback successfully received."),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
 )]

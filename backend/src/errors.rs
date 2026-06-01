@@ -73,6 +73,12 @@ pub enum ApiError {
     /// authorized.
     NoPermission,
 
+    //------------------------//
+    // 429: TOO MANY REQUESTS //
+    //------------------------//
+    /// An error to return when a user exceeds the ratelimit.
+    RateLimitExceeded,
+
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
@@ -189,6 +195,11 @@ impl Display for ApiError {
             //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
+            //------------------------//
+            // 429: TOO MANY REQUESTS //
+            //------------------------//
+            ApiError::RateLimitExceeded => write!(f, "You are sending too many requests."),
+
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
             //----------------------------//
@@ -253,6 +264,8 @@ impl ApiError {
             | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
+
+            ApiError::RateLimitExceeded => StatusCode::TOO_MANY_REQUESTS,
 
             ApiError::CreateDirException
             | ApiError::DatabaseException
