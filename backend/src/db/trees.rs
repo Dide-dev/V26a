@@ -18,7 +18,7 @@ use std::collections::{HashMap, HashSet};
 /// Check whether the given subject exists.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `id` - The id of the subject whose existence to check.
 ///
@@ -38,7 +38,7 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 /// Retrieve the list of all subjects from the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// # Returns
 /// A map of all the possible tree subjects stored in the database indexed by id,
@@ -64,7 +64,7 @@ pub async fn get_subjects(
 /// Check whether the given language exists.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `language_code` - The code of the language whose existence to check.
 ///
@@ -90,7 +90,7 @@ pub async fn language_exists(
 /// Retrieve the list of all languages from the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// # Returns
 /// A list of all the possible tree languages stored in the database, as [`Vec<Language>`].
@@ -173,7 +173,7 @@ pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
 /// Add a new book to the database. If a book with the given ISBN already exists, do nothing.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_data` - The [`TreeData`] which contains the book data.
 ///
@@ -320,7 +320,7 @@ pub async fn add_tree(
 /// Does **not** check if the tree existed in the first place.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - the id of the tree to remove
 ///
@@ -339,7 +339,7 @@ pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), Ap
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -424,7 +424,7 @@ pub async fn update_tree_data(
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree which is queried.
 ///
@@ -492,7 +492,7 @@ pub async fn db_get_tree_all_data(
 /// Get the id of the owner of the tree.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -516,7 +516,7 @@ pub async fn get_tree_owner(
 /// Check whether a user is a co-author of a tree.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -546,7 +546,7 @@ pub async fn is_co_author_of_tree(
 /// Add a co-author to a tree.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree to which a co-author should be added.
 ///
@@ -577,7 +577,7 @@ pub async fn add_co_author(
 /// and whether any duplicate cards exist in the tree structure.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree to check.
 ///
@@ -667,7 +667,7 @@ fn apply_tree_filters<'a>(
     user_id: Option<i32>,
 ) -> Result<(), ApiError> {
     let TreeFilters {
-        owner_id,
+        owner_name,
         book,
         created_after,
         created_before,
@@ -692,10 +692,10 @@ fn apply_tree_filters<'a>(
         separated.push_unseparated(")))");
     }
     separated.push_unseparated(")");
-    if let Some(owner_id) = owner_id {
+    if let Some(owner_name) = owner_name {
         separated
-            .push("(owner_id = ")
-            .push_bind_unseparated(owner_id)
+            .push("(users.name = ")
+            .push_bind_unseparated(owner_name)
             .push_unseparated(")");
     }
     if *editable && let Some(user_id) = user_id {
@@ -738,10 +738,17 @@ fn apply_tree_filters<'a>(
     Ok(())
 }
 
+const TREE_LIST_QUERY_JOINS: &str = r"
+    FROM trees
+    LEFT JOIN books ON books.isbn = trees.book_isbn
+    LEFT JOIN users ON users.id = trees.owner_id
+    LEFT JOIN subjects ON subjects.id = trees.subject_id
+";
+
 /// Get the amount of trees satisfying some filters.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `filters` - The filters to apply to the trees.
 ///
@@ -757,13 +764,8 @@ pub async fn get_queried_count(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new(
-        "SELECT COUNT(*)
-        FROM trees
-        LEFT JOIN books ON books.isbn = trees.book_isbn
-        LEFT JOIN users ON users.id = trees.owner_id
-        LEFT JOIN subjects ON subjects.id = trees.subject_id",
-    );
+    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*)");
+    query.push(TREE_LIST_QUERY_JOINS);
 
     apply_tree_filters(&mut query, filters, user_id)?;
 
@@ -775,7 +777,7 @@ pub async fn get_queried_count(
 /// Get the list of all trees satisfying some filters at a given page.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `page` - Which page is requested.
 ///
@@ -799,13 +801,17 @@ pub async fn get_queried_list(
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new(
         r#"
-        SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
-        FROM trees
-        LEFT JOIN books ON books.isbn = trees.book_isbn
-        LEFT JOIN users ON users.id = trees.owner_id
-        LEFT JOIN subjects ON subjects.id = trees.subject_id
-        "#,
+    SELECT
+        trees.*,
+        users.name AS owner_name,
+        subjects.name AS "subject_name?",
+        COALESCE(books.title, '') AS book_name,
+        COALESCE(books.author, '') AS book_author,
+        COALESCE(books.edition, '') AS book_edition,
+        ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags,
+        ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors"#,
     );
+    query.push(TREE_LIST_QUERY_JOINS);
 
     apply_tree_filters(&mut query, filters, user_id)?;
     query
@@ -1154,7 +1160,7 @@ mod tests {
 
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
-            owner_id: Some(67),
+            owner_name: Some("67".to_owned()),
             book: vec!["0-451-52493-4".to_owned()],
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
@@ -1164,19 +1170,19 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (owner_id = $3) AND (book_isbn = ANY($4)) AND (trees.created_at >= $5) AND (trees.created_at <= $6)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND (trees.created_at >= $5) AND (trees.created_at <= $6)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let partial_filters = TreeFilters {
-            owner_id: Some(67),
+            owner_name: Some("67".to_owned()),
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             ..Default::default()
         };
         apply_tree_filters(&mut partial_filters_query, &partial_filters, None).unwrap();
         assert_eq!(
             partial_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (trees.created_at >= $2)"
+            "SELECT * FROM trees WHERE (published = true) AND (users.name = $1) AND (trees.created_at >= $2)"
         );
 
         let mut show_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");

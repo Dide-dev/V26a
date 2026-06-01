@@ -420,8 +420,8 @@ async fn test_filter_tree_list(db: PgPool) {
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    let account_id1 = register(&server, &account1).await;
-    let account_id2 = register(&server, &account2).await;
+    register(&server, &account1).await;
+    register(&server, &account2).await;
     login(&server, account1.email.clone()).await;
 
     let trees_data = vec![
@@ -553,8 +553,11 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 0
     let response = server
         .get(
-            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
-                .as_str(),
+            format!(
+                "/trees/get-list?page=1&size=100&ownerName={}&showOwnPrivate=true",
+                account1.data.name
+            )
+            .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -574,8 +577,11 @@ async fn test_filter_tree_list(db: PgPool) {
     // All trees from user 0 using filter
     let response = server
         .get(
-            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
-                .as_str(),
+            format!(
+                "/trees/get-list?page=1&size=100&ownerName={}&showOwnPrivate=true",
+                account1.data.name
+            )
+            .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -590,8 +596,11 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 1
     let response = server
         .get(
-            format!("/trees/get-list?page=1&size=100&ownerId={account_id2}&showOwnPrivate=true")
-                .as_str(),
+            format!(
+                "/trees/get-list?page=1&size=100&ownerName={}&showOwnPrivate=true",
+                account2.data.name
+            )
+            .as_str(),
         )
         .await;
     response.assert_status_ok();

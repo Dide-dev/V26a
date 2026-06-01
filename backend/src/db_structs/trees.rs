@@ -511,7 +511,7 @@ pub struct TreeListResponse {
 #[derive(serde::Deserialize, ToSchema, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeFilters {
-    pub owner_id: Option<i32>,
+    pub owner_name: Option<String>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
