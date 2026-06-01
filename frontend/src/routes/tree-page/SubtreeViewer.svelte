@@ -14,16 +14,28 @@
     let {
         node,
         cards,
-        distanceFromRevealed = $bindable()
+        distanceFromRevealed,
+        isRevealed = $bindable()
     }: {
         node: RootNode | Node;
         cards: Record<CardId, CardData>;
         distanceFromRevealed: number;
+        isRevealed: boolean;
     } = $props();
 
     let revealed = $derived('label' in node);
 
     let distance = $derived(revealed ? 0 : distanceFromRevealed);
+
+    let childrenRevealed = $state(
+        (() => Array.from({ length: node.children.length }, () => false))()
+    );
+
+    let outOfFocus = $derived(node.children.length > 0 && !childrenRevealed.some((b) => !b));
+
+    $effect(() => {
+        isRevealed = distance === 0;
+    });
 </script>
 
 <div class="flex">
@@ -40,14 +52,20 @@
                 bind:distanceFromRevealed={distance}
                 card={cards[node.cardId]}
                 baseColor="tree"
+                bind:outOfFocus
             />
         </div>
     {/if}
 
     <LineDrawings alwaysFullWidth={false}>
         <!-- Here the html gets recursive as we render the 'node.children' -->
-        {#each node.children as child_node (child_node)}
-            <SubtreeViewer node={child_node} {cards} distanceFromRevealed={distance + 1} />
+        {#each node.children as child_node, i (child_node)}
+            <SubtreeViewer
+                node={child_node}
+                {cards}
+                distanceFromRevealed={distance + 1}
+                bind:isRevealed={childrenRevealed[i]}
+            />
         {/each}
     </LineDrawings>
 </div>

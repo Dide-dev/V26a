@@ -127,14 +127,14 @@
                 </div>
             </div>
             <div class="mt-text-small flex flex-auto flex-row">
-                {#if assignmentText !== ''}
-                    <div class="flex w-2/3 flex-col">
+                <div class="flex w-2/3 flex-col">
+                    {#if assignmentText !== ''}
                         <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
                             {m.assignment()}
                         </p>
-                        <p class="*:inline">
+                        <p>
                             <!-- Trees from the prototype may contain images. -->
-                            <span class="inline wrap-anywhere *:inline">
+                            <span class="wrap-anywhere *:last:inline">
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                 {@html markdownToFinalHtml(assignmentText)}
                             </span>
@@ -149,8 +149,8 @@
                                 </button>
                             {/if}
                         </p>
-                    </div>
-                {/if}
+                    {/if}
+                </div>
                 <div class="mr-4 flex w-1/3 flex-col text-right">
                     {#if tree.metadata.data.bookIsbn !== null}
                         <a
