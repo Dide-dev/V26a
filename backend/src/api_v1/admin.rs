@@ -157,8 +157,10 @@ async fn update_user_data(
     Path(user_id): Path<i32>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
+    let mut transaction = db.begin().await?;
+
     new_data.validate_inputs()?;
-    if !user_id_exists(&db, user_id).await? {
+    if !user_id_exists(&mut *transaction, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
 
@@ -170,7 +172,13 @@ async fn update_user_data(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    admin_update_user(&db, user_id, &new_data).await?;
+    admin_update_user(&mut *transaction, user_id, &new_data).await?;
+
+    if !new_data.enabled {
+        delete_all_sessions(&mut *transaction, user_id).await?;
+    }
+
+    transaction.commit().await?;
 
     Ok(Json(UserResponse::Success { user_id }))
 }

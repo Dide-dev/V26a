@@ -238,7 +238,7 @@ pub struct ChangePasswordResponse {
 ///
 /// # Arguments
 /// `jar` - The jar with the cookies (`user_info` & session).
-/// 
+///
 /// `password_change_request` - A struct containing the user's old password and the new password.
 ///
 /// # Returns
@@ -337,7 +337,7 @@ async fn delete_user_data(
 
     delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
-    // Unvalidate all the sessions based on userid.
+    // Invalidate all the sessions based on userid.
     delete_all_sessions(&mut *transaction, claims.sub).await?;
 
     // Unset the cookies by changing the date to a time in the past.

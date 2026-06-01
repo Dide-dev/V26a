@@ -14,7 +14,7 @@ use std::str::FromStr;
 /// `token` - The opaque session token from the session cookie.
 ///
 /// # Returns
-/// Returns `Ok(None)` if the token could not be found or has expired.
+/// Returns [`Ok(None)`](Ok) if the token could not be found or has expired.
 ///
 /// Returns [`Claims`] containing the user id and account type otherwise.
 ///
@@ -112,10 +112,29 @@ pub async fn delete_all_sessions(db: impl PgExecutor<'_>, user_id: i32) -> Resul
     Ok(())
 }
 
-pub async fn delete_all_sessions_except(db: impl PgExecutor<'_>, user_id: i32, token: &str) -> Result<(), ApiError> {
-    query!("DELETE FROM sessions WHERE user_id = $1 AND token != $2", user_id, token)
-        .execute(db)
-        .await?;
+/// Delete all sessions of a user from the database except the current session of the user .
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `user_id` - The user this session belongs to.
+///
+/// `token` - The opaque session token.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn delete_all_sessions_except(
+    db: impl PgExecutor<'_>,
+    user_id: i32,
+    token: &str,
+) -> Result<(), ApiError> {
+    query!(
+        "DELETE FROM sessions WHERE user_id = $1 AND token != $2",
+        user_id,
+        token
+    )
+    .execute(db)
+    .await?;
 
     Ok(())
 }
@@ -132,7 +151,7 @@ mod tests {
 
         let session = create_session(&db, user_id, 3600).await.unwrap();
 
-        let claims = get_session(&db, &session.token).await.unwrap().unwrap();
+        let claims = get_session(&db, &session).await.unwrap().unwrap();
 
         // Validates if the user is in claims, meaning the session is returned if it is true.
         assert_eq!(claims.sub, user_id);
@@ -146,7 +165,7 @@ mod tests {
 
         let row = query!(
             "SELECT token, user_id, expires_at FROM sessions WHERE token = $1",
-            session.token
+            session
         )
         .fetch_one(&db)
         .await
@@ -162,9 +181,9 @@ mod tests {
 
         let session = create_session(&db, user_id, 3600).await.unwrap();
 
-        delete_session(&db, &session.token).await.unwrap();
+        delete_session(&db, &session).await.unwrap();
 
-        let claims: Option<Claims> = get_session(&db, &session.token).await.unwrap();
+        let claims: Option<Claims> = get_session(&db, &session).await.unwrap();
 
         assert!(claims.is_none());
     }
@@ -185,4 +204,23 @@ mod tests {
         assert!(claims1.is_none());
         assert!(claims2.is_none());
     }
+
+    // #[sqlx::test]
+    // async fn delete_all_sessions_except(db: PgPool) {
+    //     let user_id = initialize_basic_user(&db).await;
+
+    //     let session1 = create_session(&db, user_id, 3600).await.unwrap();
+    //     let session2 = create_session(&db, user_id, 3600).await.unwrap();
+
+    //     delete_all_sessions_except(&db, user_id, session1).await.unwrap();
+
+    //     let claims1 = get_session(&db, &session1).await.unwrap();
+    //     let claims2 = get_session(&db, &session2).await.unwrap();
+
+    //     // This session is the exception and should not be deleted.
+    //     assert!(claims1.is_some());
+
+    //     // This session should be deleted.
+    //     assert!(claims2.is_none());
+    // }
 }
