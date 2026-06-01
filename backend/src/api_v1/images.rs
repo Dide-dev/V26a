@@ -6,6 +6,8 @@
 
 use crate::ArcState;
 
+use crate::api_v1::rate_limit_layer;
+
 use crate::db::images::{add_image, check_image_existence};
 use crate::db_structs::session::Claims;
 
@@ -22,7 +24,7 @@ use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<ArcState> {
-    Router::new().route("/add", post(add_new_image))
+    Router::new().route("/add", post(add_new_image).layer(rate_limit_layer(10, 20)))
 }
 
 #[utoipa::path(
@@ -39,9 +41,10 @@ pub fn images() -> Router<ArcState> {
         ),
     ),
     responses(
-        (status = 200, description = "Image successfully added"),
+        (status = 200, description = "Image successfully added."),
         (status = 400, description = ApiError::NoImageBodyProvidedException.to_string()),
         (status = 400, description = ApiError::InvalidImageType.to_string()),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = ApiError::CreateDirException.to_string()),
         (status = 500, description = ApiError::FileWriteException.to_string()),
         (status = 500, description = "Internal server error.")
