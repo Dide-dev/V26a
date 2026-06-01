@@ -92,6 +92,6 @@
                 maxlength={maxInputLengths.description}
             ></textarea>
         </div>
-        <button data-testid="add-button">{m.classroomAdd()}</button>
+        <button type="submit" data-testid="add-button">{m.classroomAdd()}</button>
     </form>
 </div>
