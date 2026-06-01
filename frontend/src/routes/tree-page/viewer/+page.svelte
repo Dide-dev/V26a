@@ -82,8 +82,8 @@
             <div class="flex flex-col md:w-2/3">
                 <div class="flex">
                     <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
-                    <div class="flex flex-col justify-center">
-                        {#if userAllowedToEdit}
+                    {#if userAllowedToEdit}
+                        <div class="flex flex-col justify-center">
                             <a
                                 href={appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`)}
                                 class="page__title mt-3 ml-1"
@@ -92,19 +92,21 @@
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                 {@html editIcon}
                             </a>
-                        {/if}
-                    </div>
-                    <div class="flex flex-col justify-center">
-                        <button
-                            onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
-                            aria-label="duplicate"
-                            class:cursor-pointer={true}
-                            class="page__title mt-3 ml-1"
-                        >
-                            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                            {@html iconDuplicate}
-                        </button>
-                    </div>
+                        </div>
+                    {/if}
+                    {#if userInfo !== null}
+                        <div class="flex flex-col justify-center">
+                            <button
+                                onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
+                                aria-label="duplicate"
+                                class:cursor-pointer={true}
+                                class="page__title mt-3 ml-1"
+                            >
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html iconDuplicate}
+                            </button>
+                        </div>
+                    {/if}
                 </div>
                 <span class="-mt-2 italic *:*:inline">
                     {m.madeBy()}:

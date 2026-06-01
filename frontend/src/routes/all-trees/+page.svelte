@@ -17,8 +17,10 @@
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
     import { goto } from '$app/navigation';
+    import { getUserInfo } from '$lib/api-wrapper/users';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
+    let userInfo = $state(getUserInfo());
 
     let pageSizeString = $state('10');
     let pageSizeNumber = $derived(Number(pageSizeString));
@@ -179,17 +181,19 @@
                             <!-- This formats the date in the local timezone in the form: dd-mm-yyyy -->
                             {timeFormat.format(new Date(tree.genData.createdAt))}
                         </td>
-                        <td class="min-w-2 hover:fill-blue-800">
-                            <button
-                                onclick={() => duplicateThisTree(tree.genData.id)}
-                                aria-label="duplicate"
-                                class:cursor-pointer={true}
-                                class="flex self-end"
-                            >
-                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html iconDuplicate}
-                            </button>
-                        </td>
+                        {#if userInfo !== null}
+                            <td class="min-w-2 hover:fill-blue-800">
+                                <button
+                                    onclick={() => duplicateThisTree(tree.genData.id)}
+                                    aria-label="duplicate"
+                                    class:cursor-pointer={true}
+                                    class="flex self-end"
+                                >
+                                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                    {@html iconDuplicate}
+                                </button>
+                            </td>
+                        {/if}
                     </tr>
                 {/each}
             </tbody>
