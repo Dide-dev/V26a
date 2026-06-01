@@ -47,27 +47,28 @@ async fn test_logout_success(db: PgPool) {
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
 
-    login(&server, register_data.email.clone()).await;
+    let login_response = login(&server, register_data.email.clone()).await;
 
-    let response = server.post("/auth/logout").await;
-
-    let cookie = response.headers().get("set-cookie").unwrap().clone();
-
-    // extract token
-    let token = cookie
+    let token = login_response
+        .headers()
+        .get("set-cookie")
+        .unwrap()
         .to_str()
         .unwrap()
         .split(';')
         .next()
         .unwrap()
         .strip_prefix("session=")
-        .unwrap();
+        .unwrap()
+        .to_owned();
 
-    // Checks if a header exists that will unset the cookie.
+    let response = server.post("/auth/logout").await;
+
+    // Check if a header exists that will unset the cookie.
     assert!(response.headers().contains_key("set-cookie"));
 
     // Check that the session is invalidated.
-    let session = get_session(&db, token).await.unwrap();
+    let session = get_session(&db, &token).await.unwrap();
     assert!(session.is_none());
 }
 
