@@ -7,6 +7,7 @@ use crate::db_structs::Validated;
 use crate::errors::ApiError;
 use crate::limits::{CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH};
 use sqlx::FromRow;
+use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
 /// The basic data of the classroom that is filled in by the user.
@@ -36,10 +37,28 @@ impl Validated for ClassroomAddData {
     }
 }
 
-/// The data that is returned to the user after creation of the classroom.
+/// The generated data that is created after the creation of the classroom.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomGeneratedData {
     pub id: i32,
     pub join_code: String,
+    pub created_at: DateTime<Utc>,
+    pub owner_id: i32,
+}
+
+/// The data that is returned to the user after creation of the classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomAddReturnData {
+    pub id: i32,
+    pub join_code: String,
+}
+
+/// The data that is returned to the user when requesting all data.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomAllData{
+    pub data: ClassroomAddData,
+    pub gen_data: ClassroomGeneratedData,
 }

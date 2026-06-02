@@ -6,7 +6,7 @@
 
 #![cfg(test)]
 
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomAddReturnData};
 use crate::tests::api_v1::{setup, setup_login};
 use sqlx::PgPool;
 
@@ -25,7 +25,7 @@ async fn test_new_classroom(db: PgPool) {
         .await;
     response.assert_status_ok();
 
-    let classroom_created_data = response.json::<ClassroomGeneratedData>();
+    let classroom_created_data = response.json::<ClassroomAddReturnData>();
 
     let allowed_chars: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".chars().collect();
 
