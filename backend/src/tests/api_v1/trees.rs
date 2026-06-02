@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+use crate::api_v1::trees::AuthorizeCoAuthorResponse;
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::{CardAddData, CardData, CardUpdateData};
@@ -14,7 +15,7 @@ use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
     TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
-use crate::db_structs::users::{AccountType, RegisterData};
+use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
@@ -898,6 +899,8 @@ async fn test_authorize_co_author_success(db: PgPool) {
         .await;
 
     response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(response_body, AuthorizeCoAuthorResponse::Success);
 
     let is_co_author = is_co_author_of_tree(&db, &tree_id, &co_author_id)
         .await
@@ -937,5 +940,51 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
     let response = server
         .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
         .await;
-    response.assert_status_bad_request();
+
+    response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(
+        response_body,
+        AuthorizeCoAuthorResponse::UsernameDoesNotExist
+    );
+}
+
+#[sqlx::test]
+async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    let co_author_register_data = RegisterData {
+        email: "co_author@email.com".to_owned(),
+        password: "4$$wOrd!".to_owned(),
+        data: UserData {
+            name: "CoAuthor".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::En,
+        },
+    };
+    register(&server, &co_author_register_data).await;
+    server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(
+        response_body,
+        AuthorizeCoAuthorResponse::UserAlreadyAuthorized
+    );
 }
