@@ -4,52 +4,17 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
-use crate::db_structs::users::AccountType;
+use crate::ArcState;
+use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
-use jsonwebtoken::{DecodingKey, EncodingKey, Validation, decode};
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use jsonwebtoken::{Validation, decode};
 
-/// A struct containing the [`EncodingKey`] and [`DecodingKey`] used for encoding and decoding the
-/// `JsonWebToken`.
-#[derive(Clone)]
-pub struct Keys {
-    pub encoding: EncodingKey,
-    pub decoding: DecodingKey,
-}
-
-impl Keys {
-    /// Creates a [`Keys`] from an array of bytes.
-    pub fn new(secret: &[u8]) -> Self {
-        Self {
-            encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret),
-        }
-    }
-}
-
-/// The claims contained in a JWT (JSON Web Token). Specifies the subject (user id) and the
-/// expiration time.
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct Claims {
-    /// The subject (whom the token refers to).
-    pub sub: i32,
-    /// The expiration time (as UTC timestamp).
-    pub exp: i64,
-    /// the account type
-    pub account_type: AccountType,
-}
-
-async fn get_claims(parts: &mut Parts, state: &Config) -> Result<Claims, ApiError> {
+fn get_claims(parts: &mut Parts, state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.
-    let jar = CookieJar::from_request_parts(parts, state)
-        .await
-        .map_err(|_| ApiError::MissingAuthentication)?;
+    let jar = CookieJar::from_headers(&parts.headers);
     let auth_cookie = jar
         .get("session")
         .ok_or(ApiError::MissingAuthentication)?
@@ -58,7 +23,7 @@ async fn get_claims(parts: &mut Parts, state: &Config) -> Result<Claims, ApiErro
     // Decode the user data, this automatically validates the expiration time.
     let token_data = decode::<Claims>(
         auth_cookie,
-        &state.jwt_keys.decoding,
+        &state.config.jwt_keys.decoding,
         &Validation::default(),
     )
     .map_err(|e| match e.kind() {
@@ -71,7 +36,7 @@ async fn get_claims(parts: &mut Parts, state: &Config) -> Result<Claims, ApiErro
     Ok(token_data.claims)
 }
 
-impl FromRequestParts<Config> for Claims {
+impl FromRequestParts<ArcState> for Claims {
     type Rejection = ApiError;
 
     /// Get JWT [`Claims`] from a user's cookies
@@ -94,13 +59,13 @@ impl FromRequestParts<Config> for Claims {
     /// decrypted, or if another error is given by [`jsonwebtoken`].
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &Config,
+        state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        get_claims(parts, state).await
+        get_claims(parts, state)
     }
 }
 
-impl FromRequestParts<Config> for Option<Claims> {
+impl FromRequestParts<ArcState> for Option<Claims> {
     type Rejection = ApiError;
 
     /// Get optional JWT [`Claims`] from a user's cookies
@@ -124,8 +89,8 @@ impl FromRequestParts<Config> for Option<Claims> {
     /// - another error is given by [`jsonwebtoken`]
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &Config,
+        state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(get_claims(parts, state).await.ok())
+        Ok(get_claims(parts, state).ok())
     }
 }

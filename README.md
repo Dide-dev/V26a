@@ -17,21 +17,21 @@ explore these trees to help them with their exercises.
 More on the research behind the use of _heuristic trees_ to help students solve problems can be
 read [here](https://doi.org/10.1007/s40751-022-00101-6).
 
-## Installation
+## Developer Setup
 
-The project consists of both a back-end and a front-end, which can be found in their respective directories.
+The project consists of both a backend and a frontend, which can be found in their respective directories.
 Both need to be correctly installed and configured to get the project running.
 
 1. Create a `.env` file by copying the `.env.example` file.
    The variables can be edited to change the database setup or any other environment variables.
 
-2. Install the dependencies for the front-end. For this, you need to have node.js installed.
+2. Install the dependencies for the frontend. For this, you need to have node.js v24 installed.
    In the `frontend` directory, run `npm install`.
 
 3. Setup and run the database. For this, you need to have Docker installed.
-   In the directory containing `docker-compose.yml`, run `docker compose up`.
+   In the directory containing `compose.yml`, run `docker compose up`.
 
-4. Compile and run the back-end. For this, you need to have Rust installed.
+4. Compile and run the backend. For this, you need to have Rust installed.
    First install the `sqlx` utility command, by running
    `cargo install sqlx-cli --no-default-features --features postgres`.
    Go to the `backend` directory.
@@ -39,15 +39,14 @@ Both need to be correctly installed and configured to get the project running.
 
 ## Usage
 
-After installation, to get the website running locally, all you have to do are the three following steps:
+After installation, to get the website running locally, all you have to do are the following two steps:
 
-1. In the `frontend` directory, run `npm run build`.
+1. Turn off any remaining instances that might still be running using `docker compose --profile "*" down`.
 
-2. Make sure the Docker database is running. To do so, run `docker compose up` in the root directory.
+2. Run the application in either production or developer mode, using `docker compose --profile prod|dev up --build`.
+   Replace prod|dev according to the mode you would like the application to run in.
 
-3. In the `backend` directory, run `cargo run`.
-
-The website can now be visited locally in a web browser on http://localhost:3000/.
+The website can now be visited locally in a web browser on http://localhost/.
 
 ## Features
 
@@ -58,38 +57,37 @@ _The project is still in very active development, so this list is constantly cha
 
 ## Tech Stack
 
-### Front-end
+### Frontend
 
-On the front-end, TypeScript is used with the [Svelte](https://svelte.dev) framework. For CSS formatting, Tailwind is
+On the frontend, TypeScript is used with the [Svelte](https://svelte.dev) framework. For CSS formatting, Tailwind is
 used, and for localization, Paraglide is used.
 
-### Back-end
+### Backend
 
-On the back-end, Rust is used. For running the webserver, Axum is used.
+On the backend, Rust is used. For running the webserver, Axum is used.
 
 ### Database
 
-A [PostgreSQL](https://postgresql.org) database is used. For communication between the back-end and the database, SQLx
+A [PostgreSQL](https://postgresql.org) database is used. For communication between the backend and the database, SQLx
 is used.
 
 ### Testing
 
-For component testing on the front-end, the vitest library is used.
-Unit and integration tests in the back-end are
+For component testing on the frontend, the vitest library is used.
+Unit and integration tests in the backend are
 written using the built-in testing functionality of cargo, combined with the axum-testing library.
-For end-to-end testing, Playwright is used.
 
 ## Contributing
 
-To run the tests in the front-end, run `npm run test` in the `frontend` directory.
-To run the tests in the back-end, run `cargo test` in the `backend` directory.
-To run the end-to-end tests, run `npx playwright test` in the `frontend` directory.
-Before running the end-to-end tests the first time, `npx playwright install` must be run in the `frontend` directory.
+To run the tests in the frontend, run `npm run test` in the `frontend` directory.
+To run the tests in the backend, run `cargo test` in the `backend` directory.
 
-When working on the front-end, the command `npm run dev` in the `frontend` directory can be used.
-This will spin up a front-end-only server that automatically reloads pages as source files are saved.
+When working on the frontend, it is advised to run the application in `dev` mode. This allows you to
+enable "watch", which will automatically update the frontend when changes to source files are found.
 
-If any new queries were added in the back-end, then run `cargo sqlx prepare` in the `backend` directory,
+To enable watch, either use the displayed hotkey within the container, or start the container with `--watch` at the end.
+
+If any new queries were added in the backend, then run `cargo sqlx prepare` in the `backend` directory,
 before making a pull request.
 This will create files in the `backend/.sqlx` directory, which contain the types for the new query.
 

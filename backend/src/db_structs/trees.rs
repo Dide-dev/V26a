@@ -4,10 +4,18 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::cards::CardGetData;
+use crate::db::cards::duplicate_card;
+use crate::db_structs::Validated;
+use crate::db_structs::cards::CardData;
+use crate::errors::ApiError;
+use crate::limits::{
+    TREE_ASSIGNMENT_MAX_LENGTH, TREE_BOOK_CHAPTER_MAX_LENGTH, TREE_BOOK_EDITION_MAX_LENGTH,
+    TREE_BOOK_EXERCISE_MAX_LENGTH, TREE_BOOK_ISBN_MAX_LENGTH, TREE_BOOK_NAME_MAX_LENGTH,
+    TREE_DESCRIPTION_MAX_LENGTH, TREE_TITLE_MAX_LENGTH,
+};
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::{Error, FromRow};
+use sqlx::{FromRow, PgConnection, Row};
 use std::collections::BTreeMap;
 use utoipa::openapi::{ObjectBuilder, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
@@ -16,40 +24,48 @@ use utoipa::{PartialSchema, ToSchema};
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeWithCards {
-    pub data: TreeData,
-    pub gen_data: TreeGeneratedData,
+    pub metadata: TreeMetadata,
     pub structure: TreeStructure,
     /// The `card_id` with the corresponding card.
-    pub cards: BTreeMap<i32, CardGetData>,
+    pub cards: BTreeMap<i32, CardData>,
 }
 
 // We implement this manually, so the example contains a valid example, with `cards` matching the `structure`.
 impl PartialSchema for TreeWithCards {
     fn schema() -> RefOr<Schema> {
         ObjectBuilder::new()
-            .property("data", TreeData::schema())
-            .property("genData", TreeGeneratedData::schema())
+            .property("metadata", TreeMetadata::schema())
             .property("structure", TreeStructure::schema())
-            .property("cards", BTreeMap::<i32, CardGetData>::schema())
+            .property("cards", BTreeMap::<i32, CardData>::schema())
             .examples(Some(serde_json::json!({
-                "data": {
-                  "title": "string",
-                  "description": "string",
-                  "bookName": "string",
-                  "bookEdition": "string",
-                  "bookIsbn": "string",
-                  "bookChapter": "string",
-                  "bookExercise": "string",
-                  "assignmentText": "string",
-                  "published": true
-                },
-                "genData": {
-                  "id": 7,
-                  "ownerId": 2,
-                  "createdAt": "2026-04-12T16:31:32.855032Z",
-                  "lastModified": "2026-04-12T16:31:32.855032Z",
-                  "timesVisited": 0,
-                  "lastVisited": null
+                "metadata": {
+                    "data": {
+                      "assignmentText": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+                      "bookAuthor": "Serge Lang",
+                      "bookChapter": "VII",
+                      "bookEdition": "3",
+                      "bookExercise": "2",
+                      "bookIsbn": "9780387953854",
+                      "bookName": "Algebra",
+                      "description": "My first tree!",
+                      "languageCode": "nl",
+                      "published": true,
+                      "subjectId": 1,
+                      "tags": ["tag_1", "tag_2"],
+                      "title": "My heuristic tree"
+                    },
+                    "genData": {
+                      "id": 7,
+                      "ownerId": 2,
+                      "createdAt": "2026-04-12T16:31:32.855032Z",
+                      "lastModified": "2026-04-12T16:31:32.855032Z",
+                      "timesVisited": 0,
+                      "lastVisited": null
+                    },
+                    "linkedData": {
+                      "ownerName": "string",
+                      "subjectName": "string",
+                    },
                 },
                 "structure": {
                   "rootNodes": [
@@ -84,6 +100,12 @@ pub struct TreeStructure {
     pub root_nodes: Vec<RootNode>,
 }
 
+impl Validated for TreeStructure {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        Ok(())
+    }
+}
+
 impl TreeStructure {
     /// Retrieve the card id's in the tree.
     ///
@@ -91,6 +113,14 @@ impl TreeStructure {
     /// The `card_id` of each [`Node`] in the tree as a [`Vec<i32>`].
     pub fn flatten(&self) -> Vec<i32> {
         self.root_nodes.iter().flat_map(RootNode::flatten).collect()
+    }
+
+    /// Check whether a tree structure contains no cards.
+    ///
+    /// # Returns
+    /// `true` if the tree structure contains no cards, `false` if the tree structure contains cards.
+    fn is_empty(&self) -> bool {
+        self.flatten().is_empty()
     }
 }
 
@@ -118,6 +148,26 @@ impl RootNode {
 pub struct Node {
     pub card_id: i32,
     pub children: Vec<Node>,
+}
+
+impl Node {
+    /// Duplicate the card in the database and all children cards.
+    ///
+    /// # Returns
+    /// The new duplicate `Node` with the new `card_id` and the new children as a [`Node`].
+    pub async fn duplicate(&self, db: &mut PgConnection, tree_id: i32) -> Result<Self, ApiError> {
+        let mut duplicate_children = Vec::with_capacity(self.children.len());
+        for child in &self.children {
+            let child = Box::pin(child.duplicate(&mut *db, tree_id)).await?;
+            duplicate_children.push(child);
+        }
+        let new_id = duplicate_card(&mut *db, self.card_id, tree_id).await?;
+
+        Ok(Node {
+            card_id: new_id,
+            children: duplicate_children,
+        })
+    }
 }
 
 // We have to define this ourselves instead of simply deriving it,
@@ -167,38 +217,177 @@ impl Node {
     }
 }
 
+/// The tree data that is not stored in the main trees table in the database, and is also not
+/// specified during creation or updates.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeLinkedData {
+    pub owner_name: String,
+    #[sqlx(rename = "subject_name?")]
+    pub subject_name: Option<String>,
+    pub co_authors: Vec<i32>,
+}
+
 /// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeMetadata {
     pub data: TreeData,
     pub gen_data: TreeGeneratedData,
+    pub linked_data: TreeLinkedData,
 }
 
 impl TreeMetadata {
-    pub fn from_pg_row(row: &PgRow) -> Result<Self, Error> {
+    pub fn from_pg_row(row: &PgRow) -> Result<Self, ApiError> {
         let data = TreeData::from_row(row)?;
         let gen_data = TreeGeneratedData::from_row(row)?;
+        let linked_data = TreeLinkedData::from_row(row)?;
 
-        Ok(TreeMetadata { data, gen_data })
+        Ok(TreeMetadata {
+            data,
+            gen_data,
+            linked_data,
+        })
     }
 }
 
+/// A language that trees can be written in.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Language {
+    pub code: String,
+    pub name: String,
+}
+
+/// A subject that trees can be made for.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Subject {
+    pub id: i32,
+    pub language_code: String,
+    pub name: String,
+}
+
 /// The general data of the tree, NOT including its structure or autogenerated data.
-#[derive(
-    Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow, Default,
-)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeData {
     pub title: String,
-    pub description: Option<String>,
-    pub book_name: Option<String>,
-    pub book_edition: Option<String>,
+    pub language_code: String,
+    pub tags: Vec<String>,
+    pub description: String,
+    pub subject_id: Option<i32>,
+    pub book_name: String,
+    pub book_edition: String,
+    pub book_author: String,
     pub book_isbn: Option<String>,
-    pub book_chapter: Option<String>,
-    pub book_exercise: Option<String>,
-    pub assignment_text: Option<String>,
+    pub book_chapter: String,
+    pub book_exercise: String,
+    pub assignment_text: String,
     pub published: bool,
+}
+
+#[cfg(test)]
+impl Default for TreeData {
+    fn default() -> Self {
+        Self {
+            title: String::new(),
+            language_code: "nl".to_owned(),
+            tags: Vec::new(),
+            description: String::new(),
+            subject_id: None,
+            book_name: String::new(),
+            book_edition: String::new(),
+            book_author: String::new(),
+            book_isbn: None,
+            book_chapter: String::new(),
+            book_exercise: String::new(),
+            assignment_text: String::new(),
+            published: false,
+        }
+    }
+}
+
+impl FromRow<'_, PgRow> for TreeData {
+    fn from_row(row: &PgRow) -> sqlx::Result<Self> {
+        Ok(Self {
+            title: row.try_get("title")?,
+            language_code: row.try_get("language_code")?,
+            tags: row.try_get("tags")?,
+            description: row.try_get("description")?,
+            subject_id: row.try_get("subject_id")?,
+            book_name: row.try_get("book_name")?,
+            book_edition: row.try_get("book_edition")?,
+            book_author: row.try_get("book_author")?,
+            book_isbn: row
+                .try_get::<Option<i64>, _>("book_isbn")?
+                .map(|n| n.to_string()),
+            book_chapter: row.try_get("book_chapter")?,
+            book_exercise: row.try_get("book_exercise")?,
+            assignment_text: row.try_get("assignment_text")?,
+            published: row.try_get("published")?,
+        })
+    }
+}
+
+impl Validated for TreeData {
+    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.title.chars().count() > TREE_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "title",
+                TREE_TITLE_MAX_LENGTH,
+            ));
+        }
+        if self.description.chars().count() > TREE_DESCRIPTION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "description",
+                TREE_DESCRIPTION_MAX_LENGTH,
+            ));
+        }
+        if self.book_name.chars().count() > TREE_BOOK_NAME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookName",
+                TREE_BOOK_NAME_MAX_LENGTH,
+            ));
+        }
+        if self.book_edition.chars().count() > TREE_BOOK_EDITION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookEdition",
+                TREE_BOOK_EDITION_MAX_LENGTH,
+            ));
+        }
+        if self
+            .book_isbn
+            .as_ref()
+            .is_some_and(|s| s.chars().count() > TREE_BOOK_ISBN_MAX_LENGTH)
+        {
+            return Err(ApiError::InputLengthExceeded(
+                "bookIsbn",
+                TREE_BOOK_ISBN_MAX_LENGTH,
+            ));
+        }
+        if self.book_chapter.chars().count() > TREE_BOOK_CHAPTER_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookChapter",
+                TREE_BOOK_CHAPTER_MAX_LENGTH,
+            ));
+        }
+        if self.book_exercise.chars().count() > TREE_BOOK_EXERCISE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "bookExercise",
+                TREE_BOOK_EXERCISE_MAX_LENGTH,
+            ));
+        }
+        if self.assignment_text.chars().count() > TREE_ASSIGNMENT_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "assignmentText",
+                TREE_ASSIGNMENT_MAX_LENGTH,
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 /// The autogenerated data of the tree.
@@ -250,6 +439,20 @@ pub struct TreeAddData {
     pub tree_structure: TreeStructure,
 }
 
+impl Validated for TreeAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        self.tree_data.validate_inputs()?;
+        self.tree_structure.validate_inputs()?;
+
+        // Trees should be initialized with an empty structure.
+        if !self.tree_structure.is_empty() {
+            return Err(ApiError::NonEmptyStructure);
+        }
+
+        Ok(())
+    }
+}
+
 // We implement this manually, so the example contains a legal, empty structure.
 impl PartialSchema for TreeAddData {
     fn schema() -> RefOr<Schema> {
@@ -258,24 +461,32 @@ impl PartialSchema for TreeAddData {
             .property("treeStructure", TreeStructure::schema())
             .examples(Some(serde_json::json!({
                 "treeData": {
-                  "assignmentText": "string",
-                  "bookChapter": "string",
-                  "bookEdition": "string",
-                  "bookExercise": "string",
-                  "bookIsbn": "string",
-                  "bookName": "string",
-                  "description": "string",
+                  "assignmentText": "Let A be an entire ring and K its quotient field. Let t be transcendental over K. If A is integrally closed, show that A[t] is integrally closed.",
+                  "bookAuthor": "Serge Lang",
+                  "bookChapter": "VII",
+                  "bookEdition": "3",
+                  "bookExercise": "2",
+                  "bookIsbn": "9780387953854",
+                  "bookName": "Algebra",
+                  "description": "My first tree!",
+                  "languageCode": "nl",
                   "published": true,
-                  "title": "string"
+                  "subjectId": 1,
+                  "tags": ["tag_1", "tag_2"],
+                  "title": "My heuristic tree"
                 },
                 "treeStructure": {
                   "rootNodes": [
                     {
-                      "label": "string",
+                      "label": "Orientation",
                       "children": []
                     },
                     {
-                      "label": "string",
+                      "label": "Making & executing plans",
+                      "children": []
+                    },
+                    {
+                      "label": "Completion",
                       "children": []
                     }
                   ]
@@ -288,7 +499,7 @@ impl PartialSchema for TreeAddData {
 impl ToSchema for TreeAddData {}
 
 /// The data returned when requesting a list of trees.
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeListResponse {
     /// The total amount of trees that are visible in the query.
@@ -311,6 +522,8 @@ pub struct TreeFilters {
     // Needed for optional boolean
     #[serde(default)]
     pub show_own_private: bool,
+    #[serde(default)]
+    pub editable: bool,
 }
 
 #[cfg(test)]

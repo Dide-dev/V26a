@@ -10,7 +10,7 @@ use crate::api_v1::auth::LoginResponse;
 use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    AccountType, PasswordChangeRequestBody, RegisterData, UserGetData, UserLanguage, UserUpdateData,
+    PasswordChangeRequestBody, RegisterData, UserData, UserGetData, UserLanguage,
 };
 use crate::tests::api_v1::{login, register, setup};
 use sqlx::PgPool;
@@ -23,28 +23,32 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
     let register_data = RegisterData {
         email: "johnsmith@gmail.com".to_owned(),
         password: "VeryStrongPassword1!".to_owned(),
-        name: "name".to_owned(),
-        nickname: "nickname".to_owned(),
-        about_me: "about_me".to_owned(),
-        email_visible: true,
-        language: UserLanguage::En,
+        data: UserData {
+            name: "name".to_owned(),
+            nickname: "nickname".to_owned(),
+            about_me: "about_me".to_owned(),
+            email_visible: true,
+            language: UserLanguage::En,
+        },
     };
 
     let response = server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
-    let UserResponse::Success { user_id } = response else {
+    let UserResponse::Success { user_id: _ } = response else {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
 
     let expected_user_data = UserGetData {
         email: register_data.email.clone(),
-        name: register_data.name,
-        nickname: register_data.nickname,
-        about_me: register_data.about_me,
-        email_visible: register_data.email_visible,
-        language: register_data.language,
+        data: UserData {
+            name: register_data.data.name,
+            nickname: register_data.data.nickname,
+            about_me: register_data.data.about_me,
+            email_visible: register_data.data.email_visible,
+            language: register_data.data.language,
+        },
     };
 
     // Log in
@@ -65,29 +69,26 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
     assert_eq!(user_data, expected_user_data);
 
     // Update our own user data
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
+    let update_data = UserData {
+        name: "John_Smith".to_owned(),
         nickname: "John".to_owned(),
         about_me: String::new(),
         email_visible: false,
         language: UserLanguage::Nl,
-        account_type: None,
-        enabled: None,
     };
 
-    let response = server
-        .post(&format!("/users/update/{user_id}"))
-        .json(&update_data)
-        .await;
+    let response = server.post("/users/update").json(&update_data).await;
     response.assert_status_ok();
 
     let expected_user_data = UserGetData {
         email: register_data.email.clone(),
-        name: update_data.name,
-        nickname: update_data.nickname,
-        about_me: update_data.about_me,
-        email_visible: update_data.email_visible,
-        language: update_data.language,
+        data: UserData {
+            name: update_data.name,
+            nickname: update_data.nickname,
+            about_me: update_data.about_me,
+            email_visible: update_data.email_visible,
+            language: update_data.language,
+        },
     };
 
     // Get our own user data again
@@ -99,108 +100,15 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_get_all_users(db: PgPool) {
-    let server = setup(db);
-
-    // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "2@gmail.com".to_owned()).await;
-
-    let response = server.get("/admin/all-user-data").await;
-    // It should fail because the user is not an admin
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_update_other_user(db: PgPool) {
-    let server = setup(db);
-
-    // Create two accounts and log in as one of them.
-    let user_id_1 = register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "2@gmail.com".to_owned()).await;
-
-    // Update the other user's data.
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::Nl,
-        account_type: None,
-        enabled: None,
-    };
-
-    let response = server
-        .post(&format!("/users/update/{user_id_1}"))
-        .json(&update_data)
-        .await;
-    // Changing the other user's data should fail.
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_change_account_type(db: PgPool) {
-    let server = setup(db);
-    let user_id = register(&server, "test@gmail.com".to_owned()).await;
-    login(&server, "test@gmail.com".to_owned()).await;
-
-    // Update our own user data
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::Nl,
-        account_type: Some(AccountType::Admin),
-        enabled: None,
-    };
-
-    let response = server
-        .post(&format!("/users/update/{user_id}"))
-        .json(&update_data)
-        .await;
-    // Making ourselves admin should fail.
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_change_enabled_flag(db: PgPool) {
-    let server = setup(db);
-    let user_id = register(&server, "test@gmail.com".to_owned()).await;
-    login(&server, "test@gmail.com".to_owned()).await;
-
-    // Update our own user data
-    let update_data = UserUpdateData {
-        name: "John Smith".to_owned(),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::Nl,
-        account_type: None,
-        enabled: Some(false),
-    };
-
-    let response = server
-        .post(&format!("/users/update/{user_id}"))
-        .json(&update_data)
-        .await;
-    // Disabling our own account should fail.
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
 async fn test_successful_password_change(db: PgPool) {
     let server = setup(db);
 
-    let email = "test@test.nl";
-
-    register(&server, email.to_owned()).await;
-    login(&server, email.to_owned()).await;
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email.clone()).await;
 
     let change_password_data = PasswordChangeRequestBody {
-        old_password: "a$$word".to_owned(),
+        old_password: register_data.password,
         new_password: "Pa$$word".to_owned(),
     };
 
@@ -215,7 +123,7 @@ async fn test_successful_password_change(db: PgPool) {
     assert!(body.succeeded);
 
     let login_data = LoginRequestBody {
-        email: email.to_owned(),
+        email: register_data.email,
         password: change_password_data.new_password,
     };
 
@@ -231,12 +139,11 @@ async fn test_successful_password_change(db: PgPool) {
 async fn test_change_password_incorrect_old_password(db: PgPool) {
     let server = setup(db);
 
-    let email = "test@test.nl";
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email.clone()).await;
 
-    register(&server, email.to_owned()).await;
-    login(&server, email.to_owned()).await;
-
-    // The default password set is `a$$word`, hence this request should fail.
+    // The default password set is `4$$wOrd!`, hence this request should fail.
     let change_password_data = PasswordChangeRequestBody {
         old_password: "Pa$$word".to_owned(),
         new_password: "NewPa$$word".to_owned(),
@@ -253,8 +160,8 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
     // Password change request should not have succeeded, therefore the old password should enable a user to log in.
     let login_data = LoginRequestBody {
-        email: email.to_owned(),
-        password: "a$$word".to_owned(),
+        email: register_data.email,
+        password: register_data.password,
     };
 
     let response = server.post("/auth/login").json(&login_data).await;
@@ -268,10 +175,10 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
-    let email = "monkaS@gmail.com".to_owned();
-    let user_id = register(&server, email.clone()).await;
 
-    login(&server, email.clone()).await;
+    let register_data = RegisterData::test_values();
+    let user_id = register(&server, &register_data).await;
+    login(&server, register_data.email).await;
 
     let response = server
         .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
@@ -287,11 +194,12 @@ async fn test_delete_own_user(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_other_user(db: PgPool) {
     let server = setup(db);
-    let email1 = "user1@gmail.com".to_owned();
-    let user_id_1 = register(&server, email1.clone()).await;
-    let email2 = "user2@gmail.com".to_owned();
-    register(&server, email2.clone()).await;
-    login(&server, email2.clone()).await;
+
+    let account1 = RegisterData::test_values();
+    let user_id_1 = register(&server, &account1).await;
+    let account2 = RegisterData::test_values();
+    register(&server, &account2).await;
+    login(&server, account2.email).await;
 
     let response = server
         .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
@@ -303,9 +211,10 @@ async fn test_delete_other_user(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_nonexistent_user(db: PgPool) {
     let server = setup(db);
-    let email = "swag@gmail.com".to_owned();
-    register(&server, email.clone()).await;
-    login(&server, email.clone()).await;
+
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email).await;
 
     let response = server
         .delete("/users/99999/delete?deleteOwnedTrees=false")

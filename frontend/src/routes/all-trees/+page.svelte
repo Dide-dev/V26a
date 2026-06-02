@@ -8,13 +8,12 @@
     import { m } from '$lib/paraglide/messages.js';
     import {
         type FilterOptions,
-        type PaginationOptions,
         type TreeListResponse,
-        type TreeMetadata,
         getFilteredList
-    } from '$lib/backend/trees';
-    import { appLink, timeFormatString } from '$lib/index';
+    } from '$lib/api-wrapper/trees';
+    import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
+    import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
@@ -27,7 +26,8 @@
         book: [],
         createdAfter: null,
         createdBefore: null,
-        showOwnPrivate: true
+        showOwnPrivate: true,
+        editable: null
     });
     let paginationOptions: PaginationOptions = $derived({
         page: thisPage,
@@ -35,12 +35,13 @@
     });
 
     let treeListResponse: null | TreeListResponse = $state(null);
-    let trees: null | TreeMetadata[] = $state(null);
 
     let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived(
-        thisPage < calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)
-    );
+    let nextPageExists = $derived.by(() => {
+        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
+        const total = (treeListResponse as TreeListResponse | null)?.totalTrees ?? 0;
+        return thisPage < calcTotalPages(total, pageSizeNumber);
+    });
 
     onMount(async () => {
         await loadTrees();
@@ -48,7 +49,11 @@
 
     async function loadTrees() {
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
-        trees = treeListResponse.trees;
+    }
+
+    function changePageSize() {
+        thisPage = 1;
+        loadTrees();
     }
 
     function prevPage() {
@@ -59,18 +64,6 @@
     function nextPage() {
         thisPage += 1;
         loadTrees();
-    }
-
-    function calcTotalPages(totalTrees: number, pageSize: number): number {
-        return Math.ceil(totalTrees / pageSize);
-    }
-
-    function showTreeCount(treeListResponse: TreeListResponse | null): number {
-        if (treeListResponse == null) {
-            return 0;
-        } else {
-            return treeListResponse.totalTrees;
-        }
     }
 
     function showBookName(bookName: string | null): string {
@@ -87,7 +80,7 @@
 <div class="flex w-full justify-center">
     <div class="flex-col">
         <!-- Filter options -->
-        <form class="flex w-md flex-col gap-2" onsubmit={loadTrees}>
+        <form class="completed flex w-md flex-col gap-2" onsubmit={loadTrees}>
             <b>{m.creationDate()}</b>
             <div class="flex">
                 <label class="m-1 flex-1/2">
@@ -126,9 +119,7 @@
                     bind:value={filterOptions.ownerId}
                 />
             </label>
-            <button class="m-1 cursor-pointer rounded-sm bg-emerald-500 p-1"
-                >{m.applyFilters()}</button
-            >
+            <button type="submit">{m.applyFilters()}</button>
         </form>
 
         <!-- Change the number of trees per page -->
@@ -137,7 +128,7 @@
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
-                onchange={loadTrees}
+                onchange={changePageSize}
             >
                 <option value="5">5</option>
                 <option value="10">10</option>
@@ -148,9 +139,9 @@
     </div>
 </div>
 
-{#if trees === null}
+{#if treeListResponse?.trees === null}
     <p>{m.loading()}</p>
-{:else if trees.length === 0}
+{:else if treeListResponse?.trees.length === 0}
     <div class="text-center">
         <p class="flex justify-center text-2xl">{m.noAllTreesFound()}</p>
     </div>
@@ -166,7 +157,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each trees as tree (tree.genData.id)}
+                {#each treeListResponse?.trees as tree (tree.genData.id)}
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
@@ -191,7 +182,7 @@
                 class="mx-5"
                 class:cursor-pointer={prevPageExists}>Prev</button
             >
-            {thisPage}/{calcTotalPages(showTreeCount(treeListResponse), pageSizeNumber)}
+            {thisPage}/{calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber)}
             <button
                 onclick={nextPage}
                 disabled={!nextPageExists}

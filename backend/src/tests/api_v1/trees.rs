@@ -6,16 +6,22 @@
 
 #![cfg(test)]
 
-use crate::db_structs::cards::{CardAddData, CardGetData, CardUpdateData};
+use crate::api_v1::trees::AuthorizeCoAuthorResponse;
+use crate::api_v1::trees::verify_tree_permissions;
+use crate::db::trees::is_co_author_of_tree;
+use crate::db_structs::cards::{CardAddData, CardData, CardUpdateData};
+use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    Node, RootNode, TreeAddData, TreeData, TreeListResponse, TreeMetadata, TreeRemoveCardData,
-    TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
+    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
+use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
 use crate::errors::ApiError;
-use crate::tests::api_v1::{login, register, setup, setup_login};
+use crate::get_connection_unwrap;
+use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
 use axum_test::TestServer;
 use sqlx::PgPool;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
     let basic_tree_structure = TreeStructure {
@@ -60,9 +66,52 @@ async fn test_new_empty_tree(db: PgPool) {
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_add_data.tree_data);
-    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.metadata.data, tree_add_data.tree_data);
+    assert_eq!(full_tree.metadata.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
+}
+
+#[sqlx::test]
+async fn test_new_invalid_tree(db: PgPool) {
+    let server = setup_login(db).await;
+
+    // Create tree with invalid language
+    let tree_data = TreeData {
+        language_code: "NO".to_string(),
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingLanguage("NO".to_string()).to_string());
+
+    // Create tree with invalid subject
+    let tree_data = TreeData {
+        subject_id: Some(420),
+        ..Default::default()
+    };
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingSubject(420).to_string());
 }
 
 #[sqlx::test]
@@ -71,13 +120,17 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
 
     let tree_data = TreeData {
         title: "Test tree".to_string(),
-        description: Some("This is used for testing".to_string()),
-        book_name: Some("Introduction to mathematics".to_string()),
-        book_edition: Some("4b".to_string()),
+        description: "This is used for testing".to_string(),
+        language_code: "en".to_string(),
+        tags: vec!["geometry".to_string(), "difficult".to_string()],
+        subject_id: Some(2),
+        book_name: "Introduction to mathematics".to_string(),
+        book_author: "Leonhard Euler".to_string(),
+        book_edition: "4b".to_string(),
         book_isbn: Some("9780136019701".to_string()),
-        book_chapter: Some("5".to_string()),
-        book_exercise: Some("27a".to_string()),
-        assignment_text: Some("Try to solve the following equation".to_string()),
+        book_chapter: "5".to_string(),
+        book_exercise: "27a".to_string(),
+        assignment_text: "Try to solve the following equation".to_string(),
         published: true,
     };
     let tree_structure = TreeStructure {
@@ -97,25 +150,17 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
     let response = server.get(&format!("/trees/get-with-cards/{id}")).await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, tree_add_data.tree_data);
-    assert_eq!(full_tree.gen_data.id, id);
+    assert_eq!(full_tree.metadata.data, tree_add_data.tree_data);
+    assert_eq!(full_tree.metadata.gen_data.id, id);
     assert_eq!(full_tree.cards, BTreeMap::new());
 }
 
 #[sqlx::test]
 async fn test_unpublished_trees(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
     let mut server = setup_login(db).await;
 
-    let tree_data = TreeData {
-        published: false,
-        ..Default::default()
-    };
-    let tree_structure = TreeStructure { root_nodes: vec![] };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     let endpoint = format!("/trees/get-with-cards/{tree_id}");
     server.get(&endpoint).await.assert_status_ok();
@@ -125,29 +170,33 @@ async fn test_unpublished_trees(db: PgPool) {
     response.assert_status_unauthorized();
     assert_eq!(response.text(), ApiError::MissingAuthentication.to_string());
 
-    let second_user_email = "second_user@localhost";
-    register(&server, second_user_email.to_owned()).await;
-    login(&server, second_user_email.to_owned()).await;
+    let second_user_data = RegisterData::test_values();
+    register(&server, &second_user_data).await;
+    login(&server, second_user_data.email).await;
     let response = server.get(&endpoint).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
+
+    let admin_user_data = RegisterData::test_values();
+    register_admin(&server, conn, &admin_user_data).await;
+    login(&server, admin_user_data.email).await;
+    let response = server.get(&endpoint).await;
+    response.assert_status_ok();
 }
 
 #[sqlx::test]
 async fn test_deleting_trees_works(db: PgPool) {
     let server = setup_login(db).await;
 
-    let tree_add_data = TreeAddData {
-        tree_data: TreeData::default(),
-        tree_structure: TreeStructure { root_nodes: vec![] },
-    };
-    let tree_id: i32 = server.post("/trees/add").json(&tree_add_data).await.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     // We also add a card, to ensure that it does not prevent the tree from being deleted.
     let card_add_data = CardAddData {
         tree_id,
-        front: "abc".to_owned(),
-        back: "def".to_owned(),
+        data: CardData {
+            front: "abc".to_owned(),
+            back: "def".to_owned(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -170,8 +219,10 @@ async fn test_deleting_trees_works(db: PgPool) {
         .post("/cards/update")
         .json(&CardUpdateData {
             card_id,
-            new_front: String::new(),
-            new_back: String::new(),
+            data: CardData {
+                front: String::new(),
+                back: String::new(),
+            },
         })
         .await;
     response.assert_status_bad_request();
@@ -206,11 +257,15 @@ async fn test_deleting_trees_denied(db: PgPool) {
 #[sqlx::test]
 async fn test_retrieving_owned_trees(db: PgPool) {
     let server = setup_login(db).await;
-
-    let response = server.get("/trees/get-mine-all").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
+        .await;
     response.assert_status_ok();
-    let vec: Vec<TreeMetadata> = response.json();
-    let empty: Vec<TreeMetadata> = Vec::new();
+    let vec: TreeListResponse = response.json();
+    let empty: TreeListResponse = TreeListResponse {
+        total_trees: 0,
+        trees: Vec::new(),
+    };
     assert_eq!(empty, vec);
 
     let tree_data = TreeData::default();
@@ -228,10 +283,12 @@ async fn test_retrieving_owned_trees(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let response = server.get("/trees/get-mine-all").await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showOwnPrivate=true")
+        .await;
     response.assert_status_ok();
-    let vec: Vec<TreeMetadata> = response.json();
-    let tree_metadata: &TreeMetadata = vec.first().unwrap();
+    let vec: TreeListResponse = response.json();
+    let tree_metadata: &TreeMetadata = vec.trees.first().unwrap();
     assert_eq!(tree_id, tree_metadata.gen_data.id);
     assert_eq!(tree_add_data.tree_data, tree_metadata.data);
 }
@@ -257,8 +314,10 @@ async fn test_remove_card(db: PgPool) {
 
     let card_add_data = CardAddData {
         tree_id,
-        front: String::new(),
-        back: "heuristic".to_string(),
+        data: CardData {
+            front: String::new(),
+            back: "heuristic".to_string(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -273,9 +332,9 @@ async fn test_remove_card(db: PgPool) {
     let mut expected_btree = BTreeMap::new();
     expected_btree.insert(
         card_id,
-        CardGetData {
-            front: card_add_data.front,
-            back: card_add_data.back,
+        CardData {
+            front: card_add_data.data.front,
+            back: card_add_data.data.back,
         },
     );
 
@@ -359,12 +418,12 @@ async fn test_remove_card(db: PgPool) {
 #[sqlx::test]
 async fn test_filter_tree_list(db: PgPool) {
     let server = setup(db);
-    let emails = ["test@one".to_owned(), "test@two".to_owned()];
-    let account_ids = [
-        register(&server, emails[0].clone()).await,
-        register(&server, emails[1].clone()).await,
-    ];
-    login(&server, emails[0].clone()).await;
+
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let account_id1 = register(&server, &account1).await;
+    let account_id2 = register(&server, &account2).await;
+    login(&server, account1.email.clone()).await;
 
     let trees_data = vec![
         TreeData {
@@ -372,7 +431,7 @@ async fn test_filter_tree_list(db: PgPool) {
             ..Default::default()
         },
         TreeData {
-            book_name: Some("vwo 4".to_string()),
+            book_isbn: Some("9780061120084".to_string()),
             published: true,
             ..Default::default()
         },
@@ -384,9 +443,16 @@ async fn test_filter_tree_list(db: PgPool) {
 
     add_multiple_trees(&server, &trees_data).await;
 
+    // A search with an invalid isbn
+    let response = server
+        .get("/trees/get-list?page=1&size=1&book=not-an-isbn")
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::InvalidIsbn.to_string());
+
     // A search that yields no results
     let response = server
-        .get("/trees/get-list?page=1&size=1&book=no+results")
+        .get("/trees/get-list?page=1&size=1&book=978-0-306-40615-7")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -429,21 +495,10 @@ async fn test_filter_tree_list(db: PgPool) {
         .collect::<Vec<_>>();
     assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
-    // Filter on book with space
-    let response = server.get("/trees/get-list?page=1&size=2&book=vwo+4").await;
-    response.assert_status_ok();
-    let requested_trees: TreeListResponse = response.json();
-    let requested_trees_data = requested_trees
-        .trees
-        .into_iter()
-        .map(|t| t.data)
-        .collect::<Vec<_>>();
-    assert_eq!(requested_trees_data, vec![trees_data[1].clone()]);
-
-    login(&server, emails[1].clone()).await;
+    login(&server, account2.email.clone()).await;
     let other_user_trees_data = vec![
         TreeData {
-            book_name: Some("vwo 5".to_string()),
+            book_isbn: Some("9780306406157".to_string()),
             published: true,
             ..Default::default()
         },
@@ -475,7 +530,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=vwo+4&book=vwo+5")
+        .get("/trees/get-list?page=1&size=100&book=978-0-061-12008-4&book=978-0-306-40615-7")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -491,20 +546,16 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Multiple books, incorrectly formatted
     let response = server
-        .get("/trees/get-list?page=1&size=100&book=vwo+4,vwo+5")
+        .get("/trees/get-list?page=1&size=100&book=978-0-061-12008-4,978-0-306-40615-7")
         .await;
-    response.assert_status_ok();
-    let requested_trees: TreeListResponse = response.json();
-    assert_eq!(requested_trees.trees, Vec::new());
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::InvalidIsbn.to_string());
 
     // All public trees from user 0
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_ids[0]
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -519,16 +570,13 @@ async fn test_filter_tree_list(db: PgPool) {
         vec![trees_data[1].clone(), trees_data[0].clone()]
     );
 
-    login(&server, emails[0].clone()).await;
+    login(&server, account1.email).await;
 
     // All trees from user 0 using filter
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_ids[0]
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -543,11 +591,8 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 1
     let response = server
         .get(
-            format!(
-                "/trees/get-list?page=1&size=100&ownerId={}&showOwnPrivate=true",
-                account_ids[1]
-            )
-            .as_str(),
+            format!("/trees/get-list?page=1&size=100&ownerId={account_id2}&showOwnPrivate=true")
+                .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -573,14 +618,16 @@ async fn test_update_and_get_tree(db: PgPool) {
     response.assert_status_ok();
     let tree_id: i32 = response.json();
 
-    let card_get_data = CardGetData {
+    let card_get_data = CardData {
         front: String::new(),
         back: "heuristic".to_string(),
     };
     let card_add_data = CardAddData {
         tree_id,
-        front: card_get_data.front.clone(),
-        back: card_get_data.back.clone(),
+        data: CardData {
+            front: card_get_data.front.clone(),
+            back: card_get_data.back.clone(),
+        },
     };
     let response = server.post("/cards/add").json(&card_add_data).await;
     response.assert_status_ok();
@@ -619,7 +666,7 @@ async fn test_update_and_get_tree(db: PgPool) {
     response.assert_status_ok();
     let tree_with_cards_valid: TreeWithCards = response.json();
     assert_eq!(tree_with_cards_valid.structure, structure_valid);
-    assert_eq!(tree_with_cards_valid.data, tree_data);
+    assert_eq!(tree_with_cards_valid.metadata.data, tree_data);
     assert!(
         tree_with_cards_valid
             .cards
@@ -664,32 +711,22 @@ async fn test_update_and_get_tree(db: PgPool) {
 async fn test_update_metadata(db: PgPool) {
     let server = setup_login(db).await;
 
-    // Create a tree
-    let tree_data = TreeData::default();
-    let tree_structure = TreeStructure {
-        root_nodes: vec![RootNode {
-            label: "RootNode".to_string(),
-            children: vec![],
-        }],
-    };
-    let tree_add_data = TreeAddData {
-        tree_data,
-        tree_structure,
-    };
-    let response = server.post("/trees/add").json(&tree_add_data).await;
-    response.assert_status_ok();
-    let tree_id: i32 = response.json();
+    let tree_id: i32 = create_tree(&server).await;
 
     // Update the metadata
     let new_tree_data = TreeData {
         title: "Updated tree".to_string(),
-        description: Some("Updated description".to_string()),
-        book_name: Some("Updated book".to_string()),
-        book_edition: Some("2nd".to_string()),
+        language_code: "en".to_string(),
+        tags: vec!["tag1".to_string(), "tag2".to_string()],
+        subject_id: Some(1),
+        description: "Updated description".to_string(),
+        book_name: "Updated book".to_string(),
+        book_author: "Updated author".to_string(),
+        book_edition: "2nd".to_string(),
         book_isbn: Some("9780136019701".to_string()),
-        book_chapter: Some("3".to_string()),
-        book_exercise: Some("5b".to_string()),
-        assignment_text: Some("Updated assignment".to_string()),
+        book_chapter: "3".to_string(),
+        book_exercise: "5b".to_string(),
+        assignment_text: "Updated assignment".to_string(),
         published: true,
     };
     let tree_update_data: TreeUpdateData = TreeUpdateData {
@@ -708,5 +745,246 @@ async fn test_update_metadata(db: PgPool) {
         .await;
     response.assert_status_ok();
     let full_tree: TreeWithCards = response.json();
-    assert_eq!(full_tree.data, new_tree_data);
+    assert_eq!(full_tree.metadata.data, new_tree_data);
+}
+
+#[sqlx::test]
+async fn test_get_languages(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/trees/get-all-languages").await;
+    response.assert_status_ok();
+
+    let languages: Vec<Language> = response.json();
+    assert_ne!(languages.len(), 0);
+}
+
+#[sqlx::test]
+async fn test_get_subjects(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/trees/get-all-subjects").await;
+    response.assert_status_ok();
+
+    let subjects: HashMap<String, Vec<Subject>> = response.json();
+    assert_ne!(subjects.len(), 0);
+}
+
+#[sqlx::test]
+async fn test_duplicate_tree(db: PgPool) {
+    let server = setup(db);
+
+    // Create two accounts and log in as one of them.
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&server, &account1).await;
+    let owner_id2 = register(&server, &account2).await;
+    login(&server, account1.email).await;
+
+    let tree_data = TreeData {
+        title: "test".to_owned(),
+        published: true,
+        ..Default::default()
+    };
+
+    let tree_structure = TreeStructure {
+        root_nodes: vec![RootNode {
+            label: "RootNode".to_string(),
+            children: vec![],
+        }],
+    };
+    let tree_structure_add_data = tree_structure.clone();
+    let tree_add_data = TreeAddData {
+        tree_data,
+        tree_structure: tree_structure_add_data,
+    };
+    let response = server.post("/trees/add").json(&tree_add_data).await;
+    response.assert_status_ok();
+    let id: i32 = response.json();
+    login(&server, account2.email).await;
+
+    let response = server.post("/trees/1/duplicate").await;
+    response.assert_status_ok();
+    let id2: i32 = response.json();
+    assert_eq!(id2, id + 1);
+
+    let response = server.get(&format!("/trees/get-with-cards/{id2}")).await;
+    let tree_with_cards: TreeWithCards = response.json();
+    let tree_data2 = tree_with_cards.metadata.data;
+    let expected_tree_data = TreeData {
+        title: "Copy of test".to_owned(),
+        ..Default::default()
+    };
+    assert_eq!(tree_data2, expected_tree_data);
+    let tree_gen_data = tree_with_cards.metadata.gen_data;
+    assert_eq!(tree_gen_data.owner_id, owner_id2);
+    let tree_structure2 = tree_with_cards.structure;
+    assert_eq!(
+        tree_structure.root_nodes.len(),
+        tree_structure2.root_nodes.len()
+    );
+}
+
+#[sqlx::test]
+async fn test_verify_tree_permission_owner(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    let claims = Claims {
+        sub: 1,
+        exp: i64::MAX,
+        account_type: AccountType::Author,
+    };
+
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
+
+    assert!(result.is_ok());
+}
+
+#[sqlx::test]
+async fn test_verify_tree_permission_admin(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    let claims = Claims {
+        sub: 1,
+        exp: i64::MAX,
+        account_type: AccountType::Admin,
+    };
+
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
+
+    assert!(result.is_ok());
+}
+
+#[sqlx::test]
+async fn test_verify_tree_permission_co_author(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+    let co_author_data = RegisterData::test_values();
+    register(&server, &co_author_data).await;
+    server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_data.data.name
+        ))
+        .await;
+
+    let claims = Claims {
+        sub: 1,
+        exp: i64::MAX,
+        account_type: AccountType::Author,
+    };
+
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
+
+    assert!(result.is_ok());
+}
+
+#[sqlx::test]
+async fn test_authorize_co_author_success(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+    let co_author_data = RegisterData::test_values();
+    let co_author_id = register(&server, &co_author_data).await;
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_data.data.name
+        ))
+        .await;
+
+    response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(response_body, AuthorizeCoAuthorResponse::Success);
+
+    let is_co_author = is_co_author_of_tree(&db, &tree_id, &co_author_id)
+        .await
+        .unwrap();
+
+    assert!(is_co_author);
+}
+
+#[sqlx::test]
+async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+    login(&server, register_data.email).await;
+
+    let co_author_register_data = RegisterData::test_values();
+    register(&server, &co_author_register_data).await;
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_cannot_authorize_non_existing_user(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    let co_author_username = "Non-existent_user".to_owned();
+    let response = server
+        .post(&format!("/trees/{tree_id}/authorize/{co_author_username}"))
+        .await;
+
+    response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(
+        response_body,
+        AuthorizeCoAuthorResponse::UsernameDoesNotExist
+    );
+}
+
+#[sqlx::test]
+async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    let co_author_register_data = RegisterData {
+        email: "co_author@email.com".to_owned(),
+        password: "4$$wOrd!".to_owned(),
+        data: UserData {
+            name: "CoAuthor".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::En,
+        },
+    };
+    register(&server, &co_author_register_data).await;
+    server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/authorize/{}",
+            co_author_register_data.data.name
+        ))
+        .await;
+
+    response.assert_status_ok();
+    let response_body: AuthorizeCoAuthorResponse = response.json();
+    assert_eq!(
+        response_body,
+        AuthorizeCoAuthorResponse::UserAlreadyAuthorized
+    );
 }

@@ -1,0 +1,99 @@
+# This program has been developed by students from the bachelor Computer Science at
+# Utrecht University within the Software Project course.
+# © Copyright Utrecht University (Department of Information and Computing Sciences)
+
+volumes:
+  postgres_dir:
+  caddy_data:
+  caddy_config:
+  uploads:
+
+services:
+  db:
+    image: docker.io/postgres:18
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_dir:/var/lib/postgresql
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  caddy:
+    profiles: [ "dev", "prod" ]
+    image: docker.io/caddy:2.11
+    restart: unless-stopped
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - BASE_URL=${BASE_URL}
+    ports:
+      - "80:80"
+      - "443:443"
+
+  backend:
+    profiles: [ "dev", "prod" ]
+    build:
+      context: backend
+      dockerfile: Containerfile
+    restart: unless-stopped
+    # Docker sends a SIGTERM signal and waits grace_period seconds before forcefully killing the container.
+    # A better way to do this would be to listen for a SIGTERM in our backend and initiate a graceful shutdown when the signal gets sent.
+    # This feels too out of scope ATM.
+    stop_grace_period: 2s
+    volumes:
+      - uploads:/uploads
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
+      - RUST_LOG=${RUST_LOG}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_EXPIRATION_SECONDS=${SESSION_EXPIRATION_SECONDS}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    profiles: [ "prod" ]
+    build:
+      context: frontend
+      dockerfile: Containerfile
+      target: prod
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  frontend-dev:
+    container_name: frontend
+    profiles: [ "dev" ]
+    build:
+      context: frontend
+      dockerfile: Containerfile
+      target: dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    develop:
+      watch:
+        - path: ./frontend
+          target: /app
+          ignore:
+            - '**/*.test.*'
+            - '**/tests/**'
+          action: sync
+          initial_sync: true
+        - path: ./frontend/package.json
+          action: rebuild
+    depends_on:
+      - backend

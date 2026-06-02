@@ -5,23 +5,36 @@
 -->
 
 <script lang="ts">
-    import NodeViewer from '../NodeViewer.svelte';
+    import SubtreeViewer from '../SubtreeViewer.svelte';
     import { onMount } from 'svelte';
-    import { getTreeWithCards, type TreeData } from '$lib/backend/trees';
+    import { getTreeWithCards, type TreeWithCards } from '$lib/api-wrapper/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
-    import { getUserInfo } from '$lib/backend/users';
+    import { getUserInfo } from '$lib/api-wrapper/users';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
-    import { fillStateStructure, initializeHistory, type TreeHistory } from '../history.svelte';
+    import editIcon from '$lib/assets/icons/edit.svg?raw';
+    import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
+    import { markdownToFinalHtml } from '$lib/rich-text/markdown';
 
-    // Checks if user is logged in or not.
-    let userInfo = $state(getUserInfo());
+    let userInfo = getUserInfo();
 
-    let loading = $state(true);
     let userAllowedToEdit = $state(false);
-    let id: number | null = null;
-    let tree: [TreeData, TreeHistory] | null = $state(null);
+    let tree: TreeWithCards | null = $state(null);
+
+    let showFullAssignment = $state(false);
+    let assignmentIncludesImage = $state(false);
+    /** The assignment text cut short depending on the state of `showFullAssignment`.
+     *
+     * @remarks If the assignment text includes an image, the text is never cut short.
+     */
+    let assignmentText = $derived(
+        showFullAssignment ||
+            assignmentIncludesImage ||
+            tree!.metadata.data.assignmentText.length <= 128
+            ? tree!.metadata.data.assignmentText
+            : tree!.metadata.data.assignmentText.slice(0, 128) + '...'
+    );
 
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
@@ -32,7 +45,7 @@
             return;
         }
 
-        id = Number(pageId);
+        let id = Number(pageId);
 
         if (Number.isNaN(id)) {
             // TODO: redirect to tree list
@@ -40,67 +53,138 @@
             return;
         }
 
-        const fetchedTree = await getTreeWithCards(id);
-        tree = [
-            fetchedTree.data,
-            initializeHistory(
-                fetchedTree.genData.id,
-                fillStateStructure(fetchedTree.structure, false),
-                fetchedTree.cards
-            )
-        ];
+        tree = await getTreeWithCards(id);
 
-        loading = false;
+        let htmlAssignment = markdownToFinalHtml(tree.metadata.data.assignmentText);
+        assignmentIncludesImage = htmlAssignment.includes('<img');
 
-        const isOwner = tree && userInfo && fetchedTree.genData.ownerId === userInfo.sub;
+        const isOwner = tree.metadata.genData.ownerId === userInfo?.sub;
         const isAdmin = userInfo?.accountType === 'admin';
+        const isCoAuthor = tree.metadata.linkedData.coAuthors.includes(userInfo?.sub ?? 0);
 
-        if (isOwner || isAdmin) {
+        if (isOwner || isAdmin || isCoAuthor) {
             userAllowedToEdit = true;
         }
     });
 </script>
 
-{#if loading}
-    <p class="text-green-800">{m.loadingTree()}</p>
-{:else if tree}
-    <h1 class="m-auto ml-1.5 text-3xl font-bold">{tree[0].title}</h1>
-    <p class="m-auto ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-        {tree[0].description}
-    </p>
+<div class="flex h-full w-full flex-col items-start overflow-hidden">
+    {#if tree === null}
+        <p class="text-green-800">{m.loadingTree()}</p>
+    {:else}
+        <div class="ml-1.5 flex w-[calc(100%-1.5*var(--spacing))] flex-col">
+            <div class="flex flex-col md:w-2/3">
+                <div class="flex">
+                    <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
+                    <div class="flex flex-col justify-center">
+                        {#if userAllowedToEdit}
+                            <a
+                                href={appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`)}
+                                class="page__title mt-3 ml-1"
+                                data-testid="edit-button"
+                            >
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html editIcon}
+                            </a>
+                        {/if}
+                    </div>
+                </div>
+                <span class="-mt-2 italic *:*:inline">
+                    {m.madeBy()}:
+                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 4)">
+                        <a
+                            href={appLink(`/all-trees?owner=${tree.metadata.genData.ownerId}`)}
+                            class="text-black">{tree.metadata.linkedData.ownerName}</a
+                        >
+                    </AnimatedUnderline>
+                </span>
+                <p class="font-semibold wrap-anywhere text-neutral-600">
+                    {tree.metadata.data.description}
+                </p>
+                <div class="mt-1 flex flex-row">
+                    {#each tree.metadata.data.tags as tag (tag)}
+                        {@render tagBlob(tag)}
+                    {/each}
+                </div>
+            </div>
+            <div class="mt-text-small flex flex-auto flex-row">
+                {#if assignmentText !== ''}
+                    <div class="flex w-2/3 flex-col">
+                        <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
+                            {m.assignment()}
+                        </p>
+                        <p class="*:inline">
+                            <!-- Trees from the prototype may contain images. -->
+                            <span class="inline wrap-anywhere *:inline">
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html markdownToFinalHtml(assignmentText)}
+                            </span>
+                            {#if tree.metadata.data.assignmentText.length > 128 && !assignmentIncludesImage}
+                                <button
+                                    onclick={() => {
+                                        showFullAssignment = !showFullAssignment;
+                                    }}
+                                    class="text__link"
+                                >
+                                    {showFullAssignment ? m.showLess() : m.showMore()}
+                                </button>
+                            {/if}
+                        </p>
+                    </div>
+                {/if}
+                <div class="mr-4 flex w-1/3 flex-col text-right">
+                    {#if tree.metadata.data.bookIsbn !== null}
+                        <a
+                            href={appLink(`/all-trees?isbn=${tree.metadata.data.bookIsbn}`)}
+                            class="mt-text-minor flex w-fit self-end *:*:flex-col"
+                        >
+                            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                                <h2 class="w-fit self-end text-lg font-semibold text-neutral-800">
+                                    {tree.metadata.data.bookName}
+                                </h2>
+                            </AnimatedUnderline>
+                        </a>
+                        {#if tree.metadata.data.bookAuthor !== ''}
+                            <p class="italic">
+                                {m.writtenBy({ name: tree.metadata.data.bookAuthor })}
+                            </p>
+                        {/if}
+                        <p>
+                            {m.edition()}
+                            {tree.metadata.data.bookEdition !== ''
+                                ? tree.metadata.data.bookEdition
+                                : '?'},
+                            {m.chapter()}
+                            {tree.metadata.data.bookChapter !== ''
+                                ? tree.metadata.data.bookChapter
+                                : '?'},
+                            {m.exercise()}
+                            {tree.metadata.data.bookExercise !== ''
+                                ? tree.metadata.data.bookExercise
+                                : '?'}
+                        </p>
+                    {/if}
+                </div>
+            </div>
+        </div>
 
-    <div class="mt-1 mr-1 ml-1 flex grow flex-col overflow-auto">
-        {#each tree[1].currentStructure.rootNodes as root, index (root)}
-            <NodeViewer
-                bind:history={tree[1]}
-                location={[index]}
-                editingPage={false}
-                dragState={null}
-                numPopupsOpen={0}
-            />
-        {/each}
-    </div>
-{/if}
+        <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
+            {#each tree.structure.rootNodes as root (root)}
+                <SubtreeViewer node={root} cards={tree.cards} />
+            {/each}
+        </div>
+    {/if}
+</div>
 
-{#if userAllowedToEdit}
-    <button
-        data-testid="edit-button"
-        class="fixed top-16 right-4 z-50 m-2 cursor-pointer rounded-sm bg-emerald-500 px-4 py-2 shadow"
-        onclick={() => goto(appLink(`/tree-page/editor?id=${id}`))}
+{#snippet tagBlob(tag: string)}
+    <a
+        href={appLink(`/all-trees?tags=${tag}`)}
+        class={[
+            'mr-1.5 rounded-4xl border border-neutral-400 bg-neutral-200 p-[0.25rem_0.5rem] italic',
+            'transition-all duration-200',
+            'hover:bg-neutral-400 hover:p-[0.25rem_1rem] hover:text-white'
+        ]}
     >
-        {m.edit()}
-    </button>
-{/if}
-
-<!--
-    Here we add a few css classes to the body,
-    to make sure that the element above here with the `overflow-auto` class can be
-    growing in height until the scroll bar is at the bottom of the screen.
--->
-<style>
-    :global(body) {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-</style>
+        {tag}
+    </a>
+{/snippet}

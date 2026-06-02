@@ -5,22 +5,32 @@
 */
 
 import { render, screen } from '@testing-library/svelte';
-import { test, vi, afterEach, expect } from 'vitest';
-import type { MockedFunction } from 'vitest';
+import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
-import { addTree } from '$lib/backend/trees';
-import { goto } from '$app/navigation';
+import { addTree } from '$lib/api-wrapper/trees';
 
-vi.mock('$lib/backend/trees', () => {
+vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
     return {
-        addTree: vi.fn()
+        ...(await importOriginal()),
+        addTree: vi.fn(),
+        getAllLanguages: vi.fn().mockResolvedValue(['Nederlands', 'English']),
+        getAllSubjects: vi.fn().mockResolvedValue({
+            nl: [
+                { id: 1, languageCode: 'nl', name: 'Nederlands' },
+                { id: 2, languageCode: 'nl', name: 'Wiskunde' }
+            ]
+        }),
+        updateTreeMetaData: vi.fn().mockResolvedValue(undefined)
     };
 });
 vi.mock('$app/navigation', () => ({
     goto: vi.fn()
 }));
+beforeEach(() => {
+    Element.prototype.getAnimations = () => [];
+});
 afterEach(() => {
     vi.resetAllMocks();
 });
@@ -42,45 +52,34 @@ test('Submission with correct data', async () => {
     await user.type(titleInput, 'Test tree title');
     const descriptionInput = screen.getByTestId('description');
     await user.type(descriptionInput, 'Test tree description');
-    const bookNameInput = screen.getByTestId('bookname');
-    await user.type(bookNameInput, 'A book name');
-    const bookEditionInput = screen.getByTestId('bookedition');
-    await user.type(bookEditionInput, '4th edition');
+    const tagsInput = screen.getByTestId('tags');
+    await user.type(tagsInput, 'tag1, tag2 , tag3');
     const bookIsbnInput = screen.getByTestId('bookIsbn');
     await user.type(bookIsbnInput, '9781408883464');
+    const bookNameInput = screen.getByTestId('bookname');
+    await user.type(bookNameInput, 'A book name');
+    const bookAuthorInput = screen.getByTestId('bookAuthor');
+    await user.type(bookAuthorInput, 'Johnny Test');
+    const bookEditionInput = screen.getByTestId('bookEdition');
+    await user.type(bookEditionInput, '4');
     const chapterInput = screen.getByTestId('chapter');
     await user.type(chapterInput, 'chapter 1');
     const excerciseInput = screen.getByTestId('exercise');
     await user.type(excerciseInput, 'exercise 1');
-    const assignmentTextInput = screen.getByTestId('assignment');
-    await user.type(assignmentTextInput, 'assignment text');
     await user.click(screen.getByRole('button', { name: m.createTree() }));
 
     expect(addTree).toHaveBeenCalledWith(
         expect.objectContaining({
             title: 'Test tree title',
             description: 'Test tree description',
+            tags: ['tag1', 'tag2', 'tag3'],
             bookName: 'A book name',
-            bookEdition: '4th edition',
+            bookAuthor: 'Johnny Test',
+            bookEdition: '4',
             bookIsbn: '9781408883464',
             bookChapter: 'chapter 1',
             bookExercise: 'exercise 1',
-            assignmentText: 'assignment text',
             published: false
         })
     );
-});
-
-test('Redirection after succesful creation', async () => {
-    const user = userEvent.setup();
-
-    (addTree as MockedFunction<typeof addTree>).mockResolvedValue(1);
-
-    render(page);
-
-    const titleInput = screen.getByTestId('title');
-    await user.type(titleInput, 'Test tree title');
-    await user.click(screen.getByRole('button', { name: m.createTree() }));
-
-    expect(goto).toHaveBeenCalledWith('/tree-page/editor?id=1');
 });

@@ -11,13 +11,23 @@ mod config;
 mod db;
 mod db_structs;
 mod errors;
+mod limits;
+mod state;
 mod tests;
 
-use crate::{api_v1::v1_api, config::Config};
+use crate::api_v1::rate_limit_layer;
+use crate::errors::ApiError;
+use crate::{api_v1::v1_api, config::Config, state::ArcState};
 use axum::extract::DefaultBodyLimit;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 use tracing::log::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
@@ -54,11 +64,12 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let db = setup_db(&config.database_url).await;
+
     // Build our application with a route.
     let app = Router::new()
         .nest_service("/uploads", ServeDir::new(&config.upload_dir))
-        .merge(static_frontend())
-        .nest("/api", backend(config.clone()).await)
+        .nest("/api", backend(config.clone(), db))
         // Add documentation routes.
         .merge(
             SwaggerUi::new("/api-docs").url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()),
@@ -79,21 +90,11 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-/// Creates an `Axum` [`Router`] that serves the static frontend from the `frontend` folder.
-fn static_frontend() -> Router {
-    use tower_http::services::ServeDir;
-    let static_frontend_dir = ServeDir::new("../frontend/build");
-
-    Router::new().fallback_service(static_frontend_dir)
-}
-
-/// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
-/// Also sets up the global configuration and the database.
-async fn backend(config: Config) -> Router {
-    // Set up and migrate database.
+/// Sets up and migrates the database.
+async fn setup_db(database_url: &str) -> sqlx::PgPool {
     let db = PgPoolOptions::new()
         .max_connections(20)
-        .connect(&config.database_url)
+        .connect(database_url)
         .await
         .expect("failed to connect to database.");
     sqlx::migrate!()
@@ -101,9 +102,39 @@ async fn backend(config: Config) -> Router {
         .await
         .expect("failed to run database migrations.");
 
+    db
+}
+
+/// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
+/// Also sets up the global configuration and the database.
+fn backend(config: Config, db: sqlx::PgPool) -> Router {
+    // Map status code 429 to api-error.
+    fn map_response_error(res: Response) -> Response {
+        if res.status() == StatusCode::TOO_MANY_REQUESTS {
+            return ApiError::RateLimitExceeded.into_response();
+        }
+        res
+    }
+
+    let state = ArcState::new(config);
+
+    // Extract ratelimiter config and create governor layer.
+    let governor_layer = ServiceBuilder::new()
+        .map_response(map_response_error)
+        .layer(rate_limit_layer(
+            state.config.rate_limit_per_minute,
+            state.config.rate_limit_burst_size,
+        ));
+
     Router::new()
-        .nest("/v1", v1_api(config.clone()))
+        .nest("/v1", v1_api(state.clone()))
+        .layer(governor_layer)
         .layer(Extension(db))
-        .layer(DefaultBodyLimit::max(config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
-        .with_state(config)
+        .layer(DefaultBodyLimit::max(state.config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(DefaultOnResponse::new().level(Level::INFO)),
+        )
+        .with_state(state)
 }

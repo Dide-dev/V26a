@@ -8,9 +8,9 @@ import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
-import { provideFeedback } from '$lib/backend/feedback';
+import { provideFeedback } from '$lib/api-wrapper/feedback';
 
-vi.mock('$lib/backend/feedback', () => {
+vi.mock('$lib/api-wrapper/feedback', () => {
     return {
         provideFeedback: vi.fn()
     };

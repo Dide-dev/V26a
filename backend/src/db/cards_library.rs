@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::cards::{CardFilters, CardGetData, LibraryCardGetData};
+use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
 use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
 
@@ -19,7 +19,7 @@ use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
 ///
 /// `tags` - The tags to find this card while filtering the cards library as [`&[String]`].
 ///
-/// `card_text` - The front and back text of the card as [`CardGetData`].
+/// `card_text` - The front and back text of the card as [`CardData`].
 ///
 /// # Returns
 /// The id assigned to the new card in the cards library if successful.
@@ -31,7 +31,7 @@ pub async fn cards_library_add(
     owner_id: &i32,
     title: &String,
     tags: &[String],
-    card_text: &CardGetData,
+    card_text: &CardData,
 ) -> Result<i32, ApiError> {
     let library_card_id = query!(
         "INSERT INTO library_cards (owner_id, title, tags, front, back)
@@ -44,8 +44,7 @@ pub async fn cards_library_add(
         card_text.back
     )
     .fetch_one(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .id;
 
     Ok(library_card_id)
@@ -71,11 +70,7 @@ pub async fn get_queried_cards_count(
 
     apply_card_filters(&mut query, filters);
 
-    let card_count: i64 = query
-        .build_query_scalar()
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let card_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
     Ok(card_count)
 }
@@ -112,8 +107,7 @@ pub async fn get_queried_cards_list(
     let library_cards = query
         .build_query_as::<LibraryCardGetData>()
         .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     Ok(library_cards)
 }
@@ -181,7 +175,7 @@ mod tests {
 
         let owner_id = get_tree_owner(&db, tree_id).await.unwrap().unwrap();
         let title = "title".to_owned();
-        let tags = ["tag1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(&db, &owner_id, &title, &tags, &card_text)
@@ -198,7 +192,7 @@ mod tests {
 
         assert_eq!(found_card_data.owner_id, owner_id);
         assert_eq!(found_card_data.title, title);
-        assert_eq!(found_card_data.tags.unwrap(), tags);
+        assert_eq!(found_card_data.tags, Some(tags));
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
     }

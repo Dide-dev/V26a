@@ -29,11 +29,10 @@ pub async fn get_user_credentials_by_email(
 ) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
         "SELECT id, password_hash, account_type FROM users WHERE email = $1",
-        email
+        email.to_lowercase()
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let Some(credentials) = credentials else {
         return Ok(None);
@@ -69,8 +68,7 @@ pub async fn get_user_credentials_by_id(
         id
     )
     .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     let Some(credentials) = credentials else {
         return Ok(None);

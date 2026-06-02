@@ -4,8 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
+use crate::api_v1::rate_limit_layer;
 use crate::db::feedback::add_feedback;
+use crate::db_structs::Validated;
 use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
 use axum::routing::post;
@@ -13,8 +15,11 @@ use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
-pub fn feedback() -> Router<Config> {
-    Router::new().route("/provide", post(provide_feedback))
+pub fn feedback() -> Router<ArcState> {
+    Router::new().route(
+        "/provide",
+        post(provide_feedback).layer(rate_limit_layer(5, 10)),
+    )
 }
 
 #[utoipa::path(
@@ -24,6 +29,7 @@ pub fn feedback() -> Router<Config> {
     request_body = FeedbackData,
     responses(
         (status = 200, description = "Feedback successfully received."),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
 )]
@@ -41,6 +47,7 @@ async fn provide_feedback(
     Extension(db): Extension<PgPool>,
     feedback_data: Json<FeedbackData>,
 ) -> Result<(), ApiError> {
+    feedback_data.validate_inputs()?;
     add_feedback(&db, &feedback_data).await?;
 
     Ok(())

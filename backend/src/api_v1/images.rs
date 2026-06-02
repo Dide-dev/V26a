@@ -4,10 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
+use crate::ArcState;
 
-use crate::api_v1::session::Claims;
+use crate::api_v1::rate_limit_layer;
+
 use crate::db::images::{add_image, check_image_existence};
+use crate::db_structs::session::Claims;
 
 use crate::errors::ApiError;
 use axum::body::Bytes;
@@ -21,8 +23,8 @@ use std::fmt::Write;
 use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
-pub fn images() -> Router<Config> {
-    Router::new().route("/add", post(add_new_image))
+pub fn images() -> Router<ArcState> {
+    Router::new().route("/add", post(add_new_image).layer(rate_limit_layer(10, 20)))
 }
 
 #[utoipa::path(
@@ -39,9 +41,10 @@ pub fn images() -> Router<Config> {
         ),
     ),
     responses(
-        (status = 200, description = "Image successfully added"),
+        (status = 200, description = "Image successfully added."),
         (status = 400, description = ApiError::NoImageBodyProvidedException.to_string()),
         (status = 400, description = ApiError::InvalidImageType.to_string()),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = ApiError::CreateDirException.to_string()),
         (status = 500, description = ApiError::FileWriteException.to_string()),
         (status = 500, description = "Internal server error.")
@@ -72,11 +75,11 @@ pub fn images() -> Router<Config> {
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(
     claims: Claims,
-    State(config): State<Config>,
+    State(state): State<ArcState>,
     Extension(db): Extension<PgPool>,
     body: Bytes,
 ) -> Result<String, ApiError> {
-    let upload_directory = &config.upload_dir;
+    let upload_directory = &state.config.upload_dir;
 
     // First check whether the directory exists, creates it if not.
     ensure_directory_existence(upload_directory).await?;
@@ -100,7 +103,7 @@ async fn add_new_image(
     let filepath = format!("{upload_directory}/{filename}");
 
     // Add the image metadata to the database in transaction.
-    let mut transaction = db.begin().await.map_err(|_| ApiError::DatabaseException)?;
+    let mut transaction = db.begin().await?;
     add_image(&mut *transaction, &filename, &hash, claims.sub).await?;
 
     // Write the image to the directory.
@@ -109,10 +112,7 @@ async fn add_new_image(
         .map_err(|_| ApiError::FileWriteException)?;
 
     // Finalize transaction.
-    transaction
-        .commit()
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    transaction.commit().await?;
 
     // Return where the image can be found
     Ok(format!("/uploads/{filename}"))

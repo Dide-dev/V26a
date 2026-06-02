@@ -7,21 +7,270 @@
 use crate::db_structs::pagination::PaginationOptions;
 use crate::{
     db_structs::trees::{
-        TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeMetadata, TreeStructure,
+        Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeLinkedData,
+        TreeMetadata, TreeStructure,
     },
     errors::ApiError,
 };
-use sqlx::{PgExecutor, Postgres, QueryBuilder, query};
-use std::collections::HashSet;
+use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
+use std::collections::{HashMap, HashSet};
 
-/// Add a new tree to the database.
+/// Check whether the given subject exists.
 ///
 /// # Arguments
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `tree_data` - The data assigned to the new tree as [`TreeData`].
+/// `id` - The id of the subject whose existence to check.
 ///
-/// `tree_structure` - The tree structure with cards as [`TreeStructure`].
+/// # Returns
+/// A `bool` indicating whether the given subject exists.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
+    query!("SELECT EXISTS (SELECT 1 FROM subjects WHERE id = $1)", id)
+        .fetch_one(db)
+        .await?
+        .exists
+        .ok_or(ApiError::DatabaseException)
+}
+
+/// Retrieve the list of all subjects from the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// # Returns
+/// A map of all the possible tree subjects stored in the database indexed by id,
+/// as [`HashMap<i32, Subject>`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_subjects(
+    db: impl PgExecutor<'_>,
+) -> Result<HashMap<String, Vec<Subject>>, ApiError> {
+    let results = query_as!(Subject, "SELECT * FROM subjects")
+        .fetch_all(db)
+        .await?;
+    let mut map: HashMap<String, Vec<Subject>> = HashMap::new();
+    for subject in results {
+        map.entry(subject.language_code.clone())
+            .and_modify(|vec| vec.push(subject.clone()))
+            .or_insert(vec![subject]);
+    }
+    Ok(map)
+}
+
+/// Check whether the given language exists.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `language_code` - The code of the language whose existence to check.
+///
+/// # Returns
+/// A `bool` indicating whether the given language exists.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn language_exists(
+    db: impl PgExecutor<'_>,
+    language_code: &str,
+) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM languages WHERE code = $1)",
+        language_code
+    )
+    .fetch_one(db)
+    .await?
+    .exists
+    .ok_or(ApiError::DatabaseException)
+}
+
+/// Retrieve the list of all languages from the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// # Returns
+/// A list of all the possible tree languages stored in the database, as [`Vec<Language>`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, ApiError> {
+    let results = query_as!(Language, "SELECT * FROM languages")
+        .fetch_all(db)
+        .await?;
+
+    Ok(results)
+}
+
+/// Parse an ISBN of either 10 or 13 digits, and return it as integer in the 13-digit
+/// representation.
+///
+/// # Arguments
+/// `isbn` - The ISBN to parse, as [`&str`].
+///
+/// # Returns
+/// The given ISBN in the 13-digit format as integer.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the given string is not a valid ISBN.
+pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
+    let check_digit_10 = |mut n: i64| -> i64 {
+        let mut s = 0;
+        for i in 0..9 {
+            let d = n % 10;
+            s += d * (i + 2);
+            n /= 10;
+        }
+        (11 - s % 11) % 11
+    };
+    let check_digit_13 = |mut n: i64| -> i64 {
+        let mut s = 0;
+        n /= 10;
+        for i in 0..12 {
+            let d = n % 10;
+            s += d * if i % 2 == 0 { 3 } else { 1 };
+            n /= 10;
+        }
+        (10 - s % 10) % 10
+    };
+
+    let no_dashes = isbn.chars().filter(|c| *c != '-').collect::<String>();
+    if no_dashes.len() == 10 {
+        let given_check_digit: i64 = if no_dashes.as_bytes()[9] == b'X' {
+            10
+        } else {
+            (no_dashes.as_bytes()[9] as char)
+                .to_digit(10)
+                .ok_or(ApiError::InvalidIsbn)?
+                .into()
+        };
+        let num = no_dashes[..9]
+            .parse::<i64>()
+            .map_err(|_| ApiError::InvalidIsbn)?;
+        let computed_check_digit = check_digit_10(num);
+        if computed_check_digit != given_check_digit {
+            return Err(ApiError::InvalidIsbn);
+        }
+        #[allow(clippy::inconsistent_digit_grouping)]
+        let isbn13_base = 978_0_000_00000_0_i64 + 10 * num;
+        Ok(isbn13_base + check_digit_13(isbn13_base))
+    } else if no_dashes.len() == 13 {
+        let num = no_dashes
+            .parse::<i64>()
+            .map_err(|_| ApiError::InvalidIsbn)?;
+        if check_digit_13(num) != num % 10 {
+            return Err(ApiError::InvalidIsbn);
+        }
+        Ok(num)
+    } else {
+        Err(ApiError::InvalidIsbn)
+    }
+}
+
+/// Add a new book to the database. If a book with the given ISBN already exists, do nothing.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_data` - The [`TreeData`] which contains the book data.
+///
+/// # Returns
+/// `true` if a book with the given ISBN already existed, `false` otherwise.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the book's ISBN is invalid.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<bool, ApiError> {
+    // We pass a TreeData to this function because that's the only struct
+    // that contains book info. If this does not contain a book, there's
+    // nothing to do and we can return.
+    if tree_data.book_isbn.is_none() {
+        return Ok(false);
+    }
+
+    let result = query!(
+        "WITH insertion AS (
+            INSERT INTO books (isbn, title, author, edition)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT DO NOTHING
+            RETURNING FALSE AS exists
+        )
+        SELECT * FROM insertion
+        UNION
+        SELECT TRUE AS exists FROM books WHERE isbn = $1",
+        tree_data
+            .book_isbn
+            .as_ref()
+            .map(|isbn| parse_isbn(isbn))
+            .transpose()?,
+        tree_data.book_name,
+        tree_data.book_author,
+        tree_data.book_edition,
+    )
+    .fetch_one(db)
+    .await?;
+
+    result.exists.ok_or(ApiError::DatabaseException)
+}
+
+/// Add a list of tags for a given tree in the database.
+///
+/// # Arguments
+/// `db` - A connection to the database, as [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree to assign the tags to.
+///
+/// `tags` - The list of tags as [`&[String]`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_tags(
+    db: &mut PgConnection,
+    tree_id: i32,
+    tags: &[String],
+) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
+        tags
+    )
+    .execute(&mut *db)
+    .await?;
+
+    // This needs to be queried separately because the previous query doesn't insert all of the tags
+    // if there are duplicates.
+    let tag_ids = query!(
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
+        tags
+    )
+    .fetch_all(&mut *db)
+    .await?;
+
+    query!(
+        "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        tree_id,
+        &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
+    )
+    .execute(&mut *db)
+    .await?;
+
+    Ok(())
+}
+
+/// Add a new tree to the database.
+///
+/// Also adds a new book, if the referenced book ISBN does not yet exist.
+///
+/// # Arguments
+/// `db` - A connection to the database, as [`&mut PgConnection`](PgConnection).
+///
+/// `tree_add_data` - The data assigned to the new tree as [`TreeAddData`].
 ///
 /// `owner_id` - The id of the owner of the tree.
 ///
@@ -29,36 +278,40 @@ use std::collections::HashSet;
 /// The id assigned to the new tree.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the book's ISBN is invalid.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     tree_add_data: &TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
-    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)
-        .map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)?;
     let tree_data = &tree_add_data.tree_data;
 
+    add_book(&mut *db, tree_data).await?;
+
     let tree_id = query!(
-        "INSERT INTO trees (owner_id, published, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, structure)
+        "INSERT INTO trees (owner_id, published, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, structure)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id",
         owner_id,
         tree_data.published,
         tree_data.title,
         tree_data.description,
-        tree_data.book_name,
-        tree_data.book_edition,
-        tree_data.book_isbn,
+        tree_data.language_code,
+        tree_data.subject_id,
+        tree_data.book_isbn.as_ref().map(|isbn| parse_isbn(isbn)).transpose()?,
         tree_data.book_chapter,
         tree_data.book_exercise,
         tree_data.assignment_text,
         tree_structure,
     )
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
-        .id;
+    .fetch_one(&mut *db)
+    .await?
+    .id;
+
+    add_tags(db, tree_id, &tree_data.tags).await?;
 
     Ok(tree_id)
 }
@@ -78,8 +331,7 @@ pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), Ap
     // This is because of the `ON DELETE CASCADE` in the foreign key of the 'cards' table.
     query!("DELETE FROM trees WHERE id=$1", tree_id)
         .execute(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+        .await?;
 
     Ok(())
 }
@@ -104,8 +356,7 @@ pub async fn update_tree_structure(
     tree_id: i32,
     new_tree_structure: &TreeStructure,
 ) -> Result<(), ApiError> {
-    let new_tree_structure =
-        serde_json::to_value(new_tree_structure).map_err(|_| ApiError::SerdeException)?;
+    let new_tree_structure = serde_json::to_value(new_tree_structure)?;
 
     query!(
         "UPDATE trees SET (last_modified, structure) = (current_timestamp, $2) WHERE id = $1",
@@ -113,8 +364,7 @@ pub async fn update_tree_structure(
         new_tree_structure,
     )
     .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .await?;
 
     Ok(())
 }
@@ -122,7 +372,7 @@ pub async fn update_tree_structure(
 /// Update the data of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - A connection to the database, as [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -133,31 +383,40 @@ pub async fn update_tree_structure(
 /// Nothing.
 ///
 /// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the new book's ISBN is invalid.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_tree_data(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     tree_id: i32,
     new_tree_data: TreeData,
 ) -> Result<(), ApiError> {
+    add_book(&mut *db, &new_tree_data).await?;
+
     query!(
         "UPDATE trees SET
-        (last_modified, title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published)
+        (last_modified, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, published)
         = (current_timestamp, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         WHERE id = $1",
         tree_id,
         new_tree_data.title,
         new_tree_data.description,
-        new_tree_data.book_name,
-        new_tree_data.book_edition,
-        new_tree_data.book_isbn,
+        new_tree_data.language_code,
+        new_tree_data.subject_id,
+        new_tree_data.book_isbn.as_ref().map(|isbn| parse_isbn(isbn)).transpose()?,
         new_tree_data.book_chapter,
         new_tree_data.book_exercise,
         new_tree_data.assignment_text,
         new_tree_data.published,
     )
-    .execute(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .execute(&mut *db)
+    .await?;
+
+    // Delete the old tags and add the new ones.
+    query!("DELETE FROM tree_tags WHERE tree_id = $1", tree_id)
+        .execute(&mut *db)
+        .await?;
+    add_tags(db, tree_id, &new_tree_data.tags).await?;
 
     Ok(())
 }
@@ -175,48 +434,59 @@ pub async fn update_tree_data(
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn db_get_tree_all_data(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     tree_id: i32,
-) -> Result<Option<(TreeData, TreeGeneratedData, TreeStructure)>, ApiError> {
+) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
-        "SELECT *
+        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
         FROM trees
-        WHERE id = $1",
+        LEFT JOIN books ON trees.book_isbn = books.isbn
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id
+        WHERE trees.id = $1"#,
         tree_id,
     )
-    .fetch_optional(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?;
+    .fetch_optional(&mut *db)
+    .await?;
 
     let Some(field) = field else {
         return Ok(None);
     };
 
-    let tree_structure =
-        serde_json::from_value(field.structure).map_err(|_| ApiError::SerdeException)?;
+    let tree_structure = serde_json::from_value(field.structure)?;
 
-    let tree_data = TreeData {
-        title: field.title,
-        description: field.description,
-        book_name: field.book_name,
-        book_edition: field.book_edition,
-        book_isbn: field.book_isbn,
-        book_chapter: field.book_chapter,
-        book_exercise: field.book_exercise,
-        assignment_text: field.assignment_text,
-        published: field.published,
+    let tree_metadata = TreeMetadata {
+        data: TreeData {
+            title: field.title,
+            description: field.description,
+            tags: field.tags.unwrap_or(Vec::new()),
+            language_code: field.language_code,
+            subject_id: field.subject_id,
+            book_name: field.book_name.unwrap(),
+            book_edition: field.book_edition.unwrap(),
+            book_author: field.book_author.unwrap(),
+            book_isbn: field.book_isbn.map(|n| n.to_string()),
+            book_chapter: field.book_chapter,
+            book_exercise: field.book_exercise,
+            assignment_text: field.assignment_text,
+            published: field.published,
+        },
+        gen_data: TreeGeneratedData {
+            id: field.id,
+            owner_id: field.owner_id,
+            created_at: field.created_at,
+            last_modified: field.last_modified,
+            times_visited: field.times_visited,
+            last_visited: field.last_visited,
+        },
+        linked_data: TreeLinkedData {
+            owner_name: field.owner_name,
+            subject_name: field.subject_name,
+            co_authors: field.co_authors.unwrap_or(Vec::new()),
+        },
     };
 
-    let tree_gen_data = TreeGeneratedData {
-        id: field.id,
-        owner_id: field.owner_id,
-        created_at: field.created_at,
-        last_modified: field.last_modified,
-        times_visited: field.times_visited,
-        last_visited: field.last_visited,
-    };
-
-    Ok(Some((tree_data, tree_gen_data, tree_structure)))
+    Ok(Some((tree_metadata, tree_structure)))
 }
 
 /// Get the id of the owner of the tree.
@@ -237,62 +507,70 @@ pub async fn get_tree_owner(
 ) -> Result<Option<i32>, ApiError> {
     let owner = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id,)
         .fetch_optional(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?
+        .await?
         .map(|r| r.owner_id);
 
     Ok(owner)
 }
 
-// TODO: unit tests
-/// Get the list of all trees owned by some owner.
-/// Should only be called if the user is authorised to see private trees!
+/// Check whether a user is a co-author of a tree.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `owner_id` - The id of the owner that is queried on.
+/// `tree_id` - The id of the tree of which the owner is queried.
+///
+/// `co_author_id` - The id of the given co-author.
 ///
 /// # Returns
-/// A [`Vec<TreeMetadata>`] containing the metadata of all trees owned by the owner (could be empty).
+/// A boolean, indicating whether the given user is indeed a co-author of the given tree.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_all_trees_by_owner(
+pub async fn is_co_author_of_tree(
     db: impl PgExecutor<'_>,
-    owner_id: i32,
-) -> Result<Vec<TreeMetadata>, ApiError> {
-    let records = query!("SELECT * FROM trees WHERE owner_id = $1", owner_id)
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    tree_id: &i32,
+    co_author_id: &i32,
+) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM co_authors WHERE tree_id = $1 AND user_id = $2)",
+        tree_id,
+        co_author_id
+    )
+    .fetch_one(db)
+    .await?
+    .exists
+    .ok_or(ApiError::DatabaseException)
+}
 
-    let trees_metadata = records
-        .into_iter()
-        .map(|t| TreeMetadata {
-            data: TreeData {
-                title: t.title,
-                description: t.description,
-                book_name: t.book_name,
-                book_edition: t.book_edition,
-                book_isbn: t.book_isbn,
-                book_chapter: t.book_chapter,
-                book_exercise: t.book_exercise,
-                assignment_text: t.assignment_text,
-                published: t.published,
-            },
-            gen_data: TreeGeneratedData {
-                id: t.id,
-                owner_id: t.owner_id,
-                created_at: t.created_at,
-                last_modified: t.last_modified,
-                times_visited: t.times_visited,
-                last_visited: t.last_visited,
-            },
-        })
-        .collect::<Vec<TreeMetadata>>();
-
-    Ok(trees_metadata)
+/// Add a co-author to a tree.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `tree_id` - The id of the tree to which a co-author should be added.
+///
+/// `co_author_id` - The id of the user that should be added as co-author.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_co_author(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    co_author_id: i32,
+) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO co_authors (tree_id, user_id)
+        VALUES ($1, $2)",
+        tree_id,
+        co_author_id
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
@@ -335,8 +613,7 @@ pub async fn is_structure_valid(
         i64::from(db_card_limit),
     )
     .fetch_all(db)
-    .await
-    .map_err(|_| ApiError::DatabaseException)?
+    .await?
     .iter()
     .map(|n| n.id)
     .collect::<HashSet<_>>();
@@ -366,39 +643,53 @@ pub async fn is_structure_valid(
 ///
 /// `user_id` - The logged in user performing the filter, optional.
 ///
-/// # Example:
+/// # Example
 /// ```rs
 /// let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
-/// apply_tree_filters(query, &filters);
+/// apply_tree_filters(query, &filters)?;
 /// let trees_count: i64 = query
 ///         .build_query_scalar()
 ///         .fetch_one(db)
-///         .await
-///         .map_err(|_| ApiError::DatabaseException)?;
+///         .await?;
 /// ```
 ///
-/// # To future developers:
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the filters contain an invalid ISBN.
+///
+/// # To future developers
 /// This function can and will become too big, good luck if that happens!
 fn apply_tree_filters<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
     filters: &'a TreeFilters,
     user_id: Option<i32>,
-) {
+) -> Result<(), ApiError> {
     let TreeFilters {
         owner_id,
         book,
         created_after,
         created_before,
         show_own_private,
+        editable,
     } = filters;
 
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
     separated.push("(published = true");
     if *show_own_private && let Some(user_id) = user_id {
-        separated.push_unseparated(" OR (published = false AND owner_id = ");
+        separated.push_unseparated(" OR (published = false AND (owner_id = ");
         separated.push_bind_unseparated(user_id);
-        separated.push_unseparated(")");
+
+        separated.push_unseparated(
+            " OR EXISTS(
+                SELECT 1
+                FROM co_authors
+                WHERE co_authors.user_id = ",
+        );
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated(")))");
     }
     separated.push_unseparated(")");
     if let Some(owner_id) = owner_id {
@@ -407,24 +698,44 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(owner_id)
             .push_unseparated(")");
     }
-    if !filters.book.is_empty() {
+    if *editable && let Some(user_id) = user_id {
+        separated.push("(owner_id = ");
+
+        separated.push_bind_unseparated(user_id);
+
+        separated.push_unseparated(
+            " OR EXISTS(
+                SELECT 1
+                FROM co_authors
+                WHERE co_authors.user_id = ",
+        );
+        separated.push_bind_unseparated(user_id);
+        separated.push_unseparated("))");
+    }
+    if !book.is_empty() {
+        let parsed_isbns = book
+            .iter()
+            .map(|isbn| parse_isbn(isbn))
+            .collect::<Result<Vec<_>, _>>()?;
         separated
-            .push("(book_name = ANY(")
-            .push_bind_unseparated(book)
+            .push("(book_isbn = ANY(")
+            .push_bind_unseparated(parsed_isbns)
             .push_unseparated("))");
     }
     if let Some(created_after) = created_after {
         separated
-            .push("(created_at >= ")
+            .push("(trees.created_at >= ")
             .push_bind_unseparated(created_after)
             .push_unseparated(")");
     }
     if let Some(created_before) = created_before {
         separated
-            .push("(created_at <= ")
+            .push("(trees.created_at <= ")
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
     }
+
+    Ok(())
 }
 
 /// Get the amount of trees satisfying some filters.
@@ -446,15 +757,17 @@ pub async fn get_queried_count(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM trees");
+    let mut query = QueryBuilder::<Postgres>::new(
+        "SELECT COUNT(*)
+        FROM trees
+        LEFT JOIN books ON books.isbn = trees.book_isbn
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id",
+    );
 
-    apply_tree_filters(&mut query, filters, user_id);
+    apply_tree_filters(&mut query, filters, user_id)?;
 
-    let trees_count: i64 = query
-        .build_query_scalar()
-        .fetch_one(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let trees_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
     Ok(trees_count)
 }
@@ -484,17 +797,21 @@ pub async fn get_queried_list(
     filters: &TreeFilters,
     user_id: Option<i32>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new("
-        SELECT id, owner_id, created_at, last_modified, times_visited, last_visited,
-        title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published
-        FROM trees"
+    let mut query = QueryBuilder::<Postgres>::new(
+        r#"
+        SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
+        FROM trees
+        LEFT JOIN books ON books.isbn = trees.book_isbn
+        LEFT JOIN users ON users.id = trees.owner_id
+        LEFT JOIN subjects ON subjects.id = trees.subject_id
+        "#,
     );
 
-    apply_tree_filters(&mut query, filters, user_id);
+    apply_tree_filters(&mut query, filters, user_id)?;
     query
         .push(
             // newest first
-            " ORDER BY created_at DESC \
+            " ORDER BY trees.created_at DESC \
               LIMIT ",
         )
         .push_bind(i64::from(page.get_size()))
@@ -502,11 +819,7 @@ pub async fn get_queried_list(
         // Page is 1-based
         .push_bind(i64::from((page.get_page() - 1) * page.get_size()));
 
-    let rows = query
-        .build()
-        .fetch_all(db)
-        .await
-        .map_err(|_| ApiError::DatabaseException)?;
+    let rows = query.build().fetch_all(db).await?;
 
     let trees = rows
         .iter()
@@ -524,6 +837,7 @@ pub async fn get_queried_list(
 }
 
 #[cfg(test)]
+#[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
     use super::*;
     use crate::db::test::{
@@ -533,20 +847,68 @@ mod tests {
     use crate::db_structs::trees::{Node, RootNode};
     use crate::get_connection_unwrap;
     use chrono::{TimeDelta, Utc};
-    use sqlx::{PgPool, query_as};
+    use sqlx::PgPool;
+
+    #[test]
+    fn test_parse_isbn() {
+        // Valid ISBN 10
+        let result = parse_isbn("0-451-52493-4");
+        assert_eq!(result, Ok(978_0_451_52493_5));
+
+        // Invalid ISBN 10
+        let result = parse_isbn("0-451-52493-5");
+        assert_eq!(result, Err(ApiError::InvalidIsbn));
+
+        // Valid ISBN 10 with X check digit
+        let result = parse_isbn("0-074-62542-X");
+        assert_eq!(result, Ok(978_0_074_62542_2));
+
+        // Valid ISBN 13
+        let result = parse_isbn("979-1-034-90821-9");
+        assert_eq!(result, Ok(979_1_034_90821_9));
+
+        // Invalid ISBN 13
+        let result = parse_isbn("979-1-034-90821-1");
+        assert_eq!(result, Err(ApiError::InvalidIsbn));
+    }
+
+    #[sqlx::test]
+    async fn test_add_book(db: PgPool) {
+        let tree_data = TreeData {
+            book_isbn: Some("978-0-061-12008-4".to_string()),
+            ..Default::default()
+        };
+
+        // Insert when ISBN does not exist
+        let existed = add_book(get_connection_unwrap!(db), &tree_data)
+            .await
+            .unwrap();
+        assert!(!existed);
+
+        // Insert when ISBN exists
+        let existed = add_book(get_connection_unwrap!(db), &tree_data)
+            .await
+            .unwrap();
+        assert!(existed);
+    }
 
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
-        let tree_data = TreeData::default();
+        let tree_data = TreeData {
+            tags: vec!["tag1".to_string()],
+            ..Default::default()
+        };
 
         let tree_add_data = TreeAddData {
             tree_data: tree_data.clone(),
             tree_structure: TreeStructure { root_nodes: vec![] },
         };
 
-        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
+        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, user_id)
+            .await
+            .unwrap();
 
         let found_owner_id = query!("SELECT owner_id FROM trees WHERE id = $1", tree_id)
             .fetch_one(&db)
@@ -556,10 +918,29 @@ mod tests {
 
         assert_eq!(found_owner_id, user_id);
 
-        let found_tree_data = query_as!(TreeData, "SELECT title, description, book_name, book_edition, book_isbn, book_chapter, book_exercise, assignment_text, published FROM trees WHERE id = $1", tree_id)
+        let record = query!(
+            "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
+            FROM trees
+            LEFT JOIN books ON trees.book_isbn = books.isbn
+            WHERE id = $1", tree_id)
             .fetch_one(&db)
             .await
             .unwrap();
+        let found_tree_data = TreeData {
+            title: record.title,
+            description: record.description,
+            tags: record.tags.unwrap_or(Vec::new()),
+            language_code: record.language_code,
+            subject_id: record.subject_id,
+            book_name: record.book_name.unwrap(),
+            book_edition: record.book_edition.unwrap(),
+            book_author: record.book_author.unwrap(),
+            book_isbn: record.book_isbn.map(|n| n.to_string()),
+            book_chapter: record.book_chapter,
+            book_exercise: record.book_exercise,
+            assignment_text: record.assignment_text,
+            published: record.published,
+        };
 
         assert_eq!(found_tree_data, tree_data);
 
@@ -607,7 +988,10 @@ mod tests {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
-        let tree_data = TreeData::default();
+        let tree_data = TreeData {
+            tags: vec!["tag1".to_string()],
+            ..Default::default()
+        };
         let tree_structure = TreeStructure {
             root_nodes: vec![RootNode {
                 label: "RootNode".to_string(),
@@ -618,27 +1002,36 @@ mod tests {
             tree_data,
             tree_structure,
         };
-        let tree_id = add_tree(&db, &tree_add_data, user_id).await.unwrap();
+        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, user_id)
+            .await
+            .unwrap();
 
         // Update the tree data
         let new_tree_data = TreeData {
             title: "Updated tree".to_string(),
-            description: Some("Updated description".to_string()),
-            book_name: Some("Updated book".to_string()),
-            book_edition: Some("2nd".to_string()),
+            description: "Updated description".to_string(),
+            language_code: "nl".to_string(),
+            tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            subject_id: Some(3),
+            book_name: "Updated book".to_string(),
+            book_author: "John Writer".to_string(),
+            book_edition: "2nd".to_string(),
             book_isbn: Some("9780136019701".to_string()),
-            book_chapter: Some("3".to_string()),
-            book_exercise: Some("5b".to_string()),
-            assignment_text: Some("Updated assignment".to_string()),
+            book_chapter: "3".to_string(),
+            book_exercise: "5b".to_string(),
+            assignment_text: "Updated assignment".to_string(),
             published: true,
         };
-        update_tree_data(&db, tree_id, new_tree_data.clone())
+        update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone())
             .await
             .unwrap();
 
         // Verify the data was updated
-        let (found_tree_data, _, _) = db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
-        assert_eq!(found_tree_data, new_tree_data);
+        let (found_tree_metadata, _) = db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(found_tree_metadata.data, new_tree_data);
     }
 
     #[sqlx::test]
@@ -657,14 +1050,19 @@ mod tests {
             }],
         };
 
-        let tree_id = initialize_tree_with_data(&db, user_id, &tree_data, &structure).await;
+        let tree_id =
+            initialize_tree_with_data(get_connection_unwrap!(db), user_id, &tree_data, &structure)
+                .await;
 
-        let (found_tree_data, found_tree_gen_data, found_tree_structure) =
-            db_get_tree_all_data(&db, tree_id).await.unwrap().unwrap();
+        let (found_tree_metadata, found_tree_structure) =
+            db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
+                .await
+                .unwrap()
+                .unwrap();
 
-        assert_eq!(tree_data, found_tree_data);
-        assert_eq!(tree_id, found_tree_gen_data.id);
-        assert_eq!(user_id, found_tree_gen_data.owner_id);
+        assert_eq!(tree_data, found_tree_metadata.data);
+        assert_eq!(tree_id, found_tree_metadata.gen_data.id);
+        assert_eq!(user_id, found_tree_metadata.gen_data.owner_id);
         assert_eq!(structure, found_tree_structure);
     }
 
@@ -748,7 +1146,7 @@ mod tests {
         let empty_filters = TreeFilters {
             ..Default::default()
         };
-        apply_tree_filters(&mut no_filters_query, &empty_filters, None);
+        apply_tree_filters(&mut no_filters_query, &empty_filters, None).unwrap();
         assert_eq!(
             no_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
@@ -757,15 +1155,16 @@ mod tests {
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_id: Some(67),
-            book: vec!["1984".to_owned()],
+            book: vec!["0-451-52493-4".to_owned()],
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
             show_own_private: true,
+            editable: false,
         };
-        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123));
+        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND owner_id = $1)) AND (owner_id = $2) AND (book_name = ANY($3)) AND (created_at >= $4) AND (created_at <= $5)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (owner_id = $3) AND (book_isbn = ANY($4)) AND (trees.created_at >= $5) AND (trees.created_at <= $6)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -774,10 +1173,10 @@ mod tests {
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             ..Default::default()
         };
-        apply_tree_filters(&mut partial_filters_query, &partial_filters, None);
+        apply_tree_filters(&mut partial_filters_query, &partial_filters, None).unwrap();
         assert_eq!(
             partial_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (created_at >= $2)"
+            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (trees.created_at >= $2)"
         );
 
         let mut show_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -789,7 +1188,8 @@ mod tests {
             &mut show_private_no_id_query,
             &show_private_no_id_filters,
             None,
-        );
+        )
+        .unwrap();
         assert_eq!(
             show_private_no_id_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
@@ -804,7 +1204,8 @@ mod tests {
             &mut hide_private_with_id_query,
             &show_private_no_id_filters,
             Some(123),
-        );
+        )
+        .unwrap();
         assert_eq!(
             hide_private_with_id_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
@@ -839,7 +1240,7 @@ mod tests {
             0
         );
 
-        initialize_empty_tree(&db, user_id).await;
+        initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
         assert_eq!(
             get_queried_count(&db, &empty_filters, None).await.unwrap(),
             0
@@ -859,7 +1260,7 @@ mod tests {
         );
 
         for _ in 0..100 {
-            initialize_empty_tree(&db, user_id).await;
+            initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
         }
         assert_eq!(
             get_queried_count(&db, &show_private_filters, Some(user_id))
@@ -872,7 +1273,13 @@ mod tests {
             published: true,
             ..Default::default()
         };
-        initialize_tree_with_data(&db, user_id, &public_tree, &basic_structure).await;
+        initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            user_id,
+            &public_tree,
+            &basic_structure,
+        )
+        .await;
         assert_eq!(
             get_queried_count(&db, &show_private_filters, Some(user_id))
                 .await
@@ -885,15 +1292,21 @@ mod tests {
         );
 
         let book_filter = TreeFilters {
-            book: vec!["Dikkie dik".to_owned()],
+            book: vec!["978-0-061-12008-4".to_owned()],
             ..Default::default()
         };
         let book_tree = TreeData {
-            book_name: Some("Dikkie dik".to_owned()),
+            book_isbn: Some("978-0-061-12008-4".to_owned()),
             published: true,
             ..Default::default()
         };
-        initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
+        initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            user_id,
+            &book_tree,
+            &basic_structure,
+        )
+        .await;
         assert_eq!(get_queried_count(&db, &book_filter, None).await.unwrap(), 1);
         assert_eq!(
             get_queried_count(&db, &empty_filters, None).await.unwrap(),
@@ -929,8 +1342,20 @@ mod tests {
             published: true,
             ..Default::default()
         };
-        initialize_tree_with_data(&db, user_id, &private_tree, &basic_structure).await;
-        initialize_tree_with_data(&db, user_id, &public_tree, &basic_structure).await;
+        initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            user_id,
+            &private_tree,
+            &basic_structure,
+        )
+        .await;
+        initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            user_id,
+            &public_tree,
+            &basic_structure,
+        )
+        .await;
 
         let private_tree_list =
             get_queried_list(&db, &first_page, &show_private_filters, Some(user_id))
@@ -1020,16 +1445,21 @@ mod tests {
         );
 
         let book_filter = TreeFilters {
-            book: vec!["boek".to_owned()],
+            book: vec!["978-0-061-12008-4".to_owned()],
             ..Default::default()
         };
         let book_tree = TreeData {
-            book_name: Some("boek".to_owned()),
+            book_isbn: Some("9780061120084".to_owned()),
             published: true,
             ..Default::default()
         };
-        let book_tree_id =
-            initialize_tree_with_data(&db, user_id, &book_tree, &basic_structure).await;
+        let book_tree_id = initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            user_id,
+            &book_tree,
+            &basic_structure,
+        )
+        .await;
         let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(user_id))
             .await
             .unwrap();
@@ -1044,5 +1474,70 @@ mod tests {
             .map(|d| d.gen_data.id)
             .collect::<Vec<_>>();
         assert_eq!(book_tree_id_list, vec![book_tree_id]);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_exists(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let co_author_id = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "co_author@email.com",
+            "password_hash",
+            "co_author"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        add_co_author(&db, tree_id, co_author_id).await.unwrap();
+
+        let result = is_co_author_of_tree(&db, &tree_id, &co_author_id)
+            .await
+            .unwrap();
+
+        assert!(result);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_not_exists(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let other_user = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "other_user@email.com",
+            "password_hash",
+            "other_user"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        let result = is_co_author_of_tree(&db, &tree_id, &other_user)
+            .await
+            .unwrap();
+
+        assert!(!result);
+    }
+
+    #[sqlx::test]
+    async fn test_co_author_duplicate_insert(db: PgPool) {
+        let (_, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let co_author_id = query!(
+            "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
+            "co_author@email.com",
+            "password_hash",
+            "co_author"
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        add_co_author(&db, tree_id, co_author_id).await.unwrap();
+
+        let result = add_co_author(&db, tree_id, co_author_id).await;
+
+        assert!(result.is_err());
     }
 }

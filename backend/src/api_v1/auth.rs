@@ -4,10 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::Config;
-use crate::api_v1::session::Claims;
+use crate::ArcState;
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_email;
+use crate::db::users::get_user;
+use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
 use axum::extract::State;
 use axum::routing::post;
@@ -17,11 +20,12 @@ use chrono::Utc;
 use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Duration;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
-pub fn auth() -> Router<Config> {
-    Router::new().route("/login", post(login))
+pub fn auth() -> Router<ArcState> {
+    Router::new().route("/login", post(login).layer(rate_limit_layer(15, 30)))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -32,16 +36,6 @@ pub struct LoginResponse {
     pub succeeded: bool,
 }
 
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
-/// with an encoded JWT.
-///
-/// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
-///
-/// # Error
-/// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 #[utoipa::path(
     post,
     path = "/login",
@@ -49,17 +43,14 @@ pub struct LoginResponse {
     request_body = LoginRequestBody,
     responses(
         (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
-    params(
-        ("claims" = Claims, Cookie),
-    )
 )]
-/// Login to an account if the given credentials are valid.
+/// An endpoint for logging in, if the given credentials are valid. Takes a [`LoginRequestBody`], and on success sets a session cookie
+/// with an encoded JWT.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
-///
 /// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
 ///
 /// # Returns
@@ -67,14 +58,21 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException) if the password hashing fails.
+///
+/// May return a [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
-    State(config): State<Config>,
+    State(state): State<ArcState>,
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
+    let config = &state.config;
+    login_request.validate_inputs()?;
+
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     };
@@ -92,14 +90,23 @@ async fn login(
         account_type: credentials.account_type,
     };
 
+    let user_data = get_user(&db, credentials.user_id).await?;
+
+    let user_info_cookie = InfoCookieData {
+        name: user_data.data.name,
+        nickname: user_data.data.nickname,
+        sub: claims.sub,
+        account_type: claims.account_type,
+    };
+
     // Create the authorization token.
     let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
         .map_err(|_| ApiError::TokenCreationException)?;
 
-    let user_info = serde_json::to_string(&claims).map_err(|_| ApiError::SerdeException)?;
+    let user_info = serde_json::to_string(&user_info_cookie)?;
 
     // Age of a cookie (same for the two cookies)
-    let time = time::Duration::new(config.session_duration, 0);
+    let time = Duration::seconds(config.session_duration);
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
