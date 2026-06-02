@@ -200,7 +200,7 @@ fn get_classroom_claims(
     state: &ArcState,
     classroom_id: i32,
     num: i32,
-    name: &String,
+    name: &str,
 ) -> AllClassroomClaims {
     let config = &state.config;
     let all_sessions = jar.get(AllClassroomClaims::get_cookie_name());
@@ -208,7 +208,7 @@ fn get_classroom_claims(
     let new_classroom_claims = ClassroomClaims {
         id: classroom_id,
         num,
-        name: (*name).clone(),
+        name: name.to_owned(),
         exp: Utc::now().timestamp() + config.session_duration,
     };
     let default_all_classroom_claims = AllClassroomClaims {
