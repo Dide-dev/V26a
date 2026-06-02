@@ -13,7 +13,12 @@ function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
+function apiCallPostLesson(path: string, body: unknown) {
+    return apiCallPost(prefix + path, body);
+}
+
 export type ClassroomId = number;
+export type LessonId = number;
 
 export type ClassroomAddData = {
     name: string;
@@ -25,7 +30,21 @@ export type ClassroomGeneratedData = {
     joinCode: string;
 };
 
+export type LessonAddData = {
+    name: string;
+    description: Option<string>;
+    published: Option<boolean>;
+};
+
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomGeneratedData> {
     return apiCallPostClassroom('add', classroomAddData);
+}
+
+/** Add a lesson to a classroom in the database */
+export function addLesson(
+    lessonAddData: LessonAddData,
+    classroomId: ClassroomId
+): Promise<LessonId> {
+    return apiCallPostLesson(`${classroomId}/add-lesson`, lessonAddData);
 }

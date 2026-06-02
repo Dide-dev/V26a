@@ -1,12 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT MAX(order_number) FROM lessons WHERE classroom_id=$1",
+  "query": "SELECT COUNT(*) FROM lessons WHERE classroom_id=$1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "max",
-        "type_info": "Int4"
+        "name": "count",
+        "type_info": "Int8"
       }
     ],
     "parameters": {
@@ -18,5 +18,5 @@
       null
     ]
   },
-  "hash": "7396e2288858371f09b0309a6aa9ebf55d1a3853078e6e0211c2b34944c15d43"
+  "hash": "16993a7ca252c3faf6330ba51ae0668e885fe92b5e003f1f38535f28ab07fbbc"
 }

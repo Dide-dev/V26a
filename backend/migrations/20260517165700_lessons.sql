@@ -8,7 +8,7 @@ CREATE TABLE lessons
 (
     id                  SERIAL PRIMARY KEY,
     classroom_id        INTEGER         NOT NULL,
-    order_number        INTEGER         NOT NULL,
+    order_number        INTEGER UNIQUE  NOT NULL,
     created_at          TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     name                VARCHAR(32)     NOT NULL,
     description         VARCHAR(128)    NOT NULL    DEFAULT '',

@@ -54,6 +54,7 @@ pub struct LessonAddData {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default)]
     pub published: bool,
 }
 

@@ -8,7 +8,7 @@ use crate::errors::ApiError;
 use chrono::Utc;
 use rand::prelude::*;
 use rand::rngs::SysRng;
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{Acquire, PgConnection, PgExecutor, query, query_scalar};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -135,26 +135,29 @@ pub async fn get_classroom_owner(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
+#[allow(clippy::cast_possible_truncation)]
 pub async fn add_lesson(
     db: &mut PgConnection,
     lesson_add_data: &LessonAddData,
     classroom_id: i32,
 ) -> Result<i32, ApiError> {
-    let order_number: Option<i32> = query!(
-        "SELECT MAX(order_number) FROM lessons WHERE classroom_id=$1",
+    let mut transaction = db.begin().await?;
+    let order_number: i32 = query_scalar!(
+        "SELECT COUNT(*) FROM lessons WHERE classroom_id=$1",
         classroom_id,
     )
-    .fetch_one(&mut *db)
+    .fetch_one(&mut *transaction)
     .await?
-    .max;
+    .unwrap_or(0) as i32;
     let id: i32 = query!(
         "INSERT INTO lessons (classroom_id, order_number, name, description, published) VALUES ($1, $2, $3, $4, $5) RETURNING id",
         classroom_id,
-        (order_number.unwrap_or(0))+1,
+        (order_number + 1),
         lesson_add_data.name,
         lesson_add_data.description,
         lesson_add_data.published,
-    ).fetch_one(&mut *db).await?.id;
+    ).fetch_one(&mut *transaction).await?.id;
+    transaction.commit().await?;
 
     Ok(id)
 }
