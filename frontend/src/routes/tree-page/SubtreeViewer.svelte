@@ -11,8 +11,7 @@
     ## Params
     - `node: RootNode | Node` - The contents of the current node, and its children.
     - `cards: Record<CardId, CardData>` - The contents of all cards.
-    - `color: string` - The name of the color. May be any of:
-      - `'tree'` | `'cyan'` | `'violet'` | `'pink'` | `'red'` | `'yellow'`
+    - `color: BranchColor` - The name of the color.
     - `distanceFromRevealed: number` - The distance from the closest revealed card.
                                        If `0`, the card is revealed.
     - `isRevealed: boolean` - Whether this node has been revealed.
@@ -25,6 +24,7 @@
     import SubtreeViewer from './SubtreeViewer.svelte';
     import LineDrawings from './LineDrawer.svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
+    import type { BranchColor } from '$lib/treePage';
 
     let {
         node,
@@ -35,7 +35,7 @@
     }: {
         node: RootNode | Node;
         cards: Record<CardId, CardData>;
-        color: string;
+        color: BranchColor;
         distanceFromRevealed: number;
         isRevealed: boolean;
     } = $props();

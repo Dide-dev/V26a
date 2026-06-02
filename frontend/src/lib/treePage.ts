@@ -4,4 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-export const branchColors = ['cyan', 'tree', 'yellow', 'red', 'pink', 'violet'];
+export type BranchColor = 'cyan' | 'tree' | 'yellow' | 'red' | 'pink' | 'violet';
+
+export const branchColors: BranchColor[] = ['cyan', 'tree', 'yellow', 'red', 'pink', 'violet'];

@@ -10,8 +10,7 @@
 
     ## Params
     - `card: CardData` - The contents of the card.
-    - `color: string` - The name of the color. May be any of:
-      - `'tree'` | `'cyan'` | `'violet'` | `'pink'` | `'red'` | `'yellow'`
+    - `color: BranchColor` - The name of the color.
     - `distanceFromRevealed: number` - The distance from the closest revealed card.
                                        If `0`, the card is revealed.
     - `outOfFocus: boolean` - Whether all children have been opened,
@@ -21,6 +20,7 @@
 <script lang="ts">
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
     import type { CardData } from '$lib/api-wrapper/cards';
+    import type { BranchColor } from '$lib/treePage';
 
     let {
         card,
@@ -29,7 +29,7 @@
         outOfFocus
     }: {
         card: CardData;
-        color: string;
+        color: BranchColor;
         distanceFromRevealed: number;
         outOfFocus: boolean;
     } = $props();

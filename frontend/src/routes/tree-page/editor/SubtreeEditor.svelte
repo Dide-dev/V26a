@@ -15,6 +15,7 @@
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
     import type { Node, RootNode } from '$lib/api-wrapper/trees';
+    import type { BranchColor } from '$lib/treePage';
 
     let {
         history = $bindable(),
@@ -33,7 +34,7 @@
         fakeNode?: boolean;
         dragState: DragState;
         sidebar: SideBar | null;
-        color: string;
+        color: BranchColor;
     } = $props();
 
     /** This will be null if `fakeNode` is set to true. */
