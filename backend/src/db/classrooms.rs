@@ -3,12 +3,13 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::classrooms::ClassroomAddData;
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomAllData};
+use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
 use chrono::Utc;
 use rand::prelude::*;
 use rand::rngs::SysRng;
-use sqlx::{PgConnection, PgExecutor, query};
+use sqlx::{PgConnection, PgExecutor, query, query_as, query_scalar};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -92,6 +93,70 @@ pub async fn add_classroom(
     .id;
 
     Ok(id)
+}
+
+/// Get the list of all classrooms at a given page.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `page` - Which page is requested.
+///
+/// `id` - The id of the user for whom we need to return the amount of classrooms.
+///
+/// # Returns
+/// A list with the classrooms at the requested page,
+///
+/// # Errors
+/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_all_classrooms(
+    db: impl PgExecutor<'_>,
+    id: i32,
+    page: &PaginationOptions,
+) -> Result<Vec<ClassroomAllData>, ApiError> {
+    let limit = i64::from(page.get_size());
+    let offset = i64::from((page.get_page() - 1) * page.get_size());
+    let classrooms = query_as!(
+        ClassroomAllData,
+        "SELECT name, description, id, join_code, created_at, owner_id FROM classrooms
+         WHERE owner_id = $3
+         LIMIT $1 OFFSET $2",
+        limit,
+        offset,
+        id
+    )
+    .fetch_all(db)
+    .await?;
+
+    if classrooms.is_empty() {
+        return Err(ApiError::InvalidPage);
+    }
+
+    Ok(classrooms)
+}
+
+/// Gets the amount of classrooms a user owns.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `id` - The id of the user for whom we need to return the amount of classrooms.
+///
+/// # Returns
+/// The amount of classrooms a user owns,
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_classroom_count(db: impl PgExecutor<'_>, id: i32) -> Result<i64, ApiError> {
+    let classroom_count: i64 =
+        query_scalar!("SELECT COUNT(*) FROM classrooms WHERE owner_id = $1", id)
+            .fetch_one(db)
+            .await?
+            .ok_or(ApiError::DatabaseException)?;
+
+    Ok(classroom_count)
 }
 
 #[cfg(test)]

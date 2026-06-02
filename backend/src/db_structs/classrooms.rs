@@ -37,16 +37,6 @@ impl Validated for ClassroomAddData {
     }
 }
 
-/// The generated data that is created after the creation of the classroom.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct ClassroomGeneratedData {
-    pub id: i32,
-    pub join_code: String,
-    pub created_at: DateTime<Utc>,
-    pub owner_id: i32,
-}
-
 /// The data that is returned to the user after creation of the classroom.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -58,7 +48,21 @@ pub struct ClassroomAddReturnData {
 /// The data that is returned to the user when requesting all data.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassroomAllData{
-    pub data: ClassroomAddData,
-    pub gen_data: ClassroomGeneratedData,
+pub struct ClassroomAllData {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    pub id: i32,
+    pub join_code: String,
+    pub created_at: DateTime<Utc>,
+    pub owner_id: i32,
+}
+
+/// The data returned when requesting a list of classrooms.
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomListResponse {
+    /// The total amount of classrooms that are visible in the query.
+    pub total_classrooms: i32,
+    pub classrooms: Vec<ClassroomAllData>,
 }

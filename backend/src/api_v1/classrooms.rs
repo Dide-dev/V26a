@@ -4,22 +4,30 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::classrooms::{add_classroom, generate_random_code};
+use crate::db::classrooms::{
+    add_classroom, generate_random_code, get_all_classrooms, get_classroom_count,
+};
 use crate::db_structs::Validated;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomAddReturnData, ClassroomAllData};
+use crate::db_structs::classrooms::{
+    ClassroomAddData, ClassroomAddReturnData, ClassroomListResponse,
+};
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
-use axum::extract::{Path};
+use axum::extract::Path;
+use axum_extra::extract::Query;
 
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
-    Router::new().route("/add", post(add_new_classroom))
+    Router::new()
+        .route("/add", post(add_new_classroom))
+        .route("/get-by-user/{user_id}", get(get_all_owned_classrooms))
 }
 
 #[utoipa::path(
@@ -64,42 +72,66 @@ async fn add_new_classroom(
 
 #[utoipa::path(
     get,
-    path = "/get-by-user/{id}",
+    path = "/get-by-user/{user_id}",
     context_path = "/api/v1/classrooms",
     responses(
-        (status = 200, description = "Successfully retrieved all classrooms"),
+        (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
         ("user_id" = i32, Path),
+        ("page" = OptionalPaginationOptions, Query),
     )
 )]
-/// Adds a classroom to the database.
+
+/// Get the list of all classrooms at a given page.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
 /// `user_id` - The user for whom to get their classrooms.
 ///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
+///
 /// # Returns
-/// All the classrooms of a specific user as [`Vec<ClassroomAllData>`].
+/// All the classrooms of a specific user and the amount of classrooms as [`ClassroomListResponse`].
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
+/// the classroom data.
+///
+///  Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_owned_classrooms(
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
-) -> Result<Json<Vec<ClassroomAllData>>, ApiError> {
-    if claims.account_type == AccountType::Admin || claims.sub == user_id{
-        let classrooms = get_all_classrooms(user_id).await?;
-        Ok(Json(classrooms))
-    }
-    else {
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<ClassroomListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await?;
+    let classroom_count = get_classroom_count(&mut *transaction, user_id).await?;
+
+    if claims.account_type == AccountType::Admin || claims.sub == user_id {
+        let classrooms = get_all_classrooms(&mut *transaction, user_id, &page).await?;
+        transaction.commit().await?;
+        let list = ClassroomListResponse {
+            total_classrooms: i32::try_from(classroom_count)
+                .map_err(|_| ApiError::DatabaseMemoryCap)?,
+            classrooms,
+        };
+        Ok(Json(list))
+    } else {
         Err(ApiError::NoPermission)
     }
 }
