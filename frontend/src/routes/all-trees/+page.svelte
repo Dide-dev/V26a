@@ -16,7 +16,6 @@
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
-    import { goto } from '$app/navigation';
     import { getUserInfo } from '$lib/api-wrapper/users';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
@@ -54,7 +53,7 @@
 
     async function duplicateThisTree(id: number) {
         let newTreeId = await duplicateTree(id);
-        await goto(appLink(`/tree-page/editor?id=${newTreeId}`));
+        await window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
     }
 
     async function loadTrees() {

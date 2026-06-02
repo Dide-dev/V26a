@@ -36,7 +36,7 @@
 
     async function duplicateThisTree(id: number) {
         let newTreeId = await duplicateTree(id);
-        await goto(appLink(`/tree-page/editor?id=${newTreeId}`));
+        await window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
     }
 
     async function loadTrees() {
