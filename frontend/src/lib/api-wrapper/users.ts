@@ -69,7 +69,7 @@ export type UserGetData = {
     data: UserData;
 };
 
-/** The public data of a users profile page. */
+/** The public data of a user's profile page. */
 export type PublicUserData = {
     name: string;
     nickname: string;

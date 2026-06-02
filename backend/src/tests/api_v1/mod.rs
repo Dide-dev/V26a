@@ -51,7 +51,7 @@ fn setup(db: PgPool) -> TestServer {
 /// # Arguments
 /// `db` - A [`PgPool`] to use for the [`TestServer`].
 ///
-/// `http_transport` - Configures the server to use real HTTP comminucation instead of mocking it.
+/// `http_transport` - Configures the server to use real HTTP communication instead of mocking it.
 /// It is more expensive to run this way, but for testing websockets it is required.
 ///
 /// # Returns

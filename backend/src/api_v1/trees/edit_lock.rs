@@ -37,7 +37,7 @@ use crate::{
     responses(
         (
             status = 101,
-            description = "Websocket started. All the messages will be serialized as json into text. See the examples for the types of the messages that can be send.",
+            description = "Websocket started. All the messages will be serialized as json into text. See the examples for the types of messages that can be sent.",
             body = BackendMessage,
         ),
         (status = 400, description = "Connection header did not include 'upgrade' or tree_id could not be found."),
@@ -55,14 +55,14 @@ use crate::{
 /// If the websocket ever closes, then the lock is considered to be lost.
 ///
 /// Note that the request body and responses are not the actual http GET request and response bodies,
-/// but they are there for linking to the messages that can be send over the websocket.
+/// but they are there for linking to the messages that can be sent over the websocket.
 ///
 /// # Arguments
 /// `claims` - The claims of the user who sent this request.
 ///
 /// `state` - State containing the `tree_edit_locks`.
 ///
-/// `tree_id` - The tree of which the edit locks gets acquired.
+/// `tree_id` - The tree of which the edit lock gets acquired.
 ///
 /// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission
@@ -146,7 +146,7 @@ impl BackendMessage {
 ///
 /// This function handles a websocket that does not (yet) have a lock.
 /// If no one holds the lock or the other user is inactive, this function
-/// will immediatly set the lock and call `handle_socket_with_lock`.
+/// will immediately set the lock and call `handle_socket_with_lock`.
 ///
 /// Otherwise, it will wait until the `FrontendMessage::Force` is received.
 async fn handle_socket_without_lock(

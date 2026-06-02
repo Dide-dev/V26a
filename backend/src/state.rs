@@ -50,7 +50,7 @@ pub struct State {
 
     pub tree_edit_locks: Mutex<HashMap<i32, TreeEditLock>>,
     // Later, we will add fields for
-    // sessions, email validation.
+    // sessions and email validation.
 }
 
 impl ArcState {
