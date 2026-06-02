@@ -11,8 +11,8 @@ use crate::errors::ApiError;
 use crate::limits::{
     TREE_ASSIGNMENT_MAX_LENGTH, TREE_BOOK_CHAPTER_MAX_LENGTH, TREE_BOOK_EDITION_MAX_LENGTH,
     TREE_BOOK_EXERCISE_MAX_LENGTH, TREE_BOOK_ISBN_MAX_LENGTH, TREE_BOOK_ISBN_MIN_LENGTH,
-    TREE_BOOK_NAME_MAX_LENGTH, TREE_DESCRIPTION_MAX_LENGTH, TREE_TITLE_MAX_LENGTH,
-    TREE_TITLE_MIN_LENGTH,
+    TREE_BOOK_NAME_MAX_LENGTH, TREE_DESCRIPTION_MAX_LENGTH, TREE_TAG_MAX_LENGTH,
+    TREE_TAG_MIN_LENGTH, TREE_TITLE_MAX_LENGTH, TREE_TITLE_MIN_LENGTH,
 };
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -399,6 +399,22 @@ impl Validated for TreeData {
                 "bookIsbn",
                 TREE_BOOK_ISBN_MIN_LENGTH,
             ));
+        }
+
+        for tag in &self.tags {
+            if tag.chars().count() > TREE_TAG_MAX_LENGTH {
+                return Err(ApiError::InputLengthExceeded("tag", TREE_TAG_MAX_LENGTH));
+            }
+            if tag.chars().count() < TREE_TAG_MIN_LENGTH {
+                return Err(ApiError::InputLengthNotMet("tag", TREE_TAG_MIN_LENGTH));
+            }
+            for char in tag.chars() {
+                let legal =
+                    char.is_ascii_alphanumeric() || char == '_' || char == '-' || char == '.';
+                if !legal {
+                    return Err(ApiError::IllegalTag);
+                }
+            }
         }
 
         Ok(())

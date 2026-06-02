@@ -21,6 +21,8 @@ pub enum ApiError {
     IllegalName,
     /// An error to return when a password does not contain the appropriate characters.
     IllegalPassword,
+    /// An error to return when a tag contains characters which fall outside the accepted standard.
+    IllegalTag,
     /// An error to return when an input provided is too long for the database.
     InputLengthExceeded(&'static str, usize),
     /// An error to return when an input provided is too short to be valid.
@@ -135,6 +137,7 @@ impl Display for ApiError {
             }
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
             ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
+            ApiError::IllegalTag => write!(f, "Tag contains illegal characters."),
             ApiError::InputLengthExceeded(offending_string, max_length) => {
                 write!(
                     f,
@@ -247,6 +250,7 @@ impl ApiError {
             ApiError::IllegalEmailAddress
             | ApiError::IllegalName
             | ApiError::IllegalPassword
+            | ApiError::IllegalTag
             | ApiError::InputLengthExceeded(_, _)
             | ApiError::InputLengthNotMet(_, _)
             | ApiError::InvalidAuthorisationTarget

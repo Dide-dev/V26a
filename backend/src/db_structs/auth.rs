@@ -7,7 +7,7 @@
 use crate::db_structs::users::AccountType;
 use crate::db_structs::{Validated, validate_email};
 use crate::errors::ApiError;
-use crate::limits::{PASSWORD_LOGIN_MIN_LENGTH, PASSWORD_MAX_LENGTH};
+use crate::limits::PASSWORD_LOGIN_MIN_LENGTH;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -21,13 +21,6 @@ pub struct LoginRequestBody {
 impl Validated for LoginRequestBody {
     fn validate_inputs(&self) -> Result<(), ApiError> {
         validate_email(&self.email)?;
-
-        if self.password.chars().count() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "password",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
 
         if self.password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet(

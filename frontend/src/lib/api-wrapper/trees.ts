@@ -276,8 +276,8 @@ export const minInputLengths = {
 
 /** The maximum input lengths of the tree metadata fields. */
 export const maxInputLengths = {
-    title: 128,
-    description: 256,
+    title: 100,
+    description: 500,
     tag: 32,
     bookName: 64,
     bookAuthor: 192,

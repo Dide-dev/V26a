@@ -7,8 +7,8 @@
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
 use crate::limits::{
-    CARD_BACK_MAX_LENGTH, CARD_BACK_MIN_LENGTH, CARD_FRONT_MAX_LENGTH,
-    CARD_LIBRARY_TITLE_MAX_LENGTH, CARD_LIBRARY_TITLE_MIN_LENGTH,
+    CARD_BACK_MAX_LENGTH, CARD_BACK_MIN_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TAG_MAX_LENGTH,
+    CARD_LIBRARY_TAG_MIN_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH, CARD_LIBRARY_TITLE_MIN_LENGTH,
 };
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
@@ -80,6 +80,29 @@ impl Validated for LibraryCardAddData {
                 CARD_LIBRARY_TITLE_MIN_LENGTH,
             ));
         }
+
+        for tag in &self.tags {
+            if tag.chars().count() > CARD_LIBRARY_TAG_MAX_LENGTH {
+                return Err(ApiError::InputLengthExceeded(
+                    "tag",
+                    CARD_LIBRARY_TAG_MAX_LENGTH,
+                ));
+            }
+            if tag.chars().count() < CARD_LIBRARY_TAG_MIN_LENGTH {
+                return Err(ApiError::InputLengthNotMet(
+                    "tag",
+                    CARD_LIBRARY_TAG_MIN_LENGTH,
+                ));
+            }
+            for char in tag.chars() {
+                let legal =
+                    char.is_ascii_alphanumeric() || char == '_' || char == '-' || char == '.';
+                if !legal {
+                    return Err(ApiError::IllegalTag);
+                }
+            }
+        }
+
         Ok(())
     }
 }

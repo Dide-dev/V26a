@@ -7,7 +7,7 @@
 use crate::db_structs::{Validated, validate_email, validate_password};
 use crate::errors::ApiError;
 use crate::limits::{
-    PASSWORD_LOGIN_MIN_LENGTH, PASSWORD_MAX_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
+    PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
 use serde::{Deserialize, Serialize};
@@ -228,13 +228,6 @@ pub struct PasswordChangeRequestBody {
 
 impl Validated for PasswordChangeRequestBody {
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.old_password.chars().count() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "oldPassword",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
-
         if self.old_password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet(
                 "oldPassword",
