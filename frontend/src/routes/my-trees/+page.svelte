@@ -88,7 +88,7 @@
     <div class="flex-col">
         <!-- Change the number of trees per page -->
         <label>
-            {m.numberOfTrees()}
+            {m.numberPerPage({ n: m.treesUncapitalized() })}
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}

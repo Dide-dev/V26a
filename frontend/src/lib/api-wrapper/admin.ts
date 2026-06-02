@@ -51,6 +51,20 @@ export type UserListResponse = {
     users: AllUsersGetData[];
 };
 
+/** The data returned when retrieving feedback. */
+export type FeedbackListResponse = {
+    feedbackTotal: number;
+    feedback: FeedbackGetData[];
+};
+
+/** Data corresponding to a returned piece of feedback. */
+export type FeedbackGetData = {
+    feedbackId: number;
+    email: string;
+    feedback: string;
+    createdAt: Date;
+};
+
 /** Get the data of all users */
 export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
     const params: string = getPaginationParams(pageOptions);
@@ -75,4 +89,10 @@ export function adminChangePassword(
     changePasswordData: AdminChangePasswordData
 ): Promise<ChangePasswordResponse> {
     return apiCallPostUser(`users/${userId}/update-password`, changePasswordData);
+}
+
+/** Get feedback from the database. */
+export function getFeedback(pageOptions: PaginationOptions): Promise<FeedbackListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetAdmin(`get-feedback?${params}`);
 }
