@@ -4,14 +4,13 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use axum::routing::put;
 use axum::{
     Extension, Json, Router,
     extract::Request,
     extract::{Path, State},
     middleware::{self, Next},
     response::Response,
-    routing::get,
+    routing::{get, put},
 };
 use axum_extra::extract::Query;
 use sqlx::PgPool;

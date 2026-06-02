@@ -246,7 +246,9 @@ async fn update_tree_structure(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `card_data` - The data used to initialize the card, as [`CardAddData`].
+/// `tree_id` - The tree to add the card to.
+///
+/// `card_data` - The data used of the card, as [`CardData`].
 ///
 /// # Returns
 /// The id assigned to the new card.
@@ -408,22 +410,19 @@ async fn update_structure_if_valid(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `tree_update_data` - The new data of the tree, as [`TreeUpdateData`].
-///
 /// `tree_id` - The tree to update.
+///
+/// `new_data` - The new data of the tree, as [`TreeData`].
 ///
 /// # Returns
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains an invalid ISBN.
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if `new_data` contains an invalid ISBN.
 ///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains a non-existent language.
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if `new_data` contains a non-existent language.
 ///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains a non-existent subject.
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if `new_data` contains a non-existent subject.
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///

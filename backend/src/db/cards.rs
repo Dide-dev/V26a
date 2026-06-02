@@ -14,7 +14,9 @@ use std::collections::BTreeMap;
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
-/// `card_data` - The data assigned to the new card as [`CardAddData`].
+/// `tree_id` - Tree to add the card to.
+///
+/// `card_data` - The data assigned to the new card as [`CardData`].
 ///
 /// # Returns
 /// The id assigned to the new card if successful.
@@ -112,7 +114,9 @@ pub async fn remove_card(db: impl PgExecutor<'_>, card_id: i32) -> Result<(), Ap
 /// # Arguments
 /// `db` - A connection to a Postgres database.
 ///
-/// `card_data` - The data used to update the card with, as [`CardUpdateData`].
+/// `card_id` - The card to update.
+///
+/// `card_data` - The new card data, as [`CardData`].
 ///
 /// # Returns
 /// Nothing.

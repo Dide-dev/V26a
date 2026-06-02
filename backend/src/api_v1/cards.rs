@@ -51,7 +51,9 @@ pub fn cards() -> Router<ArcState> {
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `card_data` - The data used to update the card, as [`CardUpdateData`].
+/// `card_id` - The card to update.
+///
+/// `card_data` - The new data of the card, as [`CardData`].
 /// Existing card data will be overwritten with the new data.
 ///
 /// # Returns
