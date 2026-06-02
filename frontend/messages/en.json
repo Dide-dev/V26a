@@ -173,5 +173,8 @@
     "successfulAuthorization": "Successfully authorized co-author",
     "invalidAuthorisationTarget": "The user you tried to authorize does not seem to exist",
     "userAlreadyAuthorized": "The user you tried to authorizes has already been authorized",
-    "manageCoAuthors": "Manage co-authors"
+    "manageCoAuthors": "Manage co-authors",
+    "deleteOwnedTrees": "Delete all my trees",
+    "deleteAccount": "Delete account",
+    "deleteAccountConfirmation": "Are you sure you want to delete your account?"
 }

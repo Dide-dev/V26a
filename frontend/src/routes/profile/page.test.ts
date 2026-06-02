@@ -5,6 +5,7 @@
 */
 
 import { render, screen } from '@testing-library/svelte';
+import DeleteButton from './DeleteButton.svelte';    
 import { test, vi, afterEach, expect } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
@@ -500,4 +501,22 @@ test('Submission when all password expectations have been met', async () => {
 
     expect(changePassword).toHaveBeenCalled();
     expect(confirmation.textContent).toBe(m.successfulPasswordChange());
+});
+
+test('popup opens when delete button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(DeleteButton, {
+        props: {
+            user: {
+                sub: 1,
+                exp: 123,
+                accountType: 'author'
+            }
+        }
+    });
+
+    await user.click(screen.getByTestId('delete-button'));
+
+    expect((await screen.findAllByTestId('popup')).length).toBeGreaterThan(0);
 });

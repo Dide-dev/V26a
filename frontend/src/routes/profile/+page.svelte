@@ -6,6 +6,7 @@
 
 <script lang="ts">
     import { locales } from '$lib/paraglide/runtime.js';
+    import DeleteButton from './DeleteButton.svelte';    
     import {
         getOwnUserData,
         getUserInfo,
@@ -417,5 +418,8 @@
                 <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
         </form>
+        <!-- {#if userInfo}
+            <DeleteButton user={userInfo} />
+        {/if} -->
     {/await}
 </div>
