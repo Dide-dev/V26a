@@ -25,7 +25,7 @@
     }
 
     async function doDelete() {
-        await deleteUser(user.sub, deleteTrees);
+        await deleteUser(deleteTrees);
         await goto(appLink('/'));
     }
 </script>
