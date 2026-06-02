@@ -20,7 +20,7 @@ async fn test_new_classroom(db: PgPool) {
     };
 
     let response = server
-        .post("/classrooms/add")
+        .post("/classrooms")
         .json(&classroom_add_data)
         .await;
     response.assert_status_ok();
@@ -48,7 +48,7 @@ async fn test_new_classroom_forbidden(db: PgPool) {
     };
 
     let response = server
-        .post("/classrooms/add")
+        .post("/classrooms")
         .json(&classroom_add_data)
         .await;
     response.assert_status_unauthorized();

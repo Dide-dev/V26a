@@ -25,7 +25,7 @@ use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
-    Router::new().route("/login", post(login).layer(rate_limit_layer(15, 30)))
+    Router::new().route("/", post(login).layer(rate_limit_layer(15, 30)))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -38,7 +38,7 @@ pub struct LoginResponse {
 
 #[utoipa::path(
     post,
-    path = "/login",
+    path = "/",
     context_path = "/api/v1/auth",
     request_body = LoginRequestBody,
     responses(

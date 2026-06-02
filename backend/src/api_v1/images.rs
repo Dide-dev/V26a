@@ -24,12 +24,12 @@ use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<ArcState> {
-    Router::new().route("/add", post(add_new_image).layer(rate_limit_layer(10, 20)))
+    Router::new().route("/", post(add_new_image).layer(rate_limit_layer(10, 20)))
 }
 
 #[utoipa::path(
     post,
-    path = "/add",
+    path = "/",
     context_path = "/api/v1/images",
     request_body(
         content(
