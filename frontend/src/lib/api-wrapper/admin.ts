@@ -10,7 +10,8 @@ import {
     type UserSuccess,
     type UserEmailInvalid,
     type UsernameInvalid,
-    type ChangePasswordResponse
+    type ChangePasswordResponse,
+    type UserGeneralData
 } from './users';
 import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
@@ -35,14 +36,11 @@ export type AllUsersGetData = {
 /** The data of the user that is returned when requesting the data of one user */
 export type UserAllData = {
     email: string;
-    name: string;
+    data: UserGeneralData;
     enabled: boolean;
-    nickname: string;
-    aboutMe: string;
-    emailVisible: boolean;
     accountType: string;
-    language: string;
 };
+
 /** The data needed to change a user's password */
 export type AdminChangePasswordData = {
     newPassword: string;
@@ -51,6 +49,20 @@ export type AdminChangePasswordData = {
 export type UserListResponse = {
     totalUsers: number;
     users: AllUsersGetData[];
+};
+
+/** The data returned when retrieving feedback. */
+export type FeedbackListResponse = {
+    feedbackTotal: number;
+    feedback: FeedbackGetData[];
+};
+
+/** Data corresponding to a returned piece of feedback. */
+export type FeedbackGetData = {
+    feedbackId: number;
+    email: string;
+    feedback: string;
+    createdAt: Date;
 };
 
 /** Get the data of all users */
@@ -77,4 +89,10 @@ export function adminChangePassword(
     changePasswordData: AdminChangePasswordData
 ): Promise<ChangePasswordResponse> {
     return apiCallPostUser(`users/${userId}/update-password`, changePasswordData);
+}
+
+/** Get feedback from the database. */
+export function getFeedback(pageOptions: PaginationOptions): Promise<FeedbackListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetAdmin(`get-feedback?${params}`);
 }
