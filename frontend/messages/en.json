@@ -142,5 +142,7 @@
     "admin": "Admin",
     "uuIcsHref": "https://www.uu.nl/en/organisation/department-of-information-and-computing-sciences",
     "owner": "Owner",
-    "heuristicTrees": "Heuristic trees"
+    "heuristicTrees": "Heuristic trees",
+    "pendingRegistrationTitle": "E-mail verification required",
+    "pendingRegistrationBody": "We have sent an e-mail to {#link}{mail}{/link}. Please verify your account to log in."
 }

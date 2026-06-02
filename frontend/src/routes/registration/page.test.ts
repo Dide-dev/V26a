@@ -115,7 +115,7 @@ test('Differing password and repeatPassword shows error', async () => {
 test('Redirection after successful registration', async () => {
     const user = userEvent.setup();
 
-    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Success', userId: 1 });
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Pending' });
 
     render(page);
 
@@ -137,7 +137,7 @@ test('Redirection after successful registration', async () => {
 test('Submission with correct data', async () => {
     const user = userEvent.setup();
 
-    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Success', userId: 1 });
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Pending' });
 
     render(page);
 

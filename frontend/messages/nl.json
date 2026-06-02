@@ -142,5 +142,7 @@
     "admin": "Beheer",
     "uuIcsHref": "https://www.uu.nl/organisatie/departement-informatica",
     "owner": "Eigenaar",
-    "heuristicTrees": "Heuristiekbomen"
+    "heuristicTrees": "Heuristiekbomen",
+    "pendingRegistrationTitle": "E-mailverificatie vereist",
+    "pendingRegistrationBody": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}. Verifier uw account om in te loggen."
 }

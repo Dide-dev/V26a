@@ -39,6 +39,10 @@ export type UserSuccess = {
     userId: UserId;
 };
 
+export type UserPending = {
+    type: 'Pending';
+};
+
 export type UserEmailInvalid = {
     type: 'EmailAlreadyUsed';
 };
@@ -93,7 +97,7 @@ export type ChangePasswordData = {
 /** Add a user to the database */
 export function addUser(
     user: RegisterData
-): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
+): Promise<UserPending | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser('add', user);
 }
 
