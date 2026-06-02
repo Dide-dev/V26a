@@ -166,5 +166,10 @@
     "numberPerPage": "Aantal {n} per pagina:",
     "feedbackEntries": "feedbackberichten",
     "users": "gebruikers",
-    "treesUncapitalized": "bomen"
+    "treesUncapitalized": "bomen",
+    "addCoAuthor": "Voeg co-auteur toe",
+    "successfulAuthorization": "Successvol co-auteur geautoriseerd",
+    "invalidAuthorisationTarget": "De gebruiker die je probeerde te autoriseren lijkt niet te bestaan",
+    "userAlreadyAuthorized": "De gebruiker die je probeert te autoriseren is al geautoriseerd.",
+    "manageCoAuthors": "Beheer co-auteurs"
 }
