@@ -130,16 +130,21 @@ async fn add_new_user(
     }
 
     let verification_link = format!(
-        "{}/api/v1/users/verify?code={}",
+        "{}/verify?code={}",
         state.config.base_url, verification_code
     );
+    let displayName = if !user_data.nickname.is_empty() {
+        user_data.nickname.clone()
+    } else {
+        user_data.name.clone()
+    };
     let message = Message::builder()
         .from("BOOM! <noreply@localhost>".parse()?)
-        .to(Mailbox::new(Some(user_data.nickname.clone()), parsed_email))
+        .to(Mailbox::new(Some(displayName.clone()), parsed_email))
         .subject(user_data.language.to_verification_message_title())
         .header(ContentType::TEXT_PLAIN)
         .body(user_data.language.to_verification_message_body(
-            &user_data.nickname,
+            &displayName,
             &verification_link,
             &state.config.base_url,
         ))?;
