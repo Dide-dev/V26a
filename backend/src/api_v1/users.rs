@@ -234,7 +234,7 @@ pub struct ChangePasswordResponse {
 /// Changes a user's own password in the database.
 ///
 /// # Arguments
-/// `password_change_request` - The struct containing the user's old password and the new password, 
+/// `password_change_request` - The struct containing the user's old password and the new password,
 /// as [`PasswordChangeRequestBody`].
 ///
 /// # Returns
