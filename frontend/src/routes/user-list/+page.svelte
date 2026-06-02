@@ -58,7 +58,7 @@
     <div class="flex-col">
         <!-- Change the number of users per page -->
         <label>
-            {m.numberOfUsers()}
+            {m.numberPerPage({ n: m.users() })}
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
