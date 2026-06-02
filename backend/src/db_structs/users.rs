@@ -56,6 +56,45 @@ impl Validated for UserData {
     }
 }
 
+/// Data the admin can modify, except email, password, enabled and account type.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserGeneralData {
+    pub name: String,
+    pub nickname: String,
+    pub about_me: String,
+}
+
+impl Validated for UserGeneralData {
+    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.name.chars().count() > USER_NAME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("name", USER_NAME_MAX_LENGTH));
+        }
+        if self.nickname.chars().count() > USER_NICKNAME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "nickname",
+                USER_NICKNAME_MAX_LENGTH,
+            ));
+        }
+        if self.about_me.chars().count() > USER_ABOUT_ME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "aboutMe",
+                USER_ABOUT_ME_MAX_LENGTH,
+            ));
+        }
+
+        for char in self.name.chars() {
+            let legal = char.is_ascii_alphanumeric() || char == '_' || char == '-' || char == '.';
+            if !legal {
+                return Err(ApiError::IllegalName);
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Data needed to add a user to the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -63,6 +102,28 @@ pub struct RegisterData {
     pub email: String,
     pub password: String,
     pub data: UserData,
+}
+
+#[cfg(test)]
+impl RegisterData {
+    pub fn test_values() -> Self {
+        use rand::RngExt;
+
+        let mut rng = rand::rng();
+        let n: u64 = rng.random();
+
+        RegisterData {
+            email: format!("test{n}@localhost"),
+            password: "4$$wOrd!".to_owned(),
+            data: UserData {
+                name: format!("John_Test_{n}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        }
+    }
 }
 
 impl Validated for RegisterData {
@@ -110,7 +171,7 @@ pub struct PublicUserData {
 #[serde(rename_all = "camelCase")]
 pub struct AdminUpdateData {
     pub email: String,
-    pub data: UserData,
+    pub data: UserGeneralData,
     pub enabled: bool,
     pub account_type: AccountType,
 }

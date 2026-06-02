@@ -7,7 +7,7 @@
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
     AccountType, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData, UserData,
-    UserGetAllData, UserGetData, UserLanguage,
+    UserGeneralData, UserGetData, UserLanguage,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -144,7 +144,7 @@ pub async fn get_user_public_data(
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`UserGetAllData`] object containing the user's data, minus their password.
+/// A [`AdminUpdateData`] object containing the user's data, minus their password.
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
@@ -153,22 +153,20 @@ pub async fn get_user_public_data(
 pub async fn get_user_all_data(
     db: impl PgExecutor<'_>,
     id: i32,
-) -> Result<UserGetAllData, ApiError> {
+) -> Result<AdminUpdateData, ApiError> {
     let record = query!(
-        "SELECT email, name, enabled, nickname, about_me, email_visible, account_type, language_code FROM users WHERE id = $1",
+        "SELECT email, name, enabled, nickname, about_me, account_type FROM users WHERE id = $1",
         id,
     )
     .fetch_one(db)
     .await?;
 
-    Ok(UserGetAllData {
+    Ok(AdminUpdateData {
         email: record.email,
-        data: UserData {
+        data: UserGeneralData {
             name: record.name,
             nickname: record.nickname,
             about_me: record.about_me,
-            email_visible: record.email_visible,
-            language: UserLanguage::from_str(record.language_code.as_str())?,
         },
         enabled: record.enabled,
         account_type: AccountType::from_str(record.account_type.as_str())?,
@@ -229,12 +227,10 @@ pub async fn admin_update_user(
     new_data: &AdminUpdateData,
 ) -> Result<(), ApiError> {
     query!(
-        "UPDATE users SET name = $1, nickname = $2, about_me = $3, email_visible = $4, language_code = $5, account_type = $6, enabled = $7, email = $8 WHERE id = $9",
+        "UPDATE users SET name = $1, nickname = $2, about_me = $3, account_type = $4, enabled = $5, email = $6 WHERE id = $7",
         new_data.data.name,
         new_data.data.nickname,
         new_data.data.about_me,
-        new_data.data.email_visible,
-        new_data.data.language.to_string(),
         new_data.account_type.to_string(),
         new_data.enabled,
         new_data.email.to_lowercase(),
@@ -552,12 +548,10 @@ mod tests {
         let update_data = AdminUpdateData {
             email: "JohnSmith@gmail.com".to_owned(),
             enabled: true,
-            data: UserData {
+            data: UserGeneralData {
                 name: "John_Smith".to_owned(),
                 nickname: String::new(),
                 about_me: String::new(),
-                email_visible: false,
-                language: UserLanguage::Nl,
             },
             account_type: AccountType::Admin,
         };
@@ -670,17 +664,15 @@ mod tests {
         let user_id = initialize_user(&db, &register_data).await;
         let user_data = get_user_all_data(&db, user_id).await.unwrap();
 
-        let expected_user_data = UserGetAllData {
+        let expected_user_data = AdminUpdateData {
             email: register_data.email,
-            enabled: true,
-            account_type: AccountType::Author,
-            data: UserData {
+            data: UserGeneralData {
                 name: register_data.data.name,
                 nickname: register_data.data.nickname,
                 about_me: register_data.data.about_me,
-                email_visible: register_data.data.email_visible,
-                language: register_data.data.language,
             },
+            enabled: true,
+            account_type: AccountType::Author,
         };
 
         assert_eq!(user_data, expected_user_data);

@@ -38,6 +38,11 @@
         return thisPage < calcTotalPages(total, pageSizeNumber);
     });
 
+    function changePageSize() {
+        thisPage = 1;
+        loadUsers();
+    }
+
     function prevPage() {
         thisPage -= 1;
         loadUsers();
@@ -53,11 +58,11 @@
     <div class="flex-col">
         <!-- Change the number of users per page -->
         <label>
-            {m.numberOfUsers()}
+            {m.numberPerPage({ n: m.users() })}
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
-                onchange={loadUsers}
+                onchange={changePageSize}
             >
                 <option value="5">5</option>
                 <option value="10">10</option>

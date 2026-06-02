@@ -15,10 +15,16 @@ mod limits;
 mod state;
 mod tests;
 
+use crate::api_v1::rate_limit_layer;
+use crate::errors::ApiError;
 use crate::{api_v1::v1_api, config::Config, state::ArcState};
 use axum::extract::DefaultBodyLimit;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::Level;
@@ -102,10 +108,27 @@ async fn setup_db(database_url: &str) -> sqlx::PgPool {
 /// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
 /// Also sets up the global configuration and the database.
 fn backend(config: Config, db: sqlx::PgPool) -> Router {
+    // Map status code 429 to api-error.
+    fn map_response_error(res: Response) -> Response {
+        if res.status() == StatusCode::TOO_MANY_REQUESTS {
+            return ApiError::RateLimitExceeded.into_response();
+        }
+        res
+    }
+
     let state = ArcState::new(config);
+
+    // Extract ratelimiter config and create governor layer.
+    let governor_layer = ServiceBuilder::new()
+        .map_response(map_response_error)
+        .layer(rate_limit_layer(
+            state.config.rate_limit_per_minute,
+            state.config.rate_limit_burst_size,
+        ));
 
     Router::new()
         .nest("/v1", v1_api(state.clone()))
+        .layer(governor_layer)
         .layer(Extension(db))
         .layer(DefaultBodyLimit::max(state.config.max_upload_size)) // If this limit is for some reason removed, a check for max file size must be added to the `add_new_image` function on the images/add endpoint.
         .layer(

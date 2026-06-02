@@ -14,7 +14,12 @@
     import iconExternalLink from '$lib/assets/icons/externalLink.svg?raw';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { getTreeWithCards, type TreeData, type TreeId } from '$lib/api-wrapper/trees';
+    import {
+        getTreeWithCards,
+        type TreeData,
+        type TreeId,
+        type TreeLinkedData
+    } from '$lib/api-wrapper/trees';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
     import {
@@ -29,8 +34,13 @@
     import type { SideBar } from './Sidebar.svelte';
     import SidebarComponent from './Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
+    import CoAuthor from './CoAuthor.svelte';
+    import { getUserInfo } from '$lib/api-wrapper/users';
 
     let { id }: { id: TreeId } = $props();
+
+    let userInfo = $state(getUserInfo());
+    let userAllowedToAuthorizeCo = $state(false);
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -79,6 +89,7 @@
 
     let tree: {
         data: TreeData;
+        linkedData: TreeLinkedData;
         history: TreeHistory;
         sidebar: null | SideBar;
         sidebarElement: null | SidebarComponent;
@@ -88,6 +99,7 @@
         const fetchedTree = await getTreeWithCards(id);
         tree = {
             data: fetchedTree.metadata.data,
+            linkedData: fetchedTree.metadata.linkedData,
             history: initializeHistory(
                 fetchedTree.metadata.genData.id,
                 fetchedTree.structure,
@@ -96,6 +108,13 @@
             sidebar: null,
             sidebarElement: null
         };
+
+        const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
+        const isAdmin = userInfo?.accountType === 'admin';
+
+        if (isOwner || isAdmin) {
+            userAllowedToAuthorizeCo = true;
+        }
     });
 
     function undoButtonClick() {
@@ -133,7 +152,11 @@
         </p>
 
         <div class="m-2 flex gap-2">
-            <EditMetadata treeId={tree.history.treeId} bind:prevTreeData={tree.data} />
+            <EditMetadata
+                treeId={tree.history.treeId}
+                bind:prevTreeData={tree.data}
+                treeLinkedData={tree.linkedData}
+            />
             <button
                 class={[
                     'rounded-sm bg-emerald-500 p-1',
@@ -158,6 +181,9 @@
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                 {@html iconRedo}
             </button>
+            {#if userAllowedToAuthorizeCo}
+                <CoAuthor treeId={tree.history.treeId} />
+            {/if}
             <a
                 class="rounded-sm bg-emerald-500 p-1 *:inline"
                 href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
@@ -171,8 +197,8 @@
 
         <div class="relative w-full">
             <!--
-                 The padding on the bottom is to make the scrollbar not intersect with some buttons.
-             -->
+                The padding on the bottom is to make the scrollbar not intersect with some buttons.
+            -->
             <div
                 bind:this={scrollArea}
                 class="m-1 flex overflow-x-auto pb-7"
@@ -206,9 +232,9 @@
 </div>
 
 <!--
-     We need to listen on the entire body to detect if drag & drop did not find target.
-     Also here we update the position of the 'ghost' while dragging.
- -->
+    We need to listen on the entire body to detect if drag & drop did not find target.
+    Also here we update the position of the 'ghost' while dragging.
+-->
 <svelte:window
     onmouseup={() => (dragState = null)}
     onmouseenter={(event: MouseEvent) => {
