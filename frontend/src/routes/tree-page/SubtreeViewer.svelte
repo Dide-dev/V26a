@@ -65,9 +65,9 @@
         <!-- Root Node -->
         <button
             class={[
-                !rootOpen && 'closed-root',
+                !rootOpen && 'closed',
                 node.children.length > 0 && 'hover:text-neutral-600',
-                'mr-1 mb-5 ml-1 h-fit w-32 shrink-0 text-right wrap-anywhere *:*:justify-end'
+                'root mr-1 mb-5 ml-1 h-fit w-32 shrink-0 cursor-pointer text-right wrap-anywhere *:*:justify-end'
             ]}
             onclick={toggleRoot}
         >
@@ -108,10 +108,30 @@
 
 <style>
     @layer components {
-        .closed-root {
+        .root {
             position: relative;
+            transition: color 200ms ease-in-out;
 
-            &::after {
+            &::before {
+                /* Layout */
+                content: '';
+                position: absolute;
+                bottom: 5%;
+                height: 87.5%;
+                z-index: 1;
+                left: 0;
+
+                /* Formatting */
+                background-color: var(--color-neutral-350);
+                width: var(--spacing-padding-minor);
+                transition: background-color 200ms ease-in-out;
+            }
+
+            &:hover::before {
+                background-color: var(--color-neutral-500);
+            }
+
+            &.closed::after {
                 content: '>';
                 position: absolute;
                 right: calc(var(--spacing) * -4);
