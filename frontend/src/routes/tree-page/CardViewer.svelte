@@ -12,7 +12,7 @@
         card,
         baseColor,
         distanceFromRevealed = $bindable(),
-        outOfFocus = $bindable()
+        outOfFocus
     }: {
         card: CardData;
         baseColor: string;
@@ -25,24 +25,27 @@
     }
 
     function refocus() {
-        console.log("focus");
-        outOfFocus = false;
+        focus = false;
     }
 
     function blur() {
-        console.log("blur");
-        outOfFocus = true;
+        focus = true;
     }
 
-    // --color-tree-200 --color-tree-500 --color-tree-600 --color-tree-650 --color-tree-700 --color-tree-750 --color-tree-800
+    let focus: boolean | null = $state(null)
 
-    let openColor = $derived(`var(--color-${baseColor}-200)`);
+    let openColor = $derived(`var(--color-${baseColor}-100)`);
+    let openHoverColor = $derived(`var(--color-${baseColor}-50)`);
+    let openBorderColor = $derived(`var(--color-${baseColor}-dim-350)`);
     let hoverColor = $derived(`var(--color-${baseColor}-500)`);
+    let blurColor = $derived(`var(--color-${baseColor}-dim-50)`);
+    let blurHoverColor = $derived(`var(--color-${baseColor}-dim-150)`);
+    let blurBorderColor = $derived(`var(--color-${baseColor}-dim-250)`);
 
-    let closedColor = $derived(`var(--color-${baseColor}-${Math.min(800, 550 + 50 * distanceFromRevealed)})`);
-    let borderColor = $derived(`var(--color-${baseColor}-${Math.min(900, 650 + 50 * distanceFromRevealed)})`);
+    let closedColor = $derived(`var(--color-${baseColor}-${Math.min(900, 500 + 100 * distanceFromRevealed)})`);
+    let borderColor = $derived(`var(--color-${baseColor}-${Math.min(950, 700 + 100 * distanceFromRevealed)})`);
 </script>
-{#if outOfFocus}
+{#if focus ?? outOfFocus}
     {@render outOfFocusCard()}
 {:else if distanceFromRevealed === 0}
     {@render revealedCard(card)}
@@ -55,8 +58,8 @@
 {#snippet outOfFocusCard()}
     <button
         type="button"
-        style="--background-color: {openColor}; --hover-color: {openColor}"
-        class="card min-h-card-height-sm w-card-width-sm text-left p-1 cursor-pointer"
+        style="--background-color: {blurColor}; --hover-color: {blurHoverColor}; --border-color: {blurBorderColor}"
+        class="card min-h-card-height-sm w-card-width-sm text-left p-1 cursor-pointer text-lg text-neutral-600"
         onclick={refocus}
     >
         ...
@@ -66,8 +69,8 @@
 {#snippet revealedCard(card: CardData)}
     <button
         type="button"
-        style="--background-color: {openColor}; --hover-color: {openColor}"
-        class="card min-h-card-height-md w-card-width-md overflow-x-auto border-green-800 p-1 wrap-anywhere cursor-pointer"
+        style="--background-color: {openColor}; --hover-color: {openHoverColor}; --border-color: {openBorderColor}"
+        class="card min-h-card-height-md w-card-width-md overflow-x-auto p-1 wrap-anywhere cursor-pointer"
         onclick={blur}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -77,8 +80,8 @@
 
 {#snippet openableCard(card: CardData)}
     <button
-        style="--background-color: {closedColor}; --hover-color: {hoverColor}"
-        class="card min-h-card-height-md w-card-width-md text-lg italic text-neutral-200 hover:text-neutral-100 cursor-pointer overflow-x-auto border-green-800 p-1 text-center wrap-anywhere"
+        style="--background-color: {closedColor}; --hover-color: {hoverColor}; --border-color: {borderColor}"
+        class="card min-h-card-height-md w-card-width-md text-lg italic text-neutral-200 hover:text-neutral-100 cursor-pointer overflow-x-auto p-1 text-center wrap-anywhere"
         onclick={makeRevealed}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -88,12 +91,14 @@
 
 {#snippet closedCard()}
     <p
-        style="--background-color: {closedColor}; --hover-color: {closedColor}"
+        style="--background-color: {closedColor}; --hover-color: {closedColor}; --border-color: {borderColor}"
        class={[distanceFromRevealed == 2 ? 'w-card-width-sm' : 'w-card-width-xs', "card min-h-card-height-sm p-1"]}
     ></p>
 {/snippet}
 
 <style>
+    @import './../../lib/theme.css';
+
     @layer components {
         .card {
             height: fit-content;
@@ -102,6 +107,8 @@
             border-width: 2px;
 
             background-color: var(--background-color);
+
+            border-color: var(--border-color);
 
             &:hover {
                 background-color: var(--hover-color);

@@ -10,22 +10,23 @@
     import CardViewer from './CardViewer.svelte';
     import SubtreeViewer from './SubtreeViewer.svelte';
     import LineDrawings from './LineDrawer.svelte';
+    import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
 
     let {
         node,
         cards,
-        distanceFromRevealed,
-        isRevealed = $bindable()
+        color,
+        distanceFromRevealed = 0,
+        isRevealed = $bindable(false)
     }: {
         node: RootNode | Node;
         cards: Record<CardId, CardData>;
+        color: string;
         distanceFromRevealed: number;
         isRevealed: boolean;
     } = $props();
 
-    let revealed = $derived('label' in node);
-
-    let distance = $derived(revealed ? 0 : distanceFromRevealed);
+    let rootOpen = $state(true);
 
     let childrenRevealed = $state(
         (() => Array.from({ length: node.children.length }, () => false))()
@@ -33,39 +34,82 @@
 
     let outOfFocus = $derived(node.children.length > 0 && !childrenRevealed.some((b) => !b));
 
+    // We use an effect-rune to interact correctly with bound variables.
     $effect(() => {
-        isRevealed = distance === 0;
+        isRevealed = distanceFromRevealed === 0;
     });
+
+    function toggleRoot() {
+        if (node.children.length > 0) {
+            rootOpen = !rootOpen;
+        }
+    }
 </script>
 
 <div class="flex">
     {#if 'label' in node}
         <!-- Root Node -->
-        <div class="mb-5 h-fit w-32 shrink-0 wrap-anywhere">
-            <strong>{node.label}</strong>
-        </div>
+        <button
+            class={[
+                !rootOpen && 'closed-root',
+                node.children.length > 0 && 'hover:text-neutral-600',
+                'mr-1 mb-5 ml-1 h-fit w-32 shrink-0 text-right wrap-anywhere *:*:justify-end'
+            ]}
+            onclick={toggleRoot}
+        >
+            {#if node.children.length > 0}
+                <AnimatedUnderline
+                    --weight-underline="calc(var(--spacing) / 3)"
+                    --color-underline="var(--color-neutral-600)"
+                >
+                    <p class="font-semibold">{node.label}</p>
+                </AnimatedUnderline>
+            {:else}
+                <p class="font-semibold">{node.label}</p>
+            {/if}
+        </button>
     {:else}
         <!-- Standard Node -->
         <!-- The 'flex' here prevents some weird vertical whitespace -->
         <div class="mb-2 flex">
             <CardViewer
-                bind:distanceFromRevealed={distance}
+                bind:distanceFromRevealed
                 card={cards[node.cardId]}
-                baseColor="tree"
-                bind:outOfFocus
+                baseColor={color}
+                {outOfFocus}
             />
         </div>
     {/if}
 
-    <LineDrawings alwaysFullWidth={false}>
-        <!-- Here the html gets recursive as we render the 'node.children' -->
-        {#each node.children as child_node, i (child_node)}
-            <SubtreeViewer
-                node={child_node}
-                {cards}
-                distanceFromRevealed={distance + 1}
-                bind:isRevealed={childrenRevealed[i]}
-            />
-        {/each}
-    </LineDrawings>
+    {#if rootOpen}
+        <LineDrawings alwaysFullWidth={false}>
+            <!-- Here the html gets recursive as we render the 'node.children' -->
+            {#each node.children as child_node, i (child_node)}
+                <SubtreeViewer
+                    node={child_node}
+                    {cards}
+                    {color}
+                    distanceFromRevealed={distanceFromRevealed + 1}
+                    bind:isRevealed={childrenRevealed[i]}
+                />
+            {/each}
+        </LineDrawings>
+    {/if}
 </div>
+
+<style>
+    @layer components {
+        .closed-root {
+            position: relative;
+
+            &::after {
+                content: '>';
+                position: absolute;
+                right: calc(var(--spacing) * -4);
+                top: 0;
+                font-size: large;
+                font-weight: var(--font-weight-bold);
+            }
+        }
+    }
+</style>

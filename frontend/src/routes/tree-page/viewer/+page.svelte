@@ -17,6 +17,7 @@
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
     import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
+    import { branchColors } from '$lib/treePage';
 
     let userInfo = getUserInfo();
 
@@ -25,6 +26,7 @@
 
     let showFullAssignment = $state(false);
     let assignmentIncludesImage = $state(false);
+
     /** The assignment text cut short depending on the state of `showFullAssignment`.
      *
      * @remarks If the assignment text includes an image, the text is never cut short.
@@ -188,8 +190,14 @@
         </div>
 
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
-            {#each tree.structure.rootNodes as root (root)}
-                <SubtreeViewer node={root} cards={tree.cards} />
+            {#each tree.structure.rootNodes as root, i (root)}
+                <SubtreeViewer
+                    node={root}
+                    cards={tree.cards}
+                    color={branchColors[i % branchColors.length]}
+                    distanceFromRevealed={0}
+                    isRevealed={true}
+                />
             {/each}
         </div>
     {/if}

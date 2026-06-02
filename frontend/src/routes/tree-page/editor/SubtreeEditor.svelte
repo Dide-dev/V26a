@@ -25,13 +25,15 @@
          */
         fakeNode = false,
         dragState = $bindable(),
-        sidebar = $bindable()
+        sidebar = $bindable(),
+        color
     }: {
         history: TreeHistory;
         location: number[];
         fakeNode?: boolean;
         dragState: DragState;
         sidebar: SideBar | null;
+        color: string;
     } = $props();
 
     /** This will be null if `fakeNode` is set to true. */
@@ -134,7 +136,7 @@
             class="transform:scale(0.7) pointer-events-none fixed z-20 opacity-70"
             style="left: {dragState.mouseX}px; top: {dragState.mouseY}px;"
         >
-            <SubtreeViewer node={node!} cards={history.currentCards} />
+            <SubtreeViewer node={node!} cards={history.currentCards} {color} distanceFromRevealed={1} isRevealed={false} />
         </div>
     {/if}
 
@@ -191,6 +193,7 @@
                         location={[...location, child.index]}
                         dragState={{ type: 'dismissed' }}
                         bind:sidebar
+                        {color}
                     />
                 {:else}
                     <SubtreeEditor
@@ -198,6 +201,7 @@
                         location={[...location, child.index]}
                         bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                         bind:sidebar
+                        {color}
                     />
                 {/if}
             {/each}
