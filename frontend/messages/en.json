@@ -144,5 +144,9 @@
     "owner": "Owner",
     "heuristicTrees": "Heuristic trees",
     "pendingRegistrationTitle": "E-mail verification required",
-    "pendingRegistrationBody": "We have sent an e-mail to {#link}{mail}{/link}. Please verify your account to log in."
+    "pendingRegistrationBody": "We have sent an e-mail to {#link}{mail}{/link}. Please verify your account to log in.",
+    "verificationSuccessTitle": "Account verified",
+    "verificationSuccessBody": "Your account has been successfully verified, you can now log in.",
+    "verificationFailureTitle": "Verification failed",
+    "verificationFailureBody": "Your account could not be verified. Your verification code is either expired or it has already been used. Please try logging in or register again."
 }

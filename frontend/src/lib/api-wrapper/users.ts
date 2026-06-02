@@ -12,6 +12,10 @@ function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
+function apiCallVerifyUser(path: string) {
+    return apiCallGet(prefix + path);
+}
+
 function apiCallDeleteUser(path: string) {
     return apiCallDelete(prefix + path);
 }
@@ -37,6 +41,10 @@ export type RegisterData = {
 export type UserSuccess = {
     type: 'Success';
     userId: UserId;
+};
+
+export type UserInvalidVerification = {
+    type: 'InvalidVerification';
 };
 
 export type UserPending = {
@@ -101,6 +109,11 @@ export function addUser(
     return apiCallPostUser('add', user);
 }
 
+/* Verify a pending user */
+export function verifyUser(code: string): Promise<UserSuccess | UserInvalidVerification> {
+    return apiCallVerifyUser(`verify?code=${code}`);
+}
+
 /** Delete a user in the database */
 export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
     return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
@@ -114,7 +127,7 @@ export function getOwnUserData(): Promise<UserGetData> {
 /** Update a user's own data */
 export function updateUser(
     newData: UserUpdateData
-): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
+): Promise<UserSuccess | UserEmailInvalid | UserInvalidVerification> {
     return apiCallPostUser(`update`, newData);
 }
 
