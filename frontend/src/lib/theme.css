@@ -19,7 +19,7 @@
     --color-tree-610: oklch(0.58 0.118 142.42);
     --color-tree-625: oklch(0.55 0.112 142.42);
     --color-tree-650: oklch(0.525 0.102 142.42);
-    --color-tree-700: oklch(0.500 0.095 142.42);
+    --color-tree-700: oklch(0.5 0.095 142.42);
     --color-tree-750: oklch(0.475 0.087 142.42);
     --color-tree-800: oklch(0.405 0.077 142.42);
     --color-tree-900: oklch(0.365 0.072 142.42);
@@ -30,13 +30,13 @@
     --color-tree-dim-250: oklch(0.875 0.029 143.69);
     --color-tree-dim-350: oklch(0.825 0.032 143.69);
 
-    --color-cyan-dim-50: oklch(0.9475 0.02 230.90);
-    --color-cyan-dim-150: oklch(0.92 0.025 230.90);
-    --color-cyan-dim-250: oklch(0.875 0.029 230.90);
-    --color-cyan-dim-350: oklch(0.825 0.032 230.90);
+    --color-cyan-dim-50: oklch(0.9475 0.02 230.9);
+    --color-cyan-dim-150: oklch(0.92 0.025 230.9);
+    --color-cyan-dim-250: oklch(0.875 0.029 230.9);
+    --color-cyan-dim-350: oklch(0.825 0.032 230.9);
 
     --color-violet-dim-50: oklch(0.925 0.017 293.54);
-    --color-violet-dim-150: oklch(0.90 0.022 293.54);
+    --color-violet-dim-150: oklch(0.9 0.022 293.54);
     --color-violet-dim-250: oklch(0.855 0.026 293.54);
     --color-violet-dim-350: oklch(0.805 0.029 293.54);
 
@@ -46,12 +46,12 @@
     --color-pink-dim-350: oklch(0.81 0.028 346.01);
 
     --color-red-dim-50: oklch(0.925 0.018 19.57);
-    --color-red-dim-150: oklch(0.90 0.023 19.57);
+    --color-red-dim-150: oklch(0.9 0.023 19.57);
     --color-red-dim-250: oklch(0.855 0.027 19.57);
-    --color-red-dim-350: oklch(0.805 0.030 19.57);
+    --color-red-dim-350: oklch(0.805 0.03 19.57);
 
     --color-yellow-dim-50: oklch(0.9475 0.035 98.11);
-    --color-yellow-dim-150: oklch(0.92 0.040 98.11);
+    --color-yellow-dim-150: oklch(0.92 0.04 98.11);
     --color-yellow-dim-250: oklch(0.875 0.044 98.11);
     --color-yellow-dim-350: oklch(0.825 0.047 98.11);
 

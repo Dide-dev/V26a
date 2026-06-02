@@ -41,6 +41,8 @@
     );
 
     function redrawLines() {
+        if (container === undefined) return;
+
         svgLines = [];
         svgHeight = 0;
 
@@ -85,11 +87,15 @@
     }
 
     onMount(() => {
+        if (container === undefined) return;
+
         // We set everything up so that each time any child element resizes,
         // the `redrawLines` function is called.
         // Any time the list of children changes, we also need to point the ResizeObserver to the new list of children.
         let resizeObserver = new ResizeObserver(redrawLines);
         function setupResizeObservers() {
+            if (container === undefined) return;
+
             resizeObserver.disconnect();
             for (let child of container.children) {
                 resizeObserver.observe(child);

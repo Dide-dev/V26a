@@ -136,7 +136,13 @@
             class="transform:scale(0.7) pointer-events-none fixed z-20 opacity-70"
             style="left: {dragState.mouseX}px; top: {dragState.mouseY}px;"
         >
-            <SubtreeViewer node={node!} cards={history.currentCards} {color} distanceFromRevealed={1} isRevealed={false} />
+            <SubtreeViewer
+                node={node!}
+                cards={history.currentCards}
+                {color}
+                distanceFromRevealed={1}
+                isRevealed={false}
+            />
         </div>
     {/if}
 

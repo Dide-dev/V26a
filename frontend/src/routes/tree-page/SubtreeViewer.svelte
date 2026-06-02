@@ -4,6 +4,20 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
+<!--
+    @component
+    Render a sub-tree with its children.
+
+    ## Params
+    - `node: RootNode | Node` - The contents of the current node, and its children.
+    - `cards: Record<CardId, CardData>` - The contents of all cards.
+    - `color: string` - The name of the color. May be any of:
+      - `'tree'` | `'cyan'` | `'violet'` | `'pink'` | `'red'` | `'yellow'`
+    - `distanceFromRevealed: number` - The distance from the closest revealed card.
+                                       If `0`, the card is revealed.
+    - `isRevealed: boolean` - Whether this node has been revealed.
+-->
+
 <script lang="ts">
     import type { CardData, CardId } from '$lib/api-wrapper/cards';
     import type { Node, RootNode } from '$lib/api-wrapper/trees';
@@ -72,12 +86,7 @@
         <!-- Standard Node -->
         <!-- The 'flex' here prevents some weird vertical whitespace -->
         <div class="mb-2 flex">
-            <CardViewer
-                bind:distanceFromRevealed
-                card={cards[node.cardId]}
-                baseColor={color}
-                {outOfFocus}
-            />
+            <CardViewer bind:distanceFromRevealed card={cards[node.cardId]} {color} {outOfFocus} />
         </div>
     {/if}
 
