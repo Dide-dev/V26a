@@ -99,6 +99,7 @@ export type TreeAddData = {
 };
 
 export type Subject = {
+    id: number;
     languageCode: string;
     name: string;
 };
@@ -197,6 +198,11 @@ export function isNullOrEmpty(value: unknown): boolean {
     return value == null || (Array.isArray(value) && value.length === 0);
 }
 
+export type CoAuthorizeResponse =
+    | { type: 'Success' }
+    | { type: 'UsernameDoesNotExist' }
+    | { type: 'UserAlreadyAuthorized' };
+
 export function getPaginationAndFilterParams(
     pageOptions: PaginationOptions,
     filterOptions: FilterOptions
@@ -240,7 +246,7 @@ export function duplicateTree(treeId: TreeId): Promise<void> {
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, username: string) {
+export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`${treeId}/authorize/${username}`, null);
 }
 
@@ -253,3 +259,31 @@ export function getAllLanguages(): Promise<Language[]> {
 export function getAllSubjects(): Promise<Record<string, Subject[]>> {
     return apiCallGetTree('get-all-subjects');
 }
+
+/** The minimum input lengths of the tree metadata fields. */
+export const minInputLengths = {
+    title: 4,
+    description: 0,
+    tag: 2,
+    bookName: 0,
+    bookAuthor: 0,
+    bookEdition: 0,
+    bookIsbn: 10,
+    bookChapter: 0,
+    bookExercise: 0,
+    assignmentText: 0
+};
+
+/** The maximum input lengths of the tree metadata fields. */
+export const maxInputLengths = {
+    title: 128,
+    description: 256,
+    tag: 32,
+    bookName: 64,
+    bookAuthor: 192,
+    bookEdition: 32,
+    bookIsbn: 17,
+    bookChapter: 32,
+    bookExercise: 32,
+    assignmentText: 5000
+};

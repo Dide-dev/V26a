@@ -11,7 +11,7 @@
     import { page } from '$app/state';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import { getTreeWithCards, type TreeData } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeData, type TreeLinkedData } from '$lib/api-wrapper/trees';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
@@ -27,6 +27,11 @@
     import type { SideBar } from './Sidebar.svelte';
     import SidebarComponent from './Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
+    import CoAuthor from './CoAuthor.svelte';
+    import { getUserInfo } from '$lib/api-wrapper/users';
+
+    let userInfo = $state(getUserInfo());
+    let userAllowedToAuthorizeCo = $state(false);
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -78,6 +83,7 @@
     let id: number | null = null;
     let tree: {
         data: TreeData;
+        linkedData: TreeLinkedData;
         history: TreeHistory;
         sidebar: null | SideBar;
         sidebarElement: null | SidebarComponent;
@@ -87,22 +93,21 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            // TODO: redirect to tree list
-            await goto(appLink('/'));
+            await goto(appLink('/all-trees'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            // TODO: redirect to tree list
-            await goto(appLink('/'));
+            await goto(appLink('/all-trees'));
             return;
         }
 
         const fetchedTree = await getTreeWithCards(id);
         tree = {
             data: fetchedTree.metadata.data,
+            linkedData: fetchedTree.metadata.linkedData,
             history: initializeHistory(
                 fetchedTree.metadata.genData.id,
                 fetchedTree.structure,
@@ -111,6 +116,13 @@
             sidebar: null,
             sidebarElement: null
         };
+
+        const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
+        const isAdmin = userInfo?.accountType === 'admin';
+
+        if (isOwner || isAdmin) {
+            userAllowedToAuthorizeCo = true;
+        }
 
         loading = false;
     });
@@ -150,7 +162,11 @@
         </p>
 
         <div class="m-2 flex gap-2">
-            <EditMetadata treeId={tree.history.treeId} bind:prevTreeData={tree.data} />
+            <EditMetadata
+                treeId={tree.history.treeId}
+                bind:prevTreeData={tree.data}
+                treeLinkedData={tree.linkedData}
+            />
             <button
                 class={[
                     'rounded-sm bg-emerald-500 p-1',
@@ -175,6 +191,9 @@
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                 {@html iconRedo}
             </button>
+            {#if userAllowedToAuthorizeCo}
+                <CoAuthor treeId={tree.history.treeId} />
+            {/if}
             <a
                 class="rounded-sm bg-emerald-500 p-1 *:inline"
                 href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}

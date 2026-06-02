@@ -32,6 +32,7 @@
         <button
             data-state={pressed ? 'on' : 'off'}
             {disabled}
+            type="button"
             class="outline-unset focus-visible:outline-unset flex min-h-8 min-w-8 items-center justify-center rounded-md bg-transparent p-1 text-sm font-medium text-gray-900 transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-gray-900 disabled:pointer-events-none disabled:text-gray-900/50 data-[state=on]:bg-gray-200 dark:text-gray-50 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-300 dark:disabled:text-gray-50/50 dark:data-[state=on]:bg-gray-700"
             onclick={onClick}
             onmousedown={(e) => e.preventDefault()}
