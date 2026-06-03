@@ -8,7 +8,7 @@
 
 use crate::api_v1::users::UserResponse;
 use crate::config::Config;
-use crate::db_structs::users::{RegisterData, UserLanguage};
+use crate::db_structs::users::RegisterData;
 use crate::tests::api_v1::{setup_config, try_verify};
 use sqlx::PgPool;
 
@@ -22,15 +22,7 @@ async fn test_verify_unpruned_account(db: PgPool) {
 
     let test_state = setup_config(db, &mut config);
 
-    let register_data = RegisterData {
-        email: "a@a".to_string(),
-        password: "a$$word".to_string(),
-        name: "John Test".to_string(),
-        nickname: "Johnny".to_string(),
-        about_me: "John".to_string(),
-        email_visible: false,
-        language: UserLanguage::En,
-    };
+    let register_data = RegisterData::test_values();
     let response = test_state
         .server
         .post("/users/add")

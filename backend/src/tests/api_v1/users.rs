@@ -12,7 +12,7 @@ use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     PasswordChangeRequestBody, RegisterData, UserData, UserGetData, UserLanguage,
 };
-use crate::tests::api_v1::{TestState, login, register, register_email, setup};
+use crate::tests::api_v1::{TestState, login, register, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -98,10 +98,10 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 async fn test_successful_password_change(db: PgPool) {
     let test_state = setup(db);
 
-    let email = "test@test.nl";
-    register_email(&test_state, email.to_owned()).await;
+    let register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
     let server = test_state.server;
-    login(&server, email.to_owned()).await;
+    login(&server, register_data.email.clone()).await;
 
     let change_password_data = PasswordChangeRequestBody {
         old_password: register_data.password,
@@ -135,12 +135,12 @@ async fn test_successful_password_change(db: PgPool) {
 async fn test_change_password_incorrect_old_password(db: PgPool) {
     let test_state = setup(db);
 
-    let email = "test@test.nl";
-    register_email(&test_state, email.to_owned()).await;
+    let register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
     let server = test_state.server;
-    login(&server, email.to_owned()).await;
+    login(&server, register_data.email.clone()).await;
 
-    // The default password set is `a$$word`, hence this request should fail.
+    // The default password set is `4$$wOrd!`, hence this request should fail.
     let change_password_data = PasswordChangeRequestBody {
         old_password: "Pa$$word".to_owned(),
         new_password: "NewPa$$word".to_owned(),
@@ -172,10 +172,11 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 #[sqlx::test]
 async fn test_delete_own_user(db: PgPool) {
     let test_state = setup(db);
-    let email = "monkaS@gmail.com".to_owned();
-    let user_id = register_email(&test_state, email.clone()).await;
+
+    let register_data = RegisterData::test_values();
+    let user_id = register(&test_state, &register_data).await;
     let server = test_state.server;
-    login(&server, email.clone()).await;
+    login(&server, register_data.email).await;
 
     let response = server
         .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
@@ -192,13 +193,13 @@ async fn test_delete_own_user(db: PgPool) {
 async fn test_delete_other_user(db: PgPool) {
     let test_state = setup(db);
 
-    let email1 = "user1@gmail.com".to_owned();
-    let email2 = "user2@gmail.com".to_owned();
-    let user_id_1 = register_email(&test_state, email1.clone()).await;
-    register_email(&test_state, email2.clone()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let user_id_1 = register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
 
     let server = test_state.server;
-    login(&server, email2.clone()).await;
+    login(&server, account2.email).await;
 
     let response = server
         .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
@@ -211,10 +212,10 @@ async fn test_delete_other_user(db: PgPool) {
 async fn test_delete_nonexistent_user(db: PgPool) {
     let test_state = setup(db);
 
-    let email = "swag@gmail.com".to_owned();
-    register_email(&test_state, email.clone()).await;
+    let register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
     let server = test_state.server;
-    login(&server, email.clone()).await;
+    login(&server, register_data.email).await;
 
     let response = server
         .delete("/users/99999/delete?deleteOwnedTrees=false")
@@ -227,18 +228,8 @@ async fn test_delete_nonexistent_user(db: PgPool) {
 async fn test_invalid_validation_code(db: PgPool) {
     let TestState { server, state } = setup(db);
 
-    let response = server
-        .post("/users/add")
-        .json(&RegisterData {
-            email: "johnsmith@gmail.com".to_owned(),
-            password: "VeryStrongPassword1!".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        })
-        .await;
+    let register_data = RegisterData::test_values();
+    let response = server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::Pending);
@@ -258,52 +249,38 @@ async fn test_invalid_validation_code(db: PgPool) {
 async fn test_register_pending_user(db: PgPool) {
     let server = setup(db).server;
 
-    let response = server
-        .post("/users/add")
-        .json(&RegisterData {
-            email: "johnsmith@gmail.com".to_owned(),
-            password: "VeryStrongPassword1!".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        })
-        .await;
+    let pending_user_data = RegisterData::test_values();
+    let response = server.post("/users/add").json(&pending_user_data).await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::Pending);
 
-    // Name already used
+    let name_already_used_data = RegisterData {
+        data: UserData {
+            name: pending_user_data.data.name,
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        },
+        ..RegisterData::test_values()
+    };
     let response = server
         .post("/users/add")
-        .json(&RegisterData {
-            email: "janedoe@gmail.com".to_owned(),
-            password: "VeryStrongPassword1!".to_owned(),
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        })
+        .json(&name_already_used_data)
         .await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::UsernameAlreadyUsed);
 
-    // E-mail already used
+    let email_already_used_data = RegisterData {
+        email: pending_user_data.email,
+        ..RegisterData::test_values()
+    };
     let response = server
         .post("/users/add")
-        .json(&RegisterData {
-            email: "johnsmith@gmail.com".to_owned(),
-            password: "VeryStrongPassword1!".to_owned(),
-            name: "name2".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        })
+        .json(&email_already_used_data)
         .await;
     response.assert_status_ok();
 
@@ -315,35 +292,17 @@ async fn test_register_pending_user(db: PgPool) {
 async fn test_update_pending_user(db: PgPool) {
     let test_state = setup(db);
 
-    let verified_user = RegisterData {
-        email: "johnsmith@localhost".to_string(),
-        password: "a$$word".to_string(),
-        name: "first".to_string(),
-        nickname: "bob".to_string(),
-        about_me: "I'm bob".to_string(),
-        email_visible: false,
-        language: UserLanguage::En,
-    };
-    register(&test_state, &verified_user).await;
+    let verified_user_data = RegisterData::test_values();
+    register(&test_state, &verified_user_data).await;
 
     let server = test_state.server;
-    let response = server
-        .post("/users/add")
-        .json(&RegisterData {
-            email: "janedoe@gmail.com".to_owned(),
-            password: "VeryStrongPassword1!".to_owned(),
-            name: "second".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        })
-        .await;
+    let pending_user_data = RegisterData::test_values();
+    let response = server.post("/users/add").json(&pending_user_data).await;
     response.assert_status_ok();
 
-    login(&server, verified_user.email).await;
-    let updated_user = UserUpdateData {
-        name: "second".to_string(),
+    login(&server, verified_user_data.email).await;
+    let updated_user = UserData {
+        name: pending_user_data.data.name,
         nickname: "bob".to_string(),
         about_me: "I'm still bob".to_string(),
         email_visible: false,

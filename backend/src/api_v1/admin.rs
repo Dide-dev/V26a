@@ -168,7 +168,7 @@ async fn update_user_data(
     let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
     let found_pending_username = pending_accounts
         .values()
-        .any(|r| r.register_data.name.to_lowercase() == new_data.name.to_lowercase());
+        .any(|r| r.register_data.data.name.to_lowercase() == new_data.data.name.to_lowercase());
 
     if found_user_id.is_some_and(|id| id != user_id) || found_pending_username {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));

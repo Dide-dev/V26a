@@ -31,7 +31,7 @@ pub async fn prune_unverified_accounts(arc_state: ArcState) {
 #[cfg(test)]
 mod tests {
     use crate::config::Config;
-    use crate::db_structs::users::{PendingRegisterData, RegisterData, UserLanguage};
+    use crate::db_structs::users::{PendingRegisterData, RegisterData};
     use crate::state::ArcState;
     use crate::tasks::state_cleaner::prune_unverified_accounts;
     use chrono::Utc;
@@ -41,15 +41,7 @@ mod tests {
         dotenvy::dotenv().unwrap();
         let config = Config::load();
         let state = ArcState::new(config);
-        let register_data = RegisterData {
-            email: "a@localhost".to_string(),
-            password: "password".to_string(),
-            name: "a".to_string(),
-            nickname: "a".to_string(),
-            about_me: "a".to_string(),
-            email_visible: false,
-            language: UserLanguage::Nl,
-        };
+        let register_data = RegisterData::test_values();
 
         {
             let mut pending_accounts = state.pending_accounts.lock().await;

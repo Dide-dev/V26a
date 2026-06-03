@@ -13,9 +13,10 @@
     import { onMount } from 'svelte';
 
     let verificationSuccess: boolean | null = $state(null);
-    let verificationCode = page.url.searchParams.get('code');
 
     onMount(async () => {
+        let verificationCode = page.url.searchParams.get('code');
+
         if (!verificationCode) {
             await goto(appLink('/registration'));
         }

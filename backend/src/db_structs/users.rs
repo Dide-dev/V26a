@@ -16,7 +16,7 @@ use std::str::FromStr;
 use utoipa::ToSchema;
 
 /// Data the user can modify, except email and password.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
     pub name: String,
@@ -281,7 +281,7 @@ impl UserLanguage {
             }
         }
     }
-    
+
     /// Localize 'Copy of' string according to user language.
     pub fn to_copy_of_text(&self) -> &str {
         match &self {

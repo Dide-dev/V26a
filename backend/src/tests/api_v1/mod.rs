@@ -145,30 +145,6 @@ async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
     user_id
 }
 
-/// A convenience function for registering in the testing environment, using only an e-mail.
-/// Creates an account with the given [`TestState`]
-///
-/// # Arguments
-/// `test_state` - The [`TestState`] to use for making the API calls and extracting the verification code.
-///
-/// `email` - The new user's email address.
-///
-/// # Returns
-/// An i32 representing the id of the user created.
-async fn register_email(test_state: &TestState, email: String) -> i32 {
-    let register_data = RegisterData {
-        email: email.clone(),
-        password: "a$$word".to_string(),
-        name: format!("John Test {}", uuid::Uuid::new_v4()),
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
-        language: UserLanguage::En,
-    };
-
-    register(test_state, &register_data).await
-}
-
 /// Creates an admin account with the given [`TestServer`]
 ///
 /// # Arguments
@@ -180,7 +156,11 @@ async fn register_email(test_state: &TestState, email: String) -> i32 {
 ///
 /// # Returns
 /// An i32 representing the id of the admin created.
-async fn register_admin(test_state: &TestState, db: impl PgExecutor<'_>, register_data: &RegisterData,) -> i32 {
+async fn register_admin(
+    test_state: &TestState,
+    db: impl PgExecutor<'_>,
+    register_data: &RegisterData,
+) -> i32 {
     let user_id = register(test_state, register_data).await;
 
     query!(
@@ -224,11 +204,11 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
 async fn setup_login(db: PgPool) -> TestServer {
     let test_state = setup(db);
 
-    let test_email = "testing@localhost".to_owned();
-    register_email(&test_state, test_email.clone()).await;
+    let register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
 
     let server = test_state.server;
-    login(&server, test_email).await;
+    login(&server, register_data.email).await;
 
     server
 }
@@ -261,17 +241,17 @@ mod tests {
     use crate::db_structs::session::InfoCookieData;
     use crate::db_structs::users::{AccountType, RegisterData};
     use crate::get_connection_unwrap;
-    use crate::tests::api_v1::{get_cookie_data, login, register_admin, register_email, setup};
+    use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
     use sqlx::PgPool;
 
     #[sqlx::test]
     async fn test_normal_login(db: PgPool) {
         let test_state = setup(db);
 
-        let user_email = "user@localhost";
-        register_email(&test_state, user_email.to_owned()).await;
+        let register_data = RegisterData::test_values();
+        register(&test_state, &register_data).await;
         let server = test_state.server;
-        let res = login(&server, user_email.to_owned()).await;
+        let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Author);
@@ -282,10 +262,10 @@ mod tests {
         let conn = get_connection_unwrap!(db);
         let test_state = setup(db);
 
-        let admin_email = "admin@localhost";
-        register_admin(&test_state, conn, admin_email.to_owned()).await;
+        let register_data = RegisterData::test_values();
+        register_admin(&test_state, conn, &register_data).await;
         let server = test_state.server;
-        let res = login(&server, admin_email.to_owned()).await;
+        let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Admin);

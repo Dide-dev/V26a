@@ -13,7 +13,7 @@ use crate::db::users::{
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingRegisterData, RegisterData,
-    UserGetData, UserUpdateData, UserData
+    UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
@@ -92,10 +92,8 @@ async fn add_new_user(
     State(state): State<ArcState>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let parsed_email: Address = user_data.email.parse()?;
     user_data.validate_inputs()?;
-
-    let mut transaction = db.begin().await?;
+    let parsed_email: Address = user_data.email.parse()?;
 
     let verification_code = {
         let mut rng = rand::rng();
@@ -114,10 +112,10 @@ async fn add_new_user(
             return Ok(Json(UserResponse::EmailAlreadyUsed));
         }
 
-        let found_user_id = get_user_by_name(&db, &user_data.name).await?;
-        let found_pending_username = pending_accounts
-            .values()
-            .any(|r| r.register_data.name.to_lowercase() == user_data.name.to_lowercase());
+        let found_user_id = get_user_by_name(&db, &user_data.data.name).await?;
+        let found_pending_username = pending_accounts.values().any(|r| {
+            r.register_data.data.name.to_lowercase() == user_data.data.name.to_lowercase()
+        });
 
         if found_user_id.is_some() || found_pending_username {
             return Ok(Json(UserResponse::UsernameAlreadyUsed));
@@ -137,18 +135,18 @@ async fn add_new_user(
         "{}/verify?code={}",
         state.config.base_url, verification_code
     );
-    let displayName = if !user_data.nickname.is_empty() {
-        user_data.nickname.clone()
+    let display_name = if user_data.data.nickname.is_empty() {
+        user_data.data.name.clone()
     } else {
-        user_data.name.clone()
+        user_data.data.nickname.clone()
     };
     let message = Message::builder()
         .from("BOOM! <noreply@localhost>".parse()?)
-        .to(Mailbox::new(Some(displayName.clone()), parsed_email))
-        .subject(user_data.language.to_verification_message_title())
+        .to(Mailbox::new(Some(display_name.clone()), parsed_email))
+        .subject(user_data.data.language.to_verification_message_title())
         .header(ContentType::TEXT_PLAIN)
-        .body(user_data.language.to_verification_message_body(
-            &displayName,
+        .body(user_data.data.language.to_verification_message_body(
+            &display_name,
             &verification_link,
             &state.config.base_url,
         ))?;
@@ -294,14 +292,14 @@ async fn update_user_data(
     Json(new_data): Json<UserData>,
 ) -> Result<(CookieJar, Json<UserResponse>), ApiError> {
     new_data.validate_inputs()?;
-    
+
     // This lock should not be released until the user is updated.
     let pending_accounts = state.pending_accounts.lock().await;
 
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
     let found_pending_username = pending_accounts
         .values()
-        .any(|r| r.register_data.name.to_lowercase() == new_data.name.to_lowercase());
+        .any(|r| r.register_data.data.name.to_lowercase() == new_data.name.to_lowercase());
 
     if found_user_id.is_some_and(|id| id != claims.sub) || found_pending_username {
         return Ok((jar, Json(UserResponse::UsernameAlreadyUsed)));

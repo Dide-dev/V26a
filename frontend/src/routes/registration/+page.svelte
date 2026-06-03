@@ -125,186 +125,152 @@
 </script>
 
 <div>
-    <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
+    {#if !registrationPending}
         <div>
-            <h1 class="page__title">{m.register()}</h1>
-        </div>
-        <div>
-            <label for="name">
-                {m.name()} *
-            </label>
-            <input
-                id="name"
-                class={[usernameAlreadyExists && 'error', 'input__text']}
-                bind:value={formData.data.name}
-                name="username"
-                type="text"
-                data-testid="name"
-                placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
-                minlength={minInputLengths.name}
-                maxlength={maxInputLengths.name}
-                autocomplete="username"
-                required
-                pattern="[a-zA-Z0-9._\-]*"
-                title={m.allowedRegex()}
-            />
-            {#if usernameAlreadyExists}
-                <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
-            {/if}
-        </div>
-        <div>
-            <label for="nickname">
-                {m.nickname()}
-            </label>
-            <input
-                id="nickname"
-                class="input__text"
-                bind:value={formData.data.nickname}
-                name="name"
-                type="text"
-                placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
-                minlength={minInputLengths.nickname}
-                maxlength={maxInputLengths.nickname}
-                autocomplete="name"
-            />
-        </div>
-        <div>
-            <label for="email">
-                {m.email()} *
-            </label>
-            <input
-                id="email"
-                class={[emailAlreadyExists && 'error', 'input__text']}
-                bind:value={formData.email}
-                name="email"
-                type="email"
-                data-testid="email"
-                placeholder={m.examplePlaceholderRequired({ value: m.emailPlaceholder() })}
-                minlength={minInputLengths.email}
-                maxlength={maxInputLengths.email}
-                autocomplete="email"
-                required
-            />
-            {#if emailAlreadyExists}
-                <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
-            {/if}
-        </div>
-        <div>
-            <label for="password">
-                {m.password()} *
-            </label>
-            <input
-                id="password"
-                class={[(passwordMissingChar || passwordNotSame) && 'error', 'input__text']}
-                bind:value={formData.password}
-                name="password"
-                type="password"
-                data-testid="password"
-                placeholder={m.examplePlaceholderRequired({ value: examplePassword })}
-                minlength={minInputLengths.password}
-                maxlength={maxInputLengths.password}
-                required
-            />
-            {#if passwordMissingChar}
-                <p class="text__error" data-testid="error">{m.missingCharacter()}</p>
-            {/if}
-            {#if formData.password}
-                <input
-                    id="name"
-                    class={[usernameAlreadyExists && 'error', 'input__text']}
-                    bind:value={formData.name}
-                    name="name"
-                    type="text"
-                    data-testid="name"
-                    placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
-                    minlength={minInputLengths.name}
-                    maxlength={maxInputLengths.name}
-                    autocomplete="name"
-                    required
-                />
-                {#if usernameAlreadyExists}
-                    <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
-                {/if}
-            </div>
-            <div>
-                <label for="nickname">
-                    {m.nickname()}
-                </label>
-                <input
-                    id="nickname"
-                    class="input__text"
-                    bind:value={formData.nickname}
-                    name="nickname"
-                    type="text"
-                    placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
-                    minlength={minInputLengths.nickname}
-                    maxlength={maxInputLengths.nickname}
-                />
-            </div>
-            <div>
-                <label for="email">
-                    {m.email()} *
-                </label>
-                <input
-                    id="email"
-                    class={[emailAlreadyExists && 'error', 'input__text']}
-                    bind:value={formData.email}
-                    name="email"
-                    type="email"
-                    data-testid="email"
-                    placeholder={m.examplePlaceholderRequired({ value: m.emailPlaceholder() })}
-                    minlength={minInputLengths.email}
-                    maxlength={maxInputLengths.email}
-                    autocomplete="email"
-                    required
-                />
-                {#if emailAlreadyExists}
-                    <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
-                {/if}
-            </div>
-            <div>
-                <label for="password">
-                    {m.password()} *
-                </label>
-                <input
-                    id="password"
-                    class={[(passwordMissingChar || passwordNotSame) && 'error', 'input__text']}
-                    bind:value={formData.password}
-                    name="password"
-                    type="password"
-                    autocomplete="new-password"
-                    data-testid="password"
-                    placeholder={m.examplePlaceholderRequired({ value: examplePassword })}
-                    minlength={minInputLengths.password}
-                    maxlength={maxInputLengths.password}
-                    required
-                />
-            {/if}
-            {#if passwordNotSame}
-                <p class="text__error" data-testid="error">{m.passwordsNotTheSame()}</p>
-            {/if}
-        </div>
-        <div>
-            <div class="checkbox__container">
-                <input
-                    id="emailVisible"
-                    class="input__checkbox"
-                    bind:checked={formData.data.emailVisible}
-                    name="emailVisible"
-                    type="checkbox"
-                />
-                <label for="emailVisible">
-                    {m.emailVisible()}
-                </label>
-                <div class="info">
-                    <sup>🛈</sup>
-                    <div class="info__content">{m.emailVisibleInfo()}</div>
+            <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
+                <div>
+                    <h1 class="page__title">{m.register()}</h1>
                 </div>
-            </div>
-            <button>{m.register()}</button>
-        </form>
+                <div>
+                    <label for="name">
+                        {m.name()} *
+                    </label>
+                    <input
+                        id="name"
+                        class={[usernameAlreadyExists && 'error', 'input__text']}
+                        bind:value={formData.data.name}
+                        name="username"
+                        type="text"
+                        data-testid="name"
+                        placeholder={m.examplePlaceholderRequired({ value: m.exampleName() })}
+                        minlength={minInputLengths.name}
+                        maxlength={maxInputLengths.name}
+                        autocomplete="username"
+                        required
+                        pattern="[a-zA-Z0-9._\-]*"
+                        title={m.allowedRegex()}
+                    />
+                    {#if usernameAlreadyExists}
+                        <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
+                    {/if}
+                </div>
+                <div>
+                    <label for="nickname">
+                        {m.nickname()}
+                    </label>
+                    <input
+                        id="nickname"
+                        class="input__text"
+                        bind:value={formData.data.nickname}
+                        name="name"
+                        type="text"
+                        placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
+                        minlength={minInputLengths.nickname}
+                        maxlength={maxInputLengths.nickname}
+                        autocomplete="name"
+                    />
+                </div>
+                <div>
+                    <label for="email">
+                        {m.email()} *
+                    </label>
+                    <input
+                        id="email"
+                        class={[emailAlreadyExists && 'error', 'input__text']}
+                        bind:value={formData.email}
+                        name="email"
+                        type="email"
+                        data-testid="email"
+                        placeholder={m.examplePlaceholderRequired({ value: m.emailPlaceholder() })}
+                        minlength={minInputLengths.email}
+                        maxlength={maxInputLengths.email}
+                        autocomplete="email"
+                        required
+                    />
+                    {#if emailAlreadyExists}
+                        <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
+                    {/if}
+                </div>
+                <div>
+                    <label for="password">
+                        {m.password()} *
+                    </label>
+                    <input
+                        id="password"
+                        class={[(passwordMissingChar || passwordNotSame) && 'error', 'input__text']}
+                        bind:value={formData.password}
+                        name="password"
+                        type="password"
+                        data-testid="password"
+                        placeholder={m.examplePlaceholderRequired({ value: examplePassword })}
+                        minlength={minInputLengths.password}
+                        maxlength={maxInputLengths.password}
+                        required
+                    />
+                    {#if passwordMissingChar}
+                        <p class="text__error" data-testid="error">{m.missingCharacter()}</p>
+                    {/if}
+                    {#if formData.password}
+                        <input
+                            id="repeatPassword"
+                            class={[passwordNotSame && 'error', 'input__text']}
+                            bind:value={repeatPassword}
+                            name="repeatPassword"
+                            type="password"
+                            data-testid="repeatPassword"
+                            placeholder={m.requiredPlaceholder({ value: m.repeatPassword() })}
+                            minlength={minInputLengths.password}
+                            maxlength={maxInputLengths.password}
+                            required
+                        />
+                    {/if}
+                    {#if passwordNotSame}
+                        <p class="text__error" data-testid="error">{m.passwordsNotTheSame()}</p>
+                    {/if}
+                </div>
+                <div>
+                    <div class="checkbox__container">
+                        <input
+                            id="emailVisible"
+                            class="input__checkbox"
+                            bind:checked={formData.data.emailVisible}
+                            name="emailVisible"
+                            type="checkbox"
+                        />
+                        <label for="emailVisible">
+                            {m.emailVisible()}
+                        </label>
+                        <div class="info">
+                            <sup>🛈</sup>
+                            <div class="info__content">{m.emailVisibleInfo()}</div>
+                        </div>
+                    </div>
+                    <div class="checkbox__container">
+                        <input
+                            id="tos"
+                            class="input__checkbox"
+                            bind:checked={agreedToTOS}
+                            name="tos"
+                            type="checkbox"
+                            data-testid="agreeToTOS"
+                            required
+                        />
+                        <label for="tos">
+                            <ParaglideMessage message={m.agreeToTOS} inputs={{}}>
+                                {#snippet link({ children, options })}
+                                    <a class="text__link" target="_blank" href={options.to}>
+                                        {@render children?.()}
+                                    </a>
+                                {/snippet}
+                            </ParaglideMessage> *
+                        </label>
+                    </div>
+                </div>
+                <button>{m.register()}</button>
+            </form>
+        </div>
     {:else}
-        <form class="completed">
+        <form class="completed" data-testid="verification-pending">
             <div>
                 <h1 class="page__title">{m.pendingRegistrationTitle()}</h1>
                 <p>

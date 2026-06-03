@@ -7,17 +7,18 @@
 #![cfg(test)]
 
 use crate::db_structs::session::InfoCookieData;
-use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage, UserUpdateData};
+use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
 use crate::tests::api_v1::{get_cookie_data, login, register, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let test_state = setup(db);
-    let email = "KoekieMonster@sesamstraat.nl".to_owned();
-    let user_id = register_email(&test_state, email.clone()).await;
+
+    let register_data = RegisterData::test_values();
+    let user_id = register(&test_state, &register_data).await;
     let server = test_state.server;
-    let response = login(&server, email).await;
+    let response = login(&server, register_data.email).await;
     let cookie = response.cookie("user_info");
     let cookie_data = get_cookie_data::<InfoCookieData>(&cookie);
 
@@ -30,10 +31,11 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 #[sqlx::test]
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let test_state = setup(db);
-    let email = "SidneyMonster@sesamestreet.com".to_owned();
-    register_email(&test_state, email.clone()).await;
+
+    let register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
     let server = test_state.server;
-    let response = login(&server, email).await;
+    let response = login(&server, register_data.email).await;
     let original_cookie = response.cookie("user_info");
     let original_max_age = original_cookie.max_age().unwrap();
     let original_cookie_data = get_cookie_data::<InfoCookieData>(&original_cookie);

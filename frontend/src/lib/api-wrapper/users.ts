@@ -120,7 +120,7 @@ export function getOwnUserData(): Promise<UserGetData> {
 /** Update a user's own data */
 export function updateUser(
     newData: UserData
-): Promise<UserSuccess | UserEmailInvalid | UserInvalidVerification> {
+): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser(`update`, newData);
 }
 

@@ -13,7 +13,7 @@ use crate::{
         UserGetAllData, UserLanguage, UserListResponse,
     },
     get_connection_unwrap,
-    tests::api_v1::{login, register, register_admin, register_email, setup},
+    tests::api_v1::{login, register, register_admin, setup},
 };
 use sqlx::PgPool;
 
@@ -22,10 +22,12 @@ async fn test_get_all_users_non_admin(db: PgPool) {
     let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
-    register_email(&test_state, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
     let server = test_state.server;
-    login(&server, "2@gmail.com".to_owned()).await;
+    login(&server, account2.email).await;
 
     let response = server.get("/admin/all-user-data").await;
     // It should fail because the user is not an admin
@@ -37,10 +39,12 @@ async fn test_get_all_users_admin(db: PgPool) {
     let test_state = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
-    register_admin(&test_state, &db, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register_admin(&test_state, &db, &account1).await;
+    register(&test_state, &account2).await;
     let server = test_state.server;
-    login(&server, "1@gmail.com".to_owned()).await;
+    login(&server, account1.email).await;
 
     let response = server.get("/admin/all-user-data").await;
     // It should not fail because the user is an admin
@@ -54,10 +58,12 @@ async fn test_get_one_user_non_admin(db: PgPool) {
     let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
-    register_email(&test_state, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
     let server = test_state.server;
-    login(&server, "2@gmail.com".to_owned()).await;
+    login(&server, account2.email).await;
 
     let response = server.get("/admin/users/1").await;
     // It should fail because the user is not an admin
@@ -66,25 +72,18 @@ async fn test_get_one_user_non_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_one_user_admin(db: PgPool) {
-    let test_server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
-    register_admin(&test_server, &db, "1@gmail.com".to_owned()).await;
+    let admin_account = RegisterData::test_values();
+    register_admin(&test_state, &db, &admin_account).await;
 
     // Create an account
-    let register_data = RegisterData {
-        email: "johnsmith@gmail.com".to_owned(),
-        password: "VeryStrongPassword1!".to_owned(),
-        name: "name".to_owned(),
-        nickname: "nickname".to_owned(),
-        about_me: "about_me".to_owned(),
-        email_visible: true,
-        language: UserLanguage::En,
-    };
-    register(&test_server, &register_data).await;
+    let user_account = RegisterData::test_values();
+    register(&test_state, &user_account).await;
 
-    let server = test_server.server;
-    login(&server, "1@gmail.com".to_owned()).await;
+    let server = test_state.server;
+    login(&server, admin_account.email).await;
 
     let response = server.get("/admin/users/2").await;
     // It should not fail because the user is an admin
@@ -116,10 +115,12 @@ async fn test_update_user(db: PgPool) {
         account_type: AccountType::Admin,
     };
     // Create two accounts and log in as one of them.
-    register_email(&test_state, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
     let server = test_state.server;
-    login(&server, "2@gmail.com".to_owned()).await;
+    login(&server, account2.email).await;
 
     let response = server
         .post("/admin/users/1/update-data")
@@ -134,48 +135,30 @@ async fn test_admin_update_pending_user(db: PgPool) {
     let conn = get_connection_unwrap!(db);
     let test_state = setup(db);
 
-    let admin_email = "admin@localhost".to_owned();
-    register_admin(&test_state, conn, admin_email.clone()).await;
+    let admin_user = RegisterData::test_values();
+    register_admin(&test_state, conn, &admin_user).await;
 
-    let other_user_email = "johnsmith@localhost".to_string();
-    let other_user = RegisterData {
-        email: other_user_email.clone(),
-        password: "a$$word".to_string(),
-        name: "first".to_string(),
-        nickname: "bob".to_string(),
-        about_me: "I'm bob".to_string(),
-        email_visible: false,
-        language: UserLanguage::En,
-    };
+    let other_user = RegisterData::test_values();
     let other_user_id = register(&test_state, &other_user).await;
 
     let server = test_state.server;
-    let pending_user_email = "janedoe@gmail.com".to_owned();
-    let response = server
-        .post("/users/add")
-        .json(&RegisterData {
-            email: pending_user_email.clone(),
-            password: "VeryStrongPassword1!".to_owned(),
-            name: "second".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        })
-        .await;
+    let pending_user = RegisterData::test_values();
+    let response = server.post("/users/add").json(&pending_user).await;
     response.assert_status_ok();
 
-    login(&server, admin_email.clone()).await;
+    login(&server, admin_user.email).await;
     // Test username already used
     let updated_user = AdminUpdateData {
-        email: other_user_email.clone(),
-        name: "second".to_string(),
+        email: other_user.email,
         enabled: true,
-        nickname: "bob".to_string(),
-        about_me: "I'm still bob".to_string(),
-        email_visible: false,
         account_type: AccountType::Admin,
-        language: UserLanguage::En,
+        data: UserData {
+            name: pending_user.data.name,
+            nickname: "bob".to_string(),
+            about_me: "I'm still bob".to_string(),
+            email_visible: false,
+            language: UserLanguage::En,
+        },
     };
     let response = server
         .post(&format!("/admin/users/{other_user_id}/update-data"))
@@ -188,14 +171,16 @@ async fn test_admin_update_pending_user(db: PgPool) {
 
     // Test email already used
     let updated_user = AdminUpdateData {
-        email: pending_user_email.clone(),
-        name: "first".to_string(),
+        email: pending_user.email,
         enabled: true,
-        nickname: "bob".to_string(),
-        about_me: "I'm still bob".to_string(),
-        email_visible: false,
         account_type: AccountType::Admin,
-        language: UserLanguage::En,
+        data: UserData {
+            name: "first".to_string(),
+            nickname: "bob".to_string(),
+            about_me: "I'm still bob".to_string(),
+            email_visible: false,
+            language: UserLanguage::En,
+        },
     };
     let response = server
         .post(&format!("/admin/users/{other_user_id}/update-data"))
@@ -215,10 +200,12 @@ async fn test_change_password(db: PgPool) {
         new_password: "Banaan123!".to_owned(),
     };
     // Create two accounts and log in as one of them.
-    register_email(&test_state, "1@gmail.com".to_owned()).await;
-    register_email(&test_state, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
     let server = test_state.server;
-    login(&server, "2@gmail.com".to_owned()).await;
+    login(&server, account2.email).await;
 
     let response = server
         .post("/admin/users/1/update-password")
