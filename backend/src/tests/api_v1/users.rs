@@ -221,7 +221,13 @@ async fn test_delete_own_user(db: PgPool) {
     response.assert_status_ok();
 
     // Check if cookies are unset after deletion.
-    assert!(response.headers().contains_key("set-cookie"));
+    assert!(
+        server
+            .get("/any-route")
+            .await
+            .maybe_cookie("session")
+            .is_none()
+    );
 
     // Check that sessions are unvalidated.
     server.get("/users/me").await.assert_status_unauthorized();
