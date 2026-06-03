@@ -62,6 +62,8 @@
     "noMyTreesFound": "We couldn't find any trees, it's time to make one!",
     "noAllTreesFound": "We couldn't find any trees matching these search criteria.",
     "loading": "Loading",
+    "front": "Front",
+    "back": "Back",
     "enterFrontText": "Enter card front text...",
     "enterBackText": "Enter card back text...",
     "backTextRequired": "Back text is required!",
