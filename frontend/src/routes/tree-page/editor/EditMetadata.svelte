@@ -332,7 +332,7 @@
                             <p class="text__error">{m.invalidISBN()}</p>
                         {/if}
                     </div>
-                    {#if treeData.bookIsbn !== ''}
+                    {#if treeData.bookIsbn ?? '' !== ''}
                         <div>
                             <label for="bookName">{m.bookName()}</label>
                             <div class="input__container">
@@ -410,7 +410,6 @@
                                         'input__text'
                                     ]}
                                     type="text"
-                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
                                     bind:value={treeData.bookChapter}
                                     placeholder={m.examplePlaceholder({
                                         value: m.exampleBookChapter()
@@ -433,7 +432,6 @@
                                         'input__text'
                                     ]}
                                     type="text"
-                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
                                     bind:value={treeData.bookExercise}
                                     placeholder={m.examplePlaceholder({
                                         value: m.exampleExercise()
