@@ -127,7 +127,7 @@ async fn login(
     path = "/logout",
     context_path = "/api/v1/auth",
     responses(
-        (status = 200, description = "User data successfully logged out."),
+        (status = 200, description = "User successfully logged out."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error.")
     ),
@@ -141,7 +141,7 @@ async fn login(
 /// `jar` - The jar with the cookies (`user_info` & session).
 ///
 /// # Returns
-/// The (cookie) jar that is empty.
+/// The cookie jar with its user sessions removed
 ///
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).

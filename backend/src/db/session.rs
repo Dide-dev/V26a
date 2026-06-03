@@ -14,9 +14,9 @@ use std::str::FromStr;
 /// `token` - The opaque session token from the session cookie.
 ///
 /// # Returns
-/// Returns [`Ok(None)`](Ok) if the token could not be found or has expired.
-///
 /// Returns [`Claims`] containing the user id and account type otherwise.
+///
+/// Returns [`Ok(None)`](Ok) if the token could not be found or has expired.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -50,7 +50,7 @@ pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<
 ///
 /// `user_id` - The user this session belongs to.
 ///
-/// `session_duration` - The total amount of time the session persists.
+/// `session_duration` - The total number of seconds the session persists.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -83,7 +83,7 @@ pub async fn create_session(
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `token` - The opaque session token to delete.
+/// `token` - The token of the session to delete.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -100,7 +100,7 @@ pub async fn delete_session(db: impl PgExecutor<'_>, token: &str) -> Result<(), 
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `user_id` - The user this session belongs to.
+/// `user_id` - The user whose sessions will be deleted.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -112,14 +112,14 @@ pub async fn delete_all_sessions(db: impl PgExecutor<'_>, user_id: i32) -> Resul
     Ok(())
 }
 
-/// Delete all sessions of a user from the database except the current session of the user .
+/// Delete all sessions of a user from the database except one.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `user_id` - The user this session belongs to.
+/// `user_id` - The user whose sessions will be deleted.
 ///
-/// `token` - The opaque session token.
+/// `token` - The token of the session that should remain.
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.

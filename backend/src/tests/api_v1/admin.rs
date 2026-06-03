@@ -173,7 +173,7 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
     server
         .post(&format!("/admin/users/{user_id}/update-password"))
         .json(&AdminPasswordChangeRequestBody {
-            new_password: "Pa$$word".to_owned(),
+            new_password: "P4$$word".to_owned(),
         })
         .await
         .assert_status_ok();
