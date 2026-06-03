@@ -164,8 +164,8 @@ async fn get_own_user_data(
 ///
 /// # Returns
 /// [`Success`](UserResponse::Success) with the id assigned to the new user, if successful,
-/// or [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) if the e-mail is already in use,
 /// or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) if the username is already in use.
+/// Also updates the cookies.
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.

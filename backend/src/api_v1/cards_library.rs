@@ -108,7 +108,7 @@ async fn add_card_to_library(
         ("filters" = CardFilters, Query),
     )
 )]
-/// Gets cards from the card library given the name of the id of the owner or given tags.
+/// Get cards from the card library, that satisfy the given filters.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
