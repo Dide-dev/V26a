@@ -20,7 +20,7 @@ use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
 use axum_test::TestServer;
-use sqlx::PgPool;
+use sqlx::{PgPool, query_scalar};
 use std::collections::{BTreeMap, HashMap};
 
 async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
@@ -221,7 +221,7 @@ async fn test_deleting_trees_works(db: PgPool) {
             card_id,
             data: CardData {
                 front: String::new(),
-                back: String::new(),
+                back: "back".to_string(),
             },
         })
         .await;
@@ -417,21 +417,33 @@ async fn test_remove_card(db: PgPool) {
 
 #[sqlx::test]
 async fn test_filter_tree_list(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
     let server = setup(db);
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    let account_id1 = register(&server, &account1).await;
-    let account_id2 = register(&server, &account2).await;
+    let admin_account = RegisterData::test_values();
+    register(&server, &account1).await;
+    register(&server, &account2).await;
+    register_admin(&server, &mut *conn, &admin_account).await;
     login(&server, account1.email.clone()).await;
 
+    let subject_id = query_scalar!("SELECT id FROM subjects WHERE name = 'Wiskunde A'")
+        .fetch_one(conn)
+        .await
+        .unwrap();
     let trees_data = vec![
         TreeData {
             published: true,
+            language_code: "nl".to_owned(),
+            subject_id: Some(subject_id),
+            tags: vec!["Coco".to_owned(), "Fork".to_owned()],
             ..Default::default()
         },
         TreeData {
             book_isbn: Some("9780061120084".to_string()),
+            language_code: "fr".to_owned(),
+            tags: vec!["Fork".to_owned(), "Gargoyle".to_owned()],
             published: true,
             ..Default::default()
         },
@@ -551,11 +563,99 @@ async fn test_filter_tree_list(db: PgPool) {
     response.assert_status_bad_request();
     response.assert_text(ApiError::InvalidIsbn.to_string());
 
+    // Multiple tags
+    let response = server
+        .get("/trees/get-list?page=1&size=100&tag=Coco&tag=Fork")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[0].clone(),]);
+
+    // Multiple tags, incorrectly formatted (gets parsed as single string)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&tag=Coco,Fork")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
+
+    // One tag (out of multiple)
+    let response = server.get("/trees/get-list?page=1&size=100&tag=Fork").await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        requested_trees_data,
+        vec![trees_data[1].clone(), trees_data[0].clone(),]
+    );
+
+    // Too many tags (no results)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&tag=Coco&tag=Fork&tag=Gargoyle")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
+
+    // Language that has trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&languageCode=fr")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[1].clone(),]);
+
+    // Language that has no trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&languageCode=hi")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
+
+    // Subject that has trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&subject=Wiskunde%20A")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[0].clone(),]);
+
+    // Subject that has no trees
+    let response = server
+        .get("/trees/get-list?page=1&size=100&subject=Wiskunde%20B")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    assert_eq!(requested_trees.total_trees, 0);
+
     // All public trees from user 0
     let response = server
         .get(
-            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
-                .as_str(),
+            format!(
+                "/trees/get-list?page=1&size=100&ownerName={}&showOwnPrivate=true",
+                account1.data.name
+            )
+            .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -575,8 +675,11 @@ async fn test_filter_tree_list(db: PgPool) {
     // All trees from user 0 using filter
     let response = server
         .get(
-            format!("/trees/get-list?page=1&size=100&ownerId={account_id1}&showOwnPrivate=true")
-                .as_str(),
+            format!(
+                "/trees/get-list?page=1&size=100&ownerName={}&showOwnPrivate=true",
+                account1.data.name
+            )
+            .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -591,8 +694,11 @@ async fn test_filter_tree_list(db: PgPool) {
     // All public trees from user 1
     let response = server
         .get(
-            format!("/trees/get-list?page=1&size=100&ownerId={account_id2}&showOwnPrivate=true")
-                .as_str(),
+            format!(
+                "/trees/get-list?page=1&size=100&ownerName={}&showOwnPrivate=true",
+                account2.data.name
+            )
+            .as_str(),
         )
         .await;
     response.assert_status_ok();
@@ -603,6 +709,49 @@ async fn test_filter_tree_list(db: PgPool) {
         .map(|t| t.data)
         .collect::<Vec<_>>();
     assert_eq!(requested_trees_data, vec![other_user_trees_data[0].clone()]);
+
+    // All trees as non-admin (should only show public trees)
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showPrivate=true")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        requested_trees_data,
+        vec![
+            other_user_trees_data[0].clone(),
+            trees_data[1].clone(),
+            trees_data[0].clone()
+        ]
+    );
+
+    // All trees as admin
+    login(&server, admin_account.email).await;
+    let response = server
+        .get("/trees/get-list?page=1&size=100&showPrivate=true")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        requested_trees_data,
+        vec![
+            other_user_trees_data[1].clone(),
+            other_user_trees_data[0].clone(),
+            trees_data[2].clone(),
+            trees_data[1].clone(),
+            trees_data[0].clone(),
+        ]
+    );
 }
 
 #[sqlx::test]

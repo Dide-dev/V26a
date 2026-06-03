@@ -6,7 +6,10 @@
 
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
-use crate::limits::{CARD_BACK_MAX_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH};
+use crate::limits::{
+    CARD_BACK_MAX_LENGTH, CARD_BACK_MIN_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TAG_MAX_LENGTH,
+    CARD_LIBRARY_TAG_MIN_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH, CARD_LIBRARY_TITLE_MIN_LENGTH,
+};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
@@ -35,7 +38,10 @@ pub struct CardData {
 }
 
 impl Validated for CardData {
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.front.chars().count() > CARD_FRONT_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
@@ -46,6 +52,11 @@ impl Validated for CardData {
         if self.back.chars().count() > CARD_BACK_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("back", CARD_BACK_MAX_LENGTH));
         }
+
+        if self.back.chars().count() < CARD_BACK_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("back", CARD_BACK_MIN_LENGTH));
+        }
+
         Ok(())
     }
 }
@@ -58,6 +69,12 @@ pub struct LibraryCardAddData {
     pub tags: Vec<String>,
 }
 impl Validated for LibraryCardAddData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalTag`](ApiError::IllegalTag) when a tag contains an illegal character.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.title.chars().count() > CARD_LIBRARY_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
@@ -65,6 +82,36 @@ impl Validated for LibraryCardAddData {
                 CARD_LIBRARY_TITLE_MAX_LENGTH,
             ));
         }
+
+        if self.title.chars().count() < CARD_LIBRARY_TITLE_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet(
+                "title",
+                CARD_LIBRARY_TITLE_MIN_LENGTH,
+            ));
+        }
+
+        for tag in &self.tags {
+            if tag.chars().count() > CARD_LIBRARY_TAG_MAX_LENGTH {
+                return Err(ApiError::InputLengthExceeded(
+                    "tag",
+                    CARD_LIBRARY_TAG_MAX_LENGTH,
+                ));
+            }
+            if tag.chars().count() < CARD_LIBRARY_TAG_MIN_LENGTH {
+                return Err(ApiError::InputLengthNotMet(
+                    "tag",
+                    CARD_LIBRARY_TAG_MIN_LENGTH,
+                ));
+            }
+            for char in tag.chars() {
+                let legal =
+                    char.is_ascii_alphanumeric() || char == '_' || char == '-' || char == '.';
+                if !legal {
+                    return Err(ApiError::IllegalTag);
+                }
+            }
+        }
+
         Ok(())
     }
 }

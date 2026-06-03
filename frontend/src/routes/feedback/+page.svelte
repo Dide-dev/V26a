@@ -14,7 +14,7 @@
     });
 
     const minInputLengths = {
-        email: 1,
+        email: 3,
         feedback: 6
     };
 
