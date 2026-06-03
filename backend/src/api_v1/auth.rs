@@ -145,10 +145,7 @@ async fn login(
 ///
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
-async fn logout(
-    mut jar: CookieJar,
-    Extension(db): Extension<PgPool>,
-) -> Result<CookieJar, ApiError> {
+async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
     let token = jar
         .get("session")
         .ok_or(ApiError::MissingAuthentication)?
@@ -159,9 +156,7 @@ async fn logout(
     delete_session(&db, &token).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
-    jar = jar
+    Ok(jar
         .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info"));
-
-    Ok(jar)
+        .remove(Cookie::from("user_info")))
 }

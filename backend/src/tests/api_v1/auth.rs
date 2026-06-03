@@ -11,6 +11,7 @@ use crate::db::session::get_session;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
+use crate::tests::api_v1::Cookie;
 use crate::tests::api_v1::{get_cookie_data, login, register, setup};
 use sqlx::PgPool;
 
@@ -43,10 +44,10 @@ async fn test_login_fail(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_success(db: PgPool) {
     let server = setup(db.clone());
+    let mut register_data = RegisterData::test_values();
+    register_data.email = format!("CookieMon{}@example.com", uuid::Uuid::new_v4());
 
-    let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
-
+    let _register_response = register(&server, &register_data).await;
     let login_response = login(&server, register_data.email.clone()).await;
 
     let token = login_response
@@ -62,7 +63,10 @@ async fn test_logout_success(db: PgPool) {
         .unwrap()
         .to_owned();
 
-    let response = server.post("/auth/logout").await;
+    let response = server
+        .post("/auth/logout")
+        .add_cookie(Cookie::new("session", token.clone()))
+        .await;
 
     // Check if a header exists that will unset the cookie.
     assert!(response.headers().contains_key("set-cookie"));
@@ -75,7 +79,8 @@ async fn test_logout_success(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_failure(db: PgPool) {
     let server = setup(db);
-    let register_data = RegisterData::test_values();
+    let mut register_data = RegisterData::test_values();
+    register_data.email = format!("CookieMon{}@example.com", uuid::Uuid::new_v4());
     register(&server, &register_data).await;
 
     // logout is not possible without a valid session.

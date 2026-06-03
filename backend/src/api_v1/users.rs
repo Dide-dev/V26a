@@ -324,7 +324,7 @@ async fn change_password(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
-    mut jar: CookieJar,
+    jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Query(delete): Query<DeleteOwnedTrees>,
@@ -340,12 +340,10 @@ async fn delete_user_data(
     // Invalidate all the sessions based on userid.
     delete_all_sessions(&mut *transaction, claims.sub).await?;
 
-    // Unset the cookies by changing the date to a time in the past.
-    jar = jar
-        .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info"));
-
     transaction.commit().await?;
 
-    Ok(jar)
+    // Unset the cookies by changing the date to a time in the past.
+    Ok(jar
+        .remove(Cookie::from("session"))
+        .remove(Cookie::from("user_info")))
 }
