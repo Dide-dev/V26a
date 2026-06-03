@@ -284,7 +284,7 @@ async fn change_password(
         .value()
         .to_string();
 
-    // All sessions of the account are invalidated if password is changed.
+    // All other sessions of the account are invalidated if password is changed.
     delete_all_sessions_except(&db, claims.sub, &token).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
@@ -296,7 +296,6 @@ async fn change_password(
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
-        (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error.")
     ),
@@ -305,9 +304,7 @@ async fn change_password(
         ("session" = Claims, Cookie),
     )
 )]
-/// Delete a user from the database.
-///
-/// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
+/// Delete the logged-in user from the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
@@ -315,7 +312,7 @@ async fn change_password(
 /// `deleteOwnedTrees` - Delete all the trees of the user.
 ///
 /// # Returns
-/// The (cookie) jar that is empty.
+/// The cookie jar with the session cookies removed.
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.

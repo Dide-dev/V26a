@@ -196,7 +196,7 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
         .post("/users/change-password")
         .json(&PasswordChangeRequestBody {
             old_password: register_data.password,
-            new_password: "Pa$$word".to_owned(),
+            new_password: "P4$$word".to_owned(),
         })
         .await
         .assert_status_ok();
@@ -215,7 +215,7 @@ async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
 
     let register_data = RegisterData::test_values();
-    let _user_id = register(&server, &register_data).await;
+    register(&server, &register_data).await;
     login(&server, register_data.email).await;
 
     let response = server.delete("/users/delete?deleteOwnedTrees=false").await;
