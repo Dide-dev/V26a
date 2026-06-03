@@ -29,7 +29,7 @@ pub fn images() -> Router<ArcState> {
 
 #[utoipa::path(
     post,
-    path = "/",
+    path = "",
     context_path = "/api/v1/images",
     request_body(
         content(

@@ -21,7 +21,7 @@ pub fn feedback() -> Router<ArcState> {
 
 #[utoipa::path(
     post,
-    path = "/",
+    path = "",
     context_path = "/api/v1/feedback",
     request_body = FeedbackData,
     responses(

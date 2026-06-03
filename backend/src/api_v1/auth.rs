@@ -38,7 +38,7 @@ pub struct LoginResponse {
 
 #[utoipa::path(
     post,
-    path = "/",
+    path = "",
     context_path = "/api/v1/auth",
     request_body = LoginRequestBody,
     responses(

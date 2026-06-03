@@ -58,7 +58,7 @@ pub fn trees() -> Router<ArcState> {
 
 #[utoipa::path(
     post,
-    path = "/",
+    path = "",
     context_path = "/api/v1/trees",
     request_body = TreeAddData,
     responses(
@@ -566,7 +566,7 @@ pub async fn verify_tree_permissions(
 
 #[utoipa::path(
     get,
-    path = "/",
+    path = "",
     context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully retrieved the list of trees with given filters.", body = TreeListResponse),
