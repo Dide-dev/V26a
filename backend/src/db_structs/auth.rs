@@ -19,6 +19,13 @@ pub struct LoginRequestBody {
 }
 
 impl Validated for LoginRequestBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
+    /// with at least 1 character in front of it and behind it.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         validate_email(&self.email)?;
 

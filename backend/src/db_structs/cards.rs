@@ -38,7 +38,10 @@ pub struct CardData {
 }
 
 impl Validated for CardData {
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.front.chars().count() > CARD_FRONT_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
@@ -66,6 +69,12 @@ pub struct LibraryCardAddData {
     pub tags: Vec<String>,
 }
 impl Validated for LibraryCardAddData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalTag`](ApiError::IllegalTag) when a tag contains an illegal character.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.title.chars().count() > CARD_LIBRARY_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(

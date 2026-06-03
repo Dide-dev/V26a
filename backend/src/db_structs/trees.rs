@@ -332,7 +332,10 @@ impl FromRow<'_, PgRow> for TreeData {
 }
 
 impl Validated for TreeData {
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.title.chars().count() > TREE_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
@@ -471,6 +474,8 @@ pub struct TreeAddData {
 }
 
 impl Validated for TreeAddData {
+    /// # Errors
+    /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) when the structure is not empty.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.tree_data.validate_inputs()?;
         self.tree_structure.validate_inputs()?;

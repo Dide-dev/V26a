@@ -21,6 +21,10 @@ pub struct ClassroomAddData {
 }
 
 impl Validated for ClassroomAddData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.name.chars().count() > CLASSROOM_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
