@@ -770,8 +770,8 @@ pub async fn duplicate_tree(
         this_user.data.language.to_copy_of_text(),
         new_data.title
     );
-    if new_data.title.len() > TREE_TITLE_MAX_LENGTH {
-        new_data.title = new_data.title[0..(TREE_TITLE_MAX_LENGTH - 3)].to_owned() + "...";
+    if new_data.title.chars().count() > TREE_TITLE_MAX_LENGTH {
+        new_data.title = new_data.title[0..(TREE_TITLE_MAX_LENGTH - 1)].to_owned() + "…";
     }
 
     let tree_add_data = TreeAddData {
