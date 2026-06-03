@@ -110,8 +110,6 @@
     "from": "vanaf",
     "through": "tot en met",
     "ownerId": "ID van de eigenaar",
-    "numberOfTrees": "Aantal bomen per pagina:",
-    "numberOfUsers": "Aantal gebruikers per pagina:",
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
@@ -162,5 +160,16 @@
     "exampleClassroomName": "Wiskunde-B V6A",
     "exampleClassroomDescription": "Welkom leerlingen, in dit klaslokaal zullen jullie meer leren over wiskundige heuristiekbomen.",
     "owner": "Eigenaar",
-    "heuristicTrees": "Heuristiekbomen"
+    "heuristicTrees": "Heuristiekbomen",
+    "noFeedbackFound": "Geen feedback gevonden",
+    "feedbackAddDate": "Datum ingezonden",
+    "numberPerPage": "Aantal {n} per pagina:",
+    "feedbackEntries": "feedbackberichten",
+    "users": "gebruikers",
+    "treesUncapitalized": "bomen",
+    "addCoAuthor": "Voeg co-auteur toe",
+    "successfulAuthorization": "Successvol co-auteur geautoriseerd",
+    "invalidAuthorisationTarget": "De gebruiker die je probeerde te autoriseren lijkt niet te bestaan",
+    "userAlreadyAuthorized": "De gebruiker die je probeert te autoriseren is al geautoriseerd.",
+    "manageCoAuthors": "Beheer co-auteurs"
 }
