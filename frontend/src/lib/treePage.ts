@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+// Colors from TailwindCSS, aside from `tree`, which is a custom green color, defined in theme.css.
 export type BranchColor = 'cyan' | 'tree' | 'yellow' | 'red' | 'pink' | 'violet';
 
 export const branchColors: BranchColor[] = ['cyan', 'tree', 'yellow', 'red', 'pink', 'violet'];

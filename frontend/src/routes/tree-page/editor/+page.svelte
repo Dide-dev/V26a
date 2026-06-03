@@ -226,6 +226,7 @@
                             location={[location]}
                             bind:dragState
                             bind:sidebar={tree.sidebar}
+                            color={branchColors[location % branchColors.length]}
                         />
                     {/each}
                     <RootNodeAddButton history={tree.history} enabled={dragState === null} />
