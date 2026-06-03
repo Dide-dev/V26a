@@ -31,7 +31,7 @@ impl Validated for UserData {
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     ///
     /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
-    /// 
+    ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.name.chars().count() > USER_NAME_MAX_LENGTH {
@@ -167,10 +167,10 @@ impl Validated for RegisterData {
     /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
-    /// 
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol 
+    ///
+    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
     /// with at least 1 character in front of it and behind it.
-    /// 
+    ///
     /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
@@ -209,7 +209,7 @@ impl Validated for AdminUpdateData {
     ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     ///
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol 
+    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
     /// with at least 1 character in front of it and behind it.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;

@@ -15,9 +15,9 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when an email address does not contain 3 characters, of which 1 must be an '@' symbol.
+    /// An error to return when an email address does not match the correct pattern with the '@' symbol.
     IllegalEmailAddress,
-    /// An error to return when a name contains characters which fall outside of the accepted standard.
+    /// An error to return when a name contains characters outside the accepted standard.
     IllegalName,
     /// An error to return when a password does not contain the appropriate characters.
     IllegalPassword,

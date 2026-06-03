@@ -103,12 +103,12 @@ mod tests {
     use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
     #[test]
     fn test_validate_password() {
+        // The default values are valid.
         let valid_data = RegisterData::test_values();
-
         let response = valid_data.validate_inputs();
-
         assert!(response.is_ok());
 
+        // Register with a password that is too short.
         let mut invalid_data = RegisterData {
             email: "valid@email.com".to_owned(),
             password: "no_good".to_owned(),
@@ -126,10 +126,14 @@ mod tests {
             response.unwrap_err(),
             ApiError::InputLengthNotMet("password", PASSWORD_MIN_LENGTH)
         );
+
+        // Register with a password that does not meet the security requirements.
         invalid_data.password = "Grabbelton123".to_owned();
         let response = invalid_data.validate_inputs();
         assert!(response.is_err());
         assert_eq!(response.unwrap_err(), ApiError::IllegalPassword);
+
+        // Register with a password that is too long.
         invalid_data.password =
             "Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123"
                 .to_owned();
@@ -143,10 +147,12 @@ mod tests {
 
     #[test]
     fn test_validate_email() {
+        // The default values are valid.
         let valid_data = RegisterData::test_values();
         let response = valid_data.validate_inputs();
         assert!(response.is_ok());
 
+        // Register with an email address that is too long.
         let mut invalid_data = RegisterData {
             email: "Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123Grabbelton123@grabbelton.com".to_owned(),
             password: "A$$word123".to_owned(),
@@ -164,10 +170,23 @@ mod tests {
             response.unwrap_err(),
             ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH)
         );
+
+        // Register with an email address that is too short.
+        invalid_data.email = "a@".to_owned();
+        let response = invalid_data.validate_inputs();
+        assert!(response.is_err());
+        assert_eq!(
+            response.unwrap_err(),
+            ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH)
+        );
+
+        // Register with an email address that is invalid.
         invalid_data.email = "brood@".to_owned();
         let response = invalid_data.validate_inputs();
         assert!(response.is_err());
         assert_eq!(response.unwrap_err(), ApiError::IllegalEmailAddress);
+
+        // Register with an email address that is invalid.
         invalid_data.email = "@brood".to_owned();
         let response = invalid_data.validate_inputs();
         assert!(response.is_err());
