@@ -221,7 +221,7 @@ async fn test_deleting_trees_works(db: PgPool) {
             card_id,
             data: CardData {
                 front: String::new(),
-                back: String::new(),
+                back: "back".to_string(),
             },
         })
         .await;
