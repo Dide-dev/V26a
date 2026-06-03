@@ -171,5 +171,6 @@
     "successfulAuthorization": "Successvol co-auteur geautoriseerd",
     "invalidAuthorisationTarget": "De gebruiker die je probeerde te autoriseren lijkt niet te bestaan",
     "userAlreadyAuthorized": "De gebruiker die je probeert te autoriseren is al geautoriseerd.",
-    "manageCoAuthors": "Beheer co-auteurs"
+    "manageCoAuthors": "Beheer co-auteurs",
+    "logout": "Log uit"
 }
