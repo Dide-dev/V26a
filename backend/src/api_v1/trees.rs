@@ -43,10 +43,10 @@ pub fn trees() -> Router<ArcState> {
         .route(
             "/{tree_id}",
             get(get_tree_with_cards)
-                .post(duplicate_tree)
                 .put(update_tree_data)
                 .delete(remove_tree),
         )
+        .route("/{tree_id}/duplicate", post(duplicate_tree))
         .route("/{tree_id}/structure", put(update_tree_structure))
         .route("/{tree_id}/cards", post(add_new_card))
         .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
@@ -185,7 +185,7 @@ async fn remove_tree(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `tree_update_data` - The new structure, as [`TreeStructure`].
+/// `new_structure` - The new structure, as [`TreeStructure`].
 /// Overwrites the current structure.
 ///
 /// `tree_id` - The tree to update.
@@ -296,7 +296,7 @@ async fn add_new_card(
 /// Remove a card from a tree.
 ///
 /// Removes the card from the database table `cards`, and overwrites the current tree structure,
-/// if the provided new structure in `tree_card_removal_data` is still valid when the card is removed.
+/// if the provided new structure is still valid when the card is removed.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
@@ -761,7 +761,7 @@ pub async fn get_all_subjects(
 
 #[utoipa::path(
     post,
-    path = "/{tree_id}",
+    path = "/{tree_id}/duplicate",
     context_path = "/api/v1/trees",
 
     responses(

@@ -534,9 +534,7 @@ async fn test_filter_tree_list(db: PgPool) {
     response.assert_text(ApiError::InvalidIsbn.to_string());
 
     // Multiple tags
-    let response = server
-        .get("/trees/get-list?page=1&size=100&tag=Coco&tag=Fork")
-        .await;
+    let response = server.get("/trees?page=1&size=100&tag=Coco&tag=Fork").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     let requested_trees_data = requested_trees
@@ -547,15 +545,13 @@ async fn test_filter_tree_list(db: PgPool) {
     assert_eq!(requested_trees_data, vec![trees_data[0].clone(),]);
 
     // Multiple tags, incorrectly formatted (gets parsed as single string)
-    let response = server
-        .get("/trees/get-list?page=1&size=100&tag=Coco,Fork")
-        .await;
+    let response = server.get("/trees?page=1&size=100&tag=Coco,Fork").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.total_trees, 0);
 
     // One tag (out of multiple)
-    let response = server.get("/trees/get-list?page=1&size=100&tag=Fork").await;
+    let response = server.get("/trees?page=1&size=100&tag=Fork").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     let requested_trees_data = requested_trees
@@ -570,16 +566,14 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Too many tags (no results)
     let response = server
-        .get("/trees/get-list?page=1&size=100&tag=Coco&tag=Fork&tag=Gargoyle")
+        .get("/trees?page=1&size=100&tag=Coco&tag=Fork&tag=Gargoyle")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.total_trees, 0);
 
     // Language that has trees
-    let response = server
-        .get("/trees/get-list?page=1&size=100&languageCode=fr")
-        .await;
+    let response = server.get("/trees?page=1&size=100&languageCode=fr").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     let requested_trees_data = requested_trees
@@ -590,16 +584,14 @@ async fn test_filter_tree_list(db: PgPool) {
     assert_eq!(requested_trees_data, vec![trees_data[1].clone(),]);
 
     // Language that has no trees
-    let response = server
-        .get("/trees/get-list?page=1&size=100&languageCode=hi")
-        .await;
+    let response = server.get("/trees?page=1&size=100&languageCode=hi").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     assert_eq!(requested_trees.total_trees, 0);
 
     // Subject that has trees
     let response = server
-        .get("/trees/get-list?page=1&size=100&subject=Wiskunde%20A")
+        .get("/trees?page=1&size=100&subject=Wiskunde%20A")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -612,7 +604,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // Subject that has no trees
     let response = server
-        .get("/trees/get-list?page=1&size=100&subject=Wiskunde%20B")
+        .get("/trees?page=1&size=100&subject=Wiskunde%20B")
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -620,12 +612,10 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // All public trees from user 0
     let response = server
-        .get(
-            &format!(
-                "/trees?page=1&size=100&ownerName={}&showOwnPrivate=true",
-                account1.data.name
-            ),
-        )
+        .get(&format!(
+            "/trees?page=1&size=100&ownerName={}&showOwnPrivate=true",
+            account1.data.name
+        ))
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -643,12 +633,10 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // All trees from user 0 using filter
     let response = server
-        .get(
-            &format!(
-                "/trees?page=1&size=100&ownerName={}&showOwnPrivate=true",
-                account1.data.name
-            ),
-        )
+        .get(&format!(
+            "/trees?page=1&size=100&ownerName={}&showOwnPrivate=true",
+            account1.data.name
+        ))
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -661,12 +649,10 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // All public trees from user 1
     let response = server
-        .get(
-            &format!(
-                "/trees?page=1&size=100&ownerName={}&showOwnPrivate=true",
-                account2.data.name
-            ),
-        )
+        .get(&format!(
+            "/trees?page=1&size=100&ownerName={}&showOwnPrivate=true",
+            account2.data.name
+        ))
         .await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
@@ -678,9 +664,7 @@ async fn test_filter_tree_list(db: PgPool) {
     assert_eq!(requested_trees_data, vec![other_user_trees_data[0].clone()]);
 
     // All trees as non-admin (should only show public trees)
-    let response = server
-        .get("/trees/get-list?page=1&size=100&showPrivate=true")
-        .await;
+    let response = server.get("/trees?page=1&size=100&showPrivate=true").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     let requested_trees_data = requested_trees
@@ -699,9 +683,7 @@ async fn test_filter_tree_list(db: PgPool) {
 
     // All trees as admin
     login(&server, admin_account.email).await;
-    let response = server
-        .get("/trees/get-list?page=1&size=100&showPrivate=true")
-        .await;
+    let response = server.get("/trees?page=1&size=100&showPrivate=true").await;
     response.assert_status_ok();
     let requested_trees: TreeListResponse = response.json();
     let requested_trees_data = requested_trees
@@ -902,7 +884,7 @@ async fn test_duplicate_tree(db: PgPool) {
     let id: i32 = response.json();
     login(&server, account2.email).await;
 
-    let response = server.post(&format!("/trees/{id}")).await;
+    let response = server.post(&format!("/trees/{id}/duplicate")).await;
     response.assert_status_ok();
     let id2: i32 = response.json();
     assert_eq!(id2, id + 1);

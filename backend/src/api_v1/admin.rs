@@ -51,8 +51,7 @@ async fn check_if_admin(
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
         .route("/users", get(get_all_user_data))
-        .route("/users/{user_id}", get(get_user_data))
-        .route("/users/{user_id}", put(update_user_data))
+        .route("/users/{user_id}", get(get_user_data).put(update_user_data))
         .route("/users/{user_id}/password", put(change_password))
         .route("/feedback", get(get_feedback))
         .route_layer(middleware::from_fn_with_state(state, check_if_admin))
