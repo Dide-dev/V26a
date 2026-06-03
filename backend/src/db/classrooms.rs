@@ -161,9 +161,12 @@ pub async fn get_classroom_count(db: impl PgExecutor<'_>, id: i32) -> Result<i64
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{add_classroom, generate_random_code};
+    use crate::db::classrooms::{
+        add_classroom, generate_random_code, get_all_classrooms, get_classroom_count,
+    };
     use crate::db::test::initialize_db;
     use crate::db_structs::classrooms::ClassroomAddData;
+    use crate::db_structs::pagination::PaginationOptions;
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query};
 
@@ -196,5 +199,56 @@ mod tests {
 
         assert_eq!(found_classroom_add_data, classroom_add_data);
         assert_eq!(found_classroom_data.join_code, join_code);
+    }
+
+    #[sqlx::test]
+    async fn test_get_all_classrooms(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let classroom_add_data = ClassroomAddData {
+            name: "Classroom".to_owned(),
+            description: "This is a test classroom".to_owned(),
+        };
+
+        let join_code = generate_random_code(get_connection_unwrap!(db))
+            .await
+            .unwrap();
+
+        let classroom_id = add_classroom(&db, &classroom_add_data, user_id, &join_code)
+            .await
+            .unwrap();
+
+        let pagination_options = PaginationOptions::new(1, 5, 1000, 500).unwrap();
+
+        let classrooms = get_all_classrooms(&db, user_id, &pagination_options)
+            .await
+            .unwrap();
+
+        assert_eq!(classroom_id, classrooms[0].id);
+        assert_eq!(join_code, classrooms[0].join_code);
+        assert_eq!(classroom_add_data.name, classrooms[0].name);
+        assert_eq!(classroom_add_data.description, classrooms[0].description);
+        assert_eq!(user_id, classrooms[0].owner_id);
+    }
+
+    #[sqlx::test]
+    async fn test_get_classroom_count(db: PgPool) {
+        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 0);
+
+        let classroom_add_data = ClassroomAddData {
+            name: "Classroom".to_owned(),
+            description: "This is a test classroom".to_owned(),
+        };
+
+        let join_code = generate_random_code(get_connection_unwrap!(db))
+            .await
+            .unwrap();
+
+        add_classroom(&db, &classroom_add_data, user_id, &join_code)
+            .await
+            .unwrap();
+
+        assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 1);
     }
 }
