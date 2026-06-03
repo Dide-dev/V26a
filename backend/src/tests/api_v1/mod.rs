@@ -29,9 +29,10 @@ use sqlx::{PgExecutor, PgPool, query};
 use tempfile::tempdir;
 
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
-    let value = cookie.value();
-    let decoded_value = percent_decode_str(value).decode_utf8().unwrap();
-    serde_json::from_str(&decoded_value).unwrap()
+    let decoded = percent_decode_str(cookie.value()).decode_utf8().unwrap();
+    serde_json::from_str(&decoded)
+        .or_else(|_| serde_json::from_value(serde_json::Value::String(decoded.into_owned())))
+        .unwrap()
 }
 
 /// Sets up an API test server with the given mock database.

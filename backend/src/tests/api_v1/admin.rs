@@ -158,11 +158,11 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
     login(&server, user_account.email.clone()).await;
 
     // Check two sessions exist.
-    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
-        .fetch_all(&db)
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
         .await
         .unwrap();
-    assert_eq!(sessions.len(), 2);
+    assert_eq!(sessions, Some(2));
 
     // Login as admin.
     let admin_account = RegisterData::test_values();
@@ -179,9 +179,9 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
         .assert_status_ok();
 
     // Verify all sessions are invalidated. The amount of sessions is 0 if alle sessions are invalidated.
-    let sessions = sqlx::query!("SELECT token FROM sessions WHERE user_id = $1", user_id)
-        .fetch_all(&db)
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
         .await
         .unwrap();
-    assert_eq!(sessions.len(), 0);
+    assert_eq!(sessions, Some(0));
 }
