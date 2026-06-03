@@ -4,10 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::Validated;
 use crate::db_structs::users::AccountType;
+use crate::db_structs::{Validated, validate_email};
 use crate::errors::ApiError;
-use crate::limits::{EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH};
+use crate::limits::PASSWORD_LOGIN_MIN_LENGTH;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -19,14 +19,20 @@ pub struct LoginRequestBody {
 }
 
 impl Validated for LoginRequestBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
+    /// with at least 1 character in front of it and behind it.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.email.chars().count() > EMAIL_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
-        }
-        if self.password.len() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
+        validate_email(&self.email)?;
+
+        if self.password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet(
                 "password",
-                PASSWORD_MAX_LENGTH,
+                PASSWORD_LOGIN_MIN_LENGTH,
             ));
         }
 

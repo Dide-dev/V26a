@@ -109,7 +109,7 @@ async fn test_successful_password_change(db: PgPool) {
 
     let change_password_data = PasswordChangeRequestBody {
         old_password: register_data.password,
-        new_password: "Pa$$word".to_owned(),
+        new_password: "Pa$$word1".to_owned(),
     };
 
     let response = server
@@ -146,7 +146,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
     // The default password set is `4$$wOrd!`, hence this request should fail.
     let change_password_data = PasswordChangeRequestBody {
         old_password: "Pa$$word".to_owned(),
-        new_password: "NewPa$$word".to_owned(),
+        new_password: "NewPa$$word1".to_owned(),
     };
     let response = server
         .post("/users/change-password")
