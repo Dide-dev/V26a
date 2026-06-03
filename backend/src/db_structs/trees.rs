@@ -547,17 +547,23 @@ pub struct TreeListResponse {
 #[derive(serde::Deserialize, ToSchema, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeFilters {
-    pub owner_id: Option<i32>,
+    pub owner_name: Option<String>,
 
     // Needed for optional list in query params, see https://docs.rs/axum-extra/latest/axum_extra/extract/struct.Query.html
     #[serde(default)]
     pub book: Vec<String>,
+    #[serde(default)]
+    pub tag: Vec<String>,
+    pub language_code: Option<String>,
+    pub subject: Option<String>,
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
 
     // Needed for optional boolean
     #[serde(default)]
     pub show_own_private: bool,
+    #[serde(default)]
+    pub show_private: bool,
     #[serde(default)]
     pub editable: bool,
 }

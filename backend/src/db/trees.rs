@@ -5,6 +5,8 @@
 */
 
 use crate::db_structs::pagination::PaginationOptions;
+use crate::db_structs::session::Claims;
+use crate::db_structs::users::AccountType;
 use crate::{
     db_structs::trees::{
         Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeLinkedData,
@@ -12,13 +14,15 @@ use crate::{
     },
     errors::ApiError,
 };
+use chrono::{DateTime, Utc};
+use sqlx::query_builder::Separated;
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
 /// Check whether the given subject exists.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `id` - The id of the subject whose existence to check.
 ///
@@ -38,7 +42,7 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 /// Retrieve the list of all subjects from the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// # Returns
 /// A map of all the possible tree subjects stored in the database indexed by id,
@@ -64,7 +68,7 @@ pub async fn get_subjects(
 /// Check whether the given language exists.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `language_code` - The code of the language whose existence to check.
 ///
@@ -90,7 +94,7 @@ pub async fn language_exists(
 /// Retrieve the list of all languages from the database.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// # Returns
 /// A list of all the possible tree languages stored in the database, as [`Vec<Language>`].
@@ -173,7 +177,7 @@ pub fn parse_isbn(isbn: &str) -> Result<i64, ApiError> {
 /// Add a new book to the database. If a book with the given ISBN already exists, do nothing.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_data` - The [`TreeData`] which contains the book data.
 ///
@@ -320,7 +324,7 @@ pub async fn add_tree(
 /// Does **not** check if the tree existed in the first place.
 ///
 /// # Arguments
-/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - the id of the tree to remove
 ///
@@ -339,7 +343,7 @@ pub async fn remove_tree(db: impl PgExecutor<'_>, tree_id: i32) -> Result<(), Ap
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree which is updated.
 ///
@@ -424,7 +428,7 @@ pub async fn update_tree_data(
 /// Request all data of a specific tree from the database.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree which is queried.
 ///
@@ -492,7 +496,7 @@ pub async fn db_get_tree_all_data(
 /// Get the id of the owner of the tree.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -516,7 +520,7 @@ pub async fn get_tree_owner(
 /// Check whether a user is a co-author of a tree.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree of which the owner is queried.
 ///
@@ -546,7 +550,7 @@ pub async fn is_co_author_of_tree(
 /// Add a co-author to a tree.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree to which a co-author should be added.
 ///
@@ -577,7 +581,7 @@ pub async fn add_co_author(
 /// and whether any duplicate cards exist in the tree structure.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `tree_id` - The id of the tree to check.
 ///
@@ -658,47 +662,119 @@ pub async fn is_structure_valid(
 ///
 /// # Errors
 /// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the filters contain an invalid ISBN.
-///
-/// # To future developers
-/// This function can and will become too big, good luck if that happens!
 fn apply_tree_filters<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
     filters: &'a TreeFilters,
-    user_id: Option<i32>,
+    claims: Option<&Claims>,
 ) -> Result<(), ApiError> {
     let TreeFilters {
-        owner_id,
+        owner_name,
         book,
+        tag,
+        language_code,
+        subject,
         created_after,
         created_before,
         show_own_private,
+        show_private,
         editable,
     } = filters;
 
+    let is_admin = claims.is_some_and(|c| c.account_type == AccountType::Admin);
+    let option_user_id = claims.map(|c| c.sub);
+
+    // Determine if there will be any filters to apply, if not, we should not continue with the
+    // function as it would create an empty WHERE clause.
+    let has_conditions = !(*show_private && is_admin)
+        || owner_name.is_some()
+        || (*editable && option_user_id.is_some())
+        || !book.is_empty()
+        || !tag.is_empty()
+        || language_code.is_some()
+        || subject.is_some()
+        || created_after.is_some()
+        || created_before.is_some();
+
+    if !has_conditions {
+        return Ok(());
+    }
+
     builder.push(" WHERE ");
     let mut separated = builder.separated(" AND ");
-    separated.push("(published = true");
-    if *show_own_private && let Some(user_id) = user_id {
-        separated.push_unseparated(" OR (published = false AND (owner_id = ");
-        separated.push_bind_unseparated(user_id);
 
-        separated.push_unseparated(
-            " OR EXISTS(
+    // Check if we should NOT show all trees.
+    if !(*show_private && is_admin) {
+        separated.push("(published = true");
+
+        if *show_own_private && let Some(user_id) = option_user_id {
+            separated.push_unseparated(" OR (published = false AND (owner_id = ");
+            separated.push_bind_unseparated(user_id);
+
+            separated.push_unseparated(
+                " OR EXISTS(
                 SELECT 1
                 FROM co_authors
                 WHERE co_authors.user_id = ",
-        );
-        separated.push_bind_unseparated(user_id);
-        separated.push_unseparated(")))");
+            );
+            separated.push_bind_unseparated(user_id);
+            separated.push_unseparated(")))");
+        }
+
+        separated.push_unseparated(")");
     }
-    separated.push_unseparated(")");
-    if let Some(owner_id) = owner_id {
+    apply_tree_filters_owner_name(&mut separated, owner_name.as_ref());
+    apply_tree_filters_editable(&mut separated, *editable, option_user_id);
+    apply_tree_filters_books(&mut separated, book)?;
+    apply_tree_filters_tags(&mut separated, tag);
+    apply_tree_filters_language_code(&mut separated, language_code.as_ref());
+    apply_tree_filters_subject(&mut separated, subject.as_ref());
+    apply_tree_filters_created_time(
+        &mut separated,
+        created_after.as_ref(),
+        created_before.as_ref(),
+    );
+
+    Ok(())
+}
+
+/// Adds the filters related to the owner of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `owner_name` - A filter specifying who should own the trees shown.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_owner_name<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    owner_name: Option<&'args String>,
+) {
+    if let Some(owner_name) = owner_name {
         separated
-            .push("(owner_id = ")
-            .push_bind_unseparated(owner_id)
+            .push("(users.name = ")
+            .push_bind_unseparated(owner_name)
             .push_unseparated(")");
     }
-    if *editable && let Some(user_id) = user_id {
+}
+
+/// Adds the filters related to the editability of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `editable` - A filter specifying whether the user wants to see only editable trees.
+///
+/// `option_user_id` - The logged-in user performing the filter, optional.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_editable(
+    separated: &mut Separated<'_, '_, Postgres, &str>,
+    editable: bool,
+    option_user_id: Option<i32>,
+) {
+    if editable && let Some(user_id) = option_user_id {
         separated.push("(owner_id = ");
 
         separated.push_bind_unseparated(user_id);
@@ -712,8 +788,26 @@ fn apply_tree_filters<'a>(
         separated.push_bind_unseparated(user_id);
         separated.push_unseparated("))");
     }
-    if !book.is_empty() {
-        let parsed_isbns = book
+}
+
+/// Adds the filters related to the books of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `books` - A filter specifying what books should have trees shown.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the filters contain an invalid ISBN.
+fn apply_tree_filters_books<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    books: &'args [String],
+) -> Result<(), ApiError> {
+    if !books.is_empty() {
+        let parsed_isbns = books
             .iter()
             .map(|isbn| parse_isbn(isbn))
             .collect::<Result<Vec<_>, _>>()?;
@@ -722,6 +816,96 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(parsed_isbns)
             .push_unseparated("))");
     }
+
+    Ok(())
+}
+
+/// Adds the filters related to the tags of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `tags` - A filter specifying the tags a tree should have.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_tags<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    tags: &'args [String],
+) {
+    // requested_tags is defined in tree_list_query_tag_cte() for improved efficiency
+    if !tags.is_empty() {
+        separated.push(
+            r"trees.id IN (
+                SELECT tree_id
+                FROM tree_tags
+                WHERE tag_id IN (SELECT id FROM requested_tags)
+                GROUP BY tree_id
+                HAVING COUNT(DISTINCT tag_id) =
+                       (SELECT COUNT(*) FROM requested_tags)
+            )",
+        );
+    }
+}
+
+/// Adds the filters related to the language of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `language_code` - A filter specifying the language code representing the tree's language.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_language_code<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    language_code: Option<&'args String>,
+) {
+    if let Some(language_code) = language_code {
+        separated
+            .push("(trees.language_code = ")
+            .push_bind_unseparated(language_code)
+            .push_unseparated(")");
+    }
+}
+
+/// Adds the filters related to the subject of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `subject` - A filter specifying the subject a tree should be about
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_subject<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    subject: Option<&'args String>,
+) {
+    if let Some(subject) = subject {
+        separated
+            .push("(subjects.name = ")
+            .push_bind_unseparated(subject)
+            .push_unseparated(")");
+    }
+}
+
+/// Adds the filters related to the creation time of a tree to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `created_after` - A filter specifying the time a tree should have been created after.
+///
+/// `created_before` - A filter specifying the time a tree should have been created before.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_created_time<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    created_after: Option<&'args DateTime<Utc>>,
+    created_before: Option<&'args DateTime<Utc>>,
+) {
     if let Some(created_after) = created_after {
         separated
             .push("(trees.created_at >= ")
@@ -734,14 +918,32 @@ fn apply_tree_filters<'a>(
             .push_bind_unseparated(created_before)
             .push_unseparated(")");
     }
+}
 
-    Ok(())
+const TREE_LIST_QUERY_JOINS: &str = r"
+    FROM trees
+    LEFT JOIN books ON books.isbn = trees.book_isbn
+    LEFT JOIN users ON users.id = trees.owner_id
+    LEFT JOIN subjects ON subjects.id = trees.subject_id
+";
+
+fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+    query
+        .push(
+            r"
+            WITH requested_tags AS (
+                SELECT id
+                FROM tags
+                WHERE name = ANY(",
+        )
+        .push_bind(tags)
+        .push("))");
 }
 
 /// Get the amount of trees satisfying some filters.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `filters` - The filters to apply to the trees.
 ///
@@ -755,17 +957,16 @@ fn apply_tree_filters<'a>(
 pub async fn get_queried_count(
     db: impl PgExecutor<'_>,
     filters: &TreeFilters,
-    user_id: Option<i32>,
+    claims: Option<&Claims>,
 ) -> Result<i64, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new(
-        "SELECT COUNT(*)
-        FROM trees
-        LEFT JOIN books ON books.isbn = trees.book_isbn
-        LEFT JOIN users ON users.id = trees.owner_id
-        LEFT JOIN subjects ON subjects.id = trees.subject_id",
-    );
+    let mut query = QueryBuilder::<Postgres>::new("");
+    if !filters.tag.is_empty() {
+        tree_list_query_tag_cte(&mut query, &filters.tag);
+    }
+    query.push("SELECT COUNT(*)");
+    query.push(TREE_LIST_QUERY_JOINS);
 
-    apply_tree_filters(&mut query, filters, user_id)?;
+    apply_tree_filters(&mut query, filters, claims)?;
 
     let trees_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
@@ -775,7 +976,7 @@ pub async fn get_queried_count(
 /// Get the list of all trees satisfying some filters at a given page.
 ///
 /// # Arguments
-/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
 ///
 /// `page` - Which page is requested.
 ///
@@ -795,19 +996,29 @@ pub async fn get_queried_list(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
     filters: &TreeFilters,
-    user_id: Option<i32>,
+    claims: Option<&Claims>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
-    let mut query = QueryBuilder::<Postgres>::new(
+    let mut query = QueryBuilder::<Postgres>::new("");
+    if !filters.tag.is_empty() {
+        tree_list_query_tag_cte(&mut query, &filters.tag);
+    }
+    query.push(
         r#"
-        SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
-        FROM trees
-        LEFT JOIN books ON books.isbn = trees.book_isbn
-        LEFT JOIN users ON users.id = trees.owner_id
-        LEFT JOIN subjects ON subjects.id = trees.subject_id
-        "#,
+    SELECT trees.*,
+       users.name                                                     AS owner_name,
+       subjects.name                                                  AS "subject_name?",
+       COALESCE(books.title, '')                                      AS book_name,
+       COALESCE(books.author, '')                                     AS book_author,
+       COALESCE(books.edition, '')                                    AS book_edition,
+       ARRAY(SELECT name
+             FROM tags
+                      JOIN tree_tags ON tag_id = id
+             WHERE tree_id = trees.id)                                AS tags,
+       ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors"#,
     );
+    query.push(TREE_LIST_QUERY_JOINS);
 
-    apply_tree_filters(&mut query, filters, user_id)?;
+    apply_tree_filters(&mut query, filters, claims)?;
     query
         .push(
             // newest first
@@ -1151,63 +1362,176 @@ mod tests {
             no_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
+        let admin_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Admin,
+        };
 
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
-            owner_id: Some(67),
+            owner_name: Some("67".to_owned()),
             book: vec!["0-451-52493-4".to_owned()],
+            tag: vec!["funky".to_owned()],
+            language_code: Some("nl".to_owned()),
+            subject: Some("Wiskunde A".to_owned()),
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             created_before: Some(DateTime::<Utc>::MAX_UTC),
             show_own_private: true,
+            show_private: false,
             editable: false,
         };
-        apply_tree_filters(&mut all_filters_query, &all_filters, Some(123)).unwrap();
+        apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (owner_id = $3) AND (book_isbn = ANY($4)) AND (trees.created_at >= $5) AND (trees.created_at <= $6)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let partial_filters = TreeFilters {
-            owner_id: Some(67),
+            owner_name: Some("67".to_owned()),
             created_after: Some(DateTime::<Utc>::MIN_UTC),
             ..Default::default()
         };
         apply_tree_filters(&mut partial_filters_query, &partial_filters, None).unwrap();
         assert_eq!(
             partial_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true) AND (owner_id = $1) AND (trees.created_at >= $2)"
+            "SELECT * FROM trees WHERE (published = true) AND (users.name = $1) AND (trees.created_at >= $2)"
         );
+    }
 
-        let mut show_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
-        let show_private_no_id_filters = TreeFilters {
+    #[test]
+    fn test_apply_tree_filters_own_unpublished_trees() {
+        let user_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Author,
+        };
+
+        // check if show_own_private gets made properly
+        let mut show_own_private_no_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_own_private_no_id_filters = TreeFilters {
             show_own_private: true,
             ..Default::default()
         };
         apply_tree_filters(
-            &mut show_private_no_id_query,
-            &show_private_no_id_filters,
+            &mut show_own_private_no_id_query,
+            &show_own_private_no_id_filters,
             None,
         )
         .unwrap();
         assert_eq!(
-            show_private_no_id_query.sql(),
+            show_own_private_no_id_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
 
-        let mut hide_private_with_id_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
-        let show_private_no_id_filters = TreeFilters {
+        let mut show_own_private_with_id_query =
+            QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_own_private_with_id_filters = TreeFilters {
+            show_own_private: true,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut show_own_private_with_id_query,
+            &show_own_private_with_id_filters,
+            Some(&user_claims),
+        )
+        .unwrap();
+        assert_eq!(
+            show_own_private_with_id_query.sql(),
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2))))",
+        );
+
+        let mut hide_own_private_with_id_query =
+            QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let hide_own_private_with_id_filters = TreeFilters {
             show_own_private: false,
             ..Default::default()
         };
         apply_tree_filters(
-            &mut hide_private_with_id_query,
-            &show_private_no_id_filters,
-            Some(123),
+            &mut hide_own_private_with_id_query,
+            &hide_own_private_with_id_filters,
+            Some(&user_claims),
         )
         .unwrap();
         assert_eq!(
-            hide_private_with_id_query.sql(),
+            hide_own_private_with_id_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+    }
+
+    #[test]
+    fn test_apply_tree_filters_unpublished_trees() {
+        let user_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Author,
+        };
+        let admin_claims = Claims {
+            sub: 123,
+            exp: 0,
+            account_type: AccountType::Admin,
+        };
+
+        // Check if show_private gets made properly
+        let mut show_private_no_admin_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_no_admin_filters = TreeFilters {
+            show_private: true,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut show_private_no_admin_query,
+            &show_private_no_admin_filters,
+            Some(&user_claims),
+        )
+        .unwrap();
+        assert_eq!(
+            show_private_no_admin_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+
+        let mut show_private_no_claims_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_no_admin_filters = TreeFilters {
+            show_private: true,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut show_private_no_claims_query,
+            &show_private_no_admin_filters,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            show_private_no_claims_query.sql(),
+            "SELECT * FROM trees WHERE (published = true)"
+        );
+
+        let mut show_private_admin_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let show_private_admin_filters = TreeFilters {
+            show_private: true,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut show_private_admin_query,
+            &show_private_admin_filters,
+            Some(&admin_claims),
+        )
+        .unwrap();
+        assert_eq!(show_private_admin_query.sql(), "SELECT * FROM trees",);
+
+        let mut hide_private_admin_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let hide_private_admin_filters = TreeFilters {
+            show_private: false,
+            ..Default::default()
+        };
+        apply_tree_filters(
+            &mut hide_private_admin_query,
+            &hide_private_admin_filters,
+            Some(&admin_claims),
+        )
+        .unwrap();
+        assert_eq!(
+            hide_private_admin_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
     }
@@ -1215,6 +1539,11 @@ mod tests {
     #[sqlx::test]
     async fn test_get_queried_count(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
+        let claims = Claims {
+            sub: user_id,
+            exp: 0,
+            account_type: AccountType::Author,
+        };
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -1234,7 +1563,7 @@ mod tests {
             0
         );
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(user_id))
+            get_queried_count(&db, &show_private_filters, Some(&claims))
                 .await
                 .unwrap(),
             0
@@ -1246,7 +1575,7 @@ mod tests {
             0
         );
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(user_id))
+            get_queried_count(&db, &show_private_filters, Some(&claims))
                 .await
                 .unwrap(),
             1
@@ -1263,7 +1592,7 @@ mod tests {
             initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
         }
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(user_id))
+            get_queried_count(&db, &show_private_filters, Some(&claims))
                 .await
                 .unwrap(),
             101
@@ -1281,7 +1610,7 @@ mod tests {
         )
         .await;
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(user_id))
+            get_queried_count(&db, &show_private_filters, Some(&claims))
                 .await
                 .unwrap(),
             102
@@ -1317,6 +1646,11 @@ mod tests {
     #[sqlx::test]
     async fn test_get_queried_list(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
+        let claims = Claims {
+            sub: user_id,
+            exp: 0,
+            account_type: AccountType::Author,
+        };
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -1358,7 +1692,7 @@ mod tests {
         .await;
 
         let private_tree_list =
-            get_queried_list(&db, &first_page, &show_private_filters, Some(user_id))
+            get_queried_list(&db, &first_page, &show_private_filters, Some(&claims))
                 .await
                 .unwrap()
                 .into_iter()
@@ -1378,14 +1712,14 @@ mod tests {
         assert_eq!(public_tree_list, vec![public_tree.clone()]);
 
         let private_tree_list_one_item1 =
-            get_queried_list(&db, &one_item_page1, &show_private_filters, Some(user_id))
+            get_queried_list(&db, &one_item_page1, &show_private_filters, Some(&claims))
                 .await
                 .unwrap()
                 .into_iter()
                 .map(|d| d.data)
                 .collect::<Vec<_>>();
         let private_tree_list_one_item2 =
-            get_queried_list(&db, &one_item_page2, &show_private_filters, Some(user_id))
+            get_queried_list(&db, &one_item_page2, &show_private_filters, Some(&claims))
                 .await
                 .unwrap()
                 .into_iter()
@@ -1401,14 +1735,14 @@ mod tests {
             ..Default::default()
         };
         let future_tree_list =
-            get_queried_list(&db, &first_page, &future_filter, Some(user_id)).await;
+            get_queried_list(&db, &first_page, &future_filter, Some(&claims)).await;
         assert_eq!(future_tree_list, Err(ApiError::InvalidPage));
         let recent_filter = TreeFilters {
             created_after: Some(Utc::now() - TimeDelta::seconds(2)),
             show_own_private: true,
             ..Default::default()
         };
-        let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(user_id))
+        let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(&claims))
             .await
             .unwrap()
             .into_iter()
@@ -1425,7 +1759,7 @@ mod tests {
             ..Default::default()
         };
         let ancient_tree_list =
-            get_queried_list(&db, &first_page, &ancient_filter, Some(user_id)).await;
+            get_queried_list(&db, &first_page, &ancient_filter, Some(&claims)).await;
         assert_eq!(ancient_tree_list, Err(ApiError::InvalidPage));
         let existing_filter = TreeFilters {
             created_before: Some(Utc::now() + TimeDelta::seconds(2)),
@@ -1433,7 +1767,7 @@ mod tests {
             ..Default::default()
         };
         let existing_tree_list =
-            get_queried_list(&db, &first_page, &existing_filter, Some(user_id))
+            get_queried_list(&db, &first_page, &existing_filter, Some(&claims))
                 .await
                 .unwrap()
                 .into_iter()
@@ -1460,7 +1794,7 @@ mod tests {
             &basic_structure,
         )
         .await;
-        let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(user_id))
+        let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(&claims))
             .await
             .unwrap();
         let book_tree_data_list = book_tree_list
