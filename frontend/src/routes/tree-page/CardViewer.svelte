@@ -59,6 +59,7 @@
     let closedColor = $derived(
         `var(--color-${color}-${Math.min(900, 500 + 100 * distanceFromRevealed)})`
     );
+    // --color-cyan-950 --color-tree-950 --color-yellow-950 --color-red-950 --color-pink-950 --color-violet-950
     let borderColor = $derived(
         `var(--color-${color}-${Math.min(950, 700 + 100 * distanceFromRevealed)})`
     );
@@ -110,7 +111,7 @@
 
 {#snippet closedCard()}
     <p
-        style="--background-color: {closedColor}; --hover-color: {closedColor}; --border-color: {borderColor}"
+        style="--background-color: color-mix(in oklch, {closedColor} 40%, oklch(from {closedColor} l 0 h)); --hover-color: var(--background-color); --border-color: {borderColor}"
         class={[
             distanceFromRevealed == 2 ? 'w-card-width-sm' : 'w-card-width-xs',
             'card min-h-card-height-sm p-1'
@@ -129,6 +130,7 @@
             border-width: 2px;
 
             background-color: var(--background-color);
+            transition: background-color 200ms ease-in-out;
 
             border-color: var(--border-color);
 
