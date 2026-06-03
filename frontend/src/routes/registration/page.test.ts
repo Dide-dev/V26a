@@ -122,7 +122,7 @@ test('Redirection after successful registration', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');
@@ -144,7 +144,7 @@ test('Submission with correct data', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');
@@ -157,13 +157,15 @@ test('Submission with correct data', async () => {
 
     expect(addUser).toHaveBeenCalledWith(
         expect.objectContaining({
+            data: {
+                name: 'Tree_Maker',
+                nickname: '',
+                aboutMe: '',
+                emailVisible: false,
+                language: getLocale()
+            },
             email: 'test@email.nl',
-            password: 'ThisIsAVerySecureP@ssword123',
-            name: 'Tree Maker',
-            nickname: '',
-            aboutMe: '',
-            emailVisible: false,
-            language: getLocale()
+            password: 'ThisIsAVerySecureP@ssword123'
         })
     );
 });
@@ -190,7 +192,7 @@ test('No submission without repeatPassword', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     await user.click(screen.getByTestId('agreeToTOS'));
@@ -222,7 +224,7 @@ test('No submission without email', async () => {
     render(page);
 
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');
@@ -241,7 +243,7 @@ test('No submission without agreeing to TOS', async () => {
     const emailInput = screen.getByTestId('email');
     await user.type(emailInput, 'test@email.nl');
     const nameInput = screen.getByTestId('name');
-    await user.type(nameInput, 'Tree Maker');
+    await user.type(nameInput, 'Tree_Maker');
     const passwordInput = screen.getByTestId('password');
     await user.type(passwordInput, 'ThisIsAVerySecureP@ssword123');
     const repeatPasswordInput = screen.getByTestId('repeatPassword');

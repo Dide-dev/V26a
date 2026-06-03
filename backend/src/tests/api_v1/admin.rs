@@ -9,8 +9,8 @@
 use crate::api_v1::users::UserResponse;
 use crate::{
     db_structs::users::{
-        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserGetAllData,
-        UserLanguage, UserListResponse,
+        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserData,
+        UserGetAllData, UserLanguage, UserListResponse,
     },
     get_connection_unwrap,
     tests::api_v1::{login, register, register_admin, register_email, setup},
@@ -91,14 +91,10 @@ async fn test_get_one_user_admin(db: PgPool) {
     response.assert_status_ok();
     let user_data: UserGetAllData = response.json();
     let expected_user_data = UserGetAllData {
-        email: register_data.email.clone(),
-        name: register_data.name,
+        email: user_account.email.clone(),
+        data: user_account.data,
         enabled: true,
-        nickname: register_data.nickname,
-        about_me: register_data.about_me,
-        email_visible: register_data.email_visible,
         account_type: AccountType::Author,
-        language: register_data.language,
     };
     assert_eq!(user_data, expected_user_data);
 }
@@ -109,13 +105,15 @@ async fn test_update_user(db: PgPool) {
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
-        name: "John Smith".to_owned(),
+        data: UserData {
+            name: "John Smith".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        },
         enabled: true,
-        nickname: String::new(),
-        about_me: String::new(),
-        email_visible: false,
         account_type: AccountType::Admin,
-        language: UserLanguage::Nl,
     };
     // Create two accounts and log in as one of them.
     register_email(&test_state, "1@gmail.com".to_owned()).await;

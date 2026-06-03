@@ -22,7 +22,7 @@ use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::mail::StubMailer;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
-use crate::db_structs::users::{RegisterData, UserLanguage};
+use crate::db_structs::users::RegisterData;
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
@@ -141,6 +141,7 @@ async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
         // Adding a user should never fail in a test
         panic!("Something unexpected failed while adding a user")
     };
+
     user_id
 }
 
@@ -179,8 +180,8 @@ async fn register_email(test_state: &TestState, email: String) -> i32 {
 ///
 /// # Returns
 /// An i32 representing the id of the admin created.
-async fn register_admin(test_state: &TestState, db: impl PgExecutor<'_>, email: String) -> i32 {
-    let user_id = register_email(test_state, email).await;
+async fn register_admin(test_state: &TestState, db: impl PgExecutor<'_>, register_data: &RegisterData,) -> i32 {
+    let user_id = register(test_state, register_data).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -204,7 +205,7 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
         .post("/auth/login")
         .json(&LoginRequestBody {
             email,
-            password: "a$$word".to_string(),
+            password: RegisterData::test_values().password,
         })
         .await;
     response.assert_status_ok();
@@ -258,7 +259,7 @@ async fn create_tree(test_server: &TestServer) -> i32 {
 #[cfg(test)]
 mod tests {
     use crate::db_structs::session::InfoCookieData;
-    use crate::db_structs::users::AccountType;
+    use crate::db_structs::users::{AccountType, RegisterData};
     use crate::get_connection_unwrap;
     use crate::tests::api_v1::{get_cookie_data, login, register_admin, register_email, setup};
     use sqlx::PgPool;

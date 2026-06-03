@@ -7,6 +7,7 @@
 #![cfg(test)]
 
 use crate::db_structs::feedback::{FeedbackData, FeedbackListResponse};
+use crate::db_structs::users::RegisterData;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{login, register_admin, setup, setup_login};
 use sqlx::PgPool;

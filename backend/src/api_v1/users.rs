@@ -13,11 +13,12 @@ use crate::db::users::{
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingRegisterData, RegisterData,
-    UserGetData, UserUpdateData,
+    UserGetData, UserUpdateData, UserData
 };
 use crate::errors::ApiError;
 
 use crate::api_v1::users::UserResponse::InvalidVerification;
+use crate::db_structs::Validated;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -92,6 +93,9 @@ async fn add_new_user(
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     let parsed_email: Address = user_data.email.parse()?;
+    user_data.validate_inputs()?;
+
+    let mut transaction = db.begin().await?;
 
     let verification_code = {
         let mut rng = rand::rng();
@@ -257,7 +261,7 @@ async fn get_own_user_data(
     post,
     path = "/update",
     context_path = "/api/v1/users",
-    request_body = UserUpdateData,
+    request_body = UserData,
     responses(
         (status = 200, description = "Successfully updated user with the returned id.", body = UserResponse, content_type = "application/json"),
         (status = 400, description = "User with given id cannot be found."),
@@ -273,7 +277,7 @@ async fn get_own_user_data(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `new_data` - The new data of the user, as [`UserUpdateData`].
+/// `new_data` - The new data of the user, as [`UserData`].
 ///
 /// # Returns
 /// Nothing.
@@ -287,8 +291,10 @@ async fn update_user_data(
     claims: Claims,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
-    Json(new_data): Json<UserUpdateData>,
+    Json(new_data): Json<UserData>,
 ) -> Result<(CookieJar, Json<UserResponse>), ApiError> {
+    new_data.validate_inputs()?;
+    
     // This lock should not be released until the user is updated.
     let pending_accounts = state.pending_accounts.lock().await;
 
@@ -365,6 +371,8 @@ async fn change_password(
     State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
+    password_change_request.validate_inputs()?;
+
     let credentials = get_user_credentials_by_id(&db, claims.sub)
         .await?
         .ok_or(ApiError::DatabaseException)?;

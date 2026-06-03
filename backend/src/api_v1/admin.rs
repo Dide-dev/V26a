@@ -16,7 +16,9 @@ use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 use crate::db::feedback::{get_all_feedback, get_feedback_count};
-use crate::db_structs::{feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData};
+use crate::db_structs::{
+    Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
+};
 
 use crate::db::users::get_user_by_email;
 use crate::{
@@ -155,6 +157,7 @@ async fn update_user_data(
     State(state): State<ArcState>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
+    new_data.validate_inputs()?;
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
@@ -162,7 +165,7 @@ async fn update_user_data(
     // This lock should not be released until the user is updated.
     let pending_accounts = state.pending_accounts.lock().await;
 
-    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
+    let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
     let found_pending_username = pending_accounts
         .values()
         .any(|r| r.register_data.name.to_lowercase() == new_data.name.to_lowercase());
@@ -224,6 +227,7 @@ async fn change_password(
     Path(user_id): Path<i32>,
     Json(new_password): Json<AdminPasswordChangeRequestBody>,
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
+    new_password.validate_inputs()?;
     update_password(
         &db,
         user_id,
