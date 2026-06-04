@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::db_structs::classrooms::{
-    ClassroomAddData, ClassroomAddReturnData, ClassroomListResponse,
+    ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse,
 };
 use crate::db_structs::users::RegisterData;
 use crate::tests::api_v1::{login, register, register_admin, setup, setup_login};
@@ -25,7 +25,7 @@ async fn test_new_classroom(db: PgPool) {
     let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
-    let classroom_created_data = response.json::<ClassroomAddReturnData>();
+    let classroom_created_data = response.json::<ClassroomGeneratedData>();
 
     let allowed_chars: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".chars().collect();
 
@@ -60,10 +60,7 @@ async fn test_get_classrooms(db: PgPool) {
         description: String::new(),
     };
 
-    let response = server
-        .post("/classrooms/add")
-        .json(&classroom_add_data)
-        .await;
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
     let user_id = 1;
@@ -93,10 +90,7 @@ async fn test_get_classrooms_as_admin(db: PgPool) {
         description: String::new(),
     };
 
-    let response = server
-        .post("/classrooms/add")
-        .json(&classroom_add_data)
-        .await;
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
     login(&server, account2.email).await;
@@ -128,10 +122,7 @@ async fn test_get_classroom_forbidden(db: PgPool) {
         description: String::new(),
     };
 
-    let response = server
-        .post("/classrooms/add")
-        .json(&classroom_add_data)
-        .await;
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
     login(&server, account2.email).await;

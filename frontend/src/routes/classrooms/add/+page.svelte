@@ -8,7 +8,7 @@
     import {
         addClassroom,
         type ClassroomAddData,
-        type ClassroomAddReturnData
+        type ClassroomGeneratedData
     } from '$lib/api-wrapper/classrooms';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
@@ -47,7 +47,7 @@
 
     async function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
-        let classroomGenData: ClassroomAddReturnData = await addClassroom(classroomData);
+        let classroomGenData: ClassroomGeneratedData = await addClassroom(classroomData);
 
         await goto(appLink(`/classrooms/teacher-dashboard?id=${classroomGenData.id}`));
     }

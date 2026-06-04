@@ -54,7 +54,7 @@ impl Validated for ClassroomAddData {
 /// The data that is returned to the user after creation of the classroom.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassroomAddReturnData {
+pub struct ClassroomGeneratedData {
     pub id: i32,
     pub join_code: String,
 }
