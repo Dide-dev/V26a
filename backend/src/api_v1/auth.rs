@@ -14,7 +14,7 @@ use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
 use axum::extract::State;
-use axum::routing::post;
+use axum::routing::{delete, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use serde::{Deserialize, Serialize};
@@ -25,8 +25,8 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
     Router::new()
-        .route("/login", post(login).layer(rate_limit_layer(15, 30)))
-        .route("/logout", post(logout))
+        .route("/", post(login).layer(rate_limit_layer(15, 30)))
+        .route("/", delete(logout))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -39,7 +39,7 @@ pub struct LoginResponse {
 
 #[utoipa::path(
     post,
-    path = "/login",
+    path = "",
     context_path = "/api/v1/auth",
     request_body = LoginRequestBody,
     responses(
@@ -123,8 +123,8 @@ async fn login(
 }
 
 #[utoipa::path(
-    post,
-    path = "/logout",
+    delete,
+    path = "",
     context_path = "/api/v1/auth",
     responses(
         (status = 200, description = "User successfully logged out."),

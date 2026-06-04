@@ -6,7 +6,7 @@
 
 import { apiCallPost } from './index';
 
-const prefix = 'feedback/';
+const prefix = 'feedback';
 
 function apiCallPostFeedback(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
@@ -20,5 +20,5 @@ export type FeedbackData = {
 
 /** Add feedback to the database. */
 export function provideFeedback(feedback: FeedbackData) {
-    return apiCallPostFeedback('provide', feedback);
+    return apiCallPostFeedback('', feedback);
 }

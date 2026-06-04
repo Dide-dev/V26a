@@ -22,7 +22,7 @@ async fn test_login_fail(db: PgPool) {
     register(&server, &register_data).await;
 
     let response = server
-        .post("/auth/login")
+        .post("/auth")
         .json(&LoginRequestBody {
             email: "Caesar@gmail.com".to_owned(),
             password: "banana".to_owned(),
@@ -53,7 +53,7 @@ async fn test_logout_success(db: PgPool) {
     let token: String = get_cookie_data(&cookie);
 
     let _response = server
-        .post("/auth/logout")
+        .delete("/auth")
         .add_cookie(Cookie::new("session", token.clone()))
         .await;
 
@@ -79,10 +79,7 @@ async fn test_logout_failure(db: PgPool) {
     register(&server, &register_data).await;
 
     // logout is not possible without a valid session.
-    server
-        .post("/auth/logout")
-        .await
-        .assert_status_unauthorized();
+    server.delete("/auth").await.assert_status_unauthorized();
 }
 
 #[sqlx::test]
@@ -111,7 +108,7 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let original_cookie_data = get_cookie_data::<InfoCookieData>(&original_cookie);
 
     let response = server
-        .post("/users/update")
+        .put("/users/me")
         .json(&UserData {
             name: "Sidney".to_string(),
             nickname: "Cookie Monster".to_string(),
