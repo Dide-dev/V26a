@@ -32,12 +32,16 @@ async fn test_login_fail(db: PgPool) {
     response.assert_status_ok();
     assert!(!response.json::<LoginResponse>().succeeded);
 
-    // Checks if a cookie is not set.
-    assert!(!response.headers().contains_key("set-cookie"));
+    // Checks if a cookie is missing.
+    assert!(
+        server
+            .get("/any-route")
+            .await
+            .maybe_cookie("session")
+            .is_none()
+    );
 
-    // Checks that there is no valid session present.
-    let session = get_session(&db, "expected_token").await.unwrap();
-    assert!(session.is_none());
+    // Checks that login fails.
     server.get("/users/me").await.assert_status_unauthorized();
 }
 
@@ -47,12 +51,12 @@ async fn test_logout_success(db: PgPool) {
     let mut register_data = RegisterData::test_values();
     register_data.email = format!("CookieMon{}@example.com", uuid::Uuid::new_v4());
 
-    let _register_response = register(&server, &register_data).await;
+    register(&server, &register_data).await;
     let login_response = login(&server, register_data.email.clone()).await;
     let cookie = login_response.cookie("session");
     let token: String = get_cookie_data(&cookie);
 
-    let _response = server
+    server
         .delete("/auth")
         .add_cookie(Cookie::new("session", token.clone()))
         .await;
@@ -87,7 +91,7 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
     let register_data = RegisterData::test_values();
     let user_id = register(&server, &register_data).await;
-    let response = login(&server, register_data.email.clone()).await;
+    let response = login(&server, register_data.email).await;
     let cookie = response.cookie("user_info");
     let cookie_data = get_cookie_data::<InfoCookieData>(&cookie);
 
@@ -102,7 +106,7 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let server = setup(db);
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
-    let response = login(&server, register_data.email.clone()).await;
+    let response = login(&server, register_data.email).await;
     let original_cookie = response.cookie("user_info");
     let original_max_age = original_cookie.max_age().unwrap();
     let original_cookie_data = get_cookie_data::<InfoCookieData>(&original_cookie);

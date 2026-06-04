@@ -15,8 +15,8 @@ use sqlx::PgPool;
 
 async fn get_claims(parts: &mut Parts, _state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.
-    let jar = CookieJar::from_headers(&parts.headers);
-    let auth_cookie = jar
+    let token = CookieJar::from_headers(&parts.headers);
+    let auth_cookie = token
         .get("session")
         .ok_or(ApiError::MissingAuthentication)?
         .value();
@@ -79,7 +79,7 @@ impl FromRequestParts<ArcState> for Option<Claims> {
     /// - The user does not have a session cookie,
     /// - The cookies can not be extracted from the request,
     /// - The user's session has expired,
-    /// - The user's session can not be decrypted,
+    /// - A database query requesting the session data failed.
     async fn from_request_parts(
         parts: &mut Parts,
         state: &ArcState,

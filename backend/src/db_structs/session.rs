@@ -8,8 +8,7 @@ use crate::db_structs::users::AccountType;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// The claims specifies the subject (user id) and the
-/// expiration time.
+/// The claims specify the user, expiration time and account type of the request's sender.
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Claims {
@@ -17,7 +16,7 @@ pub struct Claims {
     pub sub: i32,
     /// The expiration time (as UTC timestamp).
     pub exp: i64,
-    /// the account type
+    /// The account type
     pub account_type: AccountType,
 }
 

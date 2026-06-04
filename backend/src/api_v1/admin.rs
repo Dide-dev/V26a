@@ -17,7 +17,7 @@ use sqlx::PgPool;
 
 use crate::db::{
     feedback::{get_all_feedback, get_feedback_count},
-    session::delete_all_sessions,
+    session::delete_all_sessions_user,
 };
 use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
@@ -156,9 +156,10 @@ async fn update_user_data(
     Path(user_id): Path<i32>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
+    new_data.validate_inputs()?;
+
     let mut transaction = db.begin().await?;
 
-    new_data.validate_inputs()?;
     if !user_id_exists(&mut *transaction, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
@@ -174,7 +175,7 @@ async fn update_user_data(
     admin_update_user(&mut *transaction, user_id, &new_data).await?;
 
     if !new_data.enabled {
-        delete_all_sessions(&mut *transaction, user_id).await?;
+        delete_all_sessions_user(&mut *transaction, user_id).await?;
     }
 
     transaction.commit().await?;
@@ -231,10 +232,11 @@ async fn change_password(
     .await?;
 
     // All sessions of the account are invalidated if password is changed.
-    delete_all_sessions(&db, user_id).await?;
+    delete_all_sessions_user(&db, user_id).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
+
 #[utoipa::path(
     get,
     path = "/users/{user_id}",

@@ -141,7 +141,7 @@ async fn login(
 /// `jar` - The jar with the cookies (`user_info` & session).
 ///
 /// # Returns
-/// The cookie jar with its user sessions removed
+/// The cookie jar with its user sessions removed.
 ///
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).

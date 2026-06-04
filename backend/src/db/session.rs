@@ -49,7 +49,7 @@ pub async fn get_session(db: impl PgExecutor<'_>, token: &str) -> Result<Option<
     Ok(claims)
 }
 
-/// Insert a new session into the database.
+/// Create a new session for a user and insert it into the database.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -110,7 +110,10 @@ pub async fn delete_session(db: impl PgExecutor<'_>, token: &str) -> Result<(), 
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn delete_all_sessions(db: impl PgExecutor<'_>, user_id: i32) -> Result<(), ApiError> {
+pub async fn delete_all_sessions_user(
+    db: impl PgExecutor<'_>,
+    user_id: i32,
+) -> Result<(), ApiError> {
     query!("DELETE FROM sessions WHERE user_id = $1", user_id,)
         .execute(db)
         .await?;
@@ -195,13 +198,13 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn test_delete_all_sessions(db: PgPool) {
+    async fn test_delete_all_sessions_user(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
 
         create_session(&db, user_id, 3600).await.unwrap();
         create_session(&db, user_id, 3600).await.unwrap();
 
-        delete_all_sessions(&db, user_id).await.unwrap();
+        delete_all_sessions_user(&db, user_id).await.unwrap();
 
         let claims1 = get_session(&db, "token-1").await.unwrap();
         let claims2 = get_session(&db, "token-2").await.unwrap();

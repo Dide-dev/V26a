@@ -7,7 +7,7 @@
 use crate::ArcState;
 use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
-use crate::db::session::{delete_all_sessions, delete_all_sessions_except};
+use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
@@ -193,7 +193,6 @@ async fn update_user_data(
 
     update_user(&db, claims.sub, &new_data).await?;
 
-    let old_exp = claims.exp;
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
@@ -201,7 +200,7 @@ async fn update_user_data(
         account_type: claims.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
-    let time = Duration::seconds(old_exp - Utc::now().timestamp());
+    let time = Duration::seconds(claims.exp - Utc::now().timestamp());
     let user_cookie = Cookie::build(("user_info", new_user_info))
         .path("/")
         .secure(true)
@@ -339,7 +338,7 @@ async fn delete_user_data(
     delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
     // Invalidate all the sessions based on userid.
-    delete_all_sessions(&mut *transaction, claims.sub).await?;
+    delete_all_sessions_user(&mut *transaction, claims.sub).await?;
 
     transaction.commit().await?;
 

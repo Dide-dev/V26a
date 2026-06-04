@@ -209,7 +209,7 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_delete_nonexistent_user(db: PgPool) {
+async fn test_delete_user(db: PgPool) {
     let server = setup(db);
 
     let register_data = RegisterData::test_values();
