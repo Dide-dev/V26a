@@ -118,12 +118,12 @@ async fn get_all_owned_classrooms(
     Path(user_id): Path<i32>,
     Query(page): Query<OptionalPaginationOptions>,
 ) -> Result<Json<ClassroomListResponse>, ApiError> {
-    let page = page.to_some_with_default(1, 50, 1000, 100)?;
-
-    let mut transaction = db.begin().await?;
-    let classroom_count = get_classroom_count(&mut *transaction, user_id).await?;
-
     if claims.account_type == AccountType::Admin || claims.sub == user_id {
+        let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+        let mut transaction = db.begin().await?;
+        let classroom_count = get_classroom_count(&mut *transaction, user_id).await?;
+
         let classrooms = get_all_classrooms(&mut *transaction, user_id, &page).await?;
         transaction.commit().await?;
         let list = ClassroomListResponse {
