@@ -57,11 +57,15 @@
             </div>
 
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
-                <button class="mb- cursor-pointer rounded px-3 py-1" onclick={gotoLogin}
-                    >{m.login()}</button
+                <button
+                    type="submit"
+                    class="mb- cursor-pointer rounded px-3 py-1"
+                    onclick={gotoLogin}>{m.login()}</button
                 >
-                <button class="cursor-pointer rounded px-3 py-1" onclick={gotoRegister}
-                    >{m.register()}</button
+                <button
+                    type="submit"
+                    class="cursor-pointer rounded px-3 py-1"
+                    onclick={gotoRegister}>{m.register()}</button
                 >
             </div>
         </form>

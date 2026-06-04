@@ -287,7 +287,8 @@
                 </p>
             </div>
 
-            <button class="cursor-pointer rounded px-3 py-1" onclick={gotoLogin}>{m.login()}</button
+            <button type="submit" class="cursor-pointer rounded px-3 py-1" onclick={gotoLogin}
+                >{m.login()}</button
             >
         </form>
     {/if}
