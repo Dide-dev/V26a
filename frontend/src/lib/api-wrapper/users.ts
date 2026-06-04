@@ -108,7 +108,7 @@ export function addUser(
 
 /** Delete a user in the database */
 export function deleteUser(deleteTrees: boolean): Promise<void> {
-    return apiCallDeleteUser(`/?deleteOwnedTrees=${deleteTrees}`);
+    return apiCallDeleteUser(`?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */
