@@ -16,9 +16,9 @@ mod state;
 mod tasks;
 mod tests;
 
-use crate::tasks::state_cleaner;
 use crate::api_v1::rate_limit_layer;
 use crate::errors::ApiError;
+use crate::tasks::state_cleaner;
 use crate::{api_v1::v1_api, config::Config, state::ArcState};
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;

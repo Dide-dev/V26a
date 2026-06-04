@@ -38,7 +38,7 @@ pub struct Config {
     pub max_upload_size: usize,
 
     pub mailer: Arc<dyn Mailer>,
-    
+
     /// Ratelimiter config (minute)
     pub rate_limit_per_minute: u64,
     pub rate_limit_burst_size: u32,

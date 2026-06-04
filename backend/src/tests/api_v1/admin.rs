@@ -154,12 +154,10 @@ async fn test_admin_update_pending_user(db: PgPool) {
         email: other_user.email,
         enabled: true,
         account_type: AccountType::Admin,
-        data: UserData {
+        data: UserGeneralData {
             name: pending_user.data.name,
             nickname: "bob".to_string(),
             about_me: "I'm still bob".to_string(),
-            email_visible: false,
-            language: UserLanguage::En,
         },
     };
     let response = server
@@ -176,12 +174,10 @@ async fn test_admin_update_pending_user(db: PgPool) {
         email: pending_user.email,
         enabled: true,
         account_type: AccountType::Admin,
-        data: UserData {
+        data: UserGeneralData {
             name: "first".to_string(),
             nickname: "bob".to_string(),
             about_me: "I'm still bob".to_string(),
-            email_visible: false,
-            language: UserLanguage::En,
         },
     };
     let response = server
