@@ -87,7 +87,7 @@ impl Config {
             .parse()
             .expect("Failed to parse environment variable SESSION_EXPIRATION_SECONDS");
         let verification_timer = env::var("VERIFICATION_TIMER_SECONDS")
-            .expect("Environment variable VERIFICATION_TIMER_SECONDS must be set")
+            .unwrap_or("900".to_owned())
             .parse()
             .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
         let jwt_keys = Keys::new(
