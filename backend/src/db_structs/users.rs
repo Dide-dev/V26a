@@ -10,9 +10,12 @@ use crate::limits::{
     PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
+use tracing::log::info;
 use utoipa::ToSchema;
 
 /// Data the user can modify, except email and password.
@@ -188,6 +191,25 @@ impl Validated for RegisterData {
 pub struct PendingRegisterData {
     pub register_data: RegisterData,
     pub expires: i64,
+}
+
+pub trait PendingAccountsExt {
+    fn remove_expired(&mut self);
+}
+
+impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
+    fn remove_expired(&mut self) {
+        let before_len = self.len();
+
+        self.retain(|_, p| p.expires > Utc::now().timestamp());
+
+        // Subtraction with overflow is impossible, as there is a lock on the Map,
+        // and entries are only removed here.
+        let diff = before_len - self.len();
+        if diff != 0 {
+            info!("Removed {diff} pending accounts from cache.");
+        }
+    }
 }
 
 /// Data received when getting user data from the database.

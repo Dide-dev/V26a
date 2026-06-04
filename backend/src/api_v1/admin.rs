@@ -21,6 +21,7 @@ use crate::db_structs::{
 };
 
 use crate::db::users::get_user_by_email;
+use crate::db_structs::users::PendingAccountsExt;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
@@ -160,7 +161,10 @@ async fn update_user_data(
     }
 
     // This lock should not be released until the user is updated.
-    let pending_accounts = state.pending_accounts.lock().await;
+    let mut pending_accounts = state.pending_accounts.lock().await;
+
+    // Remove pending accounts in case they have not been pruned yet.
+    pending_accounts.remove_expired();
 
     let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
     let found_pending_username = pending_accounts

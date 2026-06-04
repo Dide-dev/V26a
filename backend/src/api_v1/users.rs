@@ -13,8 +13,8 @@ use crate::db::users::{
 };
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingRegisterData, RegisterData,
-    UserData, UserGetData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt,
+    PendingRegisterData, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
@@ -103,6 +103,9 @@ async fn add_new_user(
 
     {
         let mut pending_accounts = state.pending_accounts.lock().await;
+
+        // Remove pending accounts in case they have not been pruned yet.
+        pending_accounts.remove_expired();
 
         let found_user_id = get_user_by_email(&db, &user_data.email).await?;
         let found_pending_email = pending_accounts
@@ -300,7 +303,10 @@ async fn update_user_data(
     new_data.validate_inputs()?;
 
     // This lock should not be released until the user is updated.
-    let pending_accounts = state.pending_accounts.lock().await;
+    let mut pending_accounts = state.pending_accounts.lock().await;
+
+    // Remove pending accounts in case they have not been pruned yet.
+    pending_accounts.remove_expired();
 
     let found_user_id = get_user_by_name(&db, &new_data.name).await?;
     let found_pending_username = pending_accounts

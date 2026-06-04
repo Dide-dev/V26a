@@ -3,8 +3,8 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+use crate::db_structs::users::PendingAccountsExt;
 use crate::state::ArcState;
-use chrono::Utc;
 use std::time::Duration;
 use tokio::time;
 use tracing::log::info;
@@ -22,10 +22,8 @@ pub async fn task_handler(arc_state: ArcState) {
 
 pub async fn prune_unverified_accounts(arc_state: ArcState) {
     let mut pending_accounts = arc_state.pending_accounts.lock().await;
-    let before_count = pending_accounts.len();
-    pending_accounts.retain(|_, p| p.expires > Utc::now().timestamp());
-    let difference = before_count - pending_accounts.len();
-    info!("Pruning unverified accounts: {difference} pending accounts removed.");
+    pending_accounts.remove_expired();
+    info!("Automatically pruning unverified accounts.");
 }
 
 #[cfg(test)]
