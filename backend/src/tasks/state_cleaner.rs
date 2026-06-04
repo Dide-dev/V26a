@@ -38,7 +38,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_prune_unverified_accounts() {
-        dotenvy::dotenv().unwrap();
+        // Loading environment variables from the `.env` file is optional,
+        // because for example the CI configures it directly so the `.env` file is not present.
+        if let Err(err) = dotenvy::dotenv() {
+            assert!(
+                err.not_found(),
+                "The .env file was found but could not be loaded: {err}"
+            );
+        }
         let config = Config::load();
         let state = ArcState::new(config);
         let register_data = RegisterData::test_values();
