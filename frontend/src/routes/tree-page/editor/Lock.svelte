@@ -133,7 +133,7 @@
         <div class="flex gap-2">
             {#if localState.type === 'lockFailed'}
                 <button
-                    class="rounded bg-red-300 p-1"
+                    class="cursor-pointer rounded bg-red-300 p-1"
                     onclick={() => {
                         sendMessage({ type: 'force' });
                     }}
@@ -141,7 +141,9 @@
                     {m.forceKick()}
                 </button>
             {/if}
-            <button class="rounded bg-blue-300 p-1" onclick={retry}>{m.retry()}</button>
+            <button class="cursor-pointer rounded bg-blue-300 p-1" onclick={retry}>
+                {m.retry()}
+            </button>
         </div>
     </div>
 {/if}
