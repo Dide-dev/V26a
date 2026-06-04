@@ -64,14 +64,10 @@
 
     let localState = $state({ type: 'waiting' } as LocalState);
 
-    let protocol = $derived(window.location.protocol === 'http:' ? 'ws' : 'wss');
-    let url = $derived(
-        `${protocol}://${window.location.host}/api/v1/trees/${treeId}/acquire-edit-lock`
-    );
     let websocket: WebSocket;
 
     function initializeWebsocket() {
-        websocket = new WebSocket(url);
+        websocket = new WebSocket(`/api/v1/trees/${treeId}/acquire-edit-lock`);
         websocket.onmessage = (event) => {
             let message: BackendMessage = JSON.parse(event.data);
             localState = message;
