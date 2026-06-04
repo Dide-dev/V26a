@@ -7,7 +7,7 @@
 <script lang="ts">
     import {
         addClassroom,
-        type ClassroomAddData,
+        type ClassroomData,
         type ClassroomGeneratedData
     } from '$lib/api-wrapper/classrooms';
     import { goto } from '$app/navigation';
@@ -28,7 +28,7 @@
         }
     });
 
-    let classroomData: ClassroomAddData = $state({
+    let classroomData: ClassroomData = $state({
         name: '',
         description: ''
     });

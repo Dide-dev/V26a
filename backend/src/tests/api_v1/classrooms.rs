@@ -6,9 +6,7 @@
 
 #![cfg(test)]
 
-use crate::db_structs::classrooms::{
-    ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse,
-};
+use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData, ClassroomListResponse};
 use crate::db_structs::users::RegisterData;
 use crate::tests::api_v1::{login, register, register_admin, setup, setup_login};
 use sqlx::PgPool;
@@ -17,7 +15,7 @@ use sqlx::PgPool;
 async fn test_new_classroom(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -42,7 +40,7 @@ async fn test_new_classroom(db: PgPool) {
 async fn test_new_classroom_forbidden(db: PgPool) {
     let server = setup(db);
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -55,7 +53,7 @@ async fn test_new_classroom_forbidden(db: PgPool) {
 async fn test_get_classrooms(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -83,7 +81,7 @@ async fn test_get_classrooms_as_admin(db: PgPool) {
     register_admin(&server, &db, &account2).await;
     login(&server, account1.email).await;
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -113,7 +111,7 @@ async fn test_get_classroom_forbidden(db: PgPool) {
     register(&server, &account2).await;
     login(&server, account1.email).await;
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };

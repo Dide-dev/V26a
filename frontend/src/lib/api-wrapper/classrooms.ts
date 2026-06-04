@@ -21,7 +21,7 @@ function apiCallGetClassroom(path: string) {
 
 export type ClassroomId = number;
 
-export type ClassroomAddData = {
+export type ClassroomData = {
     name: string;
     description: Option<string>;
 };
@@ -29,24 +29,22 @@ export type ClassroomAddData = {
 export type ClassroomGeneratedData = {
     id: ClassroomId;
     joinCode: string;
-};
-
-export type ClassroomAllData = {
-    name: string;
-    description: Option<string>;
-    id: ClassroomId;
-    joinCode: string;
     createdAt: Date;
     ownerId: UserId;
 };
 
+export type ClassroomMetaData = {
+    data: ClassroomData;
+    genData: ClassroomGeneratedData;
+};
+
 export type ClassroomListResponse = {
     totalClassrooms: number;
-    classrooms: ClassroomAllData[];
+    classrooms: ClassroomMetaData[];
 };
 
 /** Add a classroom to the database */
-export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomGeneratedData> {
+export function addClassroom(classroomAddData: ClassroomData): Promise<ClassroomGeneratedData> {
     return apiCallPostClassroom('', classroomAddData);
 }
 
