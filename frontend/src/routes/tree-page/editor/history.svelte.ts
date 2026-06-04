@@ -4,8 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { addCard, updateCard, type CardData, type CardId } from '$lib/api-wrapper/cards';
+import { updateCard, type CardData, type CardId } from '$lib/api-wrapper/cards';
 import {
+    addCard,
     type TreeStructure,
     type Node,
     type TreeId,
@@ -90,19 +91,13 @@ export async function doMove(history: TreeHistory, nodeToMove: number[], newLoca
     parent.children.splice(parentIndex, 1);
     placementParent.children.splice(placementIndex, 0, node);
 
-    await updateTreeStructure({
-        id: history.treeId,
-        newStructure
-    });
+    await updateTreeStructure(history.treeId, newStructure);
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
 
 export async function doAddCard(history: TreeHistory, location: number[], card: CardData) {
-    const cardId = await addCard({
-        treeId: history.treeId,
-        data: card
-    });
+    const cardId = await addCard(history.treeId, card);
 
     const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const parent = followIndex(newStructure, location.slice(0, -1))!;
@@ -111,10 +106,7 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
         children: []
     });
 
-    await updateTreeStructure({
-        id: history.treeId,
-        newStructure
-    });
+    await updateTreeStructure(history.treeId, newStructure);
 
     const action: CardActionAdd = {
         type: 'cardAdd',
@@ -127,7 +119,7 @@ export async function doAddCard(history: TreeHistory, location: number[], card: 
 export async function doEditCard(history: TreeHistory, cardId: CardId, newCard: CardData) {
     const oldCard = history.currentCards[cardId];
 
-    await updateCard({ cardId, data: newCard });
+    await updateCard(cardId, newCard);
     const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     const action: CardActionUpdate = {
         type: 'cardUpdate',
@@ -148,11 +140,7 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
     const parentIndex = index[index.length - 1];
     parent.children.splice(parentIndex, 1, ...card.children);
 
-    await removeCardFromTree({
-        treeId: history.treeId,
-        cardId: card.cardId,
-        newStructure
-    });
+    await removeCardFromTree(history.treeId, card.cardId, newStructure);
 
     // Only now that the backend has accepted, commit locally
     const action: CardActionRemove = {
@@ -170,10 +158,7 @@ export async function doRootNodeMove(history: TreeHistory, index: number, newInd
     newStructure.rootNodes.splice(index, 1);
     newStructure.rootNodes.splice(newIndex, 0, rootnode);
 
-    await updateTreeStructure({
-        id: history.treeId,
-        newStructure
-    });
+    await updateTreeStructure(history.treeId, newStructure);
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
@@ -182,10 +167,7 @@ export async function doRootNodeEdit(history: TreeHistory, index: number, newLab
     const newStructure: TreeStructure = $state.snapshot(history.currentStructure);
     newStructure.rootNodes[index].label = newLabel;
 
-    await updateTreeStructure({
-        id: history.treeId,
-        newStructure
-    });
+    await updateTreeStructure(history.treeId, newStructure);
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
@@ -200,10 +182,7 @@ export async function doRootNodeDelete(history: TreeHistory, index: number) {
 
     newStructure.rootNodes.splice(index, 1);
 
-    await updateTreeStructure({
-        id: history.treeId,
-        newStructure
-    });
+    await updateTreeStructure(history.treeId, newStructure);
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
@@ -213,10 +192,7 @@ export async function doRootNodeAdd(history: TreeHistory, index: number, label: 
 
     newStructure.rootNodes.splice(index, 0, { label, children: [] });
 
-    await updateTreeStructure({
-        id: history.treeId,
-        newStructure
-    });
+    await updateTreeStructure(history.treeId, newStructure);
 
     commitActionLocal(history, newStructure, { type: 'none', sendStructureToBackend: true });
 }
@@ -244,46 +220,30 @@ async function performActionToBackend(
     switch (action.type) {
         case 'none': {
             if (action.sendStructureToBackend) {
-                await updateTreeStructure({
-                    id: history.treeId,
-                    newStructure
-                });
+                await updateTreeStructure(history.treeId, newStructure);
             }
             break;
         }
         case 'cardAdd': {
-            const newCardId = await addCard({
-                treeId: history.treeId,
-                data: action.card
-            });
+            const newCardId = await addCard(history.treeId, action.card);
 
             history.cardIdMapper.setMapping(action.cardId, newCardId);
 
             newStructure = mapStructureCardIds(history, newStructure);
             action = mapActionCardId(history, action);
 
-            await updateTreeStructure({
-                id: history.treeId,
-                newStructure
-            });
+            await updateTreeStructure(history.treeId, newStructure);
             // If the above api call fails the database and local state will both be consistent,
             // there will just be an unused card in the database.
 
             break;
         }
         case 'cardRemove': {
-            await removeCardFromTree({
-                treeId: history.treeId,
-                cardId: action.oldCardId,
-                newStructure
-            });
+            await removeCardFromTree(history.treeId, action.oldCardId, newStructure);
             break;
         }
         case 'cardUpdate': {
-            await updateCard({
-                cardId: action.cardId,
-                data: action.newCard
-            });
+            await updateCard(action.cardId, action.newCard);
             break;
         }
         default: {

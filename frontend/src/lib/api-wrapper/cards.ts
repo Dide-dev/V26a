@@ -4,15 +4,18 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet } from './index';
-import type { TreeId } from './trees';
+import { apiCallPost, apiCallGet, apiCallPut } from './index';
 import type { Option } from './types';
 import { isNullOrEmpty } from './trees';
 
-const prefix = 'cards/';
+const prefix = 'cards';
 
 function apiCallPostCard(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
+}
+
+function apiCallPutCard(path: string, body: unknown) {
+    return apiCallPut(prefix + path, body);
 }
 
 function apiCallGetCard(path: string) {
@@ -21,18 +24,6 @@ function apiCallGetCard(path: string) {
 
 export type CardId = number;
 export type LibraryCardId = number;
-
-/** The basic data of the card, including the tree it belongs to. */
-export type CardAddData = {
-    treeId: TreeId;
-    data: CardData;
-};
-
-/** The basic data required to update an existing card. */
-export type CardUpdateData = {
-    cardId: number;
-    data: CardData;
-};
 
 export type CardData = {
     front: string;
@@ -61,19 +52,14 @@ export type CardFilterOptions = {
     tags: string[];
 };
 
-/** Add a card to the database */
-export function addCard(card: CardAddData): Promise<CardId> {
-    return apiCallPostCard('add', card);
-}
-
 /** Update an existing card in the database */
-export function updateCard(card: CardUpdateData): Promise<void> {
-    return apiCallPostCard('update', card);
+export function updateCard(cardId: CardId, card: CardData): Promise<void> {
+    return apiCallPutCard(`/${cardId}`, card);
 }
 
 /** Add an existing card to the cards library */
 export function addCardToLibrary(card: LibraryCardAddData, cardId: CardId): Promise<LibraryCardId> {
-    return apiCallPostCard(`${cardId}/add-to-library`, card);
+    return apiCallPostCard(`/${cardId}`, card);
 }
 
 export function getFilterParams(filterOptions: CardFilterOptions): string {
@@ -98,5 +84,5 @@ export function getFilterParams(filterOptions: CardFilterOptions): string {
 /** Get the list of all trees satisfying some filters at a given page. */
 export function getFilteredList(filterOptions: CardFilterOptions): Promise<LibraryCardGetData[]> {
     const params: string = getFilterParams(filterOptions);
-    return apiCallGetCard(`get-library?${params}`);
+    return apiCallGetCard(`/library?${params}`);
 }

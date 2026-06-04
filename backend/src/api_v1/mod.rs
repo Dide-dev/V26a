@@ -7,6 +7,7 @@
 pub mod admin;
 pub mod auth;
 pub mod cards;
+pub mod cards_library;
 pub mod classrooms;
 pub mod feedback;
 pub mod images;
@@ -28,6 +29,7 @@ use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::key_extractor::KeyExtractor;
 
 use crate::ArcState;
+use crate::api_v1::cards_library::cards_library;
 use crate::api_v1::{
     admin::admin, cards::cards, classrooms::classrooms, feedback::feedback, images::images,
     trees::trees, users::users,
@@ -73,6 +75,7 @@ pub fn v1_api(state: ArcState) -> Router<ArcState> {
         .nest("/classrooms", classrooms())
         .nest("/feedback", feedback())
         .nest("/images", images())
+        .nest("/library", cards_library())
         .nest("/trees", trees())
         .nest("/users", users())
 }

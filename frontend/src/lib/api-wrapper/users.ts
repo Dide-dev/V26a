@@ -4,9 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet, apiCallDelete } from './index';
+import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 
-const prefix = 'users/';
+const prefix = 'users';
 
 function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
@@ -16,8 +16,12 @@ function apiCallVerifyUser(path: string) {
     return apiCallGet(prefix + path);
 }
 
+function apiCallPutUser(path: string, body: unknown) {
+    return apiCallPut(prefix + path, body);
+}
+
 function apiCallDeleteUser(path: string) {
-    return apiCallDelete(prefix + path);
+    return apiCallEmptyDelete(prefix + path);
 }
 
 function apiCallGetUser(path: string) {
@@ -111,7 +115,7 @@ export type ChangePasswordData = {
 export function addUser(
     user: RegisterData
 ): Promise<UserPending | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser('add', user);
+    return apiCallPostUser('', user);
 }
 
 /* Verify a pending user */
@@ -121,19 +125,19 @@ export function verifyUser(code: string): Promise<UserSuccess | UserInvalidVerif
 
 /** Delete a user in the database */
 export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
-    return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
+    return apiCallDeleteUser(`/${userId}?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
-    return apiCallGetUser('me');
+    return apiCallGetUser('/me');
 }
 
 /** Update a user's own data */
 export function updateUser(
     newData: UserData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser(`update`, newData);
+    return apiCallPutUser(`/me`, newData);
 }
 
 /**
@@ -155,5 +159,5 @@ export function getUserInfo(): UserInfo | null {
 export function changePassword(
     changePasswordData: ChangePasswordData
 ): Promise<ChangePasswordResponse> {
-    return apiCallPostUser('change-password', changePasswordData);
+    return apiCallPutUser('/me/password', changePasswordData);
 }

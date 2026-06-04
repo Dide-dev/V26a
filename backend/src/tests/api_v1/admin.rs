@@ -29,7 +29,7 @@ async fn test_get_all_users_non_admin(db: PgPool) {
     let server = test_state.server;
     login(&server, account2.email).await;
 
-    let response = server.get("/admin/all-user-data").await;
+    let response = server.get("/admin/users").await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
@@ -46,7 +46,7 @@ async fn test_get_all_users_admin(db: PgPool) {
     let server = test_state.server;
     login(&server, account1.email).await;
 
-    let response = server.get("/admin/all-user-data").await;
+    let response = server.get("/admin/users").await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
     let user_list: UserListResponse = response.json();
@@ -60,12 +60,12 @@ async fn test_get_one_user_non_admin(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&test_state, &account1).await;
+    let user_id = register(&test_state, &account1).await;
     register(&test_state, &account2).await;
     let server = test_state.server;
     login(&server, account2.email).await;
 
-    let response = server.get("/admin/users/1").await;
+    let response = server.get(&format!("/admin/users/{user_id}")).await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
@@ -80,12 +80,12 @@ async fn test_get_one_user_admin(db: PgPool) {
 
     // Create an account
     let user_account = RegisterData::test_values();
-    register(&test_state, &user_account).await;
+    let other_user_id = register(&test_state, &user_account).await;
 
     let server = test_state.server;
     login(&server, admin_account.email).await;
 
-    let response = server.get("/admin/users/2").await;
+    let response = server.get(&format!("/admin/users/{other_user_id}")).await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
     let user_data: AdminUpdateData = response.json();
@@ -119,13 +119,13 @@ async fn test_update_user(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&test_state, &account1).await;
+    let user_id = register(&test_state, &account1).await;
     register(&test_state, &account2).await;
     let server = test_state.server;
     login(&server, account2.email).await;
 
     let response = server
-        .post("/admin/users/1/update-data")
+        .put(&format!("/admin/users/{user_id}"))
         .json(&update_data)
         .await;
     // It should fail because the user is not an admin
@@ -200,13 +200,13 @@ async fn test_change_password(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&test_state, &account1).await;
+    let user_id = register(&test_state, &account1).await;
     register(&test_state, &account2).await;
     let server = test_state.server;
     login(&server, account2.email).await;
 
     let response = server
-        .post("/admin/users/1/update-password")
+        .put(&format!("/admin/users/{user_id}/password"))
         .json(&new_password)
         .await;
     // It should fail because the user is not an admin

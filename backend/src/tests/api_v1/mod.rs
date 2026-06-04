@@ -9,6 +9,7 @@
 mod admin;
 mod auth;
 mod cards;
+mod cards_library;
 mod classrooms;
 mod feedback;
 mod images;
@@ -128,7 +129,7 @@ async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
 async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
     let response = test_state
         .server
-        .post("/users/add")
+        .post("/users")
         .json(&register_data)
         .await;
     response.assert_status_ok();
@@ -182,7 +183,7 @@ async fn register_admin(
 /// `email` - The user's email address.
 async fn login(test_server: &TestServer, email: String) -> TestResponse {
     let response = test_server
-        .post("/auth/login")
+        .post("/auth")
         .json(&LoginRequestBody {
             email,
             password: RegisterData::test_values().password,
@@ -232,7 +233,7 @@ async fn create_tree(test_server: &TestServer) -> i32 {
         tree_data,
         tree_structure,
     };
-    let response = test_server.post("/trees/add").json(&tree_add_data).await;
+    let response = test_server.post("/trees").json(&tree_add_data).await;
     response.json()
 }
 

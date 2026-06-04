@@ -48,7 +48,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
     // Log in
     let response = server
-        .post("/auth/login")
+        .post("/auth")
         .json(&LoginRequestBody {
             email: register_data.email.clone(),
             password: register_data.password,
@@ -72,7 +72,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         language: UserLanguage::Nl,
     };
 
-    let response = server.post("/users/update").json(&update_data).await;
+    let response = server.put("/users/me").json(&update_data).await;
     response.assert_status_ok();
 
     let expected_user_data = UserGetData {
@@ -109,7 +109,7 @@ async fn test_successful_password_change(db: PgPool) {
     };
 
     let response = server
-        .post("/users/change-password")
+        .put("/users/me/password")
         .json(&change_password_data)
         .await;
 
@@ -123,7 +123,7 @@ async fn test_successful_password_change(db: PgPool) {
         password: change_password_data.new_password,
     };
 
-    let response = server.post("/auth/login").json(&login_data).await;
+    let response = server.post("/auth").json(&login_data).await;
 
     response.assert_status_ok();
 
@@ -146,7 +146,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
         new_password: "NewPa$$word1".to_owned(),
     };
     let response = server
-        .post("/users/change-password")
+        .put("/users/me/password")
         .json(&change_password_data)
         .await;
 
@@ -161,7 +161,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
         password: register_data.password,
     };
 
-    let response = server.post("/auth/login").json(&login_data).await;
+    let response = server.post("/auth").json(&login_data).await;
 
     response.assert_status_ok();
 
@@ -179,7 +179,7 @@ async fn test_delete_own_user(db: PgPool) {
     login(&server, register_data.email).await;
 
     let response = server
-        .delete(&format!("/users/{user_id}/delete?deleteOwnedTrees=false"))
+        .delete(&format!("/users/{user_id}?deleteOwnedTrees=false"))
         .await;
 
     response.assert_status_ok();
@@ -202,7 +202,7 @@ async fn test_delete_other_user(db: PgPool) {
     login(&server, account2.email).await;
 
     let response = server
-        .delete(&format!("/users/{user_id_1}/delete?deleteOwnedTrees=false"))
+        .delete(&format!("/users/{user_id_1}?deleteOwnedTrees=false"))
         .await;
 
     response.assert_status_forbidden();
@@ -217,8 +217,10 @@ async fn test_delete_nonexistent_user(db: PgPool) {
     let server = test_state.server;
     login(&server, register_data.email).await;
 
+    let missing_user_id = 0;
+
     let response = server
-        .delete("/users/99999/delete?deleteOwnedTrees=false")
+        .delete(&format!("/users/{missing_user_id}?deleteOwnedTrees=false"))
         .await;
 
     response.assert_status_bad_request();
