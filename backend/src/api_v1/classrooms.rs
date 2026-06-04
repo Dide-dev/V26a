@@ -9,7 +9,7 @@ use crate::db::classrooms::{
 };
 use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{
-    ClassroomAddData, ClassroomAddReturnData, ClassroomListResponse,
+    ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse,
 };
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
@@ -26,16 +26,17 @@ use sqlx::PgPool;
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
     Router::new()
-        .route("/add", post(add_new_classroom))
+        .route("/", post(add_new_classroom))
         .route("/get-by-user/{user_id}", get(get_all_owned_classrooms))
 }
 
 #[utoipa::path(
     post,
-    path = "/add",
+    path = "",
     context_path = "/api/v1/classrooms",
+    request_body = ClassroomAddData,
     responses(
-        (status = 200, description = "Successfully added new classroom."),
+        (status = 200, description = "Successfully added new classroom.", body = ClassroomGeneratedData),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error."),
     ),
@@ -51,7 +52,7 @@ pub fn classrooms() -> Router<ArcState> {
 /// `classroom_add_data` - The data used to create the classroom, as [`ClassroomAddData`].
 ///
 /// # Returns
-/// The id assigned to the new classroom and the generated join code in a [`ClassroomAddReturnData`].
+/// The id assigned to the new classroom and the generated join code in a [`ClassroomGeneratedData`].
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
@@ -61,13 +62,13 @@ async fn add_new_classroom(
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Json(classroom_add_data): Json<ClassroomAddData>,
-) -> Result<Json<ClassroomAddReturnData>, ApiError> {
+) -> Result<Json<ClassroomGeneratedData>, ApiError> {
     classroom_add_data.validate_inputs()?;
     let join_code = generate_random_code(get_connection!(db)).await?;
 
     let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
 
-    Ok(Json(ClassroomAddReturnData { id, join_code }))
+    Ok(Json(ClassroomGeneratedData { id, join_code }))
 }
 
 #[utoipa::path(

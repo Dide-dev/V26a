@@ -9,7 +9,7 @@ import type { Option } from '$lib/api-wrapper/types';
 import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
 import type { UserId } from './users';
 
-const prefix = 'classrooms/';
+const prefix = 'classrooms';
 
 function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
@@ -26,7 +26,7 @@ export type ClassroomAddData = {
     description: Option<string>;
 };
 
-export type ClassroomAddReturnData = {
+export type ClassroomGeneratedData = {
     id: ClassroomId;
     joinCode: string;
 };
@@ -46,8 +46,8 @@ export type ClassroomListResponse = {
 };
 
 /** Add a classroom to the database */
-export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomAddReturnData> {
-    return apiCallPostClassroom('add', classroomAddData);
+export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomGeneratedData> {
+    return apiCallPostClassroom('', classroomAddData);
 }
 
 /** Gets all the classrooms of a user from the database */
