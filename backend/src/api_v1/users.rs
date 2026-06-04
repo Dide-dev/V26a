@@ -19,7 +19,7 @@ use crate::db_structs::users::{
 use crate::errors::ApiError;
 
 use crate::api_v1::users::UserResponse::InvalidVerification;
-use crate::db_structs::Validated;
+use crate::db_structs::{Validated, parse_email};
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
@@ -95,7 +95,7 @@ async fn add_new_user(
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     user_data.validate_inputs()?;
-    let parsed_email: Address = user_data.email.parse()?;
+    let parsed_email: Address = parse_email(&user_data.email)?;
 
     let verification_code = {
         let mut rng = rand::rng();

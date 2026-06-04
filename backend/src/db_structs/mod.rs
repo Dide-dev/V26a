@@ -4,7 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::errors::ApiError;
-use crate::limits::{EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH};
+use crate::limits::{EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH};
+use lettre::Address;
 
 pub mod auth;
 pub mod cards;
@@ -76,26 +77,18 @@ pub fn validate_password(password: &str, field_name: &'static str) -> Result<(),
 /// Validates the given email address.
 ///
 /// # Returns
-///  [`Ok`] if the email address meets the requirements.
+/// [`Ok`] if the email address meets the requirements.
 ///
 /// # Errors
 /// Returns an [`InputLengthExceeded`](ApiError::InputLengthExceeded) if the password exceeds the maximum password length.
 ///
-/// Returns an [`InputLengthNotMet`](ApiError::InputLengthNotMet) if the password does not meet the minimum password length.
-///
-/// Returns an [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) if the email address does not have at least 1 '@'-symbol with at least 1 character in front and behind it.
-pub fn validate_email(email: &str) -> Result<(), ApiError> {
+/// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
+pub fn parse_email(email: &str) -> Result<Address, ApiError> {
     if email.chars().count() > EMAIL_MAX_LENGTH {
         return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
     }
-    if email.chars().count() < EMAIL_MIN_LENGTH {
-        return Err(ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH));
-    }
-    if email.split_terminator('@').count() < 2 || email.starts_with('@') {
-        return Err(ApiError::IllegalEmailAddress);
-    }
 
-    Ok(())
+    Ok(email.parse()?)
 }
 
 #[cfg(test)]
@@ -176,21 +169,18 @@ mod tests {
         invalid_data.email = "a@".to_owned();
         let response = invalid_data.validate_inputs();
         assert!(response.is_err());
-        assert_eq!(
-            response.unwrap_err(),
-            ApiError::InputLengthNotMet("email", EMAIL_MIN_LENGTH)
-        );
+        assert_eq!(response.unwrap_err(), ApiError::EmailParseError);
 
         // Register with an email address that is invalid.
         invalid_data.email = "brood@".to_owned();
         let response = invalid_data.validate_inputs();
         assert!(response.is_err());
-        assert_eq!(response.unwrap_err(), ApiError::IllegalEmailAddress);
+        assert_eq!(response.unwrap_err(), ApiError::EmailParseError);
 
         // Register with an email address that is invalid.
         invalid_data.email = "@brood".to_owned();
         let response = invalid_data.validate_inputs();
         assert!(response.is_err());
-        assert_eq!(response.unwrap_err(), ApiError::IllegalEmailAddress);
+        assert_eq!(response.unwrap_err(), ApiError::EmailParseError);
     }
 }

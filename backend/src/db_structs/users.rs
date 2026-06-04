@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::{Validated, validate_email, validate_password};
+use crate::db_structs::{Validated, parse_email, validate_password};
 use crate::errors::ApiError;
 use crate::limits::{
     PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
@@ -168,14 +168,13 @@ impl Validated for RegisterData {
     ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     ///
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
-    /// with at least 1 character in front of it and behind it.
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
     ///
     /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
 
-        validate_email(&self.email)?;
+        parse_email(&self.email)?;
 
         validate_password(&self.password, "password")?;
 
@@ -217,11 +216,10 @@ impl Validated for AdminUpdateData {
     ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     ///
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
-    /// with at least 1 character in front of it and behind it.
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
-        validate_email(&self.email)?;
+        parse_email(&self.email)?;
 
         Ok(())
     }

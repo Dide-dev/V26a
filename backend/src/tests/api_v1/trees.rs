@@ -15,7 +15,7 @@ use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
     TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
 };
-use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
+use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
@@ -977,22 +977,18 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let test_state = setup(db);
+
+    let register_data = RegisterData::test_values();
+    let co_author_register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
+    register(&test_state, &co_author_register_data).await;
+
+    let server = test_state.server;
+    login(&server, register_data.email).await;
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_register_data = RegisterData {
-        email: "co_author@email.com".to_owned(),
-        password: "4$$wOrd!".to_owned(),
-        data: UserData {
-            name: "CoAuthor".to_owned(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::En,
-        },
-    };
-    register(&server, &co_author_register_data).await;
     server
         .post(&format!(
             "/trees/{tree_id}/authorize/{}",
