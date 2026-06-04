@@ -219,6 +219,7 @@
     }
 
     async function handleCancel(e: Event) {
+        e.preventDefault();
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
@@ -255,28 +256,30 @@
             class={[formChanged && 'completed']}
             onsubmit={(event) => handleSubmit(event, userData)}
         >
-            <h1 class="page__title">{m.profileOf({ id: id })}</h1>
+            <h1 class="page__title">{m.profileOf({ username: userData.data.name })}</h1>
             <h2 class="page__heading">{m.general()}</h2>
             <div>
                 <label for="email">{m.email()}</label>
-                <input
-                    id="email"
-                    class={[
-                        !inputsChanged.emailChanged && 'inactive',
-                        emailAlreadyExists && 'error',
-                        'input__text'
-                    ]}
-                    bind:value={userData.email}
-                    name="email"
-                    type="email"
-                    data-testid="email"
-                    minlength={minInputLengths.email}
-                    maxlength={maxInputLengths.email}
-                    oninput={() => {
-                        inputsChanged.emailChanged = true;
-                    }}
-                    required
-                />
+                <div class="input__container">
+                    <input
+                        id="email"
+                        class={[
+                            !inputsChanged.emailChanged && 'inactive',
+                            emailAlreadyExists && 'error',
+                            'input__text'
+                        ]}
+                        bind:value={userData.email}
+                        name="email"
+                        type="email"
+                        data-testid="email"
+                        minlength={minInputLengths.email}
+                        maxlength={maxInputLengths.email}
+                        oninput={() => {
+                            inputsChanged.emailChanged = true;
+                        }}
+                        required
+                    />
+                </div>
                 {#if emailAlreadyExists}
                     <p class="text__error" data-testid="error">{m.emailAlreadyExists()}</p>
                 {/if}
@@ -420,8 +423,8 @@
                 {/if}
             </div>
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
-                <button data-testid="confirm-button">{m.confirmChanges()}</button>
-                <button onclick={handleCancel}>{m.cancel()}</button>
+                <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
+                <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
         </form>
     {/await}
