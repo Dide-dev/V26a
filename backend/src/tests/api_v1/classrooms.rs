@@ -19,7 +19,10 @@ async fn test_new_classroom(db: PgPool) {
         description: String::new(),
     };
 
-    let response = server.post("/classrooms").json(&classroom_add_data).await;
+    let response = server
+        .post("/classrooms/add")
+        .json(&classroom_add_data)
+        .await;
     response.assert_status_ok();
 
     let classroom_created_data = response.json::<ClassroomGeneratedData>();
@@ -44,6 +47,9 @@ async fn test_new_classroom_forbidden(db: PgPool) {
         description: String::new(),
     };
 
-    let response = server.post("/classrooms").json(&classroom_add_data).await;
+    let response = server
+        .post("/classrooms/add")
+        .json(&classroom_add_data)
+        .await;
     response.assert_status_unauthorized();
 }

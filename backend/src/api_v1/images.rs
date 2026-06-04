@@ -24,12 +24,12 @@ use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<ArcState> {
-    Router::new().route("/", post(add_new_image).layer(rate_limit_layer(10, 20)))
+    Router::new().route("/add", post(add_new_image).layer(rate_limit_layer(10, 20)))
 }
 
 #[utoipa::path(
     post,
-    path = "",
+    path = "/add",
     context_path = "/api/v1/images",
     request_body(
         content(
@@ -41,7 +41,7 @@ pub fn images() -> Router<ArcState> {
         ),
     ),
     responses(
-        (status = 200, description = "Image successfully added.", body = String),
+        (status = 200, description = "Image successfully added."),
         (status = 400, description = ApiError::NoImageBodyProvidedException.to_string()),
         (status = 400, description = ApiError::InvalidImageType.to_string()),
         (status = 429, description = "Ratelimit exceeded."),

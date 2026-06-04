@@ -6,7 +6,7 @@
 
 import { apiCallPostFile } from './index';
 
-const prefix = 'images';
+const prefix = 'images/';
 
 function apiCallPostImage(path: string, body: File) {
     return apiCallPostFile(prefix + path, body);
@@ -14,7 +14,7 @@ function apiCallPostImage(path: string, body: File) {
 
 /** Add an image to the database. Returns the path on which the image can be found. */
 export async function uploadImage(imageFile: File): Promise<string> {
-    const path = await apiCallPostImage('', imageFile);
+    const path = await apiCallPostImage('add', imageFile);
 
     // This path should never be explored, but needs to be specified to remove undefined from the union type.
     if (path === undefined) {

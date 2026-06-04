@@ -111,7 +111,7 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let original_cookie_data = get_cookie_data::<InfoCookieData>(&original_cookie);
 
     let response = server
-        .put("/users/me")
+        .post("/users/update")
         .json(&UserData {
             name: "Sidney".to_string(),
             nickname: "Cookie Monster".to_string(),

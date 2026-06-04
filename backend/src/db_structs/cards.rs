@@ -13,6 +13,22 @@ use crate::limits::{
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
+/// The basic data of the card, including the tree it belongs to.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CardAddData {
+    pub tree_id: i32,
+    pub data: CardData,
+}
+
+/// The basic data required to update an existing card.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CardUpdateData {
+    pub card_id: i32,
+    pub data: CardData,
+}
+
 /// The basic data of the card
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

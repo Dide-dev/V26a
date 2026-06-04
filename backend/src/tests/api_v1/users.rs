@@ -32,7 +32,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         },
     };
 
-    let response = server.post("/users").json(&register_data).await;
+    let response = server.post("/users/add").json(&register_data).await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
     let UserResponse::Success { user_id: _ } = response else {
@@ -53,7 +53,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
     // Log in
     let response = server
-        .post("/auth")
+        .post("/auth/login")
         .json(&LoginRequestBody {
             email: register_data.email.clone(),
             password: register_data.password,
@@ -77,7 +77,7 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         language: UserLanguage::Nl,
     };
 
-    let response = server.put("/users/me").json(&update_data).await;
+    let response = server.post("/users/update").json(&update_data).await;
     response.assert_status_ok();
 
     let expected_user_data = UserGetData {
@@ -113,7 +113,7 @@ async fn test_successful_password_change(db: PgPool) {
     };
 
     let response = server
-        .put("/users/me/password")
+        .post("/users/change-password")
         .json(&change_password_data)
         .await;
 
@@ -127,7 +127,7 @@ async fn test_successful_password_change(db: PgPool) {
         password: change_password_data.new_password,
     };
 
-    let response = server.post("/auth").json(&login_data).await;
+    let response = server.post("/auth/login").json(&login_data).await;
 
     response.assert_status_ok();
 
@@ -149,7 +149,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
         new_password: "NewPa$$word1".to_owned(),
     };
     let response = server
-        .put("/users/me/password")
+        .post("/users/change-password")
         .json(&change_password_data)
         .await;
 
@@ -164,7 +164,7 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
         password: register_data.password,
     };
 
-    let response = server.post("/auth").json(&login_data).await;
+    let response = server.post("/auth/login").json(&login_data).await;
 
     response.assert_status_ok();
 
@@ -209,14 +209,17 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_delete_nonexistent_user(db: PgPool) {
+async fn test_delete_own_user(db: PgPool) {
     let server = setup(db);
 
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
+
     let response = server.delete("/users/delete?deleteOwnedTrees=false").await;
+
     response.assert_status_ok();
+
     // Check if cookies are unset after deletion.
     assert!(
         server
@@ -257,4 +260,13 @@ async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
         .await
         .unwrap();
     assert_eq!(sessions, Some(0));
+}
+
+#[sqlx::test]
+async fn test_delete_nonexistent_user(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.delete("/users/delete?deleteOwnedTrees=false").await;
+
+    response.assert_status_unauthorized();
 }
