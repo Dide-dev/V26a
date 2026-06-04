@@ -10,7 +10,7 @@ use axum::{
     extract::{Path, State},
     middleware::{self, Next},
     response::Response,
-    routing::{get, post},
+    routing::{get, put},
 };
 use axum_extra::extract::Query;
 use sqlx::PgPool;
@@ -54,17 +54,16 @@ async fn check_if_admin(
 /// All paths are going through a middleware to check if the user is an admin.
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
-        .route("/all-user-data", get(get_all_user_data))
-        .route("/users/{userId}", get(get_user_data))
-        .route("/users/{user_id}/update-data", post(update_user_data))
-        .route("/users/{user_id}/update-password", post(change_password))
-        .route("/get-feedback", get(get_feedback))
+        .route("/users", get(get_all_user_data))
+        .route("/users/{user_id}", get(get_user_data).put(update_user_data))
+        .route("/users/{user_id}/password", put(change_password))
+        .route("/feedback", get(get_feedback))
         .route_layer(middleware::from_fn_with_state(state, check_if_admin))
 }
 
 #[utoipa::path(
     get,
-    path = "/all-user-data",
+    path = "/users",
     context_path = "/api/v1/admin",
     responses(
         (status = 200, description = "Successfully retrieved data.", body = UserListResponse),
@@ -116,8 +115,8 @@ async fn get_all_user_data(
 }
 
 #[utoipa::path(
-    post,
-    path = "/users/{user_id}/update-data",
+    put,
+    path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     request_body = AdminUpdateData,
     responses(
@@ -184,8 +183,8 @@ async fn update_user_data(
 }
 
 #[utoipa::path(
-    post,
-    path = "/users/{user_id}/update-password",
+    put,
+    path = "/users/{user_id}/password",
     context_path = "/api/v1/admin",
     request_body = AdminPasswordChangeRequestBody,
     responses(
@@ -282,7 +281,7 @@ async fn get_user_data(
 
 #[utoipa::path(
     get,
-    path = "/get-feedback",
+    path = "/feedback",
     context_path = "/api/v1/admin",
     responses(
         (status = 200, description = "Feedback successfully retrieved.", body = FeedbackListResponse),
