@@ -87,7 +87,11 @@
     --spacing-card-height-md: calc(var(--spacing) * 16);
     --spacing-card-height-sm: calc(var(--spacing) * 8);
 
-    --spacing-card-width-md: calc(var(--spacing) * 72);
+    --spacing-card-width-lg: calc(var(--spacing) * 72);
+    --spacing-card-width-md: calc(var(--spacing) * 40);
     --spacing-card-width-sm: calc(var(--spacing) * 24);
     --spacing-card-width-xs: calc(var(--spacing) * 4);
+
+    /* Spacing visual editor */
+    --spacing-text-area: calc(var(--spacing) * 64);
 }

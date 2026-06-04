@@ -25,6 +25,7 @@
     import LineDrawings from './LineDrawer.svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import type { BranchColor } from '$lib/treePage';
+    import { m } from '$lib/paraglide/messages.js';
 
     let {
         node,
@@ -67,9 +68,10 @@
             class={[
                 !rootOpen && 'closed',
                 node.children.length > 0 && 'hover:text-neutral-600',
-                'root mr-1 mb-5 ml-1 h-fit w-32 shrink-0 cursor-pointer text-right wrap-anywhere *:*:justify-end'
+                'root mr-1 mb-5 ml-1 flex h-fit w-card-width-md shrink-0 cursor-pointer flex-row gap-2 text-right wrap-anywhere *:*:justify-end'
             ]}
             onclick={toggleRoot}
+            title={rootOpen ? m.closeBranch() : m.openBranch()}
         >
             {#if node.children.length > 0}
                 <AnimatedUnderline
@@ -131,13 +133,15 @@
                 background-color: var(--color-neutral-500);
             }
 
-            &.closed::after {
-                content: '>';
-                position: absolute;
-                right: calc(var(--spacing) * -4);
-                top: 0;
-                font-size: large;
+            &::after {
+                content: '˅';
                 font-weight: var(--font-weight-bold);
+                transition: all 200ms ease-in-out;
+                height: fit-content;
+            }
+
+            &.closed::after {
+                transform: rotate(-90deg);
             }
         }
     }

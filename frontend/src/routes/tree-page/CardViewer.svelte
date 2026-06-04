@@ -90,7 +90,7 @@
     <button
         type="button"
         style="--background-color: {openColor}; --hover-color: {openHoverColor}; --border-color: {openBorderColor}"
-        class="card min-h-card-height-md w-card-width-md cursor-pointer overflow-x-auto p-1 wrap-anywhere"
+        class="card min-h-card-height-md w-card-width-lg cursor-pointer overflow-x-auto p-1 wrap-anywhere"
         onclick={blur}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -101,7 +101,7 @@
 {#snippet openableCard(card: CardData)}
     <button
         style="--background-color: {closedColor}; --hover-color: {hoverColor}; --border-color: {borderColor}"
-        class="card min-h-card-height-md w-card-width-md cursor-pointer overflow-x-auto p-1 text-center text-lg wrap-anywhere text-neutral-200 italic hover:text-neutral-100"
+        class="card min-h-card-height-md w-card-width-lg cursor-pointer overflow-x-auto p-1 text-center text-lg wrap-anywhere text-neutral-200 italic hover:text-neutral-100"
         onclick={makeRevealed}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
