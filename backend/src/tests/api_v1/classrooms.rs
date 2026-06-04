@@ -65,9 +65,7 @@ async fn test_get_classrooms(db: PgPool) {
 
     let user_id = 1;
 
-    let response2 = server
-        .get(&format!("/classrooms/get-by-user/{user_id}"))
-        .await;
+    let response2 = server.get(&format!("/users/{user_id}/classrooms")).await;
     response2.assert_status_ok();
 
     let classroom_list: ClassroomListResponse = response2.json();
@@ -97,9 +95,7 @@ async fn test_get_classrooms_as_admin(db: PgPool) {
 
     let user_id = 1;
 
-    let response2 = server
-        .get(&format!("/classrooms/get-by-user/{user_id}"))
-        .await;
+    let response2 = server.get(&format!("/users/{user_id}/classrooms")).await;
     response2.assert_status_ok();
 
     let classroom_list: ClassroomListResponse = response2.json();
@@ -129,9 +125,7 @@ async fn test_get_classroom_forbidden(db: PgPool) {
 
     let user_id = 1;
 
-    let response2 = server
-        .get(&format!("/classrooms/get-by-user/{user_id}"))
-        .await;
+    let response2 = server.get(&format!("/users/{user_id}/classrooms")).await;
     response2.assert_status_forbidden();
 }
 
@@ -141,8 +135,6 @@ async fn test_get_classrooms_unauthorized(db: PgPool) {
 
     let user_id = 1;
 
-    let response = server
-        .get(&format!("/classrooms/get-by-user/{user_id}"))
-        .await;
+    let response = server.get(&format!("/users/{user_id}/classrooms")).await;
     response.assert_status_unauthorized();
 }

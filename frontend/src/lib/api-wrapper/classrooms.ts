@@ -56,5 +56,5 @@ export function getAllOwnedClassrooms(
     pageOptions: PaginationOptions
 ): Promise<ClassroomListResponse> {
     const params: string = getPaginationParams(pageOptions);
-    return apiCallGetClassroom(`classroom/get-by-user/${userId}?${params}`);
+    return apiCallGetClassroom(`/users/${userId}/classrooms?${params}`);
 }
