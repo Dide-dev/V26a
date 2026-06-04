@@ -261,6 +261,11 @@ export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthori
     return apiCallPostTree(`/${treeId}/co-authors/${username}`, null);
 }
 
+/** Remove user as co-author from a tree. */
+export function removeCoAuthor(treeId: TreeId, username: string): Promise<void> {
+    return apiCallDeleteTree(`/${treeId}/co-authors/${username}`);
+}
+
 /** Get the list of all languages. */
 export function getAllLanguages(): Promise<Language[]> {
     return apiCallGetTree('/languages');
