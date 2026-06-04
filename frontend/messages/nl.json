@@ -110,8 +110,6 @@
     "from": "vanaf",
     "through": "tot en met",
     "ownerId": "ID van de eigenaar",
-    "numberOfTrees": "Aantal bomen per pagina:",
-    "numberOfUsers": "Aantal gebruikers per pagina:",
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
@@ -168,5 +166,16 @@
     "verificationSuccessTitle": "Account geverifieerd",
     "verificationSuccessBody": "Je account is geverifieerd, je kan nu inloggen.",
     "verificationFailureTitle": "Verificatie mislukt",
-    "verificationFailureBody": "Je account kon niet worden geverifieerd. Je verificatiecode is mogelijk al verlopen of gebruikt. Log in of registreer alsjeblieft opnieuw."
+    "verificationFailureBody": "Je account kon niet worden geverifieerd. Je verificatiecode is mogelijk al verlopen of gebruikt. Log in of registreer alsjeblieft opnieuw.",
+    "noFeedbackFound": "Geen feedback gevonden",
+    "feedbackAddDate": "Datum ingezonden",
+    "numberPerPage": "Aantal {n} per pagina:",
+    "feedbackEntries": "feedbackberichten",
+    "users": "gebruikers",
+    "treesUncapitalized": "bomen",
+    "addCoAuthor": "Voeg co-auteur toe",
+    "successfulAuthorization": "Successvol co-auteur geautoriseerd",
+    "invalidAuthorisationTarget": "De gebruiker die je probeerde te autoriseren lijkt niet te bestaan",
+    "userAlreadyAuthorized": "De gebruiker die je probeert te autoriseren is al geautoriseerd.",
+    "manageCoAuthors": "Beheer co-auteurs"
 }

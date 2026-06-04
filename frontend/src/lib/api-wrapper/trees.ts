@@ -198,6 +198,11 @@ export function isNullOrEmpty(value: unknown): boolean {
     return value == null || (Array.isArray(value) && value.length === 0);
 }
 
+export type CoAuthorizeResponse =
+    | { type: 'Success' }
+    | { type: 'UsernameDoesNotExist' }
+    | { type: 'UserAlreadyAuthorized' };
+
 export function getPaginationAndFilterParams(
     pageOptions: PaginationOptions,
     filterOptions: FilterOptions
@@ -241,7 +246,7 @@ export function duplicateTree(treeId: TreeId): Promise<void> {
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, username: string) {
+export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`${treeId}/authorize/${username}`, null);
 }
 
@@ -271,8 +276,8 @@ export const minInputLengths = {
 
 /** The maximum input lengths of the tree metadata fields. */
 export const maxInputLengths = {
-    title: 128,
-    description: 256,
+    title: 100,
+    description: 500,
     tag: 32,
     bookName: 64,
     bookAuthor: 192,

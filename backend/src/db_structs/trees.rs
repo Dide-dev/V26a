@@ -10,8 +10,9 @@ use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
 use crate::limits::{
     TREE_ASSIGNMENT_MAX_LENGTH, TREE_BOOK_CHAPTER_MAX_LENGTH, TREE_BOOK_EDITION_MAX_LENGTH,
-    TREE_BOOK_EXERCISE_MAX_LENGTH, TREE_BOOK_ISBN_MAX_LENGTH, TREE_BOOK_NAME_MAX_LENGTH,
-    TREE_DESCRIPTION_MAX_LENGTH, TREE_TITLE_MAX_LENGTH,
+    TREE_BOOK_EXERCISE_MAX_LENGTH, TREE_BOOK_ISBN_MAX_LENGTH, TREE_BOOK_ISBN_MIN_LENGTH,
+    TREE_BOOK_NAME_MAX_LENGTH, TREE_DESCRIPTION_MAX_LENGTH, TREE_TAG_MAX_LENGTH,
+    TREE_TAG_MIN_LENGTH, TREE_TITLE_MAX_LENGTH, TREE_TITLE_MIN_LENGTH,
 };
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -291,7 +292,7 @@ pub struct TreeData {
 impl Default for TreeData {
     fn default() -> Self {
         Self {
-            title: String::new(),
+            title: "title".to_string(),
             language_code: "nl".to_owned(),
             tags: Vec::new(),
             description: String::new(),
@@ -331,7 +332,10 @@ impl FromRow<'_, PgRow> for TreeData {
 }
 
 impl Validated for TreeData {
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.title.chars().count() > TREE_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
@@ -384,6 +388,36 @@ impl Validated for TreeData {
                 "assignmentText",
                 TREE_ASSIGNMENT_MAX_LENGTH,
             ));
+        }
+
+        if self.title.chars().count() < TREE_TITLE_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("title", TREE_TITLE_MIN_LENGTH));
+        }
+        if self
+            .book_isbn
+            .as_ref()
+            .is_some_and(|s| s.chars().count() < TREE_BOOK_ISBN_MIN_LENGTH)
+        {
+            return Err(ApiError::InputLengthNotMet(
+                "bookIsbn",
+                TREE_BOOK_ISBN_MIN_LENGTH,
+            ));
+        }
+
+        for tag in &self.tags {
+            if tag.chars().count() > TREE_TAG_MAX_LENGTH {
+                return Err(ApiError::InputLengthExceeded("tag", TREE_TAG_MAX_LENGTH));
+            }
+            if tag.chars().count() < TREE_TAG_MIN_LENGTH {
+                return Err(ApiError::InputLengthNotMet("tag", TREE_TAG_MIN_LENGTH));
+            }
+            for char in tag.chars() {
+                let legal =
+                    char.is_ascii_alphanumeric() || char == '_' || char == '-' || char == '.';
+                if !legal {
+                    return Err(ApiError::IllegalTag);
+                }
+            }
         }
 
         Ok(())
@@ -440,6 +474,8 @@ pub struct TreeAddData {
 }
 
 impl Validated for TreeAddData {
+    /// # Errors
+    /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) when the structure is not empty.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.tree_data.validate_inputs()?;
         self.tree_structure.validate_inputs()?;

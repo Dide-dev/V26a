@@ -50,7 +50,7 @@
     const minInputLengths = {
         name: 4,
         nickname: 2,
-        email: 0,
+        email: 3,
         password: 8
     };
 

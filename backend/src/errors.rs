@@ -17,10 +17,16 @@ pub enum ApiError {
     //------------------//
     /// An error to be returned when `lettre` fails to parse an e-mail.
     EmailParseError,
-    /// An error to return when a name contains characters which fall outside of the accepted standard.
+    /// An error to return when a name contains characters outside the accepted standard.
     IllegalName,
+    /// An error to return when a password does not contain the appropriate characters.
+    IllegalPassword,
+    /// An error to return when a tag contains characters which fall outside the accepted standard.
+    IllegalTag,
     /// An error to return when an input provided is too long for the database.
     InputLengthExceeded(&'static str, usize),
+    /// An error to return when an input provided is too short to be valid.
+    InputLengthNotMet(&'static str, usize),
     /// An error to return when a user tries to authorize themselves as a co-author on their own tree.
     InvalidAuthorisationTarget,
     /// An error to return when an invalid image type is attempted to be put in the database.
@@ -156,10 +162,18 @@ impl Display for ApiError {
             //------------------//
             ApiError::EmailParseError => write!(f, "Could not parse email."),
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
+            ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
+            ApiError::IllegalTag => write!(f, "Tag contains illegal characters."),
             ApiError::InputLengthExceeded(offending_string, max_length) => {
                 write!(
                     f,
                     "Input in field \"{offending_string}\" exceeds the maximum length of {max_length} characters."
+                )
+            }
+            ApiError::InputLengthNotMet(offending_string, min_length) => {
+                write!(
+                    f,
+                    "Input in field \"{offending_string}\" does not meet the minimum length of {min_length} characters."
                 )
             }
             ApiError::InvalidAuthorisationTarget => {
@@ -270,7 +284,10 @@ impl ApiError {
         match &self {
             ApiError::EmailParseError
             | ApiError::IllegalName
+            | ApiError::IllegalPassword
+            | ApiError::IllegalTag
             | ApiError::InputLengthExceeded(_, _)
+            | ApiError::InputLengthNotMet(_, _)
             | ApiError::InvalidAuthorisationTarget
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
