@@ -100,10 +100,10 @@ test('save calls updateTreeMetaData with correct data', async () => {
     await user.type(screen.getByLabelText(m.description()), 'New Apple');
     await user.click(screen.getByText(m.confirmChanges()));
 
-    expect(updateTreeMetaData).toHaveBeenCalledWith({
-        id: 1,
-        newData: expect.objectContaining({ description: 'New Apple' })
-    });
+    expect(updateTreeMetaData).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ description: 'New Apple' })
+    );
 });
 
 test('dropdown closes after save', async () => {

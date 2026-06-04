@@ -20,7 +20,7 @@ use crate::errors::ApiError;
 
 use crate::db_structs::Validated;
 use axum::extract::{Path, State};
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
@@ -33,11 +33,10 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<ArcState> {
     Router::new()
-        .route("/add", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/me", get(get_own_user_data))
-        .route("/update", post(update_user_data))
-        .route("/change-password", post(change_password))
-        .route("/{user_id}/delete", delete(delete_user_data))
+        .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
+        .route("/me", get(get_own_user_data).put(update_user_data))
+        .route("/me/password", put(change_password))
+        .route("/{user_id}", delete(delete_user_data))
         .route("/{user_id}/public", get(get_public_user_data))
 }
 
@@ -54,7 +53,7 @@ pub enum UserResponse {
 
 #[utoipa::path(
     post,
-    path = "/add",
+    path = "",
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
@@ -145,8 +144,8 @@ async fn get_own_user_data(
 
 #[utoipa::path(
     get,
-    path = "/public",
-    context_path = "/api/v1/users/{user_id}",
+    path = "/{user_id}/public",
+    context_path = "/api/v1/users",
     responses(
         (status = 200, description = "Successfully retrieved public data of user.", body = PublicUserData),
         (status = 400, description = "User with given id cannot be found."),
@@ -177,8 +176,8 @@ async fn get_public_user_data(
 }
 
 #[utoipa::path(
-    post,
-    path = "/update",
+    put,
+    path = "/me",
     context_path = "/api/v1/users",
     request_body = UserData,
     responses(
@@ -199,7 +198,9 @@ async fn get_public_user_data(
 /// `new_data` - The new data of the user, as [`UserData`].
 ///
 /// # Returns
-/// Nothing.
+/// [`Success`](UserResponse::Success) with the id assigned to the new user, if successful,
+/// or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) if the username is already in use.
+/// Also updates the cookies.
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
@@ -255,8 +256,8 @@ pub struct ChangePasswordResponse {
 }
 
 #[utoipa::path(
-    post,
-    path = "/change-password",
+    put,
+    path = "/me/password",
     context_path = "/api/v1/users",
     request_body = PasswordChangeRequestBody,
     responses(
@@ -267,13 +268,14 @@ pub struct ChangePasswordResponse {
         ("session" = Claims, Cookie),
     )
 )]
-/// Changes a password in the database.
+/// Changes a user's own password in the database.
 ///
 /// # Arguments
-/// `password_change_request` - A struct containing the user's old password and the new password.
+/// `password_change_request` - The struct containing the user's old password and the new password,
+/// as [`PasswordChangeRequestBody`].
 ///
 /// # Returns
-/// Nothing.
+/// A boolean whether the password change was successful, as [`ChangePasswordResponse`].
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException) or
@@ -313,7 +315,7 @@ async fn change_password(
 
 #[utoipa::path(
     delete,
-    path = "/{user_id}/delete",
+    path = "/{user_id}",
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
@@ -333,8 +335,6 @@ async fn change_password(
 /// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
 ///
 /// # Arguments
-/// `jar` - The jar with the cookies (`user_info` & session).
-///
 /// `claims` - The session cookie of the user.
 ///
 /// `user_id` - The user to delete.

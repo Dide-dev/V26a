@@ -4,17 +4,21 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet, apiCallDelete } from './index';
+import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 import type { Option } from './types';
 
-const prefix = 'users/';
+const prefix = 'users';
 
 function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
+function apiCallPutUser(path: string, body: unknown) {
+    return apiCallPut(prefix + path, body);
+}
+
 function apiCallDeleteUser(path: string) {
-    return apiCallDelete(prefix + path);
+    return apiCallEmptyDelete(prefix + path);
 }
 
 function apiCallGetUser(path: string) {
@@ -81,7 +85,7 @@ export type UserGetData = {
     data: UserData;
 };
 
-/** The public data of a user's profile page. */
+/** The public data for a user's profile page. */
 export type PublicUserData = {
     name: string;
     nickname: string;
@@ -111,29 +115,29 @@ export type ChangePasswordData = {
 export function addUser(
     user: RegisterData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser('add', user);
+    return apiCallPostUser('', user);
 }
 
 /** Delete a user in the database */
 export function deleteUser(userId: UserId, deleteTrees: boolean): Promise<void> {
-    return apiCallDeleteUser(`/${userId}/delete?deleteOwnedTrees=${deleteTrees}`);
+    return apiCallDeleteUser(`/${userId}?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
-    return apiCallGetUser('me');
+    return apiCallGetUser('/me');
 }
 
 /** Get a user's public data. Is by default cached in a global variable, to reduce server load. */
 export function getPublicUserData(userId: UserId): Promise<PublicUserData> {
-    return apiCallGetUser(`${userId}/public`);
+    return apiCallGetUser(`/${userId}/public`);
 }
 
 /** Update a user's own data */
 export function updateUser(
     newData: UserData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser(`update`, newData);
+    return apiCallPutUser(`/me`, newData);
 }
 
 /**
@@ -155,5 +159,5 @@ export function getUserInfo(): UserInfo | null {
 export function changePassword(
     changePasswordData: ChangePasswordData
 ): Promise<ChangePasswordResponse> {
-    return apiCallPostUser('change-password', changePasswordData);
+    return apiCallPutUser('/me/password', changePasswordData);
 }

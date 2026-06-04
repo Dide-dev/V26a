@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::cards::{get_tree_cards, remove_card};
+use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
     add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
@@ -15,15 +15,15 @@ use crate::db::users::get_user_by_name;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    Language, Node, RootNode, Subject, TreeAddData, TreeFilters, TreeListResponse,
-    TreeRemoveCardData, TreeStructure, TreeUpdateData, TreeUpdateStructureData, TreeWithCards,
+    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeFilters, TreeListResponse,
+    TreeStructure, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use serde::{Deserialize, Serialize};
@@ -31,6 +31,7 @@ use sqlx::{PgConnection, PgPool};
 use utoipa::ToSchema;
 
 use crate::db_structs::Validated;
+use crate::db_structs::cards::CardData;
 use std::collections::HashMap;
 
 pub mod edit_lock;
@@ -38,17 +39,24 @@ pub mod edit_lock;
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
-        .route("/add", post(add_new_tree))
-        .route("/remove/{tree_id}", delete(remove_tree))
-        .route("/update-structure", post(update_tree_structure))
-        .route("/remove-card", post(remove_card_from_tree))
-        .route("/get-with-cards/{tree_id}", get(get_tree_with_cards))
-        .route("/get-list", get(get_list))
-        .route("/update-data", post(update_tree_data))
-        .route("/get-all-languages", get(get_all_languages))
-        .route("/get-all-subjects", get(get_all_subjects))
+        .route("/", get(get_list).post(add_new_tree))
+        .route("/languages", get(get_all_languages))
+        .route("/subjects", get(get_all_subjects))
+        .route(
+            "/{tree_id}",
+            get(get_tree_with_cards)
+                .put(update_tree_data)
+                .delete(remove_tree),
+        )
         .route("/{tree_id}/duplicate", post(duplicate_tree))
         .route("/{tree_id}/authorize/{username}", post(authorize_co_author))
+        .route("/{tree_id}/structure", put(update_tree_structure))
+        .route("/{tree_id}/cards", post(add_new_card))
+        .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
+        .route(
+            "/{tree_id}/co-authors/{username}",
+            post(authorize_co_author),
+        )
         .route(
             "/{tree_id}/acquire-edit-lock",
             // This endpoint requires to be wrapped in an [`axum::routing::any`],
@@ -59,7 +67,7 @@ pub fn trees() -> Router<ArcState> {
 
 #[utoipa::path(
     post,
-    path = "/add",
+    path = "",
     context_path = "/api/v1/trees",
     request_body = TreeAddData,
     responses(
@@ -124,7 +132,7 @@ async fn add_new_tree(
 
 #[utoipa::path(
     delete,
-    path = "/remove/{tree_id}",
+    path = "/{tree_id}",
     context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Tree successfully removed."),
@@ -165,10 +173,10 @@ async fn remove_tree(
 }
 
 #[utoipa::path(
-    post,
-    path = "/update_structure",
+    put,
+    path = "/{tree_id}/structure",
     context_path = "/api/v1/trees",
-    request_body = TreeUpdateStructureData,
+    request_body = TreeStructure,
     responses(
         (status = 200, description = "Tree structure successfully updated."),
         (status = 400, description = "Tree with given id cannot be found or the new structure is not valid."),
@@ -178,6 +186,7 @@ async fn remove_tree(
     ),
     params(
         ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
     )
 )]
 /// Update the structure of an existing tree in the database.
@@ -185,8 +194,10 @@ async fn remove_tree(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `tree_update_data` - The data used to update the data of the tree, as [`TreeUpdateStructureData`].
+/// `new_structure` - The new structure, as [`TreeStructure`].
 /// Overwrites the current structure.
+///
+/// `tree_id` - The tree to update.
 ///
 /// # Returns
 /// Nothing.
@@ -208,19 +219,15 @@ async fn remove_tree(
 async fn update_tree_structure(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_update_data): Json<TreeUpdateStructureData>,
+    Path(tree_id): Path<i32>,
+    Json(new_structure): Json<TreeStructure>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(get_connection!(db), tree_update_data.id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
 
     let mut transaction = db.begin().await?;
 
-    update_structure_if_valid(
-        &mut transaction,
-        tree_update_data.id,
-        tree_update_data.new_structure,
-    )
-    .await?;
+    update_structure_if_valid(&mut transaction, tree_id, new_structure).await?;
 
     transaction.commit().await?;
 
@@ -229,9 +236,59 @@ async fn update_tree_structure(
 
 #[utoipa::path(
     post,
-    path = "/remove-card",
+    path = "/{tree_id}/cards",
     context_path = "/api/v1/trees",
-    request_body = TreeRemoveCardData,
+    request_body = CardData,
+    responses(
+        (status = 200, description = "Card successfully added with returned id.", body = i32, content_type = "application/json"),
+        (status = 400, description = "Tree with given id does not exist."),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+    )
+)]
+/// Add a card to the database.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_id` - The tree to add the card to.
+///
+/// `card_data` - The data used of the card, as [`CardData`].
+///
+/// # Returns
+/// The id assigned to the new card.
+///
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `tree_id` referenced in `card_data` exists.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
+/// the tree for the given `tree_id` referenced in `card_data`.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn add_new_card(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(tree_id): Path<i32>,
+    Json(card_data): Json<CardData>,
+) -> Result<Json<i32>, ApiError> {
+    card_data.validate_inputs()?;
+    // Check whether the tree of which a card is being updated exists and is owned by the user.
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+
+    let id = add_card(&db, tree_id, &card_data).await?;
+
+    Ok(Json(id))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/{tree_id}/cards/{card_id}",
+    context_path = "/api/v1/trees",
+    request_body = TreeStructure,
     responses(
         (status = 200, description = "Card successfully removed from tree."),
         (status = 400, description = "Tree or card with given id cannot be found or the new structure is not valid."),
@@ -241,18 +298,23 @@ async fn update_tree_structure(
     ),
     params(
         ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
+        ("card_id" = i32, Path),
     )
 )]
 /// Remove a card from a tree.
 ///
 /// Removes the card from the database table `cards`, and overwrites the current tree structure,
-/// if the provided new structure in `tree_card_removal_data` is still valid when the card is removed.
+/// if the provided new structure is still valid when the card is removed.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `tree_card_removal_data` - The data used to remove the card and update the tree structure,
-/// as [`TreeRemoveCardData`].
+/// `new_structure` - The new tree structure, as [`TreeStructure`], not containing the deleted card.
+///
+/// `tree_id` - The tree on which to remove the card.
+///
+/// `card_id` - The card to remove from the tree.
 ///
 /// # Returns
 /// Nothing.
@@ -277,24 +339,20 @@ async fn update_tree_structure(
 async fn remove_card_from_tree(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_card_removal_data): Json<TreeRemoveCardData>,
+    Path((tree_id, card_id)): Path<(i32, i32)>,
+    Json(new_structure): Json<TreeStructure>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(get_connection!(db), tree_card_removal_data.tree_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
 
     let mut transaction = db.begin().await?;
 
     // First, we remove the card from the database, within the transaction.
-    remove_card(&mut *transaction, tree_card_removal_data.card_id).await?;
+    remove_card(&mut *transaction, card_id).await?;
 
     // Then, we check if the structure is still valid with the card being removed.
     // This ensures the card is actually removed from the structure.
-    update_structure_if_valid(
-        &mut transaction,
-        tree_card_removal_data.tree_id,
-        tree_card_removal_data.new_structure,
-    )
-    .await?;
+    update_structure_if_valid(&mut transaction, tree_id, new_structure).await?;
 
     transaction.commit().await?;
 
@@ -340,10 +398,10 @@ async fn update_structure_if_valid(
 }
 
 #[utoipa::path(
-    post,
-    path = "/update-data",
+    put,
+    path = "/{tree_id}",
     context_path = "/api/v1/trees",
-    request_body = TreeUpdateData,
+    request_body = TreeData,
     responses(
         (status = 200, description = "Tree data updated successfully."),
         (status = 400, description = "Tree with given id cannot be found, invalid ISBN provided, non-existent language provided or non-existent subject provided."),
@@ -353,6 +411,7 @@ async fn update_structure_if_valid(
     ),
     params(
         ("session" = Claims, Cookie),
+        ("tree_id" = i32, Path),
     )
 )]
 /// Update the data of an existing tree in the database.
@@ -360,22 +419,21 @@ async fn update_structure_if_valid(
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `tree_update_data` - The data used to update the tree, as [`TreeUpdateData`].
+/// `tree_id` - The tree to update.
+///
+/// `new_data` - The new data of the tree, as [`TreeData`].
 ///
 /// # Returns
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains an invalid ISBN.
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if `new_data` contains an invalid ISBN.
 ///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains a non-existent language.
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if `new_data` contains a non-existent language.
 ///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
-/// [`TreeAddData`] contains a non-existent subject.
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if `new_data` contains a non-existent subject.
 ///
-/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with the `id` specified in `tree_update_data` exists.
+/// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree for the given `tree_id`.
@@ -384,31 +442,25 @@ async fn update_structure_if_valid(
 async fn update_tree_data(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(tree_update_data): Json<TreeUpdateData>,
+    Path(tree_id): Path<i32>,
+    Json(new_data): Json<TreeData>,
 ) -> Result<(), ApiError> {
-    tree_update_data.new_data.validate_inputs()?;
+    new_data.validate_inputs()?;
     let mut transaction = db.begin().await?;
 
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(&mut transaction, tree_update_data.id, &claims).await?;
+    verify_tree_permissions(&mut transaction, tree_id, &claims).await?;
 
-    if !language_exists(&mut *transaction, &tree_update_data.new_data.language_code).await? {
-        return Err(ApiError::MissingLanguage(
-            tree_update_data.new_data.language_code.clone(),
-        ));
+    if !language_exists(&mut *transaction, &new_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(new_data.language_code.clone()));
     }
-    if let Some(subject_id) = &tree_update_data.new_data.subject_id
+    if let Some(subject_id) = &new_data.subject_id
         && !subject_exists(&mut *transaction, *subject_id).await?
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
 
-    db::trees::update_tree_data(
-        &mut transaction,
-        tree_update_data.id,
-        tree_update_data.new_data,
-    )
-    .await?;
+    db::trees::update_tree_data(&mut transaction, tree_id, new_data).await?;
 
     transaction.commit().await?;
 
@@ -417,7 +469,7 @@ async fn update_tree_data(
 
 #[utoipa::path(
     get,
-    path = "/get-with-cards/{tree_id}",
+    path = "/{tree_id}",
     context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully retrieved requested tree.", body = TreeWithCards),
@@ -523,7 +575,7 @@ pub async fn verify_tree_permissions(
 
 #[utoipa::path(
     get,
-    path = "/get-list",
+    path = "",
     context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully retrieved the list of trees with given filters.", body = TreeListResponse),
@@ -568,18 +620,16 @@ pub async fn get_list(
 ) -> Result<Json<TreeListResponse>, ApiError> {
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
-    let optional_user_id = claims.map(|c| c.sub);
-
     let mut transaction = db.begin().await?;
 
-    let trees_count = get_queried_count(&mut *transaction, &filters, optional_user_id).await?;
+    let trees_count = get_queried_count(&mut *transaction, &filters, claims.as_ref()).await?;
     if trees_count == 0 {
         return Ok(Json(TreeListResponse {
             total_trees: 0,
             trees: Vec::new(),
         }));
     }
-    let trees = get_queried_list(&mut *transaction, &page, &filters, optional_user_id).await?;
+    let trees = get_queried_list(&mut *transaction, &page, &filters, claims.as_ref()).await?;
 
     transaction.commit().await?;
 
@@ -604,7 +654,7 @@ pub enum AuthorizeCoAuthorResponse {
 
 #[utoipa::path(
     post,
-    path = "{tree_id}/authorize/{username}",
+    path = "{tree_id}/co-authors/{username}",
     context_path = "/api/v1/trees/",
     responses(
         (status = 200, description = "Successfully attempted to add co-author to tree.", body = AuthorizeCoAuthorResponse, content_type = "application/json"),
@@ -670,7 +720,7 @@ async fn authorize_co_author(
 
 #[utoipa::path(
     get,
-    path = "/get-all-languages",
+    path = "/languages",
     context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully retrieved the list of languages.", body = Vec<String>),
@@ -695,7 +745,7 @@ pub async fn get_all_languages(
 
 #[utoipa::path(
     get,
-    path = "/get-all-subjects",
+    path = "/subjects",
     context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully retrieved the list of subjects.", body = Vec<String>),
@@ -796,16 +846,12 @@ pub async fn duplicate_tree(
         });
     }
 
-    let tree_update_data = TreeUpdateStructureData {
-        id: new_tree_id,
-        new_structure: TreeStructure {
-            root_nodes: new_structure,
-        },
-    };
     update_structure_if_valid(
         &mut transaction,
-        tree_update_data.id,
-        tree_update_data.new_structure,
+        new_tree_id,
+        TreeStructure {
+            root_nodes: new_structure,
+        },
     )
     .await?;
 
