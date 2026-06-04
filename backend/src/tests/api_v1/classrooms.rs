@@ -77,7 +77,7 @@ async fn test_get_classrooms_as_admin(db: PgPool) {
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
+    let user_id = register(&server, &account1).await;
     register_admin(&server, &db, &account2).await;
     login(&server, account1.email).await;
 
@@ -90,8 +90,6 @@ async fn test_get_classrooms_as_admin(db: PgPool) {
     response.assert_status_ok();
 
     login(&server, account2.email).await;
-
-    let user_id = 1;
 
     let response2 = server.get(&format!("/users/{user_id}/classrooms")).await;
     response2.assert_status_ok();
@@ -107,7 +105,7 @@ async fn test_get_classroom_forbidden(db: PgPool) {
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
+    let user_id = register(&server, &account1).await;
     register(&server, &account2).await;
     login(&server, account1.email).await;
 
@@ -120,8 +118,6 @@ async fn test_get_classroom_forbidden(db: PgPool) {
     response.assert_status_ok();
 
     login(&server, account2.email).await;
-
-    let user_id = 1;
 
     let response2 = server.get(&format!("/users/{user_id}/classrooms")).await;
     response2.assert_status_forbidden();

@@ -23,7 +23,7 @@ export type ClassroomId = number;
 
 export type ClassroomData = {
     name: string;
-    description: Option<string>;
+    description: string;
 };
 
 export type ClassroomGeneratedData = {
