@@ -104,12 +104,12 @@ fn setup(db: PgPool) -> TestState {
 ///
 /// # Arguments
 /// `test_state` - The [`TestState`] to use for making the API calls and extracting the verification code.
-/// 
+///
 /// `email` - The email address of the account to be verified.
 ///
 /// # Returns
 /// The response of the verification request as a [`TestResponse`].
-/// 
+///
 /// # Panics
 /// Will panic if no pending account with the given e-mail could be found.
 async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
