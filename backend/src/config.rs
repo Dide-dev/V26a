@@ -74,7 +74,8 @@ impl Config {
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
             .unwrap_or("10".to_string())
             .parse::<usize>()
-            .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB");
+            .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
+            * 1_048_576; // Mebibytes to bytes
 
         Self {
             listening_ip,
