@@ -215,7 +215,7 @@ async fn test_delete_nonexistent_user(db: PgPool) {
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
-    let response = server.delete("/users?deleteOwnedTrees=false").await;
+    let response = server.delete("/users/me?deleteOwnedTrees=false").await;
     response.assert_status_ok();
     // Check if cookies are unset after deletion.
     assert!(
@@ -247,7 +247,7 @@ async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
     assert_eq!(sessions, Some(2));
 
     server
-        .delete("/users?deleteOwnedTrees=false")
+        .delete("/users/me?deleteOwnedTrees=false")
         .await
         .assert_status_ok();
 

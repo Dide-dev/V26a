@@ -16,7 +16,7 @@ function apiCallPutUser(path: string, body: unknown) {
     return apiCallPut(prefix + path, body);
 }
 
-function apiCalldeleteMe(path: string) {
+function apiCallDeleteMe(path: string) {
     return apiCallEmptyDelete(prefix + path);
 }
 
@@ -108,7 +108,7 @@ export function addUser(
 
 /** Delete a user in the database */
 export function deleteMe(deleteTrees: boolean): Promise<void> {
-    return apiCalldeleteMe(`?deleteOwnedTrees=${deleteTrees}`);
+    return apiCallDeleteMe(`/me?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */

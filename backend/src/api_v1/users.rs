@@ -34,9 +34,8 @@ use utoipa::ToSchema;
 pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/me", get(get_own_user_data).put(update_user_data))
+        .route("/me", get(get_own_user_data).put(update_user_data).delete(delete_user_data))
         .route("/me/password", put(change_password))
-        .route("/", delete(delete_user_data))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -292,7 +291,7 @@ async fn change_password(
 
 #[utoipa::path(
     delete,
-    path = "",
+    path = "/me",
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
