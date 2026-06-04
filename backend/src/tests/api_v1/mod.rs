@@ -100,6 +100,18 @@ fn setup(db: PgPool) -> TestState {
     setup_config(db, &mut config)
 }
 
+/// Try to verify an account on the test server with the given email.
+///
+/// # Arguments
+/// `test_state` - The [`TestState`] to use for making the API calls and extracting the verification code.
+/// 
+/// `email` - The email address of the account to be verified.
+///
+/// # Returns
+/// The response of the verification request as a [`TestResponse`].
+/// 
+/// # Panics
+/// Will panic if no pending account with the given e-mail could be found.
 async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
     let verification_code = {
         let pending_accounts = test_state.state.pending_accounts.lock().await;

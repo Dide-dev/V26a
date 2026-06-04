@@ -27,10 +27,11 @@ async fn test_add_feedback(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_feedback(db: PgPool) {
-    let test_state = setup(db.clone());
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register_admin(&test_state, get_connection_unwrap!(db), &register_data).await;
+    register_admin(&test_state, conn, &register_data).await;
     let server = test_state.server;
     login(&server, register_data.email).await;
 
@@ -56,10 +57,11 @@ async fn test_get_feedback(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_no_feedback(db: PgPool) {
-    let test_state = setup(db.clone());
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register_admin(&test_state, get_connection_unwrap!(db), &register_data).await;
+    register_admin(&test_state, conn, &register_data).await;
     let server = test_state.server;
     login(&server, register_data.email).await;
 
