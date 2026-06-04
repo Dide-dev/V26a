@@ -29,9 +29,7 @@ use crate::{
         get_user_list_by_page, update_password, user_id_exists,
     },
     db_structs::pagination::OptionalPaginationOptions,
-    db_structs::users::{
-        AccountType, AdminPasswordChangeRequestBody, UserGetAllData, UserListResponse,
-    },
+    db_structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
     errors::ApiError,
 };
 
@@ -243,7 +241,7 @@ async fn change_password(
     path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = UserGetAllData),
+        (status = 200, description = "Successfully retrieved data.", body = AdminUpdateData),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -260,7 +258,7 @@ async fn change_password(
 /// `user_id` - The user from whom we want to get the data.
 ///
 /// # Returns
-/// The data of a user as [`UserGetAllData`].
+/// The data of a user as [`AdminUpdateData`].
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
@@ -275,7 +273,7 @@ async fn change_password(
 async fn get_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
-) -> Result<Json<UserGetAllData>, ApiError> {
+) -> Result<Json<AdminUpdateData>, ApiError> {
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }

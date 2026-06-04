@@ -9,8 +9,8 @@
 use crate::api_v1::users::UserResponse;
 use crate::{
     db_structs::users::{
-        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserData,
-        UserGetAllData, UserLanguage, UserListResponse,
+        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData,
+        UserGeneralData, UserListResponse,
     },
     get_connection_unwrap,
     tests::api_v1::{login, register, register_admin, setup},
@@ -88,10 +88,14 @@ async fn test_get_one_user_admin(db: PgPool) {
     let response = server.get("/admin/users/2").await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
-    let user_data: UserGetAllData = response.json();
-    let expected_user_data = UserGetAllData {
+    let user_data: AdminUpdateData = response.json();
+    let expected_user_data = AdminUpdateData {
         email: user_account.email.clone(),
-        data: user_account.data,
+        data: UserGeneralData {
+            name: user_account.data.name,
+            nickname: user_account.data.nickname,
+            about_me: user_account.data.about_me,
+        },
         enabled: true,
         account_type: AccountType::Author,
     };
@@ -104,12 +108,10 @@ async fn test_update_user(db: PgPool) {
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
-        data: UserData {
+        data: UserGeneralData {
             name: "John Smith".to_owned(),
             nickname: String::new(),
             about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::Nl,
         },
         enabled: true,
         account_type: AccountType::Admin,

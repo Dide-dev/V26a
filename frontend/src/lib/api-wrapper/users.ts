@@ -42,6 +42,18 @@ export type UserData = {
     language: string;
 };
 
+/** The data a admin can modify, except email, password, accountType and enabled
+ *
+ * The data needed to update a user
+ * `nickname` and `aboutMe` are always updated, where null values are stored as-is in the
+ * database.
+ */
+export type UserGeneralData = {
+    name: string;
+    nickname: string;
+    aboutMe: string;
+};
+
 /** The data needed to register a new user */
 export type RegisterData = {
     email: string;
