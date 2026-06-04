@@ -250,7 +250,7 @@
                             maxlength={maxInputLengths.description}
                         ></textarea>
                     </div>
-                    <div>
+                    <div class="*:max-h-text-area">
                         <label for="assignment">{m.assignment()}</label>
                         <Editor
                             maxLength={maxInputLengths.assignmentText}
