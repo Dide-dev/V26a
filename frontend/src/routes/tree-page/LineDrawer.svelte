@@ -4,7 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
-<!--component
+<!--
+    @component
     This component expects te be in a flex row, and creates two elements:
     one is the svg with lines, the other is a flex column with the children.
  -->

@@ -21,6 +21,7 @@
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
     import type { CardData } from '$lib/api-wrapper/cards';
     import type { BranchColor } from '$lib/treePage';
+    import { Tween } from 'svelte/motion';
 
     let {
         card,
@@ -38,15 +39,18 @@
         distanceFromRevealed = 0;
     }
 
-    function refocus() {
-        focus = false;
+    function toggleFocus() {
+        blurred = !(blurred ?? outOfFocus);
+
+        focusTween.target = blurred ? 0 : 100;
     }
 
-    function blur() {
-        focus = true;
-    }
+    let blurred: boolean | null = $state(null);
+    let inFocus: boolean = $derived(!(blurred ?? outOfFocus));
 
-    let focus: boolean | null = $state(null);
+    let focusTween: Tween<number> = new Tween(100, {
+        duration: 200
+    });
 
     let openColor = $derived(`var(--color-${color}-100)`);
     let openHoverColor = $derived(`var(--color-${color}-50)`);
@@ -59,15 +63,19 @@
     let closedColor = $derived(
         `var(--color-${color}-${Math.min(900, 500 + 100 * distanceFromRevealed)})`
     );
+
+    // This comments loads in required theme colors:
     // --color-cyan-950 --color-tree-950 --color-yellow-950 --color-red-950 --color-pink-950 --color-violet-950
     let borderColor = $derived(
         `var(--color-${color}-${Math.min(950, 700 + 100 * distanceFromRevealed)})`
     );
+
+    $effect(() => {
+        focusTween.target = outOfFocus ? 0 : 100;
+    });
 </script>
 
-{#if focus ?? outOfFocus}
-    {@render outOfFocusCard()}
-{:else if distanceFromRevealed === 0}
+{#if distanceFromRevealed === 0}
     {@render revealedCard(card)}
 {:else if distanceFromRevealed === 1}
     {@render openableCard(card)}
@@ -75,26 +83,25 @@
     {@render closedCard()}
 {/if}
 
-{#snippet outOfFocusCard()}
-    <button
-        type="button"
-        style="--background-color: {blurColor}; --hover-color: {blurHoverColor}; --border-color: {blurBorderColor}"
-        class="card min-h-card-height-sm w-card-width-sm cursor-pointer p-1 text-left text-lg text-neutral-600"
-        onclick={refocus}
-    >
-        ...
-    </button>
-{/snippet}
-
 {#snippet revealedCard(card: CardData)}
     <button
         type="button"
-        style="--background-color: {openColor}; --hover-color: {openHoverColor}; --border-color: {openBorderColor}"
-        class="card min-h-card-height-md w-card-width-lg cursor-pointer overflow-x-auto p-1 wrap-anywhere"
-        onclick={blur}
+        style="--background-color: {inFocus ? openColor : blurColor}; --hover-color: {inFocus
+            ? openHoverColor
+            : blurHoverColor}; --border-color: {inFocus ? openBorderColor : blurBorderColor};}"
+        class={[
+            inFocus && 'min-h-card-height-md w-card-width-lg',
+            !inFocus && 'min-h-card-height-sm w-card-width-sm text-neutral-600',
+            'card cursor-pointer overflow-x-auto p-1 text-left wrap-anywhere transition-all motion-reduce:transition-none'
+        ]}
+        onclick={toggleFocus}
     >
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html markdownToFinalHtml(card.back)}
+        {#if inFocus || focusTween.current > 50}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html markdownToFinalHtml(card.back)}
+        {:else}
+            ...
+        {/if}
     </button>
 {/snippet}
 
@@ -130,7 +137,8 @@
             border-width: 2px;
 
             background-color: var(--background-color);
-            transition: background-color 200ms ease-in-out;
+            transition: background-color ease-in-out;
+            transition-duration: 200ms;
 
             border-color: var(--border-color);
 

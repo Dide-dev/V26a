@@ -136,7 +136,7 @@
             &::after {
                 content: '˅';
                 font-weight: var(--font-weight-bold);
-                transition: all 200ms ease-in-out;
+                transition: transform 200ms ease-in-out;
                 height: fit-content;
             }
 
