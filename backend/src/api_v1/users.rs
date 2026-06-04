@@ -142,7 +142,10 @@ async fn add_new_user(
         user_data.data.nickname.clone()
     };
     let message = Message::builder()
-        .from("BOOM! <noreply@localhost>".parse()?)
+        .from(Mailbox::new(
+            Some("BOOM!".to_owned()),
+            format!("noreply@{}", state.config.hostname).parse()?,
+        ))
         .to(Mailbox::new(Some(display_name.clone()), parsed_email))
         .subject(user_data.data.language.to_verification_message_title())
         .header(ContentType::TEXT_PLAIN)

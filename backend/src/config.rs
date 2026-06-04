@@ -19,6 +19,7 @@ use std::sync::Arc;
 pub struct Config {
     pub listening_ip: String,
     pub listening_port: u16,
+    pub hostname: String,
     pub base_url: String,
     pub database_url: String,
 
@@ -56,7 +57,21 @@ impl Config {
             .unwrap_or("3000".to_owned())
             .parse()
             .expect("Failed to parse environment variable LISTENING_PORT");
+
         let base_url = env::var("BASE_URL").expect("Environment variable BASE_URL must be set");
+        let (base_url, hostname) = if base_url.starts_with("http") {
+            (
+                base_url.clone(),
+                base_url
+                    .split("://")
+                    .last()
+                    .expect("Failed to get hostname from BASE_URL")
+                    .to_owned(),
+            )
+        } else {
+            (format!("https://{}", base_url.clone()), base_url)
+        };
+
         let database_url =
             env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set");
 
@@ -108,6 +123,7 @@ impl Config {
         Self {
             listening_ip,
             listening_port,
+            hostname,
             base_url,
             database_url,
             log_level,
