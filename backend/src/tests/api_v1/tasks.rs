@@ -25,7 +25,7 @@ async fn test_verify_unpruned_account(db: PgPool) {
     let register_data = RegisterData::test_values();
     let response = test_state
         .server
-        .post("/users/add")
+        .post("/users")
         .json(&register_data)
         .await;
     response.assert_status_ok();

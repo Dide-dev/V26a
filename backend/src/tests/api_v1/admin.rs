@@ -145,7 +145,7 @@ async fn test_admin_update_pending_user(db: PgPool) {
 
     let server = test_state.server;
     let pending_user = RegisterData::test_values();
-    let response = server.post("/users/add").json(&pending_user).await;
+    let response = server.post("/users").json(&pending_user).await;
     response.assert_status_ok();
 
     login(&server, admin_user.email).await;
@@ -161,7 +161,7 @@ async fn test_admin_update_pending_user(db: PgPool) {
         },
     };
     let response = server
-        .post(&format!("/admin/users/{other_user_id}/update-data"))
+        .put(&format!("/admin/users/{other_user_id}"))
         .json(&updated_user)
         .await;
     response.assert_status_ok();
@@ -181,7 +181,7 @@ async fn test_admin_update_pending_user(db: PgPool) {
         },
     };
     let response = server
-        .post(&format!("/admin/users/{other_user_id}/update-data"))
+        .put(&format!("/admin/users/{other_user_id}"))
         .json(&updated_user)
         .await;
     response.assert_status_ok();

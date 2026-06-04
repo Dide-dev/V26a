@@ -127,11 +127,7 @@ async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
 /// # Returns
 /// An i32 representing the id of the user created.
 async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
-    let response = test_state
-        .server
-        .post("/users")
-        .json(&register_data)
-        .await;
+    let response = test_state.server.post("/users").json(&register_data).await;
     response.assert_status_ok();
 
     let response = try_verify(test_state, register_data.email.clone()).await;

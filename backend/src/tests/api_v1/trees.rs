@@ -402,8 +402,8 @@ async fn test_filter_tree_list(db: PgPool) {
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
     let admin_account = RegisterData::test_values();
-    let account_id1 = register(&test_state, &account1).await;
-    let account_id2 = register(&test_state, &account2).await;
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
     register_admin(&test_state, &mut *conn, &admin_account).await;
     let server = test_state.server;
     login(&server, account1.email.clone()).await;

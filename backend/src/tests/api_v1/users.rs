@@ -231,7 +231,7 @@ async fn test_invalid_validation_code(db: PgPool) {
     let TestState { server, state } = setup(db);
 
     let register_data = RegisterData::test_values();
-    let response = server.post("/users/add").json(&register_data).await;
+    let response = server.post("/users").json(&register_data).await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::Pending);
@@ -252,7 +252,7 @@ async fn test_register_pending_user(db: PgPool) {
     let server = setup(db).server;
 
     let pending_user_data = RegisterData::test_values();
-    let response = server.post("/users/add").json(&pending_user_data).await;
+    let response = server.post("/users").json(&pending_user_data).await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::Pending);
@@ -268,7 +268,7 @@ async fn test_register_pending_user(db: PgPool) {
         ..RegisterData::test_values()
     };
     let response = server
-        .post("/users/add")
+        .post("/users")
         .json(&name_already_used_data)
         .await;
     response.assert_status_ok();
@@ -281,7 +281,7 @@ async fn test_register_pending_user(db: PgPool) {
         ..RegisterData::test_values()
     };
     let response = server
-        .post("/users/add")
+        .post("/users")
         .json(&email_already_used_data)
         .await;
     response.assert_status_ok();
@@ -299,7 +299,7 @@ async fn test_update_pending_user(db: PgPool) {
 
     let server = test_state.server;
     let pending_user_data = RegisterData::test_values();
-    let response = server.post("/users/add").json(&pending_user_data).await;
+    let response = server.post("/users").json(&pending_user_data).await;
     response.assert_status_ok();
 
     login(&server, verified_user_data.email).await;
@@ -310,7 +310,7 @@ async fn test_update_pending_user(db: PgPool) {
         email_visible: false,
         language: UserLanguage::En,
     };
-    let response = server.post("/users/update").json(&updated_user).await;
+    let response = server.put("/users/me").json(&updated_user).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
