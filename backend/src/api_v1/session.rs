@@ -5,6 +5,7 @@
 */
 
 use crate::ArcState;
+use crate::api_v1::extract_token;
 use crate::db::session::get_session;
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
@@ -15,18 +16,15 @@ use sqlx::PgPool;
 
 async fn get_claims(parts: &mut Parts, _state: &ArcState) -> Result<Claims, ApiError> {
     // Extract the token from the cookie jar.
-    let token = CookieJar::from_headers(&parts.headers);
-    let auth_cookie = token
-        .get("session")
-        .ok_or(ApiError::MissingAuthentication)?
-        .value();
+    let jar = CookieJar::from_headers(&parts.headers);
+    let token = extract_token(&jar)?;
 
     let db = parts
         .extensions
         .get::<PgPool>()
         .ok_or(ApiError::DatabaseException)?;
 
-    get_session(db, auth_cookie)
+    get_session(db, &token)
         .await?
         .ok_or(ApiError::InvalidSession)
 }

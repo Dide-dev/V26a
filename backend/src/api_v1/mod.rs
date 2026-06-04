@@ -15,9 +15,11 @@ pub mod session;
 pub mod trees;
 pub mod users;
 
+use crate::errors::ApiError;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::Request;
+use axum_extra::extract::CookieJar;
 use governor::clock::QuantaInstant;
 use governor::middleware::NoOpMiddleware;
 use std::net::SocketAddr;
@@ -95,4 +97,13 @@ pub fn rate_limit_layer(
             .unwrap(),
     );
     GovernorLayer::new(config)
+}
+
+// Extra token from cookie via conversion of Cookiejar --> String.
+pub fn extract_token(jar: &CookieJar) -> Result<String, ApiError> {
+    Ok(jar
+        .get("session")
+        .ok_or(ApiError::MissingAuthentication)?
+        .value()
+        .to_string())
 }

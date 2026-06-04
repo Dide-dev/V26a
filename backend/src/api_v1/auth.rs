@@ -5,7 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::rate_limit_layer;
+use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
 use crate::db::users::get_user;
@@ -146,11 +146,7 @@ async fn login(
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
 async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
-    let token = jar
-        .get("session")
-        .ok_or(ApiError::MissingAuthentication)?
-        .value()
-        .to_string();
+    let token = extract_token(&jar)?;
 
     // Invalidate the session.
     delete_session(&db, &token).await?;

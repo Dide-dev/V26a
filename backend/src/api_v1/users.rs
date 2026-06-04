@@ -5,7 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::rate_limit_layer;
+use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
@@ -281,11 +281,7 @@ async fn change_password(
     )
     .await?;
 
-    let token = jar
-        .get("session")
-        .ok_or(ApiError::MissingAuthentication)?
-        .value()
-        .to_string();
+    let token = extract_token(&jar)?;
 
     // All other sessions of the account are invalidated if password is changed.
     delete_all_sessions_except(&db, claims.sub, &token).await?;

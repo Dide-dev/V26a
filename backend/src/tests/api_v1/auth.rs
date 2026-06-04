@@ -7,12 +7,12 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
+use crate::api_v1::extract_token;
 use crate::db::session::get_session;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
-use crate::tests::api_v1::Cookie;
-use crate::tests::api_v1::{get_cookie_data, login, register, setup};
+use crate::tests::api_v1::{get_cookie_data, login, register, response_to_jar, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -48,18 +48,14 @@ async fn test_login_fail(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_success(db: PgPool) {
     let server = setup(db.clone());
-    let mut register_data = RegisterData::test_values();
-    register_data.email = format!("CookieMon{}@example.com", uuid::Uuid::new_v4());
+    let register_data = RegisterData::test_values();
 
     register(&server, &register_data).await;
-    let login_response = login(&server, register_data.email.clone()).await;
-    let cookie = login_response.cookie("session");
-    let token: String = get_cookie_data(&cookie);
+    let login_response = login(&server, register_data.email).await;
+    let jar = response_to_jar(&login_response);
+    let token = extract_token(&jar).unwrap();
 
-    server
-        .delete("/auth")
-        .add_cookie(Cookie::new("session", token.clone()))
-        .await;
+    server.delete("/auth").await;
 
     // Check if a cookie is unset.
     assert!(
@@ -78,8 +74,7 @@ async fn test_logout_success(db: PgPool) {
 #[sqlx::test]
 async fn test_logout_failure(db: PgPool) {
     let server = setup(db);
-    let mut register_data = RegisterData::test_values();
-    register_data.email = format!("CookieMon{}@example.com", uuid::Uuid::new_v4());
+    let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
 
     // logout is not possible without a valid session.
