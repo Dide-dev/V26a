@@ -9,9 +9,13 @@ import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 import { m } from '$lib/paraglide/messages.js';
 
 // Must be used in any linking to other pages, like the 'a' html element.
-// Localized and could possibly add prefix to the path.
+// This localizes and possibly adds a prefix to the path.
 export function appLink(href: string) {
-    // TODO: Should 'resolve' from $app/paths be used??
+    // We currently don't need to use `resolve` from $app/paths.
+    // This is because we don't use dynamic routes with '/[some-path-argument]/'.
+    // We are missing out on type checking which we could do through the `PathnameWithSearchOrHash` type,
+    // but half of our links are in the header and footer where everything is just a `string`.
+
     return localizeHref(href);
 }
 
