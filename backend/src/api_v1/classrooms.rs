@@ -28,13 +28,13 @@ use sqlx::PgPool;
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
     Router::new()
-        .route("/add", post(add_new_classroom))
+        .route("/", post(add_new_classroom))
         .route("/login", post(classroom_login))
 }
 
 #[utoipa::path(
     post,
-    path = "/add",
+    path = "",
     context_path = "/api/v1/classrooms",
     request_body = ClassroomAddData,
     responses(
