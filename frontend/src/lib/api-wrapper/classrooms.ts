@@ -5,7 +5,6 @@
 */
 
 import { apiCallPost, apiCallGet } from '$lib/api-wrapper/index';
-import type { Option } from '$lib/api-wrapper/types';
 import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
 import type { UserId } from './users';
 
