@@ -267,10 +267,7 @@ async fn test_register_pending_user(db: PgPool) {
         },
         ..RegisterData::test_values()
     };
-    let response = server
-        .post("/users")
-        .json(&name_already_used_data)
-        .await;
+    let response = server.post("/users").json(&name_already_used_data).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
@@ -280,10 +277,7 @@ async fn test_register_pending_user(db: PgPool) {
         email: pending_user_data.email,
         ..RegisterData::test_values()
     };
-    let response = server
-        .post("/users")
-        .json(&email_already_used_data)
-        .await;
+    let response = server.post("/users").json(&email_already_used_data).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
