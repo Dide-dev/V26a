@@ -179,7 +179,7 @@
 </script>
 
 <nav
-    class={['sticky z-100 mb-6 text-neutral-100 not-md:justify-end']}
+    class="sticky z-40 mb-6 text-neutral-100 not-md:justify-end"
     style:top={menu ? '0px' : `${topScrollMargin}px`}
     onmouseleave={() => {
         if (!windowIsLarge.current) return;

@@ -142,7 +142,7 @@
             text-underline-offset: 4px;
             text-decoration: underline var(--color-neutral-350) 2px;
 
-            &::placeholder {
+            &:not(:disabled)::placeholder {
                 padding-bottom: 2px;
                 text-underline-offset: 4px;
                 text-decoration: underline var(--color-neutral-350) 2px;
@@ -177,7 +177,7 @@
         .input__container:has(.input__text.inactive:not(:focus)) {
             position: relative;
 
-            &::before {
+            &:has(:not(:disabled))::before {
                 content: '';
                 position: absolute;
                 left: 0;
@@ -251,7 +251,8 @@
             gap: var(--spacing);
         }
 
-        button {
+        button[type='submit'],
+        button[type='reset'] {
             padding: var(--spacing-padding-minor);
             border-radius: var(--radius-md);
             border-width: 2px;
@@ -263,15 +264,14 @@
             border-color: currentColor;
         }
 
-        &.completed {
-            button {
-                color: var(--color-black);
-                background-color: var(--color-neutral-200);
-                border-color: var(--color-neutral-600);
-                cursor: pointer;
-            }
+        &.completed button[type='submit'],
+        button[type='reset'] {
+            color: var(--color-black);
+            background-color: var(--color-neutral-200);
+            border-color: var(--color-neutral-600);
+            cursor: pointer;
 
-            button:hover {
+            &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
                 animation: completedFormButtonSelect 0.15s ease-in-out;

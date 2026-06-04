@@ -111,7 +111,7 @@
                 {#if assignmentText !== ''}
                     <div class="flex w-2/3 flex-col">
                         <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
-                            {m.assignmentText()}
+                            {m.assignment()}
                         </p>
                         <p class="*:inline">
                             <!-- Trees from the prototype may contain images. -->
@@ -150,15 +150,15 @@
                             </p>
                         {/if}
                         <p>
-                            {m.bookEdition()}
+                            {m.edition()}
                             {tree.metadata.data.bookEdition !== ''
                                 ? tree.metadata.data.bookEdition
                                 : '?'},
-                            {m.bookChapter()}
+                            {m.chapter()}
                             {tree.metadata.data.bookChapter !== ''
                                 ? tree.metadata.data.bookChapter
                                 : '?'},
-                            {m.bookExercise()}
+                            {m.exercise()}
                             {tree.metadata.data.bookExercise !== ''
                                 ? tree.metadata.data.bookExercise
                                 : '?'}
