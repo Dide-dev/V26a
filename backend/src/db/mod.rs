@@ -187,15 +187,12 @@ pub mod test {
     /// # Returns
     /// The `card_id` associated with the newly added card.
     pub async fn initialize_card(db: impl PgExecutor<'_>, tree_id: i32) -> i32 {
-        let card_add_data = CardAddData {
-            tree_id,
-            data: CardData {
-                front: "front".to_owned(),
-                back: "back".to_owned(),
-            },
+        let card_data = CardData {
+            front: "front".to_owned(),
+            back: "back".to_owned(),
         };
 
-        initialize_card_with_data(db, &card_add_data).await
+        initialize_card_with_data(db, tree_id, &card_data).await
     }
 
     /// Initialize a card into the database with the provided card data.
@@ -209,13 +206,14 @@ pub mod test {
     /// The `card_id` associated with the newly added card.
     pub async fn initialize_card_with_data(
         db: impl PgExecutor<'_>,
-        card_data: &CardAddData,
+        tree_id: i32,
+        card_data: &CardData,
     ) -> i32 {
         query!(
             "INSERT INTO cards (tree_id, back, front) VALUES ($1, $2, $3) RETURNING id",
-            card_data.tree_id,
-            card_data.data.back,
-            card_data.data.front,
+            tree_id,
+            card_data.back,
+            card_data.front,
         )
         .fetch_one(db)
         .await

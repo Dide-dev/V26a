@@ -7,7 +7,7 @@
 import { apiCallPost } from '$lib/api-wrapper/index';
 import type { Option } from '$lib/api-wrapper/types';
 
-const prefix = 'classrooms/';
+const prefix = 'classrooms';
 
 function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
@@ -38,7 +38,7 @@ export type LessonAddData = {
 
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomAddData): Promise<ClassroomGeneratedData> {
-    return apiCallPostClassroom('add', classroomAddData);
+    return apiCallPostClassroom('', classroomAddData);
 }
 
 /** Add a lesson to a classroom in the database */

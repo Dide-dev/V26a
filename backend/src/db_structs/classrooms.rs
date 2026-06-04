@@ -6,7 +6,7 @@
 use crate::db_structs::Validated;
 use crate::errors::ApiError;
 use crate::limits::{
-    CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, LESSON_DESCRIPTION_MAX_LENGTH,
+    CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH, LESSON_DESCRIPTION_MAX_LENGTH,
     LESSON_TITLE_MAX_LENGTH,
 };
 use sqlx::FromRow;
@@ -22,6 +22,10 @@ pub struct ClassroomAddData {
 }
 
 impl Validated for ClassroomAddData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.name.chars().count() > CLASSROOM_TITLE_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded(
@@ -35,6 +39,14 @@ impl Validated for ClassroomAddData {
                 CLASSROOM_DESCRIPTION_MAX_LENGTH,
             ));
         }
+
+        if self.name.chars().count() < CLASSROOM_TITLE_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet(
+                "title",
+                CLASSROOM_TITLE_MIN_LENGTH,
+            ));
+        }
+
         Ok(())
     }
 }

@@ -5,15 +5,26 @@
 */
 
 import type { CardData, CardId } from './cards';
-import { apiCallPost, apiCallGet, apiCallDelete, apiCallDuplicate } from './index';
+import {
+    apiCallPost,
+    apiCallGet,
+    apiCallDelete,
+    apiCallEmptyPost,
+    apiCallPut,
+    apiCallEmptyDelete
+} from './index';
 import type { Option } from './types';
 import type { UserId } from './users';
 import type { PaginationOptions } from '$lib/pagination';
 
-const prefix = 'trees/';
+const prefix = 'trees';
 
 function apiCallPostTree(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
+}
+
+function apiCallPutTree(path: string, body: unknown) {
+    return apiCallPut(prefix + path, body);
 }
 
 function apiCallGetTree(path: string) {
@@ -21,11 +32,15 @@ function apiCallGetTree(path: string) {
 }
 
 function apiCallDeleteTree(path: string) {
-    return apiCallDelete(prefix + path);
+    return apiCallEmptyDelete(prefix + path);
+}
+
+function apiCallDeleteTreeWithBody(path: string, body: unknown) {
+    return apiCallDelete(prefix + path, body);
 }
 
 function apiCallDuplicateTree(path: string) {
-    return apiCallDuplicate(prefix + path);
+    return apiCallEmptyPost(prefix + path);
 }
 
 export type TreeId = number;
@@ -127,22 +142,6 @@ const defaultTreeStructure: TreeStructure = {
     ]
 };
 
-export type TreeUpdateMetaData = {
-    id: TreeId;
-    newData: TreeData;
-};
-
-export type TreeUpdateStructureData = {
-    id: TreeId;
-    newStructure: TreeStructure;
-};
-
-export type TreeRemoveCardData = {
-    treeId: TreeId;
-    cardId: CardId;
-    newStructure: TreeStructure;
-};
-
 export type TreeListResponse = {
     totalTrees: number;
     trees: TreeMetadata[];
@@ -165,33 +164,45 @@ export function addTree(treeData: TreeData): Promise<TreeId> {
         treeStructure
     };
 
-    return apiCallPostTree('add', treeAddData);
+    return apiCallPostTree('', treeAddData);
 }
 
 /** Remove a tree and all of its cards from the database. */
 export function removeTree(treeId: TreeId): Promise<void> {
-    return apiCallDeleteTree(`remove/${treeId}`);
+    return apiCallDeleteTree(`/${treeId}`);
 }
 
 /** Update the structure of an existing tree. */
-export function updateTreeStructure(newTreeStructure: TreeUpdateStructureData): Promise<void> {
-    return apiCallPostTree('update-structure', newTreeStructure);
+export function updateTreeStructure(
+    treeId: TreeId,
+    newTreeStructure: TreeStructure
+): Promise<void> {
+    return apiCallPutTree(`/${treeId}/structure`, newTreeStructure);
+}
+
+/** Add a card to the database */
+export function addCard(treeId: TreeId, card: CardData): Promise<CardId> {
+    return apiCallPostTree(`/${treeId}/cards`, card);
 }
 
 /** Remove a card from the database and update the structure of the tree with a new
  * appropriate structure. */
-export function removeCardFromTree(removeCardData: TreeRemoveCardData) {
-    return apiCallPostTree('remove-card', removeCardData);
+export function removeCardFromTree(
+    treeId: TreeId,
+    cardId: CardId,
+    newTreeStructure: TreeStructure
+) {
+    return apiCallDeleteTreeWithBody(`/${treeId}/cards/${cardId}`, newTreeStructure);
 }
 
 /** Request all data of a specific tree together with all its cards from the database. */
 export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
-    return apiCallGetTree(`get-with-cards/${treeId}`);
+    return apiCallGetTree(`/${treeId}`);
 }
 
 /** Update the metadata of a specific tree. */
-export function updateTreeMetaData(newTreeData: TreeUpdateMetaData): Promise<void> {
-    return apiCallPostTree('update-data', newTreeData);
+export function updateTreeMetaData(treeId: TreeId, newTreeData: TreeData): Promise<void> {
+    return apiCallPutTree(`/${treeId}`, newTreeData);
 }
 
 export function isNullOrEmpty(value: unknown): boolean {
@@ -237,27 +248,27 @@ export function getFilteredList(
     filterOptions: FilterOptions
 ): Promise<TreeListResponse> {
     const params: string = getPaginationAndFilterParams(pageOptions, filterOptions);
-    return apiCallGetTree(`get-list?${params}`);
+    return apiCallGetTree(`?${params}`);
 }
 
 /** Duplicates a tree */
 export function duplicateTree(treeId: TreeId): Promise<void> {
-    return apiCallDuplicateTree(`${treeId}/duplicate`);
+    return apiCallDuplicateTree(`/${treeId}`);
 }
 
 /** Add user as co-author to a tree. */
 export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
-    return apiCallPostTree(`${treeId}/authorize/${username}`, null);
+    return apiCallPostTree(`/${treeId}/co-authors/${username}`, null);
 }
 
 /** Get the list of all languages. */
 export function getAllLanguages(): Promise<Language[]> {
-    return apiCallGetTree('get-all-languages');
+    return apiCallGetTree('/languages');
 }
 
 /** Get the list of all subjects. */
 export function getAllSubjects(): Promise<Record<string, Subject[]>> {
-    return apiCallGetTree('get-all-subjects');
+    return apiCallGetTree('/subjects');
 }
 
 /** The minimum input lengths of the tree metadata fields. */
@@ -276,8 +287,8 @@ export const minInputLengths = {
 
 /** The maximum input lengths of the tree metadata fields. */
 export const maxInputLengths = {
-    title: 128,
-    description: 256,
+    title: 100,
+    description: 500,
     tag: 32,
     bookName: 64,
     bookAuthor: 192,
