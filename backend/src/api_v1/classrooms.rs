@@ -87,7 +87,7 @@ async fn add_new_classroom(
     )
 )]
 
-/// Get the list of all classrooms at a given page.
+/// Get the list of all classrooms a user has on a given page.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
@@ -97,7 +97,7 @@ async fn add_new_classroom(
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
-/// All the classrooms of a specific user and the amount of classrooms as [`ClassroomListResponse`].
+/// All the classrooms of a specific user and the number of classrooms as [`ClassroomListResponse`].
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.

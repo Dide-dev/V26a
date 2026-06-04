@@ -137,15 +137,15 @@ pub async fn get_all_classrooms(
     Ok(classrooms)
 }
 
-/// Gets the amount of classrooms a user owns.
+/// Gets the number of classrooms a user owns.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `id` - The id of the user for whom we need to return the amount of classrooms.
+/// `id` - The id of the user for whom we need to return the number of classrooms.
 ///
 /// # Returns
-/// The amount of classrooms a user owns,
+/// The number of classrooms a user owns,
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
