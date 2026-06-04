@@ -84,10 +84,11 @@ impl Config {
             .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
             * 1_048_576; // Mebibytes to bytes
 
-        let smtp_url = env::var("SMTP_URL").expect("SMTP environment variables must be set");
-        let transport = AsyncSmtpTransport::<Tokio1Executor>::from_url(&smtp_url)
-            .expect("Failed to create AsyncSmtpTransport.")
-            .build();
+        let smtp_server =
+            env::var("SMTP_SERVER").expect("Environment variable SMTP_SERVER must be set");
+        // builder_dangerous disables TLS and authentication, this is fine because we are only connecting to a localhost relay server.
+        let transport =
+            AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(smtp_server).build();
         let mailer = Arc::new(SmtpMailer { transport });
 
         Self {

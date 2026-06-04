@@ -60,7 +60,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SESSION_EXPIRATION_SECONDS=${SESSION_EXPIRATION_SECONDS}
       - VERIFICATION_TIMER_SECONDS=${VERIFICATION_TIMER_SECONDS}
-      - SMTP_URL=${SMTP_URL}
+      - SMTP_SERVER=${SMTP_SERVER}
     depends_on:
       db:
         condition: service_healthy
@@ -108,7 +108,6 @@ services:
     restart: unless-stopped
     environment:
       - MP_SMTP_BIND_ADDR=0.0.0.0:25
-      - MP_SMTP_AUTH=${SMTP_USERNAME}:${SMTP_PASSWORD}
       - MP_SMTP_AUTH_ALLOW_INSECURE=true
     ports:
       - "25:25" # SMTP
