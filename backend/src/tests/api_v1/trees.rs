@@ -1101,7 +1101,6 @@ async fn test_acquire_lock(db: PgPool) {
     ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
 
     // User 2 first fails, then forces
-    // (also enforcing that the default active_status is set to true)
     login(&server, user2.email.clone()).await;
     let mut ws2 = create_ws().await;
     ws2.assert_receive_json(&BackendMessage::LockFailed {
@@ -1113,20 +1112,9 @@ async fn test_acquire_lock(db: PgPool) {
         .await;
     ws2.assert_receive_json(&BackendMessage::LockAchieved).await;
 
-    // User 2 becomes inactive, user 1 kicks out user 2 without forcing
-    ws2.send_json(&FrontendMessage::SetActive {
-        new_active_state: false,
-    })
-    .await;
-    login(&server, user1.email.clone()).await;
+    // User 2 closes the websocket (by for example leaving page),
+    // the lock is gone, so user 1 doesn't need to force the lock.
+    ws2.close().await;
     ws1 = create_ws().await;
     ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
-    ws2.assert_receive_json(&BackendMessage::KickedOutBy { user_id: user_id1 })
-        .await;
-
-    // User 1 closes the websocket (by for example leaving page),
-    // the lock is gone, so user 2 doesn't need to force the lock.
-    ws1.close().await;
-    ws2 = create_ws().await;
-    ws2.assert_receive_json(&BackendMessage::LockAchieved).await;
 }

@@ -36,10 +36,6 @@ pub struct TreeEditLock {
     /// If this struct is dropped, the user will also be kicked.
     /// The content of the message is the user who kicked you out.
     pub kick_out_sender: oneshot::Sender<i32>,
-
-    /// Indicates if the user is tabbed out or not.
-    /// Is an arc atomic bool, so that changing this value doesn't need to lock the entire `HashMap`.
-    pub is_active: Arc<std::sync::atomic::AtomicBool>,
 }
 
 /// This struct is meant to be wrapped in a [`Arc`],

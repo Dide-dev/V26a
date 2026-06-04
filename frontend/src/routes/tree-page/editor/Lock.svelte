@@ -16,6 +16,7 @@
     import { onMount, type Snippet } from 'svelte';
     import { m } from '$lib/paraglide/messages';
     import UserDisplay from '$lib/UserDisplay.svelte';
+    import Popup from '$lib/Popup.svelte';
 
     let {
         treeId,
@@ -23,13 +24,9 @@
         children
     }: { treeId: TreeId; children: Snippet } = $props();
 
-    type FrontendMessage = FrontendMessageForce | FrontendMessageForceSetActive;
+    type FrontendMessage = FrontendMessageForce;
     type FrontendMessageForce = {
         type: 'force';
-    };
-    type FrontendMessageForceSetActive = {
-        type: 'setActive';
-        newActiveState: boolean;
     };
 
     type BackendMessage =
@@ -52,14 +49,17 @@
     type LocalState =
         | LocalStateWaiting
         | LocalStateServerDisconnected
+        | LocalStateLockFailed
         | BackendMessageLockAchieved
-        | BackendMessageLockFailed
         | BackendMessageKickedOutBy;
     type LocalStateWaiting = {
         type: 'waiting';
     };
     type LocalStateServerDisconnected = {
         type: 'serverDisconnected';
+    };
+    type LocalStateLockFailed = BackendMessageLockFailed & {
+        popupOpen?: boolean;
     };
 
     let localState = $state({ type: 'waiting' } as LocalState);
@@ -93,30 +93,50 @@
         return () => websocket.close();
     });
 
-    function sendMessage(message: FrontendMessage) {
+    function sendForceMessage() {
+        let message: FrontendMessage = { type: 'force' };
         websocket.send(JSON.stringify(message));
     }
 </script>
-
-<svelte:document
-    onvisibilitychange={() => {
-        if (websocket.readyState === WebSocket.CONNECTING) {
-            // When lock is first mounted, the websocket is not yet connected,
-            // but this event will fire and say that the document is visible.
-            return;
-        }
-
-        const newActiveState = !document.hidden;
-        sendMessage({ type: 'setActive', newActiveState });
-    }}
-/>
 
 {#if localState.type === 'waiting'}
     <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
 {/if}
 
+{#snippet forceKickSnippet(state: LocalStateLockFailed)}
+    {#if state.popupOpen ?? false}
+        <Popup>
+            <div class="flex max-w-md flex-col gap-2">
+                <p>
+                    <UserDisplay userId={state.activeUser} />
+                    {m.otherUserKickConfirm()}
+                </p>
+                <div class="flex justify-end gap-2">
+                    <button
+                        class="cursor-pointer rounded bg-red-300 p-1"
+                        onclick={sendForceMessage}
+                    >
+                        {m.forceKick()}
+                    </button>
+                    <button
+                        class="cursor-pointer rounded bg-green-300 p-1"
+                        onclick={() => {
+                            // This check is unnecessary, but typescript doesn't realize that
+                            if (localState.type !== 'lockFailed') return;
+
+                            localState.popupOpen = false;
+                        }}
+                    >
+                        {m.cancel()}
+                    </button>
+                </div>
+            </div>
+        </Popup>
+    {/if}
+{/snippet}
+
 {#if localState.type !== 'lockAchieved' && localState.type !== 'waiting'}
-    <div class="m-3 flex flex-col items-center gap-2">
+    <div class="m-3 flex max-w-md flex-col items-center gap-2">
         <p>
             {#if localState.type === 'kickedOutBy'}
                 {m.kickedBy()} <UserDisplay userId={localState.userId} />
@@ -127,19 +147,23 @@
             {/if}
         </p>
         <div class="flex gap-2">
+            <button class="cursor-pointer rounded bg-blue-300 p-1" onclick={retry}>
+                {m.retry()}
+            </button>
             {#if localState.type === 'lockFailed'}
                 <button
                     class="cursor-pointer rounded bg-red-300 p-1"
                     onclick={() => {
-                        sendMessage({ type: 'force' });
+                        // This check is unnecessary, but typescript doesn't realize that
+                        if (localState.type !== 'lockFailed') return;
+
+                        localState.popupOpen = true;
                     }}
                 >
                     {m.forceKick()}
                 </button>
+                {@render forceKickSnippet(localState)}
             {/if}
-            <button class="cursor-pointer rounded bg-blue-300 p-1" onclick={retry}>
-                {m.retry()}
-            </button>
         </div>
     </div>
 {/if}

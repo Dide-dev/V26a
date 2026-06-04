@@ -4,11 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
-
 use axum::{
     Extension,
     extract::{
@@ -90,10 +85,8 @@ pub async fn acquire_edit_lock(
     rename_all_fields = "camelCase"
 )]
 pub enum FrontendMessage {
-    /// Will kick out any potential other user, even if they are currenctly active and have unsaved changes.
+    /// Will force acquire the lock, kicking out any potential other user holding the lock
     Force,
-    /// Set active state. If set to true, any other user trying to acquire the lock will have to click a button to force.
-    SetActive { new_active_state: bool },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, PartialEq)]
@@ -103,7 +96,7 @@ pub enum FrontendMessage {
     rename_all_fields = "camelCase"
 )]
 pub enum BackendMessage {
-    /// Lock achieved, it is safe to edit.
+    /// Lock achieved, the tree is safe to edit.
     LockAchieved,
     /// Could not achive lock, because another user is active.
     LockFailed { active_user: i32 },
@@ -145,8 +138,7 @@ impl BackendMessage {
 /// because it calls [`handle_socket_with_lock`]
 ///
 /// This function handles a websocket that does not (yet) have a lock.
-/// If no one holds the lock or the other user is inactive, this function
-/// will immediately set the lock and call `handle_socket_with_lock`.
+/// If no one holds the lock, this function will immediately set the lock and call `handle_socket_with_lock`.
 ///
 /// Otherwise, it will wait until the `FrontendMessage::Force` is received.
 async fn handle_socket_without_lock(
@@ -157,11 +149,9 @@ async fn handle_socket_without_lock(
 ) {
     let (my_sender, my_receiver) = tokio::sync::oneshot::channel();
 
-    let is_active = Arc::new(AtomicBool::new(true));
     let my_tree_lock = TreeEditLock {
         user_id,
         kick_out_sender: my_sender,
-        is_active: is_active.clone(),
     };
 
     // Try lock
@@ -170,35 +160,28 @@ async fn handle_socket_without_lock(
         let mut tree_edit_locks = state.tree_edit_locks.lock().await;
 
         match tree_edit_locks.entry(tree_id) {
-            Entry::Occupied(mut occupied_entry) => {
-                let old_lock = occupied_entry.get();
-                if !old_lock.is_active.load(Ordering::Relaxed) {
-                    let old_lock = occupied_entry.insert(my_tree_lock);
-                    old_lock.kick_out_sender.send(user_id).ok();
-
-                    // We must drop the MutexGuard since the `handle_socket_with_lock` will run for a long time.
-                    std::mem::drop(tree_edit_locks);
-                    return handle_socket_with_lock(socket, state, is_active, tree_id, my_receiver)
-                        .await;
-                }
+            Entry::Occupied(occupied_entry) => {
+                // Locking failed because someone else is has it.
 
                 let message = BackendMessage::LockFailed {
-                    active_user: old_lock.user_id,
+                    active_user: occupied_entry.get().user_id,
                 };
                 message.try_send(&mut socket).await;
             }
             Entry::Vacant(vacant_entry) => {
+                // Locking succeeded!
                 vacant_entry.insert(my_tree_lock);
 
                 // We must drop the MutexGuard since the `handle_socket_with_lock` will run for a long time.
                 std::mem::drop(tree_edit_locks);
-                return handle_socket_with_lock(socket, state, is_active, tree_id, my_receiver)
-                    .await;
+                return handle_socket_with_lock(socket, state, tree_id, my_receiver).await;
             }
         }
     }
 
-    while let Some(msg) = FrontendMessage::try_receive(&mut socket).await {
+    // If other messages are added, this should turn into a loop.
+    // Currently the only message would return out of the loop.
+    if let Some(msg) = FrontendMessage::try_receive(&mut socket).await {
         match msg {
             FrontendMessage::Force => {
                 let mut tree_edit_locks = state.tree_edit_locks.lock().await;
@@ -212,12 +195,10 @@ async fn handle_socket_without_lock(
 
                 // We must drop the MutexGuard since the `handle_socket_with_lock` will run for a long time.
                 std::mem::drop(tree_edit_locks);
-                return handle_socket_with_lock(socket, state, is_active, tree_id, my_receiver)
-                    .await;
-            }
-            FrontendMessage::SetActive { new_active_state } => {
-                // This would be very unusual, but we will play along
-                is_active.store(new_active_state, Ordering::Relaxed);
+
+                // The function should return with this the result of this function,
+                // but currently there would be a clippy warning since this is not a loop.
+                handle_socket_with_lock(socket, state, tree_id, my_receiver).await;
             }
         }
     }
@@ -229,12 +210,10 @@ async fn handle_socket_without_lock(
 /// as it will clean up the `state.tree_edit_locks[tree_id]` before returning when done.
 ///
 /// This function handles a websocket that already has the lock.
-/// So it will ignore the `FrontendMessage::Force` message and will update
-/// active state whenever `FrontendMessage::SetActive` is received.
+/// So it will ignore the [`FrontendMessage::Force`] message and will update
 async fn handle_socket_with_lock(
     mut socket: WebSocket,
     state: ArcState,
-    is_active: Arc<AtomicBool>,
     tree_id: i32,
     mut my_receiver: Receiver<i32>,
 ) {
@@ -251,9 +230,6 @@ async fn handle_socket_with_lock(
                 match msg {
                     FrontendMessage::Force => {
                         // Nothing to do here, tree is already locked by this user
-                    },
-                    FrontendMessage::SetActive { new_active_state } => {
-                        is_active.store(new_active_state, Ordering::Relaxed);
                     },
                 }
             }
