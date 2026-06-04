@@ -436,35 +436,6 @@ pub struct TreeGeneratedData {
     pub last_visited: Option<DateTime<Utc>>,
 }
 
-/// The data needed to update a tree.
-#[derive(serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeUpdateStructureData {
-    pub id: i32,
-    pub new_structure: TreeStructure,
-}
-
-/// The data needed to remove a card from a tree.
-#[derive(serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeUpdateData {
-    pub id: i32,
-    pub new_data: TreeData,
-}
-
-/// The data needed to remove a card from a tree.
-///
-/// The `new_structure` must be passed, as the card has to be removed simultaneously
-/// with the update of the structure in a single database transaction to ensure the database
-/// remains in a valid state.
-#[derive(serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeRemoveCardData {
-    pub tree_id: i32,
-    pub card_id: i32,
-    pub new_structure: TreeStructure,
-}
-
 /// The data needed to initialize a tree in the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
