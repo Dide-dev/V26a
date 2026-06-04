@@ -20,7 +20,7 @@ use crate::errors::ApiError;
 
 use crate::db_structs::Validated;
 use axum::extract::State;
-use axum::routing::{delete, get, post, put};
+use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
@@ -34,7 +34,12 @@ use utoipa::ToSchema;
 pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/me", get(get_own_user_data).put(update_user_data).delete(delete_user_data))
+        .route(
+            "/me",
+            get(get_own_user_data)
+                .put(update_user_data)
+                .delete(delete_user_data),
+        )
         .route("/me/password", put(change_password))
 }
 
