@@ -6,9 +6,9 @@
 use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData, ClassroomMetaData};
 use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
+use chrono::{DateTime, Utc};
 use rand::prelude::*;
 use sqlx::{PgConnection, PgExecutor, query, query_scalar};
-use chrono::{DateTime, Utc};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///

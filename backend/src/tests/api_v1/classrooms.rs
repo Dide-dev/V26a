@@ -70,7 +70,7 @@ async fn test_get_classrooms(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classrooms_unauthorized(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let response = server.get("/users/me/classrooms").await;
     response.assert_status_unauthorized();

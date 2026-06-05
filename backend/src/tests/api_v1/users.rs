@@ -171,10 +171,11 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
 #[sqlx::test]
 async fn test_password_change_invalidates_other_sessions(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     let register_data = RegisterData::test_values();
-    let user_id = register(&server, &register_data).await;
+    let user_id = register(&test_state, &register_data).await;
+    let server = test_state.server;
 
     // Create two sessions.
     login(&server, register_data.email.clone()).await;
@@ -207,7 +208,7 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
     register(&test_state, &register_data).await;
@@ -230,10 +231,11 @@ async fn test_delete_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     let register_data = RegisterData::test_values();
-    let user_id = register(&server, &register_data).await;
+    let user_id = register(&test_state, &register_data).await;
+    let server = test_state.server;
     login(&server, register_data.email.clone()).await;
     login(&server, register_data.email.clone()).await;
 

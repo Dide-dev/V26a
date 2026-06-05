@@ -120,7 +120,7 @@ export function addUser(
 
 /* Verify a pending user */
 export function verifyUser(code: string): Promise<UserSuccess | UserInvalidVerification> {
-    return apiCallVerifyUser(`verify?code=${code}`);
+    return apiCallVerifyUser(`/verify?code=${code}`);
 }
 
 /** Delete a user in the database */

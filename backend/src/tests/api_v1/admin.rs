@@ -190,8 +190,9 @@ async fn test_admin_update_pending_user(db: PgPool) {
     assert_eq!(response, UserResponse::EmailAlreadyUsed);
 }
 
+#[sqlx::test]
 async fn test_disable_user(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
@@ -206,7 +207,13 @@ async fn test_disable_user(db: PgPool) {
 
     // Create an user that has 2 sessions active.
     let user_account = RegisterData::test_values();
-    let other_user_id = register(&server, &user_account).await;
+    let other_user_id = register(&test_state, &user_account).await;
+
+    // Create one admin account that can disable an user.
+    let admin_account = RegisterData::test_values();
+    register_admin(&test_state, &db, &admin_account).await;
+    let server = test_state.server;
+
     login(&server, user_account.email.clone()).await;
     login(&server, user_account.email.clone()).await;
 
@@ -219,10 +226,6 @@ async fn test_disable_user(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(sessions, Some(2));
-
-    // Create one admin account that can disable an user.
-    let admin_account = RegisterData::test_values();
-    register_admin(&server, &db, &admin_account).await;
     login(&server, admin_account.email).await;
 
     // Update the userdata to disable the account.
@@ -268,11 +271,14 @@ async fn test_change_password(db: PgPool) {
 
 #[sqlx::test]
 async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     // Create a regular user with two sessions.
     let user_account = RegisterData::test_values();
-    let user_id = register(&server, &user_account).await;
+    let admin_account = RegisterData::test_values();
+    let user_id = register(&test_state, &user_account).await;
+    register_admin(&test_state, &db, &admin_account).await;
+    let server = test_state.server;
     login(&server, user_account.email.clone()).await;
     login(&server, user_account.email.clone()).await;
 
@@ -284,8 +290,6 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
     assert_eq!(sessions, Some(2));
 
     // Login as admin.
-    let admin_account = RegisterData::test_values();
-    register_admin(&server, &db, &admin_account).await;
     login(&server, admin_account.email).await;
 
     // Change the user's password as admin.
