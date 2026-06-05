@@ -56,7 +56,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
       - RUST_LOG=${RUST_LOG}
-      - JWT_SECRET=${JWT_SECRET}
       - SESSION_EXPIRATION_SECONDS=${SESSION_EXPIRATION_SECONDS}
     depends_on:
       db:
