@@ -15,7 +15,10 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db::feedback::{get_all_feedback, get_feedback_count};
+use crate::db::{
+    feedback::{get_all_feedback, get_feedback_count},
+    session::delete_all_sessions_user,
+};
 use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
 };
@@ -50,6 +53,7 @@ async fn check_if_admin(
 }
 
 /// Creates an `Axum` [`Router`] for the user category.
+/// All paths are going through a middleware to check if the user is an admin.
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
         .route("/users", get(get_all_user_data))
@@ -156,7 +160,10 @@ async fn update_user_data(
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     new_data.validate_inputs()?;
-    if !user_id_exists(&db, user_id).await? {
+
+    let mut transaction = db.begin().await?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
 
@@ -184,7 +191,13 @@ async fn update_user_data(
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
-    admin_update_user(&db, user_id, &new_data).await?;
+    admin_update_user(&mut *transaction, user_id, &new_data).await?;
+
+    if !new_data.enabled {
+        delete_all_sessions_user(&mut *transaction, user_id).await?;
+    }
+
+    transaction.commit().await?;
 
     Ok(Json(UserResponse::Success { user_id }))
 }
@@ -237,8 +250,12 @@ async fn change_password(
     )
     .await?;
 
+    // All sessions of the account are invalidated if password is changed.
+    delete_all_sessions_user(&db, user_id).await?;
+
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
+
 #[utoipa::path(
     get,
     path = "/users/{user_id}",

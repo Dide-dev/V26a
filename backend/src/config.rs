@@ -32,7 +32,6 @@ pub struct Config {
     pub session_duration: i64,
     /// This duration is in _seconds_.
     pub verification_timer: i64,
-    pub jwt_keys: Keys,
 
     /// Upload images directory
     pub upload_dir: String,
@@ -90,11 +89,6 @@ impl Config {
             .unwrap_or("900".to_owned())
             .parse()
             .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
-        let jwt_keys = Keys::new(
-            env::var("JWT_SECRET")
-                .expect("Environment variable JWT_SECRET must be set")
-                .as_bytes(),
-        );
 
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
             .unwrap_or("30".to_string())
@@ -130,7 +124,6 @@ impl Config {
             bcrypt_cost,
             session_duration,
             verification_timer,
-            jwt_keys,
             upload_dir,
             max_upload_size,
             mailer,
