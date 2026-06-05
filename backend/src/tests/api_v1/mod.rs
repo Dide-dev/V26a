@@ -22,7 +22,7 @@ use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
 use axum::Extension;
-use axum_extra::extract::{CookieJar, cookie::Cookie};
+use axum_extra::extract::{cookie::Cookie};
 use axum_test::{TestResponse, TestServer};
 use percent_encoding::percent_decode_str;
 use serde::de::DeserializeOwned;
@@ -33,14 +33,6 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
     let decoded_value = percent_decode_str(value).decode_utf8().unwrap();
     serde_json::from_str(&decoded_value).unwrap()
-}
-
-fn response_to_jar(response: &TestResponse) -> CookieJar {
-    let mut jar = CookieJar::new();
-    for cookie in response.iter_cookies() {
-        jar = jar.add(cookie.into_owned());
-    }
-    jar
 }
 
 /// Sets up an API test server with the given mock database.

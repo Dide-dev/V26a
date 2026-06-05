@@ -7,12 +7,11 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::extract_token;
 use crate::db::session::get_session;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
-use crate::tests::api_v1::{get_cookie_data, login, register, response_to_jar, setup};
+use crate::tests::api_v1::{get_cookie_data, login, register, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -52,8 +51,9 @@ async fn test_logout_success(db: PgPool) {
 
     register(&server, &register_data).await;
     let login_response = login(&server, register_data.email).await;
-    let jar = response_to_jar(&login_response);
-    let token = extract_token(&jar).unwrap();
+    let token = login_response.cookie("session")
+        .value()
+        .to_string();
 
     server.delete("/auth").await;
 
