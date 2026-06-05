@@ -63,27 +63,25 @@
 
 <div class="flex">
     {#if 'label' in node}
-        <!-- Root Node -->
-        <button
-            class={[
-                !rootOpen && 'closed',
-                node.children.length > 0 && 'hover:text-neutral-600',
-                'root mr-1 mb-5 ml-1 flex h-fit w-card-width-md shrink-0 cursor-pointer flex-row gap-2 text-right wrap-anywhere *:*:justify-end'
-            ]}
-            onclick={toggleRoot}
-            title={rootOpen ? m.closeBranch() : m.openBranch()}
-        >
-            {#if node.children.length > 0}
+        {#if node.children.length > 0}
+            <!-- Root Node -->
+            <button
+                class={[
+                    !rootOpen && 'closed',
+                    node.children.length > 0 && 'hover:text-neutral-600',
+                    'root mr-1 mb-5 ml-1 flex h-fit w-card-width-md shrink-0 cursor-pointer flex-row gap-2 text-right wrap-anywhere *:*:justify-end'
+                ]}
+                onclick={toggleRoot}
+                title={rootOpen ? m.closeBranch() : m.openBranch()}
+            >
                 <AnimatedUnderline
                     --weight-underline="calc(var(--spacing) / 3)"
                     --color-underline="var(--color-neutral-600)"
                 >
                     <p class="font-semibold">{node.label}</p>
                 </AnimatedUnderline>
-            {:else}
-                <p class="font-semibold">{node.label}</p>
-            {/if}
-        </button>
+            </button>
+        {/if}
     {:else}
         <!-- Standard Node -->
         <!-- The 'flex' here prevents some weird vertical whitespace -->
