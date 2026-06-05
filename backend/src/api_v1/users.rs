@@ -370,7 +370,7 @@ async fn delete_user_data(
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
-/// All the classrooms of me and the number of classrooms as [`ClassroomListResponse`].
+/// All the user's classrooms and the number of classrooms as [`ClassroomListResponse`].
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
