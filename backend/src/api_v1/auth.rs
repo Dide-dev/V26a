@@ -5,19 +5,18 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::rate_limit_layer;
+use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_email;
+use crate::db::session::{create_session, delete_session};
 use crate::db::users::get_user;
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::errors::ApiError;
 use axum::extract::State;
-use axum::routing::post;
+use axum::routing::{delete, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::{CookieJar, cookie::Cookie};
-use chrono::Utc;
-use jsonwebtoken::{Header, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use time::Duration;
@@ -25,7 +24,9 @@ use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
-    Router::new().route("/", post(login).layer(rate_limit_layer(15, 30)))
+    Router::new()
+        .route("/", post(login).layer(rate_limit_layer(15, 30)))
+        .route("/", delete(logout))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -47,30 +48,24 @@ pub struct LoginResponse {
         (status = 500, description = "Internal server error."),
     ),
 )]
-/// An endpoint for logging in, if the given credentials are valid. Takes a [`LoginRequestBody`], and on success sets a session cookie
-/// with an encoded JWT.
+/// Login to an account if the given credentials are valid. It takes a [`LoginRequestBody`], and on success sets a session cookie.
 ///
 /// # Arguments
 /// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
 ///
 /// # Returns
 /// A [`LoginResponse`] which flags whether the combination of email and password is correct.
-/// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
+/// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException) if the password hashing fails.
-///
-/// May return a [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException), [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(login_request): Json<LoginRequestBody>,
 ) -> Result<(CookieJar, Json<LoginResponse>), ApiError> {
-    let config = &state.config;
     login_request.validate_inputs()?;
 
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
@@ -84,29 +79,18 @@ async fn login(
         return Ok((jar, Json(LoginResponse { succeeded: false })));
     }
 
-    let claims = Claims {
+    let user_data = get_user(&db, credentials.user_id).await?;
+    let user_info = InfoCookieData {
+        name: user_data.data.name,
+        nickname: user_data.data.nickname,
         sub: credentials.user_id,
-        exp: Utc::now().timestamp() + config.session_duration,
         account_type: credentials.account_type,
     };
 
-    let user_data = get_user(&db, credentials.user_id).await?;
+    let session_duration = state.config.session_duration;
+    let token = create_session(&db, credentials.user_id, session_duration).await?;
 
-    let user_info_cookie = InfoCookieData {
-        name: user_data.data.name,
-        nickname: user_data.data.nickname,
-        sub: claims.sub,
-        account_type: claims.account_type,
-    };
-
-    // Create the authorization token.
-    let token = encode(&Header::default(), &claims, &config.jwt_keys.encoding)
-        .map_err(|_| ApiError::TokenCreationException)?;
-
-    let user_info = serde_json::to_string(&user_info_cookie)?;
-
-    // Age of a cookie (same for the two cookies)
-    let time = Duration::seconds(config.session_duration);
+    let user_info_serialised = serde_json::to_string(&user_info)?;
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
@@ -117,20 +101,58 @@ async fn login(
     // `MaxAge`: After this much time has passed, the browser will automatically delete the cookie.
     // See also https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies
 
+    // The age of a cookie (same for the two cookies)
+    let duration = Duration::seconds(session_duration);
+
     let cookie = Cookie::build(("session", token))
         .path("/api/")
         .secure(true)
-        .max_age(time)
+        .max_age(duration)
         .http_only(true);
 
-    let user_cookie = Cookie::build(("user_info", user_info))
+    let user_info_cookie = Cookie::build(("user_info", user_info_serialised))
         .path("/")
         .secure(true)
-        .max_age(time)
+        .max_age(duration)
         .http_only(false);
 
     Ok((
-        jar.add(cookie).add(user_cookie),
+        jar.add(cookie).add(user_info_cookie),
         Json(LoginResponse { succeeded: true }),
     ))
+}
+
+#[utoipa::path(
+    delete,
+    path = "",
+    context_path = "/api/v1/auth",
+    responses(
+        (status = 200, description = "User successfully logged out."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Logs out a user and deletes their session on the backend.
+///
+/// # Arguments
+/// `jar` - The jar with the cookies (`user_info` & session).
+///
+/// # Returns
+/// The cookie jar with its user sessions removed.
+///
+/// # Errors
+/// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
+async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
+    let token = extract_token(&jar)?;
+
+    // Invalidate the session.
+    delete_session(&db, &token).await?;
+
+    // Unset the cookie, "remove" sets the time of the cookie in the past.
+    Ok(jar
+        .remove(Cookie::from("session"))
+        .remove(Cookie::from("user_info")))
 }

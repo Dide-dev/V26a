@@ -7,7 +7,9 @@
 #![cfg(test)]
 
 use crate::api_v1::classrooms::verify_classroom_permissions;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, LessonAddData};
+use crate::db_structs::classrooms::{
+    ClassroomData, ClassroomGeneratedData, ClassroomListResponse, LessonAddData,
+};
 use crate::db_structs::session::Claims;
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
@@ -19,7 +21,7 @@ use sqlx::PgPool;
 async fn test_new_classroom(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -44,12 +46,40 @@ async fn test_new_classroom(db: PgPool) {
 async fn test_new_classroom_forbidden(db: PgPool) {
     let server = setup(db);
 
-    let classroom_add_data = ClassroomAddData {
+    let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
 
     let response = server.post("/classrooms").json(&classroom_add_data).await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_get_classrooms(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let classroom_add_data = ClassroomData {
+        name: "Classroom".to_owned(),
+        description: String::new(),
+    };
+
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
+    response.assert_status_ok();
+
+    let response2 = server.get("/users/me/classrooms").await;
+    response2.assert_status_ok();
+
+    let classroom_list: ClassroomListResponse = response2.json();
+
+    assert_eq!(classroom_list.total_classrooms, 1);
+}
+
+#[sqlx::test]
+async fn test_get_classrooms_unauthorized(db: PgPool) {
+    let server = setup(db);
+
+    let response = server.get("/users/me/classrooms").await;
     response.assert_status_unauthorized();
 }
 

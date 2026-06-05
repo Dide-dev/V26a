@@ -19,7 +19,7 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
+use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
 use axum::Extension;
@@ -177,7 +177,7 @@ async fn create_tree(test_server: &TestServer) -> i32 {
 /// # Returns
 /// An i32 representing the classroom's id.
 async fn create_classroom(test_server: &TestServer) -> i32 {
-    let classroom_data = ClassroomAddData {
+    let classroom_data = ClassroomData {
         name: "Classroom".to_string(),
         description: "Classroom description".to_string(),
     };
