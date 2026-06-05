@@ -17,13 +17,13 @@ use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
 use crate::db_structs::Validated;
-use axum::extract::{Path, State};
-use axum::routing::{delete, get, post, put};
+use axum::extract::State;
+use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
@@ -44,8 +44,7 @@ pub fn users() -> Router<ArcState> {
                 .delete(delete_user_data),
         )
         .route("/me/password", put(change_password))
-        .route("/{user_id}", delete(delete_user_data))
-        .route("/{user_id}/classrooms", get(get_all_owned_classrooms))
+        .route("/me/classrooms", get(get_all_owned_classrooms))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -356,35 +355,27 @@ async fn delete_user_data(
     responses(
         (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
-        ("user_id" = i32, Path),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
-
 /// Get the list of all classrooms a user has on a given page.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `user_id` - The user for whom to get their classrooms.
-///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
 /// # Returns
-/// All the classrooms of a specific user and the number of classrooms as [`ClassroomListResponse`].
+/// All the classrooms of me and the number of classrooms as [`ClassroomListResponse`].
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
-/// the classroom data.
-///
-///  Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
 ///
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
 /// invalid or corrupted.
@@ -393,18 +384,14 @@ async fn delete_user_data(
 async fn get_all_owned_classrooms(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
     Query(page): Query<OptionalPaginationOptions>,
 ) -> Result<Json<ClassroomListResponse>, ApiError> {
-    if claims.account_type != AccountType::Admin && claims.sub != user_id {
-        return Err(ApiError::NoPermission);
-    }
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
     let mut transaction = db.begin().await?;
-    let classroom_count = get_classroom_count(&mut *transaction, user_id).await?;
+    let classroom_count = get_classroom_count(&mut *transaction, claims.sub).await?;
 
-    let classrooms = get_all_classrooms(&mut *transaction, user_id, &page).await?;
+    let classrooms = get_all_classrooms(&mut *transaction, claims.sub, &page).await?;
     transaction.commit().await?;
     let list = ClassroomListResponse {
         total_classrooms: i32::try_from(classroom_count)
