@@ -21,7 +21,7 @@ use sqlx::{PgConnection, PgPool};
 pub fn classrooms() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_classroom))
-        .route("/{id}/add-lesson", post(add_new_lesson))
+        .route("/{classroom_id}/lessons", post(add_new_lesson))
 }
 
 #[utoipa::path(
@@ -67,7 +67,7 @@ async fn add_new_classroom(
 
 #[utoipa::path(
     post,
-    path = "/{classroom_id}/add-lesson",
+    path = "/{classroom_id}/lessons",
     context_path = "/api/v1/classrooms",
     request_body = LessonAddData,
     responses(

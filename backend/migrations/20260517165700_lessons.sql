@@ -8,13 +8,14 @@ CREATE TABLE lessons
 (
     id                  SERIAL PRIMARY KEY,
     classroom_id        INTEGER         NOT NULL,
-    order_number        INTEGER UNIQUE  NOT NULL,
+    order_number        INTEGER         NOT NULL,
     created_at          TIMESTAMPTZ     NOT NULL    DEFAULT CURRENT_TIMESTAMP,
     name                VARCHAR(32)     NOT NULL,
     description         VARCHAR(128)    NOT NULL    DEFAULT '',
     published           BOOLEAN         NOT NULL    DEFAULT FALSE,
 
-    FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE
+    FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE,
+    CONSTRAINT order_number_unique UNIQUE (id, order_number)
 );
 
 CREATE TABLE lesson_trees

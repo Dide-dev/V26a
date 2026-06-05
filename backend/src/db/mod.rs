@@ -45,7 +45,7 @@ macro_rules! get_connection_unwrap {
 pub mod test {
     use crate::db::classrooms::generate_random_code;
     use crate::db::trees::parse_isbn;
-    use crate::db_structs::cards::{CardAddData, CardData};
+    use crate::db_structs::cards::CardData;
     use crate::db_structs::classrooms::ClassroomAddData;
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::RegisterData;

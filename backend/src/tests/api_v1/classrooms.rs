@@ -67,7 +67,7 @@ async fn test_new_lesson(db: PgPool) {
     };
 
     let response = server
-        .post(&format!("/classrooms/{classroom_id}/add-lesson"))
+        .post(&format!("/classrooms/{classroom_id}/lessons"))
         .json(&lesson_add_data)
         .await;
     response.assert_status_bad_request();
@@ -75,14 +75,14 @@ async fn test_new_lesson(db: PgPool) {
 
     let classroom_id: i32 = create_classroom(&server).await;
     let response = server
-        .post(&format!("/classrooms/{classroom_id}/add-lesson"))
+        .post(&format!("/classrooms/{classroom_id}/lessons"))
         .json(&lesson_add_data)
         .await;
     response.assert_status_ok();
 
     server.clear_cookies();
     let response = server
-        .post(&format!("/classrooms/{classroom_id}/add-lesson"))
+        .post(&format!("/classrooms/{classroom_id}/lessons"))
         .json(&lesson_add_data)
         .await;
     response.assert_status_unauthorized();
@@ -92,7 +92,7 @@ async fn test_new_lesson(db: PgPool) {
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
     let response = server
-        .post(&format!("/classrooms/{classroom_id}/add-lesson"))
+        .post(&format!("/classrooms/{classroom_id}/lessons"))
         .json(&lesson_add_data)
         .await;
     response.assert_status_forbidden();

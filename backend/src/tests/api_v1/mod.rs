@@ -181,10 +181,7 @@ async fn create_classroom(test_server: &TestServer) -> i32 {
         name: "Classroom".to_string(),
         description: "Classroom description".to_string(),
     };
-    let response = test_server
-        .post("/classrooms/add")
-        .json(&classroom_data)
-        .await;
+    let response = test_server.post("/classrooms").json(&classroom_data).await;
     response.json::<ClassroomGeneratedData>().id
 }
 
