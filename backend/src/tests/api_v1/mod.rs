@@ -22,7 +22,7 @@ use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
 use axum::Extension;
-use axum_extra::extract::{cookie::Cookie};
+use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
 use percent_encoding::percent_decode_str;
 use serde::de::DeserializeOwned;

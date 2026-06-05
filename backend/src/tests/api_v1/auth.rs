@@ -51,9 +51,7 @@ async fn test_logout_success(db: PgPool) {
 
     register(&server, &register_data).await;
     let login_response = login(&server, register_data.email).await;
-    let token = login_response.cookie("session")
-        .value()
-        .to_string();
+    let token = login_response.cookie("session").value().to_string();
 
     server.delete("/auth").await;
 

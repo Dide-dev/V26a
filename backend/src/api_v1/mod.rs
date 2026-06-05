@@ -100,10 +100,10 @@ pub fn rate_limit_layer(
 }
 
 /// Get the value of the session cookie from the [`CookieJar`]
-/// 
+///
 /// # Arguments
 /// `jar` - The [`CookieJar`] returned from a request.
-/// 
+///
 /// # Returns
 /// The value of a session cookie as a [`String`] if successful, or [`MissingAuthentication`](ApiError::MissingAuthentication) if not.
 pub fn extract_token(jar: &CookieJar) -> Result<String, ApiError> {
