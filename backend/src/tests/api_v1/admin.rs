@@ -8,8 +8,8 @@
 
 use crate::{
     db_structs::users::{
-        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData, UserData,
-        UserGetAllData, UserLanguage, UserListResponse,
+        AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData,
+        UserGeneralData, UserListResponse,
     },
     tests::api_v1::{login, register, register_admin, setup},
 };
@@ -20,11 +20,13 @@ async fn test_get_all_users_non_admin(db: PgPool) {
     let server = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&server, &account1).await;
+    register(&server, &account2).await;
+    login(&server, account2.email).await;
 
-    let response = server.get("/admin/all-user-data").await;
+    let response = server.get("/admin/users").await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
@@ -34,11 +36,13 @@ async fn test_get_all_users_admin(db: PgPool) {
     let server = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
-    register_admin(&server, &db, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "1@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register_admin(&server, &db, &account1).await;
+    register(&server, &account2).await;
+    login(&server, account1.email).await;
 
-    let response = server.get("/admin/all-user-data").await;
+    let response = server.get("/admin/users").await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
     let user_list: UserListResponse = response.json();
@@ -50,11 +54,13 @@ async fn test_get_one_user_non_admin(db: PgPool) {
     let server = setup(db);
 
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let user_id = register(&server, &account1).await;
+    register(&server, &account2).await;
+    login(&server, account2.email).await;
 
-    let response = server.get("/admin/users/1").await;
+    let response = server.get(&format!("/admin/users/{user_id}")).await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
@@ -64,38 +70,25 @@ async fn test_get_one_user_admin(db: PgPool) {
     let server = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
-    register_admin(&server, &db, "1@gmail.com".to_owned()).await;
+    let admin_account = RegisterData::test_values();
+    register_admin(&server, &db, &admin_account).await;
 
     // Create an account
-    let register_data = RegisterData {
-        email: "johnsmith@gmail.com".to_owned(),
-        password: "VeryStrongPassword1!".to_owned(),
-        data: UserData {
-            name: "name".to_owned(),
-            nickname: "nickname".to_owned(),
-            about_me: "about_me".to_owned(),
-            email_visible: true,
-            language: UserLanguage::En,
-        },
-    };
+    let user_account = RegisterData::test_values();
 
-    let response = server.post("/users/add").json(&register_data).await;
-    response.assert_status_ok();
+    let other_user_id = register(&server, &user_account).await;
+    login(&server, admin_account.email).await;
 
-    login(&server, "1@gmail.com".to_owned()).await;
-
-    let response = server.get("/admin/users/2").await;
+    let response = server.get(&format!("/admin/users/{other_user_id}")).await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
-    let user_data: UserGetAllData = response.json();
-    let expected_user_data = UserGetAllData {
-        email: register_data.email.clone(),
-        data: UserData {
-            name: register_data.data.name,
-            nickname: register_data.data.nickname,
-            about_me: register_data.data.about_me,
-            email_visible: register_data.data.email_visible,
-            language: register_data.data.language,
+    let user_data: AdminUpdateData = response.json();
+    let expected_user_data = AdminUpdateData {
+        email: user_account.email.clone(),
+        data: UserGeneralData {
+            name: user_account.data.name,
+            nickname: user_account.data.nickname,
+            about_me: user_account.data.about_me,
         },
         enabled: true,
         account_type: AccountType::Author,
@@ -109,23 +102,23 @@ async fn test_update_user(db: PgPool) {
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
-        data: UserData {
+        data: UserGeneralData {
             name: "John Smith".to_owned(),
             nickname: String::new(),
             about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::Nl,
         },
         enabled: true,
         account_type: AccountType::Admin,
     };
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let user_id = register(&server, &account1).await;
+    register(&server, &account2).await;
+    login(&server, account2.email).await;
 
     let response = server
-        .post("/admin/users/1/update-data")
+        .put(&format!("/admin/users/{user_id}"))
         .json(&update_data)
         .await;
     // It should fail because the user is not an admin
@@ -140,12 +133,14 @@ async fn test_change_password(db: PgPool) {
         new_password: "Banaan123!".to_owned(),
     };
     // Create two accounts and log in as one of them.
-    register(&server, "1@gmail.com".to_owned()).await;
-    register(&server, "2@gmail.com".to_owned()).await;
-    login(&server, "2@gmail.com".to_owned()).await;
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let user_id = register(&server, &account1).await;
+    register(&server, &account2).await;
+    login(&server, account2.email).await;
 
     let response = server
-        .post("/admin/users/1/update-password")
+        .put(&format!("/admin/users/{user_id}/password"))
         .json(&new_password)
         .await;
     // It should fail because the user is not an admin

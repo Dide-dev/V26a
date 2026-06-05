@@ -4,11 +4,11 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::Validated;
+use crate::db_structs::{Validated, validate_email, validate_password};
 use crate::errors::ApiError;
 use crate::limits::{
-    EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
-    USER_NICKNAME_MAX_LENGTH,
+    PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
+    USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -27,7 +27,12 @@ pub struct UserData {
 }
 
 impl Validated for UserData {
-    /// Returns a [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.name.chars().count() > USER_NAME_MAX_LENGTH {
             return Err(ApiError::InputLengthExceeded("name", USER_NAME_MAX_LENGTH));
@@ -42,6 +47,74 @@ impl Validated for UserData {
             return Err(ApiError::InputLengthExceeded(
                 "aboutMe",
                 USER_ABOUT_ME_MAX_LENGTH,
+            ));
+        }
+
+        if self.name.chars().count() < USER_NAME_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("name", USER_NAME_MIN_LENGTH));
+        }
+        if self.nickname != String::new()
+            && self.nickname.chars().count() < USER_NICKNAME_MIN_LENGTH
+        {
+            return Err(ApiError::InputLengthNotMet(
+                "nickname",
+                USER_NICKNAME_MIN_LENGTH,
+            ));
+        }
+
+        for char in self.name.chars() {
+            let legal = char.is_ascii_alphanumeric() || char == '_' || char == '-' || char == '.';
+            if !legal {
+                return Err(ApiError::IllegalName);
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Data the admin can modify, except email, password, enabled and account type.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserGeneralData {
+    pub name: String,
+    pub nickname: String,
+    pub about_me: String,
+}
+
+impl Validated for UserGeneralData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.name.chars().count() > USER_NAME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded("name", USER_NAME_MAX_LENGTH));
+        }
+        if self.nickname.chars().count() > USER_NICKNAME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "nickname",
+                USER_NICKNAME_MAX_LENGTH,
+            ));
+        }
+        if self.about_me.chars().count() > USER_ABOUT_ME_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "aboutMe",
+                USER_ABOUT_ME_MAX_LENGTH,
+            ));
+        }
+
+        if self.name.chars().count() < USER_NAME_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet("name", USER_NAME_MIN_LENGTH));
+        }
+        if self.nickname != String::new()
+            && self.nickname.chars().count() < USER_NICKNAME_MIN_LENGTH
+        {
+            return Err(ApiError::InputLengthNotMet(
+                "nickname",
+                USER_NICKNAME_MIN_LENGTH,
             ));
         }
 
@@ -65,19 +138,46 @@ pub struct RegisterData {
     pub data: UserData,
 }
 
+#[cfg(test)]
+impl RegisterData {
+    pub fn test_values() -> Self {
+        use rand::RngExt;
+
+        let mut rng = rand::rng();
+        let n: u64 = rng.random();
+
+        RegisterData {
+            email: format!("test{n}@localhost"),
+            password: "4$$wOrd!".to_owned(),
+            data: UserData {
+                name: format!("John_Test_{n}"),
+                nickname: String::new(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::En,
+            },
+        }
+    }
+}
+
 impl Validated for RegisterData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
+    ///
+    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
+    /// with at least 1 character in front of it and behind it.
+    ///
+    /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
 
-        if self.email.chars().count() > EMAIL_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
-        }
-        if self.password.len() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "password",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
+        validate_email(&self.email)?;
+
+        validate_password(&self.password, "password")?;
 
         Ok(())
     }
@@ -96,17 +196,25 @@ pub struct UserGetData {
 #[serde(rename_all = "camelCase")]
 pub struct AdminUpdateData {
     pub email: String,
-    pub data: UserData,
+    pub data: UserGeneralData,
     pub enabled: bool,
     pub account_type: AccountType,
 }
 
 impl Validated for AdminUpdateData {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
+    ///
+    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
+    /// with at least 1 character in front of it and behind it.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
-        if self.email.chars().count() > EMAIL_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded("email", EMAIL_MAX_LENGTH));
-        }
+        validate_email(&self.email)?;
+
         Ok(())
     }
 }
@@ -151,19 +259,20 @@ pub struct PasswordChangeRequestBody {
 }
 
 impl Validated for PasswordChangeRequestBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns an [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.old_password.len() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
+        if self.old_password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet(
                 "oldPassword",
-                PASSWORD_MAX_LENGTH,
+                PASSWORD_LOGIN_MIN_LENGTH,
             ));
         }
-        if self.new_password.len() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "newPassword",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
+        validate_password(&self.new_password, "newPassword")?;
 
         Ok(())
     }
@@ -177,13 +286,15 @@ pub struct AdminPasswordChangeRequestBody {
 }
 
 impl Validated for AdminPasswordChangeRequestBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns an [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        if self.new_password.len() > PASSWORD_MAX_LENGTH {
-            return Err(ApiError::InputLengthExceeded(
-                "newPassword",
-                PASSWORD_MAX_LENGTH,
-            ));
-        }
+        validate_password(&self.new_password, "newPassword")?;
+
         Ok(())
     }
 }

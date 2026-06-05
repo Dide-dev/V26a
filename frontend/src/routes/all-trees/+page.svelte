@@ -51,6 +51,11 @@
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
     }
 
+    function changePageSize() {
+        thisPage = 1;
+        loadTrees();
+    }
+
     function prevPage() {
         thisPage -= 1;
         loadTrees();
@@ -75,7 +80,7 @@
 <div class="flex w-full justify-center">
     <div class="flex-col">
         <!-- Filter options -->
-        <form class="flex w-md flex-col gap-2" onsubmit={loadTrees}>
+        <form class="completed flex w-md flex-col gap-2" onsubmit={loadTrees}>
             <b>{m.creationDate()}</b>
             <div class="flex">
                 <label class="m-1 flex-1/2">
@@ -114,16 +119,16 @@
                     bind:value={filterOptions.ownerId}
                 />
             </label>
-            <button>{m.applyFilters()}</button>
+            <button type="submit">{m.applyFilters()}</button>
         </form>
 
         <!-- Change the number of trees per page -->
         <label>
-            {m.numberOfTrees()}
+            {m.numberPerPage({ n: m.treesUncapitalized() })}
             <select
                 class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
                 bind:value={pageSizeString}
-                onchange={loadTrees}
+                onchange={changePageSize}
             >
                 <option value="5">5</option>
                 <option value="10">10</option>

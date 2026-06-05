@@ -101,14 +101,14 @@
         >
             <h1>{m.editThisCard()}</h1>
 
-            <p>Front</p>
+            <p>{m.front()}</p>
             <SimpleTextEditArea
                 maxLength={maxInputLengths.frontMaxLength}
                 height={2}
                 bind:valueText={sidebar.editingVersion.front}
             />
             <div class="h-5"></div>
-            <p>Back</p>
+            <p>{m.back()}</p>
             <div class="m-1 flex gap-2 rounded bg-white p-1">
                 <button
                     class="cursor-pointer rounded p-1"

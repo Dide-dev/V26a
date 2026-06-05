@@ -66,11 +66,12 @@
     );
 
     const minInputLengths = {
-        email: 0,
+        email: 3,
         name: 4,
         nickname: 2,
         aboutMe: 0,
-        password: 8
+        password: 8,
+        oldPassword: 1
     };
 
     const maxInputLengths = {
@@ -196,8 +197,8 @@
     }
 
     function handleCancel(e: Event) {
-        if (!formChanged) return;
         e.preventDefault();
+        if (!formChanged) return;
         resetInputStates();
         resetInputResponses();
         changePasswordData.oldPassword = '';
@@ -353,8 +354,7 @@
                     autocomplete="current-password"
                     data-testid="oldPassword"
                     placeholder={m.requiredPlaceholder({ value: m.oldPassword() })}
-                    minlength={minInputLengths.password}
-                    maxlength={maxInputLengths.password}
+                    minlength={minInputLengths.oldPassword}
                 />
                 {#if incorrectPassword}
                     <p class="text__error">{m.incorrectPassword()}</p>
@@ -413,8 +413,8 @@
                 {/if}
             </div>
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
-                <button data-testid="confirm-button">{m.confirmChanges()}</button>
-                <button onclick={handleCancel}>{m.cancel()}</button>
+                <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
+                <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
         </form>
     {/await}

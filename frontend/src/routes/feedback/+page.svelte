@@ -14,7 +14,7 @@
     });
 
     const minInputLengths = {
-        email: 1,
+        email: 3,
         feedback: 6
     };
 
@@ -84,7 +84,7 @@
                 </p>
             {/if}
         </div>
-        <button data-testid="submit-feedback-button">{m.submitFeedback()}</button>
+        <button type="submit" data-testid="submit-feedback-button">{m.submitFeedback()}</button>
     </form>
 </div>
 <br />

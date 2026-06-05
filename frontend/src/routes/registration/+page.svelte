@@ -48,7 +48,7 @@
     const minInputLengths = {
         name: 4,
         nickname: 2,
-        email: 0,
+        email: 3,
         password: 8
     };
 
@@ -139,7 +139,7 @@
                 autocomplete="username"
                 required
                 pattern="[a-zA-Z0-9._\-]*"
-                title={m.allowedRegex()}
+                title={m.allowedRegex({ field: m.names() })}
             />
             {#if usernameAlreadyExists}
                 <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>
@@ -257,6 +257,6 @@
                 </label>
             </div>
         </div>
-        <button>{m.register()}</button>
+        <button type="submit">{m.register()}</button>
     </form>
 </div>

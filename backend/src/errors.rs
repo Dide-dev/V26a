@@ -15,10 +15,18 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when a name contains characters which fall outside of the accepted standard.
+    /// An error to return when an email address does not match the correct pattern with the '@' symbol.
+    IllegalEmailAddress,
+    /// An error to return when a name contains characters outside the accepted standard.
     IllegalName,
+    /// An error to return when a password does not contain the appropriate characters.
+    IllegalPassword,
+    /// An error to return when a tag contains characters which fall outside the accepted standard.
+    IllegalTag,
     /// An error to return when an input provided is too long for the database.
     InputLengthExceeded(&'static str, usize),
+    /// An error to return when an input provided is too short to be valid.
+    InputLengthNotMet(&'static str, usize),
     /// An error to return when a user tries to authorize themselves as a co-author on their own tree.
     InvalidAuthorisationTarget,
     /// An error to return when an invalid image type is attempted to be put in the database.
@@ -70,6 +78,12 @@ pub enum ApiError {
     /// authorized.
     NoPermission,
 
+    //------------------------//
+    // 429: TOO MANY REQUESTS //
+    //------------------------//
+    /// An error to return when a user exceeds the ratelimit.
+    RateLimitExceeded,
+
     //----------------------------//
     // 500: INTERNAL SERVER ERROR //
     //----------------------------//
@@ -118,11 +132,22 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
+            ApiError::IllegalEmailAddress => {
+                write!(f, "Email address does not follow pattern 'name@domain'.")
+            }
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
+            ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
+            ApiError::IllegalTag => write!(f, "Tag contains illegal characters."),
             ApiError::InputLengthExceeded(offending_string, max_length) => {
                 write!(
                     f,
                     "Input in field \"{offending_string}\" exceeds the maximum length of {max_length} characters."
+                )
+            }
+            ApiError::InputLengthNotMet(offending_string, min_length) => {
+                write!(
+                    f,
+                    "Input in field \"{offending_string}\" does not meet the minimum length of {min_length} characters."
                 )
             }
             ApiError::InvalidAuthorisationTarget => {
@@ -178,6 +203,11 @@ impl Display for ApiError {
             //----------------//
             ApiError::NoPermission => write!(f, "You are not authorised to do this."),
 
+            //------------------------//
+            // 429: TOO MANY REQUESTS //
+            //------------------------//
+            ApiError::RateLimitExceeded => write!(f, "You are sending too many requests."),
+
             //----------------------------//
             // 500: INTERNAL SERVER ERROR //
             //----------------------------//
@@ -217,8 +247,12 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::IllegalName
+            ApiError::IllegalEmailAddress
+            | ApiError::IllegalName
+            | ApiError::IllegalPassword
+            | ApiError::IllegalTag
             | ApiError::InputLengthExceeded(_, _)
+            | ApiError::InputLengthNotMet(_, _)
             | ApiError::InvalidAuthorisationTarget
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
@@ -240,6 +274,8 @@ impl ApiError {
             | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
+
+            ApiError::RateLimitExceeded => StatusCode::TOO_MANY_REQUESTS,
 
             ApiError::CreateDirException
             | ApiError::DatabaseException

@@ -5,6 +5,7 @@
 */
 
 use crate::ArcState;
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::users::get_user;
 use crate::db_structs::Validated;
@@ -24,7 +25,7 @@ use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
-    Router::new().route("/login", post(login))
+    Router::new().route("/", post(login).layer(rate_limit_layer(15, 30)))
 }
 
 /// Return body, where the `succeeded`-field signals whether the request was successful.
@@ -35,27 +36,19 @@ pub struct LoginResponse {
     pub succeeded: bool,
 }
 
-/// An endpoint for logging in. Takes a [`LoginRequestBody`], and on success sets a session cookie
-/// with an encoded JWT.
-///
-/// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
-///
-/// # Error
-/// Returns a [`HashException`](ApiError::HashException) if the password hashing fails.
-///
-/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 #[utoipa::path(
     post,
-    path = "/login",
+    path = "",
     context_path = "/api/v1/auth",
     request_body = LoginRequestBody,
     responses(
         (status = 200, description = "Session and user_info cookies added.", body = LoginResponse),
+        (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     ),
 )]
-/// Login to an account if the given credentials are valid.
+/// An endpoint for logging in, if the given credentials are valid. Takes a [`LoginRequestBody`], and on success sets a session cookie
+/// with an encoded JWT.
 ///
 /// # Arguments
 /// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
@@ -65,8 +58,12 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an encoded JWT and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException) if the password hashing fails.
+///
+/// May return a [`TokenCreationException`](ApiError::TokenCreationException)
 /// or [`SerdeException`](ApiError::SerdeException) instead.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn login(
     jar: CookieJar,
     Extension(db): Extension<PgPool>,

@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import type { Element, Text, Root } from 'hast';
+import type { Element, ElementContent, Root } from 'hast';
 import type { State } from 'hast-util-to-mdast';
 import { render } from 'katex';
 import type { Nodes, RootContent } from 'mdast';
@@ -122,13 +122,13 @@ export function rehypeRemarkSpanHandler(
     }
 
     const codeElement = node.children[0] as Element;
+    const text = extractAllRawText(codeElement);
 
-    // It is possible that the text in the inline math is undefined deleting its content.
-    if (codeElement.children.length === 0) {
+    if (text.trim() === '') {
         return [];
+    } else {
+        return { type: 'inlineMath', value: text };
     }
-
-    return { type: 'inlineMath', value: (codeElement.children[0] as Text).value };
 }
 
 /** Will translate a rehype 'div' element to a remark node, and handles math blocks correctly. */
@@ -143,16 +143,36 @@ export function rehypeRemarkDivHandler(
         return state.toFlow(state.all(node));
     }
     const codeElement = (node.children[0] as Element).children[0] as Element;
+    const text = extractAllRawText(codeElement);
 
-    // It is possible that the text in the code block is undefined when initially creating it.
-    let value = '';
-    if (codeElement.children.length > 0) {
-        value = (codeElement.children[0] as Text).value;
-    }
-
-    if (value.trim() === '') {
+    if (text.trim() === '') {
         return [];
     } else {
-        return { type: 'math', value };
+        return { type: 'math', value: text };
+    }
+}
+
+/**
+ * This function takes a rehype element and extracts and concatenates all text of the full subtree.
+ * It will ignore any italics, bolds, etc.
+ *
+ * This function is useful in the inline math and math blocks, since there italics and bold must be ignored.
+ */
+function extractAllRawText(node: ElementContent): string {
+    switch (node.type) {
+        case 'element': {
+            let result = '';
+            for (const child of node.children) {
+                result += extractAllRawText(child);
+            }
+            return result;
+        }
+        case 'text': {
+            return node.value;
+        }
+        // Comments and raw html gets ignored, as we only care about text.
+        default: {
+            return '';
+        }
     }
 }

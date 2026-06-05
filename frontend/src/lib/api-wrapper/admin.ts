@@ -4,24 +4,25 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallGet, apiCallPost } from './index';
+import { apiCallGet, apiCallPut } from './index';
 import {
     type UserId,
     type UserSuccess,
     type UserEmailInvalid,
     type UsernameInvalid,
-    type ChangePasswordResponse
+    type ChangePasswordResponse,
+    type UserGeneralData
 } from './users';
 import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
-const prefix = 'admin/';
+const prefix = 'admin';
 
 function apiCallGetAdmin(path: string) {
     return apiCallGet(prefix + path);
 }
 
-function apiCallPostUser(path: string, body: unknown) {
-    return apiCallPost(prefix + path, body);
+function apiCallPutAdmin(path: string, body: unknown) {
+    return apiCallPut(prefix + path, body);
 }
 
 /** The data of the user that is returned when requesting the data of all users */
@@ -35,14 +36,11 @@ export type AllUsersGetData = {
 /** The data of the user that is returned when requesting the data of one user */
 export type UserAllData = {
     email: string;
-    name: string;
+    data: UserGeneralData;
     enabled: boolean;
-    nickname: string;
-    aboutMe: string;
-    emailVisible: boolean;
     accountType: string;
-    language: string;
 };
+
 /** The data needed to change a user's password */
 export type AdminChangePasswordData = {
     newPassword: string;
@@ -53,22 +51,36 @@ export type UserListResponse = {
     users: AllUsersGetData[];
 };
 
+/** The data returned when retrieving feedback. */
+export type FeedbackListResponse = {
+    feedbackTotal: number;
+    feedback: FeedbackGetData[];
+};
+
+/** Data corresponding to a returned piece of feedback. */
+export type FeedbackGetData = {
+    feedbackId: number;
+    email: string;
+    feedback: string;
+    createdAt: Date;
+};
+
 /** Get the data of all users */
 export function getAllUserData(pageOptions: PaginationOptions): Promise<UserListResponse> {
     const params: string = getPaginationParams(pageOptions);
-    return apiCallGetAdmin(`all-user-data?${params}`);
+    return apiCallGetAdmin(`/users?${params}`);
 }
 
 /** Get the data of a specific user */
 export function getUserAllData(userId: UserId): Promise<UserAllData> {
-    return apiCallGetAdmin(`users/${userId}`);
+    return apiCallGetAdmin(`/users/${userId}`);
 }
 /** Update the data of a user */
 export function updateUserData(
     userId: UserId,
     newData: UserAllData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser(`users/${userId}/update-data`, newData);
+    return apiCallPutAdmin(`/users/${userId}`, newData);
 }
 
 /** Change a user's password */
@@ -76,5 +88,11 @@ export function adminChangePassword(
     userId: UserId,
     changePasswordData: AdminChangePasswordData
 ): Promise<ChangePasswordResponse> {
-    return apiCallPostUser(`users/${userId}/update-password`, changePasswordData);
+    return apiCallPutAdmin(`/users/${userId}/password`, changePasswordData);
+}
+
+/** Get feedback from the database. */
+export function getFeedback(pageOptions: PaginationOptions): Promise<FeedbackListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetAdmin(`/feedback?${params}`);
 }
