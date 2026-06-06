@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { redirect } from '@sveltejs/kit';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
     import { logout } from '$lib/api-wrapper/auth';
 
-    export async function load() {
+    onMount(async () => {
         await logout();
-        redirect(302, '/');
-    }
+        goto('/');
+    });
 </script>

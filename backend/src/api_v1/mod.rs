@@ -20,6 +20,7 @@ use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::Request;
 use axum_extra::extract::CookieJar;
+use axum_extra::extract::cookie::Cookie;
 use governor::clock::QuantaInstant;
 use governor::middleware::NoOpMiddleware;
 use std::net::SocketAddr;
@@ -112,4 +113,32 @@ pub fn extract_token(jar: &CookieJar) -> Result<String, ApiError> {
         .ok_or(ApiError::MissingAuthentication)?
         .value()
         .to_string())
+}
+
+/// Reference to the empty session cookie from the [`CookieJar`]
+///
+/// # Arguments
+///
+/// # Returns
+/// The name, path and domain of a session cookie as a [`Cookie`] if successful.
+pub fn empty_session_cookie() -> Cookie<'static> {
+    Cookie::build(("session", ""))
+        .path("/api/")
+        .http_only(true)
+        .secure(true)
+        .build()
+}
+
+/// Reference to the empty user info cookie from the [`CookieJar`]
+///
+/// # Arguments
+///
+/// # Returns
+/// The name, path and domain of a user info cookie as a [`Cookie`] if successful.
+pub fn empty_user_info_cookie() -> Cookie<'static> {
+    Cookie::build(("user_info", ""))
+        .path("/")
+        .http_only(false)
+        .secure(true)
+        .build()
 }
