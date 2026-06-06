@@ -134,7 +134,7 @@
                         },
                         {
                             href: '/logout',
-                            text: m.logout(),
+                            text: m.logout()
                         }
                     ]
                 })
