@@ -43,7 +43,7 @@ use utoipa::ToSchema;
 pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/verify", get(verify))
+        .route("/verification", post(verify))
         .route(
             "/me",
             get(get_own_user_data)
@@ -175,9 +175,9 @@ async fn add_new_user(
 
 /// Struct for a verification code for the /users/verify endpoint.
 /// Needs to be a struct so it can be read from the correct query parameter "code".
-#[derive(serde::Deserialize, ToSchema)]
+#[derive(serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct VerificationCode {
-    code: String,
+    pub code: String,
 }
 
 #[utoipa::path(
@@ -206,7 +206,7 @@ pub struct VerificationCode {
 async fn verify(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
-    Query(code): Query<VerificationCode>,
+    Json(code): Json<VerificationCode>,
 ) -> Result<Json<UserResponse>, ApiError> {
     let code = code.code;
     let mut pending_accounts = state.pending_accounts.lock().await;

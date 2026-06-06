@@ -9,7 +9,7 @@
     import { m } from '$lib/paraglide/messages';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
-    import { verifyUser } from '$lib/api-wrapper/users';
+    import { type VerificationCode, verifyUser } from '$lib/api-wrapper/users';
     import { onMount } from 'svelte';
 
     let verificationSuccess: boolean | null = $state(null);
@@ -21,7 +21,10 @@
             await goto(appLink('/registration'));
         }
 
-        let verificationState = await verifyUser(verificationCode!);
+        let verificationData: VerificationCode = {
+            code: verificationCode!
+        };
+        let verificationState = await verifyUser(verificationData);
         verificationSuccess = verificationState.type === 'Success';
     });
 

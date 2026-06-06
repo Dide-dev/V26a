@@ -12,8 +12,8 @@ function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
-function apiCallVerifyUser(path: string) {
-    return apiCallGet(prefix + path);
+function apiCallVerifyUser(path: string, body: unknown) {
+    return apiCallPost(prefix + path, body);
 }
 
 function apiCallPutUser(path: string, body: unknown) {
@@ -63,6 +63,10 @@ export type RegisterData = {
     email: string;
     password: string;
     data: UserData;
+};
+
+export type VerificationCode = {
+    code: string;
 };
 
 export type UserSuccess = {
@@ -119,8 +123,8 @@ export function addUser(
 }
 
 /* Verify a pending user */
-export function verifyUser(code: string): Promise<UserSuccess | UserInvalidVerification> {
-    return apiCallVerifyUser(`/verify?code=${code}`);
+export function verifyUser(code: VerificationCode): Promise<UserSuccess | UserInvalidVerification> {
+    return apiCallVerifyUser(`/verify`, code);
 }
 
 /** Delete a user in the database */

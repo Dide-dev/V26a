@@ -7,7 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
+use crate::api_v1::users::{ChangePasswordResponse, UserResponse, VerificationCode};
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
@@ -272,7 +272,12 @@ async fn test_invalid_validation_code(db: PgPool) {
 
     let before_pending_count = { state.pending_accounts.lock().await.len() };
 
-    let response = server.get("/users/verify?code=1").await;
+    let response = server
+        .post("/users/verification")
+        .json(&VerificationCode {
+            code: "1".to_string(),
+        })
+        .await;
     response.assert_status_ok();
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::InvalidVerification);

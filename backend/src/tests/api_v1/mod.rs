@@ -17,7 +17,7 @@ mod trees;
 mod users;
 
 use crate::ArcState;
-use crate::api_v1::users::UserResponse;
+use crate::api_v1::users::{UserResponse, VerificationCode};
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
@@ -125,7 +125,10 @@ async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
 
     test_state
         .server
-        .get(&format!("/users/verify?code={verification_code}"))
+        .post("/users/verification")
+        .json(&VerificationCode {
+            code: verification_code,
+        })
         .await
 }
 
