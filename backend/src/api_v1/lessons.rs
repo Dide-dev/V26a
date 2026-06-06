@@ -4,6 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::api_v1::classrooms::verify_classroom_permissions;
+use crate::api_v1::trees::verify_tree_permissions;
+use crate::db::classrooms::{add_existing_tree_to_lesson, get_classroom_from_lesson};
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::get_connection;
@@ -12,8 +14,6 @@ use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Router};
 use sqlx::{PgConnection, PgPool};
-use crate::api_v1::trees::verify_tree_permissions;
-use crate::db::classrooms::{get_classroom_from_lesson, add_existing_tree_to_lesson};
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn lessons() -> Router<ArcState> {
@@ -99,8 +99,9 @@ pub async fn verify_lesson_permissions(
     lesson_id: i32,
     claims: &Claims,
 ) -> Result<(), ApiError> {
-    let classroom_id = get_classroom_from_lesson(&mut *db, lesson_id).await?.ok_or(ApiError::MissingLesson(lesson_id))?;
+    let classroom_id = get_classroom_from_lesson(&mut *db, lesson_id)
+        .await?
+        .ok_or(ApiError::MissingLesson(lesson_id))?;
     verify_classroom_permissions(&mut *db, classroom_id, claims).await?;
     Ok(())
 }
-

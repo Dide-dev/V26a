@@ -259,11 +259,10 @@ pub async fn get_classroom_from_lesson(
     db: impl PgExecutor<'_>,
     lesson_id: i32,
 ) -> Result<Option<i32>, ApiError> {
-    let classroom_id =
-        query!("SELECT classroom_id FROM lessons WHERE id = $1", lesson_id)
-            .fetch_optional(db)
-            .await?
-            .map(|r| r.classroom_id);
+    let classroom_id = query!("SELECT classroom_id FROM lessons WHERE id = $1", lesson_id)
+        .fetch_optional(db)
+        .await?
+        .map(|r| r.classroom_id);
     Ok(classroom_id)
 }
 
@@ -290,13 +289,18 @@ pub async fn add_existing_tree_to_lesson(
         "INSERT INTO lesson_trees (lesson_id, tree_id) VALUES ($1, $2)",
         lesson_id,
         tree_id,
-    ).execute(db).await?;
+    )
+    .execute(db)
+    .await?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{add_classroom, add_existing_tree_to_lesson, add_lesson, generate_random_code, get_all_classrooms, get_classroom_count, get_classroom_owner};
+    use crate::db::classrooms::{
+        add_classroom, add_existing_tree_to_lesson, add_lesson, generate_random_code,
+        get_all_classrooms, get_classroom_count, get_classroom_owner,
+    };
     use crate::db::test::{initialize_classroom, initialize_db};
     use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
     use crate::db_structs::pagination::PaginationOptions;
@@ -372,18 +376,7 @@ mod tests {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
         assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 0);
 
-        let classroom_add_data = ClassroomData {
-            name: "Classroom".to_owned(),
-            description: "This is a test classroom".to_owned(),
-        };
-
-        let join_code = generate_random_code(get_connection_unwrap!(db))
-            .await
-            .unwrap();
-
-        add_classroom(&db, &classroom_add_data, user_id, &join_code)
-            .await
-            .unwrap();
+        let _ = initialize_classroom(get_connection_unwrap!(db), user_id).await;
 
         assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 1);
     }
@@ -447,14 +440,22 @@ mod tests {
             description: "This is a test lesson".to_string(),
             published: false,
         };
-        let lesson_id = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id).await.unwrap();
+        let lesson_id = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id)
+            .await
+            .unwrap();
 
-        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id).await.expect("");
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
+            .await
+            .expect("");
 
         let found_tree_id_in_lesson = query!(
             "SELECT tree_id FROM lesson_trees WHERE lesson_id = $1",
             lesson_id
-        ).fetch_one(&db).await.unwrap().tree_id;
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .tree_id;
 
         assert_eq!(found_tree_id_in_lesson, tree_id);
     }

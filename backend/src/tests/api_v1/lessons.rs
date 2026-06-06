@@ -6,7 +6,6 @@
 
 #![cfg(test)]
 
-use sqlx::PgPool;
 use crate::api_v1::lessons::verify_lesson_permissions;
 use crate::db_structs::classrooms::LessonAddData;
 use crate::db_structs::session::Claims;
@@ -14,6 +13,7 @@ use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_classroom, create_tree, login, register, setup_login};
+use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_add_tree_to_lesson(db: PgPool) {
@@ -24,32 +24,45 @@ async fn test_add_tree_to_lesson(db: PgPool) {
         description: "Test".to_owned(),
         published: true,
     };
-    let response = server.post(&format!("/classrooms/{classroom_id}/lessons")).json(&lesson_data).await;
+    let response = server
+        .post(&format!("/classrooms/{classroom_id}/lessons"))
+        .json(&lesson_data)
+        .await;
     let lesson_id: i32 = response.json();
 
     let tree_id = i32::MAX;
-    let response = server.post(&format!("/lessons/{lesson_id}/trees/{tree_id}")).await;
+    let response = server
+        .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
+        .await;
     response.assert_status_bad_request();
     response.assert_text(ApiError::MissingTree(tree_id).to_string());
 
     let tree_id = create_tree(&server).await;
-    let response = server.post(&format!("/lessons/{lesson_id}/trees/{tree_id}")).await;
+    let response = server
+        .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
+        .await;
     response.assert_status_ok();
 
     server.clear_cookies();
-    let response = server.post(&format!("/lessons/{lesson_id}/trees/{tree_id}")).await;
+    let response = server
+        .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
+        .await;
     response.assert_status_unauthorized();
     response.assert_text(ApiError::MissingAuthentication.to_string());
 
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
-    let response = server.post(&format!("/lessons/{lesson_id}/trees/{tree_id}")).await;
+    let response = server
+        .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
+        .await;
     response.assert_status_forbidden();
     response.assert_text(ApiError::NoPermission.to_string());
 
     let lesson_id = i32::MAX;
-    let response = server.post(&format!("/lessons/{lesson_id}/trees/{tree_id}")).await;
+    let response = server
+        .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
+        .await;
     response.assert_status_bad_request();
     response.assert_text(ApiError::MissingLesson(lesson_id).to_string());
 }
@@ -62,7 +75,10 @@ async fn test_verify_lesson_permissions(db: PgPool) {
         description: "Test".to_owned(),
         published: true,
     };
-    let response = server.post(&format!("/classrooms/{classroom_id}/lessons")).json(&lesson_data).await;
+    let response = server
+        .post(&format!("/classrooms/{classroom_id}/lessons"))
+        .json(&lesson_data)
+        .await;
     let lesson_id: i32 = response.json();
 
     let claims = Claims {

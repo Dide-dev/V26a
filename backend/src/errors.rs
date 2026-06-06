@@ -184,7 +184,9 @@ impl Display for ApiError {
                 write!(f, "The classroom with id {id} could not be found.")
             }
             ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
-            ApiError::MissingLesson(id) => {write!(f, "The lesson with id {id} could not be found.")}
+            ApiError::MissingLesson(id) => {
+                write!(f, "The lesson with id {id} could not be found.")
+            }
             ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),

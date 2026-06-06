@@ -13,9 +13,9 @@ mod cards_library;
 mod classrooms;
 mod feedback;
 mod images;
+mod lessons;
 mod trees;
 mod users;
-mod lessons;
 
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
