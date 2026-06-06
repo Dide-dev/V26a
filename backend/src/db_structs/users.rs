@@ -193,11 +193,15 @@ pub struct PendingRegisterData {
     pub expires: i64,
 }
 
+/// A trait that can be used to remove expired accounts from a [`HashMap`] containing [`PendingRegisterData`].
 pub trait PendingAccountsExt {
     fn remove_expired(&mut self);
 }
 
 impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
+    /// Removes pending accounts for which the expiration time has passed.
+    ///
+    /// This function mutates the [`HashMap`] in place.
     fn remove_expired(&mut self) {
         let before_len = self.len();
 
