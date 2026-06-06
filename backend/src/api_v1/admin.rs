@@ -10,12 +10,15 @@ use axum::{
     extract::{Path, State},
     middleware::{self, Next},
     response::Response,
-    routing::{get, post},
+    routing::{get, put},
 };
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db::feedback::{get_all_feedback, get_feedback_count};
+use crate::db::{
+    feedback::{get_all_feedback, get_feedback_count},
+    session::delete_all_sessions_user,
+};
 use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
 };
@@ -48,19 +51,19 @@ async fn check_if_admin(
 }
 
 /// Creates an `Axum` [`Router`] for the user category.
+/// All paths are going through a middleware to check if the user is an admin.
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
-        .route("/all-user-data", get(get_all_user_data))
-        .route("/users/{userId}", get(get_user_data))
-        .route("/users/{user_id}/update-data", post(update_user_data))
-        .route("/users/{user_id}/update-password", post(change_password))
-        .route("/get-feedback", get(get_feedback))
+        .route("/users", get(get_all_user_data))
+        .route("/users/{user_id}", get(get_user_data).put(update_user_data))
+        .route("/users/{user_id}/password", put(change_password))
+        .route("/feedback", get(get_feedback))
         .route_layer(middleware::from_fn_with_state(state, check_if_admin))
 }
 
 #[utoipa::path(
     get,
-    path = "/all-user-data",
+    path = "/users",
     context_path = "/api/v1/admin",
     responses(
         (status = 200, description = "Successfully retrieved data.", body = UserListResponse),
@@ -112,8 +115,8 @@ async fn get_all_user_data(
 }
 
 #[utoipa::path(
-    post,
-    path = "/users/{user_id}/update-data",
+    put,
+    path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     request_body = AdminUpdateData,
     responses(
@@ -154,7 +157,10 @@ async fn update_user_data(
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     new_data.validate_inputs()?;
-    if !user_id_exists(&db, user_id).await? {
+
+    let mut transaction = db.begin().await?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
 
@@ -166,14 +172,20 @@ async fn update_user_data(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    admin_update_user(&db, user_id, &new_data).await?;
+    admin_update_user(&mut *transaction, user_id, &new_data).await?;
+
+    if !new_data.enabled {
+        delete_all_sessions_user(&mut *transaction, user_id).await?;
+    }
+
+    transaction.commit().await?;
 
     Ok(Json(UserResponse::Success { user_id }))
 }
 
 #[utoipa::path(
-    post,
-    path = "/users/{user_id}/update-password",
+    put,
+    path = "/users/{user_id}/password",
     context_path = "/api/v1/admin",
     request_body = AdminPasswordChangeRequestBody,
     responses(
@@ -219,8 +231,12 @@ async fn change_password(
     )
     .await?;
 
+    // All sessions of the account are invalidated if password is changed.
+    delete_all_sessions_user(&db, user_id).await?;
+
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
+
 #[utoipa::path(
     get,
     path = "/users/{user_id}",
@@ -267,7 +283,7 @@ async fn get_user_data(
 
 #[utoipa::path(
     get,
-    path = "/get-feedback",
+    path = "/feedback",
     context_path = "/api/v1/admin",
     responses(
         (status = 200, description = "Feedback successfully retrieved.", body = FeedbackListResponse),

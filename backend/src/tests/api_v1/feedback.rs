@@ -21,7 +21,7 @@ async fn test_add_feedback(db: PgPool) {
         feedback: "feedback".to_owned(),
     };
 
-    let response = server.post("/feedback/provide").json(&feedback_data).await;
+    let response = server.post("/feedback").json(&feedback_data).await;
     response.assert_status_ok();
 }
 
@@ -39,10 +39,10 @@ async fn test_get_feedback(db: PgPool) {
         feedback: "feedback".to_owned(),
     };
 
-    let response = server.post("/feedback/provide").json(&feedback_data).await;
+    let response = server.post("/feedback").json(&feedback_data).await;
     response.assert_status_ok();
 
-    let response = server.get("/admin/get-feedback?page=1&size=1").await;
+    let response = server.get("/admin/feedback?page=1&size=1").await;
     response.assert_status_ok();
 
     let requested_feedback: FeedbackListResponse = response.json();
@@ -63,7 +63,7 @@ async fn test_get_no_feedback(db: PgPool) {
     register_admin(&server, conn, &admin_data).await;
     login(&server, admin_data.email).await;
 
-    let response = server.get("/admin/get-feedback?page=1&size=10").await;
+    let response = server.get("/admin/feedback?page=1&size=10").await;
     response.assert_status_ok();
 
     let requested_feedback: FeedbackListResponse = response.json();
@@ -80,9 +80,9 @@ async fn test_get_feedback_not_admin(db: PgPool) {
         feedback: "feedback".to_owned(),
     };
 
-    let response = server.post("/feedback/provide").json(&feedback_data).await;
+    let response = server.post("/feedback").json(&feedback_data).await;
     response.assert_status_ok();
 
-    let response = server.get("/admin/get-feedback?page=1&size=1").await;
+    let response = server.get("/admin/feedback?page=1&size=1").await;
     response.assert_status_forbidden();
 }

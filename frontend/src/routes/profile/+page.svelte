@@ -197,8 +197,8 @@
     }
 
     function handleCancel(e: Event) {
-        if (!formChanged) return;
         e.preventDefault();
+        if (!formChanged) return;
         resetInputStates();
         resetInputResponses();
         changePasswordData.oldPassword = '';

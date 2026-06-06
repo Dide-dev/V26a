@@ -26,7 +26,7 @@ async fn test_get_all_users_non_admin(db: PgPool) {
     register(&server, &account2).await;
     login(&server, account2.email).await;
 
-    let response = server.get("/admin/all-user-data").await;
+    let response = server.get("/admin/users").await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
@@ -42,7 +42,7 @@ async fn test_get_all_users_admin(db: PgPool) {
     register(&server, &account2).await;
     login(&server, account1.email).await;
 
-    let response = server.get("/admin/all-user-data").await;
+    let response = server.get("/admin/users").await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
     let user_list: UserListResponse = response.json();
@@ -56,11 +56,11 @@ async fn test_get_one_user_non_admin(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
+    let user_id = register(&server, &account1).await;
     register(&server, &account2).await;
     login(&server, account2.email).await;
 
-    let response = server.get("/admin/users/1").await;
+    let response = server.get(&format!("/admin/users/{user_id}")).await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
 }
@@ -76,10 +76,10 @@ async fn test_get_one_user_admin(db: PgPool) {
     // Create an account
     let user_account = RegisterData::test_values();
 
-    register(&server, &user_account).await;
+    let other_user_id = register(&server, &user_account).await;
     login(&server, admin_account.email).await;
 
-    let response = server.get("/admin/users/2").await;
+    let response = server.get(&format!("/admin/users/{other_user_id}")).await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
     let user_data: AdminUpdateData = response.json();
@@ -113,16 +113,70 @@ async fn test_update_user(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
+    let user_id = register(&server, &account1).await;
     register(&server, &account2).await;
     login(&server, account2.email).await;
 
     let response = server
-        .post("/admin/users/1/update-data")
+        .put(&format!("/admin/users/{user_id}"))
         .json(&update_data)
         .await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_disable_user(db: PgPool) {
+    let server = setup(db.clone());
+
+    let update_data = AdminUpdateData {
+        email: "JohnSmith@gmail.com".to_owned(),
+        data: UserGeneralData {
+            name: "KobeDaMonkey".to_owned(),
+            nickname: String::new(),
+            about_me: String::new(),
+        },
+        enabled: false,
+        account_type: AccountType::Author,
+    };
+
+    // Create an user that has 2 sessions active.
+    let user_account = RegisterData::test_values();
+    let other_user_id = register(&server, &user_account).await;
+    login(&server, user_account.email.clone()).await;
+    login(&server, user_account.email.clone()).await;
+
+    // Checks two sessions exist before disable.
+    let sessions = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM sessions WHERE user_id = $1",
+        other_user_id
+    )
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(sessions, Some(2));
+
+    // Create one admin account that can disable an user.
+    let admin_account = RegisterData::test_values();
+    register_admin(&server, &db, &admin_account).await;
+    login(&server, admin_account.email).await;
+
+    // Update the userdata to disable the account.
+    let response = server
+        .put(&format!("/admin/users/{other_user_id}"))
+        .json(&update_data)
+        .await;
+    response.assert_status_ok();
+
+    // Check that all sessions are invalidated after disable.
+    let sessions = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM sessions WHERE user_id = $1",
+        other_user_id
+    )
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(sessions, Some(0));
 }
 
 #[sqlx::test]
@@ -135,14 +189,53 @@ async fn test_change_password(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
+    let user_id = register(&server, &account1).await;
     register(&server, &account2).await;
     login(&server, account2.email).await;
 
     let response = server
-        .post("/admin/users/1/update-password")
+        .put(&format!("/admin/users/{user_id}/password"))
         .json(&new_password)
         .await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
+}
+
+#[sqlx::test]
+async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
+    let server = setup(db.clone());
+
+    // Create a regular user with two sessions.
+    let user_account = RegisterData::test_values();
+    let user_id = register(&server, &user_account).await;
+    login(&server, user_account.email.clone()).await;
+    login(&server, user_account.email.clone()).await;
+
+    // Check two sessions exist.
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions, Some(2));
+
+    // Login as admin.
+    let admin_account = RegisterData::test_values();
+    register_admin(&server, &db, &admin_account).await;
+    login(&server, admin_account.email).await;
+
+    // Change the user's password as admin.
+    server
+        .put(&format!("/admin/users/{user_id}/password"))
+        .json(&AdminPasswordChangeRequestBody {
+            new_password: "P4$$word".to_owned(),
+        })
+        .await
+        .assert_status_ok();
+
+    // Verify all sessions are invalidated. The amount of sessions is 0 if alle sessions are invalidated.
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions, Some(0));
 }
