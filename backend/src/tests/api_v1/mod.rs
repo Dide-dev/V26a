@@ -13,7 +13,6 @@ mod cards_library;
 mod classrooms;
 mod feedback;
 mod images;
-mod tasks;
 mod trees;
 mod users;
 

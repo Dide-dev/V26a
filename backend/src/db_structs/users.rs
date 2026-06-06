@@ -428,3 +428,36 @@ impl FromStr for AccountType {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::db_structs::users::{PendingAccountsExt, PendingRegisterData, RegisterData};
+    use chrono::Utc;
+    use std::collections::HashMap;
+
+    #[tokio::test]
+    async fn test_remove_expired() {
+        let mut pending_accounts = HashMap::<String, PendingRegisterData>::new();
+        let register_data = RegisterData::test_values();
+
+        pending_accounts.insert(
+            "a".to_owned(),
+            PendingRegisterData {
+                register_data: register_data.clone(),
+                expires: 0,
+            },
+        );
+        pending_accounts.insert(
+            "b".to_owned(),
+            PendingRegisterData {
+                register_data: register_data.clone(),
+                expires: Utc::now().timestamp() + 60,
+            },
+        );
+
+        pending_accounts.remove_expired();
+
+        assert!(!pending_accounts.contains_key("a"));
+        assert!(pending_accounts.contains_key("b"));
+    }
+}

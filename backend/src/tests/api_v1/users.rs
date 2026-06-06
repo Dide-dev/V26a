@@ -8,11 +8,12 @@
 
 use crate::api_v1::auth::LoginResponse;
 use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
+use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     PasswordChangeRequestBody, RegisterData, UserData, UserGetData, UserLanguage,
 };
-use crate::tests::api_v1::{TestState, login, register, setup};
+use crate::tests::api_v1::{TestState, login, register, setup, setup_config, try_verify};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -278,6 +279,26 @@ async fn test_invalid_validation_code(db: PgPool) {
 
     let after_pending_count = { state.pending_accounts.lock().await.len() };
     assert_eq!(before_pending_count, after_pending_count);
+}
+
+#[sqlx::test]
+async fn test_verify_unpruned_account(db: PgPool) {
+    let mut config = Config::load();
+    // Set verification timer to 0 so a pending account is considered expired immediately.
+    // The task is not running so it will not be pruned from the state, but it should still be
+    // considered as expired.
+    config.verification_timer = 0;
+
+    let test_state = setup_config(db, &mut config);
+
+    let register_data = RegisterData::test_values();
+    let response = test_state.server.post("/users").json(&register_data).await;
+    response.assert_status_ok();
+
+    let response = try_verify(&test_state, register_data.email).await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::InvalidVerification);
 }
 
 #[sqlx::test]
