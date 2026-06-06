@@ -5,7 +5,9 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::{empty_session_cookie, empty_user_info_cookie, extract_token, rate_limit_layer};
+use crate::api_v1::{
+    empty_session_cookie, empty_user_info_cookie, extract_token, rate_limit_layer,
+};
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
 use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
