@@ -26,7 +26,7 @@ pub fn lessons() -> Router<ArcState> {
     context_path = "/api/v1/lessons",
     responses(
         (status = 200, description = "Successfully added tree to lesson."),
-        (status = 400, description = "Lesson, classroom or tree with given id cannot be found."),
+        (status = 400, description = "Lesson or tree with given id cannot be found, or tree already exists in the lesson."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -52,13 +52,13 @@ pub fn lessons() -> Router<ArcState> {
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
-/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if the classroom to which the lesson belongs does not exist.
-///
 /// Returns [`MissingLesson`](ApiError::MissingLesson) if the lesson to which the tree should be added does not exist.
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree which should be added to the lesson does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add edit the tree or classroom.
+///
+/// Returns [`TreeAlreadyExistsWithinLesson`](ApiError::TreeAlreadyExistsWithinLesson) if the tree already exists in the lesson.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_tree_to_lesson(
@@ -88,8 +88,6 @@ async fn add_tree_to_lesson(
 ///
 /// # Errors
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to modify the lesson for the given `lesson_id`.
-///
-/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if there is no classroom with `classroom_id`.
 ///
 /// Returns [`MissingLesson`](ApiError::MissingTree) if there is no lesson with `lesson_id`.
 ///

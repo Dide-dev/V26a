@@ -279,19 +279,33 @@ pub async fn get_classroom_from_lesson(
 /// Nothing
 ///
 /// # Errors
+/// Returns a [`TreeAlreadyExistsWithinLesson`](ApiError::TreeAlreadyExistsWithinLesson) if the tree already exists the lesson.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_existing_tree_to_lesson(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     lesson_id: i32,
     tree_id: i32,
 ) -> Result<(), ApiError> {
+    let mut transaction = db.begin().await?;
+    let is_duplicate = query!(
+        "SELECT * FROM lesson_trees WHERE (lesson_id=$1 AND tree_id=$2)",
+        lesson_id,
+        tree_id,
+    )
+    .fetch_optional(&mut *transaction)
+    .await?;
+    if is_duplicate.is_some() {
+        return Err(ApiError::TreeAlreadyExistsWithinLesson);
+    }
     query!(
         "INSERT INTO lesson_trees (lesson_id, tree_id) VALUES ($1, $2)",
         lesson_id,
         tree_id,
     )
-    .execute(db)
+    .execute(&mut *transaction)
     .await?;
+    transaction.commit().await?;
     Ok(())
 }
 

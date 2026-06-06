@@ -62,6 +62,8 @@ pub enum ApiError {
     NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
+    /// An error to return when a tree already exists within a lesson.
+    TreeAlreadyExistsWithinLesson,
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -129,6 +131,7 @@ impl From<serde_json::Error> for ApiError {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 // Define how errors should be converted to messages.
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -200,6 +203,9 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
+            ApiError::TreeAlreadyExistsWithinLesson => {
+                write!(f, "The tree already exists in the lesson.")
+            }
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -279,7 +285,8 @@ impl ApiError {
             | ApiError::MissingUser(_)
             | ApiError::MissingUsername(_)
             | ApiError::NoImageBodyProvidedException
-            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure
+            | ApiError::TreeAlreadyExistsWithinLesson => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession

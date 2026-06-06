@@ -43,6 +43,12 @@ async fn test_add_tree_to_lesson(db: PgPool) {
         .await;
     response.assert_status_ok();
 
+    let response = server
+        .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::TreeAlreadyExistsWithinLesson.to_string());
+
     server.clear_cookies();
     let response = server
         .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
