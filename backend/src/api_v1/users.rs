@@ -5,7 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::{extract_token, rate_limit_layer};
+use crate::api_v1::{empty_session_cookie, empty_user_info_cookie, extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
 use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
@@ -344,8 +344,8 @@ async fn delete_user_data(
 
     // Unset the cookies by changing the date to a time in the past.
     Ok(jar
-        .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info")))
+        .remove(empty_session_cookie())
+        .remove(empty_user_info_cookie()))
 }
 
 #[utoipa::path(

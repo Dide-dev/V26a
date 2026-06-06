@@ -5,7 +5,7 @@
 -->
 
 <script lang="ts">
-    import { deleteUser } from '$lib/api-wrapper/users';
+    import { deleteMe } from '$lib/api-wrapper/users';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
     import { goto } from '$app/navigation';
@@ -25,12 +25,16 @@
     }
 
     async function doDelete() {
-        await deleteUser(deleteTrees);
+        await deleteMe(deleteTrees);
         await goto(appLink('/'));
     }
 </script>
 
-<button data-testid="delete-button" class="rounded-md bg-red-800 p-2" onclick={openPopup}>
+<button
+    data-testid="delete-button"
+    class="mt-1 rounded-md bg-red-800 p-2 transition-colors hover:bg-red-900"
+    onclick={openPopup}
+>
     {m.deleteAccount()}
 </button>
 
