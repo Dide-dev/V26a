@@ -27,11 +27,11 @@
     import type { SideBar } from './Sidebar.svelte';
     import SidebarComponent from './Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
-    import CoAuthor from './CoAuthor.svelte';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    // import CoAuthor from './CoAuthor.svelte';
+    // import { getUserInfo } from '$lib/api-wrapper/users';
 
-    let userInfo = $state(getUserInfo());
-    let userAllowedToAuthorizeCo = $state(false);
+    // let userInfo = $state(getUserInfo());
+    // let userAllowedToAuthorizeCo = $state(false);
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -117,12 +117,12 @@
             sidebarElement: null
         };
 
-        const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
-        const isAdmin = userInfo?.accountType === 'admin';
+        // const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
+        // const isAdmin = userInfo?.accountType === 'admin';
 
-        if (isOwner || isAdmin) {
-            userAllowedToAuthorizeCo = true;
-        }
+        // if (isOwner || isAdmin) {
+        //     userAllowedToAuthorizeCo = true;
+        // }
 
         loading = false;
     });
@@ -191,9 +191,11 @@
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                 {@html iconRedo}
             </button>
-            {#if userAllowedToAuthorizeCo}
-                <CoAuthor treeId={tree.history.treeId} />
-            {/if}
+            <!--
+                {#if userAllowedToAuthorizeCo}
+                    <CoAuthor treeId={tree.history.treeId} />
+                {/if}
+            -->
             <a
                 class="rounded-sm bg-emerald-500 p-1 *:inline"
                 href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}

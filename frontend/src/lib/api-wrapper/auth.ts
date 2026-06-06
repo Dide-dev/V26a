@@ -6,7 +6,7 @@
 
 import { apiCallPost } from './index';
 
-const prefix = 'auth/';
+const prefix = 'auth';
 
 function apiCallPostAuth(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
@@ -24,5 +24,10 @@ export type LoginResponse = {
 
 /** Log in with the provided credentials */
 export function login(credentials: LoginData): Promise<LoginResponse> {
-    return apiCallPostAuth('login', credentials);
+    return apiCallPostAuth('', credentials);
+}
+
+/** Log out the user */
+export function logout(): Promise<void> {
+    return apiCallPostAuth(`logout`, {});
 }

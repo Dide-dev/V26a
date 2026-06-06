@@ -6,7 +6,7 @@
 
 use crate::db::classrooms::{add_classroom, generate_random_code};
 use crate::db_structs::Validated;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
+use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -17,15 +17,16 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
-    Router::new().route("/add", post(add_new_classroom))
+    Router::new().route("/", post(add_new_classroom))
 }
 
 #[utoipa::path(
     post,
-    path = "/add",
+    path = "",
     context_path = "/api/v1/classrooms",
+    request_body = ClassroomData,
     responses(
-        (status = 200, description = "Successfully added new classroom."),
+        (status = 200, description = "Successfully added new classroom.", body = ClassroomGeneratedData),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 500, description = "Internal server error."),
     ),
@@ -38,7 +39,7 @@ pub fn classrooms() -> Router<ArcState> {
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `classroom_add_data` - The data used to create the classroom, as [`ClassroomAddData`].
+/// `classroom_add_data` - The data used to create the classroom, as [`ClassroomData`].
 ///
 /// # Returns
 /// The id assigned to the new classroom and the generated join code in a [`ClassroomGeneratedData`].
@@ -50,12 +51,17 @@ pub fn classrooms() -> Router<ArcState> {
 async fn add_new_classroom(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Json(classroom_add_data): Json<ClassroomAddData>,
+    Json(classroom_add_data): Json<ClassroomData>,
 ) -> Result<Json<ClassroomGeneratedData>, ApiError> {
     classroom_add_data.validate_inputs()?;
     let join_code = generate_random_code(get_connection!(db)).await?;
 
-    let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
+    let (id, created_at) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
 
-    Ok(Json(ClassroomGeneratedData { id, join_code }))
+    Ok(Json(ClassroomGeneratedData {
+        id,
+        join_code,
+        created_at,
+        owner_id: claims.sub,
+    }))
 }

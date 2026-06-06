@@ -20,13 +20,12 @@
     let formCompleted: boolean = $derived(loginData.email !== '' && loginData.password !== '');
 
     const minInputLengths = {
-        email: 0,
-        password: 8
+        email: 3,
+        password: 1 // In case an old account has a password shorter than the current imposed minimum.
     };
 
     const maxInputLengths = {
-        email: 128,
-        password: 72
+        email: 128
     };
 
     async function handleSubmit(event: SubmitEvent) {
@@ -92,7 +91,6 @@
                 data-testid="password"
                 placeholder={m.yourPassword()}
                 minlength={minInputLengths.password}
-                maxlength={maxInputLengths.password}
                 autocomplete="current-password"
                 required
             />

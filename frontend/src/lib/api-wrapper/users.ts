@@ -4,16 +4,20 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet, apiCallDelete } from './index';
+import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 
-const prefix = 'users/';
+const prefix = 'users';
 
 function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
-function apiCallDeleteUser(path: string) {
-    return apiCallDelete(prefix + path);
+function apiCallPutUser(path: string, body: unknown) {
+    return apiCallPut(prefix + path, body);
+}
+
+function apiCallDeleteMe(path: string) {
+    return apiCallEmptyDelete(prefix + path);
 }
 
 function apiCallGetUser(path: string) {
@@ -99,24 +103,24 @@ export type ChangePasswordData = {
 export function addUser(
     user: RegisterData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser('add', user);
+    return apiCallPostUser('', user);
 }
 
 /** Delete a user in the database */
-export function deleteUser(deleteTrees: boolean): Promise<void> {
-    return apiCallDeleteUser(`/delete?deleteOwnedTrees=${deleteTrees}`);
+export function deleteMe(deleteTrees: boolean): Promise<void> {
+    return apiCallDeleteMe(`/me?deleteOwnedTrees=${deleteTrees}`);
 }
 
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
-    return apiCallGetUser('me');
+    return apiCallGetUser('/me');
 }
 
 /** Update a user's own data */
 export function updateUser(
     newData: UserData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
-    return apiCallPostUser(`update`, newData);
+    return apiCallPutUser(`/me`, newData);
 }
 
 /**
@@ -138,5 +142,5 @@ export function getUserInfo(): UserInfo | null {
 export function changePassword(
     changePasswordData: ChangePasswordData
 ): Promise<ChangePasswordResponse> {
-    return apiCallPostUser('change-password', changePasswordData);
+    return apiCallPutUser('/me/password', changePasswordData);
 }

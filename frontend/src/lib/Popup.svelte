@@ -17,7 +17,7 @@ Only layout is provided so bring your own cancel/ok buttons.
 </script>
 
 <div data-testid="popup" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="rounded bg-white p-4">
+    <div class="max-h-[90vh] overflow-y-auto rounded bg-white p-4">
         {@render children()}
     </div>
 </div>

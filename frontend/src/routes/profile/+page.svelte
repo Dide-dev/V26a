@@ -67,11 +67,12 @@
     );
 
     const minInputLengths = {
-        email: 0,
+        email: 3,
         name: 4,
         nickname: 2,
         aboutMe: 0,
-        password: 8
+        password: 8,
+        oldPassword: 1
     };
 
     const maxInputLengths = {
@@ -197,8 +198,8 @@
     }
 
     function handleCancel(e: Event) {
-        if (!formChanged) return;
         e.preventDefault();
+        if (!formChanged) return;
         resetInputStates();
         resetInputResponses();
         changePasswordData.oldPassword = '';
@@ -354,8 +355,7 @@
                     autocomplete="current-password"
                     data-testid="oldPassword"
                     placeholder={m.requiredPlaceholder({ value: m.oldPassword() })}
-                    minlength={minInputLengths.password}
-                    maxlength={maxInputLengths.password}
+                    minlength={minInputLengths.oldPassword}
                 />
                 {#if incorrectPassword}
                     <p class="text__error">{m.incorrectPassword()}</p>
