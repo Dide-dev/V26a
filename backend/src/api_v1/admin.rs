@@ -23,14 +23,14 @@ use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
 };
 
-use crate::db::users::get_user_by_email;
+use crate::api_v1::users::{check_email_used, check_username_used};
 use crate::db_structs::users::PendingAccountsExt;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
     db::users::{
-        admin_update_user, get_user_all_data, get_user_by_name, get_user_count,
-        get_user_list_by_page, update_password, user_id_exists,
+        admin_update_user, get_user_all_data, get_user_count, get_user_list_by_page,
+        update_password, user_id_exists,
     },
     db_structs::pagination::OptionalPaginationOptions,
     db_structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
@@ -173,21 +173,11 @@ async fn update_user_data(
     // Remove pending accounts in case they have not been pruned yet.
     pending_accounts.remove_expired();
 
-    let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
-    let found_pending_username = pending_accounts
-        .values()
-        .any(|r| r.register_data.data.name.to_lowercase() == new_data.data.name.to_lowercase());
-
-    if found_user_id.is_some_and(|id| id != user_id) || found_pending_username {
+    if check_username_used(&db, &pending_accounts, &new_data.data.name, Some(user_id)).await? {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    let found_user_id = get_user_by_email(&db, &new_data.email).await?;
-    let found_pending_email = pending_accounts
-        .values()
-        .any(|r| r.register_data.email.to_lowercase() == new_data.email.to_lowercase());
-
-    if found_user_id.is_some_and(|id| id != user_id) || found_pending_email {
+    if check_email_used(&db, &pending_accounts, &new_data.email).await? {
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
