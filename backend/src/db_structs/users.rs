@@ -367,43 +367,6 @@ impl FromStr for UserLanguage {
     }
 }
 
-impl UserLanguage {
-    pub fn to_verification_message_title(&self) -> &str {
-        match &self {
-            UserLanguage::Nl => "BOOM! Accountbevestiging",
-            UserLanguage::En => "BOOM! Account verification",
-        }
-    }
-
-    pub fn to_verification_message_body(
-        &self,
-        nickname: &str,
-        verification_link: &str,
-        base_url: &str,
-    ) -> String {
-        match &self {
-            UserLanguage::Nl => {
-                format!(
-                    "Hallo {nickname},\n\nBedankt voor het registreren aan BOOM!\nVoordat u uw account kunt gebruiken, dient u zich te verifiëren met de volgende link:\n{verification_link}\n\nAls u dit verzoek niet herkent, kunt u deze e-mail gerust negeren.\n\nBOOM!\n{base_url}"
-                )
-            }
-            UserLanguage::En => {
-                format!(
-                    "Hello {nickname},\n\nThank you for signing up to BOOM!\nBefore you can use your account, please verify using the following link:\n{verification_link}\n\nIf you do not recognize this request, please ignore this e-mail.\n\nBOOM!\n{base_url}"
-                )
-            }
-        }
-    }
-
-    /// Localize 'Copy of' string according to user language.
-    pub fn to_copy_of_text(&self) -> &str {
-        match &self {
-            UserLanguage::Nl => "Kopie van",
-            UserLanguage::En => "Copy of",
-        }
-    }
-}
-
 /// The possible values of the account type field of a user.
 #[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

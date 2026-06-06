@@ -25,6 +25,7 @@ use std::collections::HashMap;
 
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
+use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
 use axum::extract::State;
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
@@ -146,19 +147,23 @@ async fn add_new_user(
     } else {
         user_data.data.nickname.clone()
     };
+    let language = user_data.data.language;
     let message = Message::builder()
         .from(Mailbox::new(
             Some("BOOM!".to_owned()),
             format!("noreply@{}", state.config.hostname).parse()?,
         ))
         .to(Mailbox::new(Some(display_name.clone()), parsed_email))
-        .subject(user_data.data.language.to_verification_message_title())
         .header(ContentType::TEXT_PLAIN)
-        .body(user_data.data.language.to_verification_message_body(
-            &display_name,
-            &verification_link,
-            &state.config.base_url,
-        ))?;
+        .subject(EmailVerificationSubject.localized(&language))
+        .body(
+            EmailVerificationBody(
+                display_name,
+                verification_link,
+                state.config.base_url.clone(),
+            )
+            .localized(&language),
+        )?;
     state.config.mailer.send(message).await?;
 
     Ok(Json(UserResponse::Pending))

@@ -12,6 +12,7 @@ mod db;
 mod db_structs;
 mod errors;
 mod limits;
+mod messages;
 mod state;
 mod tasks;
 mod tests;
