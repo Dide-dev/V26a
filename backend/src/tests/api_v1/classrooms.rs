@@ -130,7 +130,7 @@ async fn test_new_lesson(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_verify_tree_permission_owner(db: PgPool) {
+async fn test_verify_classroom_permission_owner(db: PgPool) {
     let server = setup_login(db.clone()).await;
     let classroom_id: i32 = create_classroom(&server).await;
 

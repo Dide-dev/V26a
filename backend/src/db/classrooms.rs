@@ -296,10 +296,7 @@ pub async fn add_existing_tree_to_lesson(
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{
-        add_classroom, add_lesson, generate_random_code, get_all_classrooms, get_classroom_count,
-        get_classroom_owner,
-    };
+    use crate::db::classrooms::{add_classroom, add_existing_tree_to_lesson, add_lesson, generate_random_code, get_all_classrooms, get_classroom_count, get_classroom_owner};
     use crate::db::test::{initialize_classroom, initialize_db};
     use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
     use crate::db_structs::pagination::PaginationOptions;
@@ -439,5 +436,26 @@ mod tests {
             found_lesson_data1.order_number + 1,
             found_lesson_data2.order_number
         );
+    }
+
+    #[sqlx::test]
+    async fn test_add_existing_tree_to_lesson(db: PgPool) {
+        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
+        let lesson_add_data = LessonAddData {
+            name: "Lesson".to_string(),
+            description: "This is a test lesson".to_string(),
+            published: false,
+        };
+        let lesson_id = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id).await.unwrap();
+
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id).await.expect("");
+
+        let found_tree_id_in_lesson = query!(
+            "SELECT tree_id FROM lesson_trees WHERE lesson_id = $1",
+            lesson_id
+        ).fetch_one(&db).await.unwrap().tree_id;
+
+        assert_eq!(found_tree_id_in_lesson, tree_id);
     }
 }

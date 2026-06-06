@@ -64,12 +64,11 @@ pub fn lessons() -> Router<ArcState> {
 async fn add_tree_to_lesson(
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    lesson_id: Path<i32>,
-    tree_id: Path<i32>,
+    Path((lesson_id, tree_id)): Path<(i32, i32)>,
 ) -> Result<(), ApiError> {
-    verify_lesson_permissions(get_connection!(db), *lesson_id, &claims).await?;
-    verify_tree_permissions(get_connection!(db), *tree_id, &claims).await?;
-    add_existing_tree_to_lesson(get_connection!(db), *lesson_id, *tree_id).await?;
+    verify_lesson_permissions(get_connection!(db), lesson_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    add_existing_tree_to_lesson(get_connection!(db), lesson_id, tree_id).await?;
     Ok(())
 }
 
@@ -95,7 +94,7 @@ async fn add_tree_to_lesson(
 /// Returns [`MissingLesson`](ApiError::MissingTree) if there is no lesson with `lesson_id`.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-async fn verify_lesson_permissions(
+pub async fn verify_lesson_permissions(
     db: &mut PgConnection,
     lesson_id: i32,
     claims: &Claims,
