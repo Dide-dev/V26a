@@ -169,7 +169,7 @@
     "verificationSuccessTitle": "Account verified",
     "verificationSuccessBody": "Your account has been successfully verified, you can now log in.",
     "verificationFailureTitle": "Verification failed",
-    "verificationFailureBody": "Your account could not be verified. Your verification code is either expired or it has already been used. Please try logging in or register again.",
+    "verificationFailureBody": "Your account could not be verified. Your verification code is either expired or it has already been used. Please try logging in or registering again.",
     "noFeedbackFound": "No feedback found",
     "feedbackAddDate": "Date submitted",
     "numberPerPage": "Number of {n} per page:",

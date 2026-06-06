@@ -167,7 +167,7 @@
     "verificationSuccessTitle": "Account geverifieerd",
     "verificationSuccessBody": "Je account is geverifieerd, je kan nu inloggen.",
     "verificationFailureTitle": "Verificatie mislukt",
-    "verificationFailureBody": "Je account kon niet worden geverifieerd. Je verificatiecode is mogelijk al verlopen of gebruikt. Log in of registreer alsjeblieft opnieuw.",
+    "verificationFailureBody": "Je account kon niet worden geverifieerd. Je verificatiecode is mogelijk al verlopen of gebruikt. Probeer alsjeblieft in te loggen of nogmaals te registreren.",
     "noFeedbackFound": "Geen feedback gevonden",
     "feedbackAddDate": "Datum ingezonden",
     "numberPerPage": "Aantal {n} per pagina:",
