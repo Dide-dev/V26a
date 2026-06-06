@@ -243,6 +243,57 @@ pub async fn add_lesson(
     Ok(id)
 }
 
+/// Get the classroom to which a lesson belongs.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `lesson_id` - The id of the classroom of which the owner is queried.
+///
+/// # Returns
+/// The id of the classroom as a [`Some`] if the lesson exists, or a [`None`] if it doesn't.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_classroom_from_lesson(
+    db: impl PgExecutor<'_>,
+    lesson_id: i32,
+) -> Result<Option<i32>, ApiError> {
+    let classroom_id =
+        query!("SELECT classroom_id FROM lessons WHERE id = $1", lesson_id)
+            .fetch_optional(db)
+            .await?
+            .map(|r| r.classroom_id);
+    Ok(classroom_id)
+}
+
+/// Adds an existing tree to a lesson in the database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `lesson_id` - The id of the lesson to which the tree will belong.
+///
+/// `tree_id` - The id of the tree which should be added to the lesson.
+///
+/// # Returns
+/// Nothing
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException).
+pub async fn add_existing_tree_to_lesson(
+    db: impl PgExecutor<'_>,
+    lesson_id: i32,
+    tree_id: i32,
+) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO lesson_trees (lesson_id, tree_id) VALUES ($1, $2)",
+        lesson_id,
+        tree_id,
+    ).execute(db).await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::db::classrooms::{

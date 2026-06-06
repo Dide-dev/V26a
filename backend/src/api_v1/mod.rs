@@ -14,6 +14,7 @@ pub mod images;
 pub mod session;
 pub mod trees;
 pub mod users;
+pub mod lessons;
 
 use crate::errors::ApiError;
 use axum::body::Body;
@@ -38,6 +39,7 @@ use crate::api_v1::{
 };
 use auth::auth;
 use axum::Router;
+use crate::api_v1::lessons::lessons;
 
 #[derive(Clone)]
 pub struct IpKeyExtractor;
@@ -77,6 +79,7 @@ pub fn v1_api(state: ArcState) -> Router<ArcState> {
         .nest("/classrooms", classrooms())
         .nest("/feedback", feedback())
         .nest("/images", images())
+        .nest("/lessons", lessons())
         .nest("/library", cards_library())
         .nest("/trees", trees())
         .nest("/users", users())

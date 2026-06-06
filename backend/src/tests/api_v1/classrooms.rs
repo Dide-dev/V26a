@@ -141,7 +141,7 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
     };
 
     let result =
-        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &claims).await;
     assert!(result.is_ok());
 }
 
@@ -157,6 +157,6 @@ async fn test_verify_classroom_permission_admin(db: PgPool) {
     };
 
     let result =
-        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &claims).await;
     assert!(result.is_ok());
 }
