@@ -15,9 +15,11 @@ pub mod session;
 pub mod trees;
 pub mod users;
 
+use crate::errors::ApiError;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::Request;
+use axum_extra::extract::CookieJar;
 use governor::clock::QuantaInstant;
 use governor::middleware::NoOpMiddleware;
 use std::net::SocketAddr;
@@ -80,8 +82,8 @@ pub fn v1_api(state: ArcState) -> Router<ArcState> {
         .nest("/users", users())
 }
 
-// Compute governor config (per minute).
-// Using miliseconds to compute req/min.
+/// Compute governor config (per minute).
+/// Using miliseconds to compute req/min.
 pub fn rate_limit_layer(
     refresh_rate: u64,
     burst_size: u32,
@@ -95,4 +97,19 @@ pub fn rate_limit_layer(
             .unwrap(),
     );
     GovernorLayer::new(config)
+}
+
+/// Get the value of the session cookie from the [`CookieJar`]
+///
+/// # Arguments
+/// `jar` - The [`CookieJar`] returned from a request.
+///
+/// # Returns
+/// The value of a session cookie as a [`String`] if successful, or [`MissingAuthentication`](ApiError::MissingAuthentication) if not.
+pub fn extract_token(jar: &CookieJar) -> Result<String, ApiError> {
+    Ok(jar
+        .get("session")
+        .ok_or(ApiError::MissingAuthentication)?
+        .value()
+        .to_string())
 }

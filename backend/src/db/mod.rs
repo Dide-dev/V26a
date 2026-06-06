@@ -10,6 +10,7 @@ pub mod cards_library;
 pub mod classrooms;
 pub mod feedback;
 pub mod images;
+pub mod session;
 pub mod trees;
 pub mod users;
 
