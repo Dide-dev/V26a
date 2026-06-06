@@ -50,7 +50,6 @@
     const minInputLengths = {
         name: 4,
         nickname: 2,
-        email: 3,
         password: 8
     };
 
@@ -182,7 +181,6 @@
                         type="email"
                         data-testid="email"
                         placeholder={m.examplePlaceholderRequired({ value: m.emailPlaceholder() })}
-                        minlength={minInputLengths.email}
                         maxlength={maxInputLengths.email}
                         autocomplete="email"
                         required
