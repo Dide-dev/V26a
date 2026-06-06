@@ -87,9 +87,11 @@ pub enum UserResponse {
 /// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
 /// # Returns
-/// [`Pending`](UserResponse::Pending) if the registration was successful and is now pending verification.
-/// if the email has not yet been used, or [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) otherwise.
-/// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
+/// [`Pending`](UserResponse::Pending) if the registration was successful and is now pending verification,
+///
+/// [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) if the email has already been used, or
+///
+/// [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) if the username has already been used.
 ///
 /// # Errors
 /// May return a [`HashException`](ApiError::HashException),
