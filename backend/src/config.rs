@@ -7,7 +7,6 @@
 //! This module parses all external configuration from environment variables.
 //! For more details, see the '.env.example' file in the root of this repository.
 
-use crate::db_structs::session::Keys;
 use bcrypt::DEFAULT_COST;
 use std::env;
 
@@ -25,7 +24,6 @@ pub struct Config {
     pub bcrypt_cost: u32,
     /// This duration is in _seconds_.
     pub session_duration: i64,
-    pub jwt_keys: Keys,
 
     /// Upload images directory
     pub upload_dir: String,
@@ -61,26 +59,22 @@ impl Config {
             s.parse()
                 .expect("Failed to parse environment variable BCRYPT_COST")
         });
+
         let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
             .expect("Failed to parse environment variable SESSION_EXPIRATION_SECONDS");
-        let jwt_keys = Keys::new(
-            env::var("JWT_SECRET")
-                .expect("Environment variable JWT_SECRET must be set")
-                .as_bytes(),
-        );
+        let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASSROOM_SESSIONS")
+            .unwrap_or("10".to_string())
+            .parse::<usize>()
+            .expect("Failed to parse environment variable MAX_CONCURRENT_CLASSROOM_SESSIONS");
+
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
             .unwrap_or("10".to_string())
             .parse::<usize>()
             .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
             * 1_048_576; // Mebibytes to bytes
-
-        let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASSROOM_SESSIONS")
-            .unwrap_or("10".to_string())
-            .parse::<usize>()
-            .expect("Failed to parse environment variable MAX_CONCURRENT_CLASSROOM_SESSIONS");
 
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
             .unwrap_or("30".to_string())
@@ -99,10 +93,9 @@ impl Config {
             log_level,
             bcrypt_cost,
             session_duration,
-            jwt_keys,
+            max_concurrent_classroom_sessions,
             upload_dir,
             max_upload_size,
-            max_concurrent_classroom_sessions,
             rate_limit_per_minute,
             rate_limit_burst_size,
         }

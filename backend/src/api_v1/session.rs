@@ -5,13 +5,15 @@
 */
 
 use crate::ArcState;
+use crate::api_v1::extract_token;
+use crate::db::session::get_session;
 use crate::db_structs::session::{AllClassroomClaims, Claims, ClaimsType, ClassroomClaims};
 use crate::errors::ApiError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
-use jsonwebtoken::{Validation, decode};
+use sqlx::PgPool;
 use serde::de::DeserializeOwned;
 
 /// If the api call path contains `classrooms/{id}`, returns `id`.
@@ -42,33 +44,24 @@ fn get_claims<T: ClaimsType + DeserializeOwned>(
 ) -> Result<T, ApiError> {
     // Extract the token from the cookie jar.
     let jar = CookieJar::from_headers(&parts.headers);
+    let token = extract_token(&jar)?;
 
-    // Get the cookie value.
-    let cookie_value = jar
-        .get(T::get_cookie_name())
-        .ok_or(ApiError::MissingAuthentication)?
-        .value();
+    let db = parts
+        .extensions
+        .get::<PgPool>()
+        .ok_or(ApiError::DatabaseException)?;
 
-    // Decode the user data, this automatically validates the expiration time.
-    let token_data = decode::<T>(
-        cookie_value,
-        &state.config.jwt_keys.decoding,
-        &Validation::default(),
-    )
-    .map_err(|e| match e.kind() {
-        // exp gets validated by the library, but we want to map it to our own error type.
-        jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredSession,
-        // Other validation error, usually means that the decoding failed (completely invalid session).
-        _ => ApiError::InvalidSession,
-    })?;
-
-    Ok(token_data.claims)
+    get_session(db, &token)
+        .await?
+        .ok_or(ApiError::InvalidSession)
+    // MERGE: this only gets one session for now,
+    // should retrieve one from set for classrooms
 }
 
 impl FromRequestParts<ArcState> for Claims {
     type Rejection = ApiError;
 
-    /// Get JWT [`Claims`] from a user's cookies
+    /// Get [`Claims`] from a user's cookies
     ///
     /// # Example
     /// Passing `claims: `[`Claims`] into an axum function will automatically call this function.
@@ -84,20 +77,19 @@ impl FromRequestParts<ArcState> for Claims {
     ///
     /// Returns [`ExpiredSession`](ApiError::ExpiredSession) if the user's session has expired.
     ///
-    /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be
-    /// decrypted, or if another error is given by [`jsonwebtoken`].
+    /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be created.
     async fn from_request_parts(
         parts: &mut Parts,
         state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        get_claims(parts, state)
+        get_claims(parts, state).await
     }
 }
 
 impl FromRequestParts<ArcState> for Option<Claims> {
     type Rejection = ApiError;
 
-    /// Get optional JWT [`Claims`] from a user's cookies
+    /// Get optional [`Claims`] from a user's cookies
     ///
     /// # Example
     /// Passing `optional_claims: `[`Option<Claims>`](Claims) into an axum function will automatically call this function.
@@ -114,8 +106,7 @@ impl FromRequestParts<ArcState> for Option<Claims> {
     /// - The user does not have a session cookie,
     /// - The cookies can not be extracted from the request,
     /// - The user's session has expired,
-    /// - The user's session can not be decrypted,
-    /// - another error is given by [`jsonwebtoken`]
+    /// - A database query requesting the session data failed.
     async fn from_request_parts(
         parts: &mut Parts,
         state: &ArcState,

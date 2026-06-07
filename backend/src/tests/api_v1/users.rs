@@ -173,54 +173,88 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_delete_own_user(db: PgPool) {
-    let server = setup(db);
+async fn test_password_change_invalidates_other_sessions(db: PgPool) {
+    let server = setup(db.clone());
 
     let register_data = RegisterData::test_values();
     let user_id = register(&server, &register_data).await;
-    login(&server, register_data.email).await;
 
-    let response = server
-        .delete(&format!("/users/{user_id}?deleteOwnedTrees=false"))
-        .await;
+    // Create two sessions.
+    login(&server, register_data.email.clone()).await;
+    login(&server, register_data.email.clone()).await;
 
-    response.assert_status_ok();
+    // Check that two sessions exist before password change.
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions, Some(2));
 
-    // Check if user is logged out after deletion.
-    let response = server.get("/users/me").await;
-    response.assert_status_unauthorized();
+    // Change password.
+    server
+        .put("/users/me/password")
+        .json(&PasswordChangeRequestBody {
+            old_password: register_data.password,
+            new_password: "P4$$word".to_owned(),
+        })
+        .await
+        .assert_status_ok();
+
+    // Checks that only one session is left. That means other sessions are invalidated.
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions, Some(1));
 }
 
 #[sqlx::test]
-async fn test_delete_other_user(db: PgPool) {
-    let server = setup(db);
-
-    let account1 = RegisterData::test_values();
-    let user_id_1 = register(&server, &account1).await;
-    let account2 = RegisterData::test_values();
-    register(&server, &account2).await;
-    login(&server, account2.email).await;
-
-    let response = server
-        .delete(&format!("/users/{user_id_1}?deleteOwnedTrees=false"))
-        .await;
-
-    response.assert_status_forbidden();
-}
-
-#[sqlx::test]
-async fn test_delete_nonexistent_user(db: PgPool) {
+async fn test_delete_user(db: PgPool) {
     let server = setup(db);
 
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     login(&server, register_data.email).await;
+    let response = server.delete("/users/me?deleteOwnedTrees=false").await;
+    response.assert_status_ok();
+    // Check if cookies are unset after deletion.
+    assert!(
+        server
+            .get("/any-route")
+            .await
+            .maybe_cookie("session")
+            .is_none()
+    );
 
-    let missing_user_id = 0;
+    // Check that sessions are unvalidated.
+    server.get("/users/me").await.assert_status_unauthorized();
+}
 
-    let response = server
-        .delete(&format!("/users/{missing_user_id}?deleteOwnedTrees=false"))
-        .await;
+#[sqlx::test]
+async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
+    let server = setup(db.clone());
 
-    response.assert_status_bad_request();
+    let register_data = RegisterData::test_values();
+    let user_id = register(&server, &register_data).await;
+    login(&server, register_data.email.clone()).await;
+    login(&server, register_data.email.clone()).await;
+
+    // Checks two sessions exist before deletion.
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions, Some(2));
+
+    server
+        .delete("/users/me?deleteOwnedTrees=false")
+        .await
+        .assert_status_ok();
+
+    // Check that all sessions are invalidated. The amount of sessions should be equal to 0 then.
+    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(sessions, Some(0));
 }

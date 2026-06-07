@@ -44,6 +44,8 @@ pub enum ApiError {
     MismatchedStructure,
     /// An error to return when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
+    /// An error to return when a non-existing `classroom_id` is used to access a classroom.
+    MissingClassroom(i32),
     /// An error to return when a non-existing `language` is used when creating or updating a tree.
     MissingLanguage(String),
     /// An error to return when a non-existing `subject_id` is used when creating or updating a tree.
@@ -180,6 +182,9 @@ impl Display for ApiError {
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
             ),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::MissingClassroom(id) => {
+                write!(f, "The classroom with id {id} could not be found.")
+            }
             ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
             ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
@@ -273,6 +278,7 @@ impl ApiError {
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
             | ApiError::MissingCard(_)
+            | ApiError::MissingClassroom(_)
             | ApiError::MissingLanguage(_)
             | ApiError::MissingSubject(_)
             | ApiError::MissingTree(_)

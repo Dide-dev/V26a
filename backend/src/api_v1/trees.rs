@@ -20,6 +20,7 @@ use crate::db_structs::trees::{
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
+use crate::limits::TREE_TITLE_MAX_LENGTH;
 use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
@@ -818,6 +819,9 @@ pub async fn duplicate_tree(
         this_user.data.language.to_copy_of_text(),
         new_data.title
     );
+    if new_data.title.chars().count() > TREE_TITLE_MAX_LENGTH {
+        new_data.title = new_data.title[0..(TREE_TITLE_MAX_LENGTH - 1)].to_owned() + "…";
+    }
 
     let tree_add_data = TreeAddData {
         tree_data: new_data,

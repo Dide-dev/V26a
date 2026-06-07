@@ -252,7 +252,7 @@ export function getFilteredList(
 }
 
 /** Duplicates a tree */
-export function duplicateTree(treeId: TreeId): Promise<void> {
+export function duplicateTree(treeId: TreeId): Promise<TreeId> {
     return apiCallDuplicateTree(`/${treeId}`);
 }
 
