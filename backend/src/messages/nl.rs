@@ -9,7 +9,7 @@ use crate::messages::Message;
 pub fn localize_message(message: &Message) -> String {
     match message {
         Message::EmailVerificationSubject => "BOOM! Accountbevestiging".to_owned(),
-        Message::EmailVerificationBody(nickname, base_url, verification_link) => format!(
+        Message::EmailVerificationBody(nickname, verification_link, base_url) => format!(
             "Hallo {nickname},\n\nBedankt voor het registreren van een account bij BOOM!\nVoordat u uw account kunt gebruiken, dient u zich te verifiëren met de volgende link:\n{verification_link}\n\nAls u dit verzoek niet herkent, kunt u deze e-mail gerust negeren.\n\nBOOM!\n{base_url}"
         ),
         Message::CopyOf => "Kopie van".to_owned(),

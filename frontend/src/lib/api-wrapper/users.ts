@@ -12,10 +12,6 @@ function apiCallPostUser(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
 }
 
-function apiCallVerifyUser(path: string, body: unknown) {
-    return apiCallPost(prefix + path, body);
-}
-
 function apiCallPutUser(path: string, body: unknown) {
     return apiCallPut(prefix + path, body);
 }
@@ -124,7 +120,7 @@ export function addUser(
 
 /* Verify a pending user */
 export function verifyUser(code: VerificationCode): Promise<UserSuccess | UserInvalidVerification> {
-    return apiCallVerifyUser(`/verify`, code);
+    return apiCallPostUser(`/verification`, code);
 }
 
 /** Delete a user in the database */
