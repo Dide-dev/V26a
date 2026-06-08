@@ -7,7 +7,7 @@
 <script lang="ts">
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import { onMount } from 'svelte';
-    import { getTreeWithCards, type TreeWithCards } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeWithCards, duplicateTree } from '$lib/api-wrapper/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
     import { getUserInfo } from '$lib/api-wrapper/users';
@@ -16,6 +16,8 @@
     import editIcon from '$lib/assets/icons/edit.svg?raw';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
+    import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
+    import { branchColors } from '$lib/treePage';
 
     let userInfo = getUserInfo();
 
@@ -24,6 +26,7 @@
 
     let showFullAssignment = $state(false);
     let assignmentIncludesImage = $state(false);
+
     /** The assignment text cut short depending on the state of `showFullAssignment`.
      *
      * @remarks If the assignment text includes an image, the text is never cut short.
@@ -66,6 +69,11 @@
             userAllowedToEdit = true;
         }
     });
+
+    async function duplicateThisTree(id: number) {
+        let newTreeId = await duplicateTree(id);
+        await window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
+    }
 </script>
 
 <div class="flex h-full w-full flex-col items-start overflow-hidden">
@@ -76,8 +84,8 @@
             <div class="flex flex-col md:w-2/3">
                 <div class="flex">
                     <h1 class="page__title mt-0">{tree.metadata.data.title}</h1>
-                    <div class="flex flex-col justify-center">
-                        {#if userAllowedToEdit}
+                    {#if userAllowedToEdit}
+                        <div class="flex flex-col justify-center">
                             <a
                                 href={appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`)}
                                 class="page__title mt-3 ml-1"
@@ -86,8 +94,21 @@
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                 {@html editIcon}
                             </a>
-                        {/if}
-                    </div>
+                        </div>
+                    {/if}
+                    {#if userInfo !== null}
+                        <div class="flex flex-col justify-center">
+                            <button
+                                onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
+                                aria-label="duplicate"
+                                class:cursor-pointer={true}
+                                class="page__title mt-3 ml-1"
+                            >
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html iconDuplicate}
+                            </button>
+                        </div>
+                    {/if}
                 </div>
                 <span class="-mt-2 italic *:*:inline">
                     {m.madeBy()}:
@@ -108,14 +129,14 @@
                 </div>
             </div>
             <div class="mt-text-small flex flex-auto flex-row">
-                {#if assignmentText !== ''}
-                    <div class="flex w-2/3 flex-col">
+                <div class="flex w-2/3 flex-col">
+                    {#if assignmentText !== ''}
                         <p class="mt-text-minor text-lg font-semibold wrap-anywhere">
                             {m.assignment()}
                         </p>
-                        <p class="*:inline">
+                        <p>
                             <!-- Trees from the prototype may contain images. -->
-                            <span class="inline wrap-anywhere *:inline">
+                            <span class="wrap-anywhere *:last:inline">
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                 {@html markdownToFinalHtml(assignmentText)}
                             </span>
@@ -130,8 +151,8 @@
                                 </button>
                             {/if}
                         </p>
-                    </div>
-                {/if}
+                    {/if}
+                </div>
                 <div class="mr-4 flex w-1/3 flex-col text-right">
                     {#if tree.metadata.data.bookIsbn !== null}
                         <a
@@ -169,8 +190,14 @@
         </div>
 
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
-            {#each tree.structure.rootNodes as root (root)}
-                <SubtreeViewer node={root} cards={tree.cards} />
+            {#each tree.structure.rootNodes as root, i (root)}
+                <SubtreeViewer
+                    node={root}
+                    cards={tree.cards}
+                    color={branchColors[i % branchColors.length]}
+                    distanceFromRevealed={0}
+                    isRevealed={true}
+                />
             {/each}
         </div>
     {/if}

@@ -5,21 +5,25 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::rate_limit_layer;
+use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_id;
+use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
+use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
 };
+use crate::db_structs::classrooms::ClassroomListResponse;
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 
 use crate::db_structs::Validated;
-use axum::extract::{Path, State};
-use axum::routing::{delete, get, post, put};
+use axum::extract::State;
+use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
@@ -33,9 +37,14 @@ use utoipa::ToSchema;
 pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/me", get(get_own_user_data).put(update_user_data))
+        .route(
+            "/me",
+            get(get_own_user_data)
+                .put(update_user_data)
+                .delete(delete_user_data),
+        )
         .route("/me/password", put(change_password))
-        .route("/{user_id}", delete(delete_user_data))
+        .route("/me/classrooms", get(get_all_owned_classrooms))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -247,6 +256,7 @@ pub struct ChangePasswordResponse {
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
     claims: Claims,
+    jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
@@ -275,76 +285,118 @@ async fn change_password(
     )
     .await?;
 
+    let token = extract_token(&jar)?;
+
+    // All other sessions of the account are invalidated if password is changed.
+    delete_all_sessions_except(&db, claims.sub, &token).await?;
+
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
 
 #[utoipa::path(
     delete,
-    path = "/{user_id}",
+    path = "/me",
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
-        (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("user_id" = i32, Path),
         ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
         ("session" = Claims, Cookie),
     )
 )]
-/// Delete a user from the database.
-///
-/// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
+/// Delete the logged-in user from the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `user_id` - The user to delete.
-///
 /// `deleteOwnedTrees` - Delete all the trees of the user.
 ///
 /// # Returns
-/// The (cookie) jar that is empty.
+/// The cookie jar with the session cookies removed.
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete
-/// the user.
-///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
-    mut jar: CookieJar,
+    jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
     Query(delete): Query<DeleteOwnedTrees>,
 ) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await?;
 
-    if !user_id_exists(&mut *transaction, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
+    if !user_id_exists(&mut *transaction, claims.sub).await? {
+        return Err(ApiError::MissingUser(claims.sub));
     }
 
-    // A user can only delete their own account unless they are an admin.
-    if claims.sub != user_id && claims.account_type != AccountType::Admin {
-        return Err(ApiError::NoPermission);
-    }
+    delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
-    delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
-
-    if claims.sub == user_id {
-        jar = jar
-            .remove(Cookie::from("session"))
-            .remove(Cookie::from("user_info"));
-    }
+    // Invalidate all the sessions based on userid.
+    delete_all_sessions_user(&mut *transaction, claims.sub).await?;
 
     transaction.commit().await?;
 
-    Ok(jar)
+    // Unset the cookies by changing the date to a time in the past.
+    Ok(jar
+        .remove(Cookie::from("session"))
+        .remove(Cookie::from("user_info")))
+}
+
+#[utoipa::path(
+    get,
+    path = "/{user_id}/classrooms",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
+    )
+)]
+/// Get the list of all classrooms a user has on a given page.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
+///
+/// # Returns
+/// All the user's classrooms and the number of classrooms as [`ClassroomListResponse`].
+///
+/// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
+///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_all_owned_classrooms(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<ClassroomListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await?;
+    let classroom_count = get_classroom_count(&mut *transaction, claims.sub).await?;
+
+    let classrooms = get_all_classrooms(&mut *transaction, claims.sub, &page).await?;
+    transaction.commit().await?;
+    let list = ClassroomListResponse {
+        total_classrooms: i32::try_from(classroom_count)
+            .map_err(|_| ApiError::DatabaseMemoryCap)?,
+        classrooms,
+    };
+    Ok(Json(list))
 }

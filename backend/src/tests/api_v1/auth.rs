@@ -6,15 +6,82 @@
 
 #![cfg(test)]
 
+use crate::api_v1::auth::LoginResponse;
+use crate::db::session::get_session;
+use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::InfoCookieData;
 use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
 use crate::tests::api_v1::{get_cookie_data, login, register, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
+async fn test_login_fail(db: PgPool) {
+    let server = setup(db.clone());
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+
+    let response = server
+        .post("/auth")
+        .json(&LoginRequestBody {
+            email: "Caesar@gmail.com".to_owned(),
+            password: "banana".to_owned(),
+        })
+        .await;
+
+    response.assert_status_ok();
+    assert!(!response.json::<LoginResponse>().succeeded);
+
+    // Checks if a cookie is missing.
+    assert!(
+        server
+            .get("/any-route")
+            .await
+            .maybe_cookie("session")
+            .is_none()
+    );
+
+    // Checks that login fails.
+    server.get("/users/me").await.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_logout_success(db: PgPool) {
+    let server = setup(db.clone());
+    let register_data = RegisterData::test_values();
+
+    register(&server, &register_data).await;
+    let login_response = login(&server, register_data.email).await;
+    let token = login_response.cookie("session").value().to_string();
+
+    server.delete("/auth").await;
+
+    // Check if a cookie is unset.
+    assert!(
+        server
+            .get("/any-route")
+            .await
+            .maybe_cookie("session")
+            .is_none()
+    );
+
+    // Check that the session is invalidated.
+    let session = get_session(&db, &token).await.unwrap();
+    assert!(session.is_none());
+}
+
+#[sqlx::test]
+async fn test_logout_failure(db: PgPool) {
+    let server = setup(db);
+    let register_data = RegisterData::test_values();
+    register(&server, &register_data).await;
+
+    // logout is not possible without a valid session.
+    server.delete("/auth").await.assert_status_unauthorized();
+}
+
+#[sqlx::test]
 async fn test_check_user_info_cookie_data_login(db: PgPool) {
     let server = setup(db);
-
     let register_data = RegisterData::test_values();
     let user_id = register(&server, &register_data).await;
     let response = login(&server, register_data.email).await;
@@ -30,7 +97,6 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 #[sqlx::test]
 async fn test_check_user_info_cookie_data_update(db: PgPool) {
     let server = setup(db);
-
     let register_data = RegisterData::test_values();
     register(&server, &register_data).await;
     let response = login(&server, register_data.email).await;
