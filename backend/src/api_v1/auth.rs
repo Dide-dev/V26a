@@ -5,9 +5,7 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::{
-    empty_session_cookie, empty_user_info_cookie, extract_token, rate_limit_layer,
-};
+use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
 use crate::db::users::get_user;
@@ -155,6 +153,6 @@ async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<Cook
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar
-        .remove(empty_session_cookie())
-        .remove(empty_user_info_cookie()))
+        .remove(Cookie::build("session").path("/api/"))
+        .remove(Cookie::build("user_info").path("/")))
 }
