@@ -646,8 +646,8 @@ pub enum AuthorizeCoAuthorResponse {
 
 #[utoipa::path(
     post,
-    path = "{tree_id}/co-authors/{username}",
-    context_path = "/api/v1/trees/",
+    path = "/{tree_id}/co-authors/{username}",
+    context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully attempted to add co-author to tree.", body = AuthorizeCoAuthorResponse, content_type = "application/json"),
         (status = 400, description = "Tree with given id cannot be found."),
@@ -712,8 +712,8 @@ async fn authorize_co_author(
 
 #[utoipa::path(
     delete,
-    path = "{tree_id}/co-authors/{username}",
-    context_path = "/api/v1/trees/",
+    path = "/{tree_id}/co-authors/{username}",
+    context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully removed co-author from tree."),
         (status = 400, description = "Tree with given id cannot be found or the given username cannot be found."),
