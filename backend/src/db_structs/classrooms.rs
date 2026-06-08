@@ -7,6 +7,7 @@ use crate::db_structs::Validated;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
+    LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH,
 };
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -76,4 +77,33 @@ pub struct ClassroomListResponse {
     /// The total amount of classrooms that are visible in the query.
     pub total_classrooms: i32,
     pub classrooms: Vec<ClassroomMetaData>,
+}
+
+/// The basic data of the lesson that is filled in by the user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonAddData {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub published: bool,
+}
+
+impl Validated for LessonAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.name.len() > LESSON_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "name",
+                LESSON_TITLE_MAX_LENGTH,
+            ));
+        }
+        if self.description.len() > LESSON_DESCRIPTION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "description",
+                LESSON_DESCRIPTION_MAX_LENGTH,
+            ));
+        }
+        Ok(())
+    }
 }
