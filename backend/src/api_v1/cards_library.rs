@@ -84,8 +84,8 @@ async fn add_card_to_library(
     let card_text = get_card_text(&db, card_id).await?;
 
     let library_card_id = cards_library_add(
-        &db,
-        &owner_id,
+        get_connection!(db),
+        owner_id,
         &card_data.title,
         &card_data.tags,
         &card_text,

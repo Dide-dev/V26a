@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM library_cards_tags WHERE library_card_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5748e4e7fc3e9b073c7b52353f79b0b1d8a7e02c26f1e9b0783b26106b056e03"
+}
