@@ -252,8 +252,8 @@ export function getFilteredList(
 }
 
 /** Duplicates a tree */
-export function duplicateTree(treeId: TreeId): Promise<void> {
-    return apiCallDuplicateTree(`/${treeId}`);
+export function duplicateTree(treeId: TreeId): Promise<TreeId> {
+    return apiCallDuplicateTree(`/${treeId}/duplicate`);
 }
 
 /** Add user as co-author to a tree. */

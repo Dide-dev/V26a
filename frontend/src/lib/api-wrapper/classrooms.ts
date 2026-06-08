@@ -7,6 +7,7 @@
 import { apiCallPost, apiCallGet } from '$lib/api-wrapper/index';
 import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
 import type { UserId } from './users';
+import type { Option } from '$lib/api-wrapper/types';
 
 const prefix = 'classrooms';
 
@@ -19,6 +20,7 @@ function apiCallGetClassroom(path: string) {
 }
 
 export type ClassroomId = number;
+export type LessonId = number;
 
 export type ClassroomData = {
     name: string;
@@ -42,6 +44,12 @@ export type ClassroomListResponse = {
     classrooms: ClassroomMetaData[];
 };
 
+export type LessonAddData = {
+    name: string;
+    description: Option<string>;
+    published: Option<boolean>;
+};
+
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomData): Promise<ClassroomGeneratedData> {
     return apiCallPostClassroom('', classroomAddData);
@@ -54,4 +62,12 @@ export function getAllOwnedClassrooms(
 ): Promise<ClassroomListResponse> {
     const params: string = getPaginationParams(pageOptions);
     return apiCallGetClassroom(`/users/${userId}/classrooms?${params}`);
+}
+
+/** Add a lesson to a classroom in the database */
+export function addLesson(
+    lessonAddData: LessonAddData,
+    classroomId: ClassroomId
+): Promise<LessonId> {
+    return apiCallPostClassroom(`${classroomId}/lessons`, lessonAddData);
 }

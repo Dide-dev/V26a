@@ -7,7 +7,6 @@
 //! This module parses all external configuration from environment variables.
 //! For more details, see the '.env.example' file in the root of this repository.
 
-use crate::db_structs::session::Keys;
 use bcrypt::DEFAULT_COST;
 use std::env;
 
@@ -25,7 +24,6 @@ pub struct Config {
     pub bcrypt_cost: u32,
     /// This duration is in _seconds_.
     pub session_duration: i64,
-    pub jwt_keys: Keys,
 
     /// Upload images directory
     pub upload_dir: String,
@@ -62,12 +60,6 @@ impl Config {
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
             .expect("Failed to parse environment variable SESSION_EXPIRATION_SECONDS");
-        let jwt_keys = Keys::new(
-            env::var("JWT_SECRET")
-                .expect("Environment variable JWT_SECRET must be set")
-                .as_bytes(),
-        );
-
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
             .unwrap_or("30".to_string())
             .parse::<u64>()
@@ -92,7 +84,6 @@ impl Config {
             log_level,
             bcrypt_cost,
             session_duration,
-            jwt_keys,
             upload_dir,
             max_upload_size,
             rate_limit_per_minute,
