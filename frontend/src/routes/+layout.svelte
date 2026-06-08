@@ -129,10 +129,6 @@
                             text: m.profile()
                         },
                         {
-                            href: '/login',
-                            text: m.login()
-                        },
-                        {
                             href: '/logout',
                             text: m.logout()
                         }
