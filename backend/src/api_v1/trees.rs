@@ -733,7 +733,7 @@ async fn authorize_co_author(
 /// If the given user was already not a co-author of the given tree,
 /// this function will still return a 200 OK status.
 /// This is also the case when trying to remove the owner of a tree as co-author,
-/// because the owner of tree can never alos become a co-author.
+/// because the owner of tree can never become a co-author.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
