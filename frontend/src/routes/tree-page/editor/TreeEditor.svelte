@@ -34,6 +34,7 @@
     import type { SideBar } from './Sidebar.svelte';
     import SidebarComponent from './Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
+    import { branchColors } from '$lib/treePage';
     import CoAuthor from './CoAuthor.svelte';
     import { getUserInfo } from '$lib/api-wrapper/users';
 
@@ -213,6 +214,7 @@
                             location={[location]}
                             bind:dragState
                             bind:sidebar={tree.sidebar}
+                            color={branchColors[location % branchColors.length]}
                         />
                     {/each}
                     <RootNodeAddButton history={tree.history} enabled={dragState === null} />
