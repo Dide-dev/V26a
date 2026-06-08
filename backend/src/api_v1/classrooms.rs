@@ -13,7 +13,7 @@ use crate::{ArcState, get_connection};
 
 use crate::db_structs::users::AccountType;
 use axum::extract::Path;
-use axum::routing::post;
+use axum::routing::{post, get};
 use axum::{Extension, Json, Router};
 use sqlx::{PgConnection, PgPool};
 
@@ -22,6 +22,7 @@ pub fn classrooms() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_classroom))
         .route("/{classroom_id}/lessons", post(add_new_lesson))
+        .route("/{join_code}", get(get_classroom_content))
 }
 
 #[utoipa::path(
@@ -119,6 +120,14 @@ async fn add_new_lesson(
     let id = add_lesson(get_connection!(db), &lesson_add_data, classroom_id).await?;
 
     Ok(Json(id))
+}
+
+async fn get_classroom_content(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(join_code): Path<String>,
+) -> Result<Json<ClassroomData>, ApiError> {
+
 }
 
 /// Checks whether the classroom exists and if it is owned by the user, or if the user is an admin.

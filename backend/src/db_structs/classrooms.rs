@@ -12,6 +12,7 @@ use crate::limits::{
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
+use crate::db_structs::trees::TreeMetadata;
 
 /// The basic data of the classroom that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
@@ -106,4 +107,38 @@ impl Validated for LessonAddData {
         }
         Ok(())
     }
+}
+
+/// All data on lessons, except the order number and classroom id.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonData {
+    id: i32,
+    created_at: DateTime<Utc>,
+    name: String,
+    description: String,
+    published: bool,
+}
+/// The structure of a lesson; its trees and order number.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonStructure {
+    pub order_number: i32,
+    pub trees: Vec<TreeMetadata>,
+}
+
+/// The data of the lesson along with its trees.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonMetaData {
+    pub data: LessonAddData,
+    pub structure: LessonStructure,
+}
+
+/// The basic data of the lesson that is filled in by the user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct JoinClassroomData {
+    pub data: ClassroomMetaData,
+    pub lessons: Vec<LessonMetaData>,
 }
