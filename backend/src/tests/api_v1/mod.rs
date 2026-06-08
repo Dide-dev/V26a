@@ -19,6 +19,7 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::UserResponse;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
 use axum::Extension;
@@ -190,6 +191,22 @@ async fn create_tree(test_server: &TestServer) -> i32 {
     };
     let response = test_server.post("/trees").json(&tree_add_data).await;
     response.json()
+}
+
+/// Creates a basic classroom that can be used in tests.
+///
+/// # Arguments
+/// `test_server` - The [`TestServer`] to use for making the API calls.
+///
+/// # Returns
+/// An i32 representing the classroom's id.
+async fn create_classroom(test_server: &TestServer) -> i32 {
+    let classroom_data = ClassroomData {
+        name: "Classroom".to_string(),
+        description: "Classroom description".to_string(),
+    };
+    let response = test_server.post("/classrooms").json(&classroom_data).await;
+    response.json::<ClassroomGeneratedData>().id
 }
 
 #[cfg(test)]

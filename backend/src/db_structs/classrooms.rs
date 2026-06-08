@@ -7,20 +7,22 @@ use crate::db_structs::Validated;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
+    LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH,
 };
 use sqlx::FromRow;
+use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
 /// The basic data of the classroom that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassroomAddData {
+pub struct ClassroomData {
     pub name: String,
     #[serde(default)]
     pub description: String,
 }
 
-impl Validated for ClassroomAddData {
+impl Validated for ClassroomData {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     ///
@@ -56,4 +58,52 @@ impl Validated for ClassroomAddData {
 pub struct ClassroomGeneratedData {
     pub id: i32,
     pub join_code: String,
+    pub created_at: DateTime<Utc>,
+    pub owner_id: i32,
+}
+
+/// The data that is returned to the user when requesting all data.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomMetaData {
+    pub data: ClassroomData,
+    pub gen_data: ClassroomGeneratedData,
+}
+
+/// The data returned when requesting a list of classrooms.
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomListResponse {
+    /// The total amount of classrooms that are visible in the query.
+    pub total_classrooms: i32,
+    pub classrooms: Vec<ClassroomMetaData>,
+}
+
+/// The basic data of the lesson that is filled in by the user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonAddData {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub published: bool,
+}
+
+impl Validated for LessonAddData {
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        if self.name.len() > LESSON_TITLE_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "name",
+                LESSON_TITLE_MAX_LENGTH,
+            ));
+        }
+        if self.description.len() > LESSON_DESCRIPTION_MAX_LENGTH {
+            return Err(ApiError::InputLengthExceeded(
+                "description",
+                LESSON_DESCRIPTION_MAX_LENGTH,
+            ));
+        }
+        Ok(())
+    }
 }
