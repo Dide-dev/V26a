@@ -761,7 +761,7 @@ fn apply_tree_filters<'a>(
                 WHERE co_authors.user_id = ",
             );
             separated.push_bind_unseparated(user_id);
-            separated.push_unseparated(")))");
+            separated.push_unseparated(" AND co_authors.tree_id = trees.id)))");
         }
 
         separated.push_unseparated(")");
@@ -830,7 +830,7 @@ fn apply_tree_filters_editable(
                 WHERE co_authors.user_id = ",
         );
         separated.push_bind_unseparated(user_id);
-        separated.push_unseparated("))");
+        separated.push_unseparated(" AND co_authors.tree_id = trees.id))");
     }
 }
 
