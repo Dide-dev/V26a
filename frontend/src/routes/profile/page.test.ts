@@ -510,5 +510,5 @@ test('popup opens when delete button is clicked', async () => {
 
     await user.click(screen.getByTestId('delete-button'));
 
-    expect((await screen.findAllByTestId('popup')).length).toBeGreaterThan(0);
+    screen.getByTestId('popup');
 });
