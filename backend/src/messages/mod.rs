@@ -15,12 +15,16 @@ pub enum Message {
     /// The body of an e-mail sent to verify an account upon registration.
     ///
     /// # Parameters
-    /// `name` - The name that the receiver will be greeted as.
+    /// `display_name` - The name that the receiver will be greeted as.
     ///
     /// `verification_link` - The link that the receiver can use to verify.
     ///
     /// `base_url` - The base URL of the website, to show in the footer.
-    EmailVerificationBody(String, String, String),
+    EmailVerificationBody {
+        display_name: String,
+        verification_link: String,
+        base_url: String,
+    },
     /// A text to be used as prefix in a copy of something.
     CopyOf,
 }

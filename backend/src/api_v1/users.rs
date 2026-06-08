@@ -157,11 +157,11 @@ async fn add_new_user(
         .header(ContentType::TEXT_PLAIN)
         .subject(EmailVerificationSubject.localized(&language))
         .body(
-            EmailVerificationBody(
+            EmailVerificationBody {
                 display_name,
                 verification_link,
-                state.config.base_url.clone(),
-            )
+                base_url: state.config.base_url.clone(),
+            }
             .localized(&language),
         )?;
     state.config.mailer.send(message).await?;
