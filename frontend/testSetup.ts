@@ -7,6 +7,21 @@
 import { beforeEach } from 'vitest';
 import * as ResizeObserverModule from 'resize-observer-polyfill';
 
+window.matchMedia =
+    window.matchMedia ||
+    function (query: string) {
+        return {
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: () => {},
+            removeListener: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => false
+        } as MediaQueryList;
+    };
+
 beforeEach(() => {
     // Reset the DOM. This is necessary to ensure that each individual test starts
     // with an empty DOM, so that they do not interfere with each other.
