@@ -19,8 +19,9 @@
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
     import { getUserInfo } from '$lib/api-wrapper/users';
-    import { goto } from '$app/navigation';
     import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
+    import { redirectLogin } from '$lib/api-wrapper';
+    import { page } from '$app/state';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
@@ -57,7 +58,7 @@
         if (userInfo !== null) {
             treeListResponse = await getFilteredList(paginationOptions, filterOptions);
         } else {
-            await goto(appLink('/login'));
+            await redirectLogin(page.url);
         }
     }
 
