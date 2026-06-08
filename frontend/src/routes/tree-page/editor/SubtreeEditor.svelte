@@ -15,6 +15,7 @@
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
     import type { Node, RootNode } from '$lib/api-wrapper/trees';
+    import type { BranchColor } from '$lib/treePage';
 
     let {
         history = $bindable(),
@@ -25,13 +26,15 @@
          */
         fakeNode = false,
         dragState = $bindable(),
-        sidebar = $bindable()
+        sidebar = $bindable(),
+        color
     }: {
         history: TreeHistory;
         location: number[];
         fakeNode?: boolean;
         dragState: DragState;
         sidebar: SideBar | null;
+        color: BranchColor;
     } = $props();
 
     /** This will be null if `fakeNode` is set to true. */
@@ -134,7 +137,13 @@
             class="transform:scale(0.7) pointer-events-none fixed z-20 opacity-70"
             style="left: {dragState.mouseX}px; top: {dragState.mouseY}px;"
         >
-            <SubtreeViewer node={node!} cards={history.currentCards} />
+            <SubtreeViewer
+                node={node!}
+                cards={history.currentCards}
+                {color}
+                distanceFromRevealed={1}
+                isRevealed={false}
+            />
         </div>
     {/if}
 
@@ -180,7 +189,7 @@
     {/if}
 
     {#if children.length > 0}
-        <LineDrawer>
+        <LineDrawer alwaysFullWidth={true}>
             <!-- Here the html gets recursive as we render the 'node.children' -->
             {#each children as child (child)}
                 {#if child.isFake}
@@ -191,6 +200,7 @@
                         location={[...location, child.index]}
                         dragState={{ type: 'dismissed' }}
                         bind:sidebar
+                        {color}
                     />
                 {:else}
                     <SubtreeEditor
@@ -198,6 +208,7 @@
                         location={[...location, child.index]}
                         bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}
                         bind:sidebar
+                        {color}
                     />
                 {/if}
             {/each}
