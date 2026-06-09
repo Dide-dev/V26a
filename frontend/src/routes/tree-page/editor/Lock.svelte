@@ -148,7 +148,11 @@
         </p>
         <div class="flex gap-2">
             <button class="cursor-pointer rounded bg-blue-300 p-1" onclick={retry}>
-                {m.retry()}
+                {#if localState.type === 'lockFailed'}
+                    {m.retry()}
+                {:else}
+                    {m.reconnect()}
+                {/if}
             </button>
             {#if localState.type === 'lockFailed'}
                 <button

@@ -28,6 +28,7 @@
     "orderedList": "Ordered list",
     "upload": "Upload",
     "retry": "Retry",
+    "reconnect": "Reconnect",
     "forceKick": "Force kick",
     "kickedBy": "You have been kicked by",
     "serverDisconnected": "Server disconnected!",
