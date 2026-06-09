@@ -1434,7 +1434,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -1489,7 +1489,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             show_own_private_with_id_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2))))",
+            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))))",
         );
 
         let mut hide_own_private_with_id_query =
