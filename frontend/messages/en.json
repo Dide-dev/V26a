@@ -113,6 +113,7 @@
     "from": "from",
     "through": "through",
     "ownerId": "ID of the owner",
+    "searchTerms": "Search terms",
     "numberOfTrees": "Number of trees per page:",
     "numberOfUsers": "Number of users per page:",
     "selectDate": "Select date",

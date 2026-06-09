@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT trees.*, users.name AS owner_name, subjects.name AS \"subject_name?\", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        WHERE trees.id = $1",
+  "query": "SELECT\n            trees.id, owner_id, trees.created_at, last_modified, published, times_visited, last_visited, trees.title, description, book_chapter, book_exercise, assignment_text, structure, trees.language_code, subject_id, book_isbn,\n            users.name AS owner_name, subjects.name AS \"subject_name?\",\n            COALESCE(books.title, '') AS book_name,\n            COALESCE(books.author, '') AS book_author,\n            COALESCE(books.edition, '') AS book_edition,\n            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        WHERE trees.id = $1",
   "describe": {
     "columns": [
       {
@@ -150,5 +150,5 @@
       null
     ]
   },
-  "hash": "e31c1a7efde5ccf411c5197e82c94c89c16ca2354ef7c927fc71b9198eca8c2b"
+  "hash": "ec66ee72875f79890c9f6dc68cf01c52f58c633cf9db486e0889150271b3afcb"
 }

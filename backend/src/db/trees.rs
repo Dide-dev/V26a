@@ -442,7 +442,13 @@ pub async fn db_get_tree_all_data(
     tree_id: i32,
 ) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
-        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
+        r#"SELECT
+            trees.id, owner_id, trees.created_at, last_modified, published, times_visited, last_visited, trees.title, description, book_chapter, book_exercise, assignment_text, structure, trees.language_code, subject_id, book_isbn,
+            users.name AS owner_name, subjects.name AS "subject_name?",
+            COALESCE(books.title, '') AS book_name,
+            COALESCE(books.author, '') AS book_author,
+            COALESCE(books.edition, '') AS book_edition,
+            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
         FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
         LEFT JOIN users ON users.id = trees.owner_id
@@ -700,6 +706,7 @@ fn apply_tree_filters<'a>(
 ) -> Result<(), ApiError> {
     let TreeFilters {
         owner_name,
+        search_terms,
         book,
         tag,
         language_code,
@@ -718,6 +725,7 @@ fn apply_tree_filters<'a>(
     // function as it would create an empty WHERE clause.
     let has_conditions = !(*show_private && is_admin)
         || owner_name.is_some()
+        || search_terms.as_ref().is_some_and(|t| !t.trim().is_empty())
         || (*editable && option_user_id.is_some())
         || !book.is_empty()
         || !tag.is_empty()
@@ -754,6 +762,7 @@ fn apply_tree_filters<'a>(
         separated.push_unseparated(")");
     }
     apply_tree_filters_owner_name(&mut separated, owner_name.as_ref());
+    apply_tree_filters_search_terms(&mut separated, search_terms.as_ref());
     apply_tree_filters_editable(&mut separated, *editable, option_user_id);
     apply_tree_filters_books(&mut separated, book)?;
     apply_tree_filters_tags(&mut separated, tag);
@@ -786,6 +795,31 @@ fn apply_tree_filters_owner_name<'args>(
             .push("(users.name = ")
             .push_bind_unseparated(owner_name)
             .push_unseparated(")");
+    }
+}
+
+/// Adds to a Postgres [`QueryBuilder`] the filters for matching search terms.
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `search_terms` - A string of space separated search terms.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_search_terms<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    search_terms: Option<&'args String>,
+) {
+    if let Some(search_terms) = search_terms {
+        let trimmed = search_terms.trim();
+
+        if !trimmed.is_empty() {
+            separated
+                .push("(trees.search_vector @@ websearch_to_tsquery('dutch',")
+                .push_bind_unseparated(trimmed)
+                .push_unseparated("))");
+        }
     }
 }
 
@@ -1402,6 +1436,7 @@ mod tests {
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_name: Some("67".to_owned()),
+            search_terms: None,
             book: vec!["0-451-52493-4".to_owned()],
             tag: vec!["funky".to_owned()],
             language_code: Some("nl".to_owned()),

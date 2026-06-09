@@ -27,6 +27,7 @@
 
     let filterOptions: FilterOptions = $state({
         ownerId: null,
+        searchTerms: '',
         book: [],
         createdAfter: null,
         createdBefore: null,
@@ -127,6 +128,10 @@
                     type="number"
                     bind:value={filterOptions.ownerId}
                 />
+            </label>
+            <label class="m-1">
+                {m.searchTerms()}
+                <input class="rounded-md border-2" bind:value={filterOptions.searchTerms} />
             </label>
             <button type="submit">{m.applyFilters()}</button>
         </form>
