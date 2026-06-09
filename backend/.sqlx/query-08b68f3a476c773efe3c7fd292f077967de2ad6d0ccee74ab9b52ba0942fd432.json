@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT name, nickname, about_me, email_visible, email, language_code, account_type FROM users WHERE id = $1",
+  "query": "SELECT name, nickname, about_me, email_visible, email, language_code FROM users WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -37,11 +37,6 @@
         "ordinal": 5,
         "name": "language_code",
         "type_info": "Bpchar"
-      },
-      {
-        "ordinal": 6,
-        "name": "account_type",
-        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -55,9 +50,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "a0d12b853a9c5437aaae67c506fb31c5f06b1c742ace933d69deee6dbf928292"
+  "hash": "08b68f3a476c773efe3c7fd292f077967de2ad6d0ccee74ab9b52ba0942fd432"
 }

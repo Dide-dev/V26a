@@ -199,7 +199,6 @@ pub struct PublicUserData {
     pub nickname: String,
     pub about_me: String,
     pub language: UserLanguage,
-    pub account_type: AccountType,
 
     /// If email is not visible, this will be set to None
     pub email: Option<String>,

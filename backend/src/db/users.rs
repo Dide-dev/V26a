@@ -112,7 +112,7 @@ pub async fn get_user_public_data(
     id: i32,
 ) -> Result<Option<PublicUserData>, ApiError> {
     let record = query!(
-        "SELECT name, nickname, about_me, email_visible, email, language_code, account_type FROM users WHERE id = $1",
+        "SELECT name, nickname, about_me, email_visible, email, language_code FROM users WHERE id = $1",
         id,
     )
     .fetch_optional(db)
@@ -127,7 +127,6 @@ pub async fn get_user_public_data(
         nickname: record.nickname,
         about_me: record.about_me,
         language: UserLanguage::from_str(record.language_code.as_str())?,
-        account_type: AccountType::from_str(record.account_type.as_str())?,
         email: if record.email_visible {
             Some(record.email)
         } else {

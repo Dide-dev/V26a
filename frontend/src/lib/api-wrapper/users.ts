@@ -91,7 +91,6 @@ export type PublicUserData = {
     nickname: string;
     aboutMe: string;
     language: string;
-    accountType: AccountType;
     /** Is null when the user set the `emailVisible` to false. */
     email: Option<string>;
 };
