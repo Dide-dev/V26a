@@ -1094,12 +1094,16 @@ async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_deauthorize_co_author(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let test_state = setup(db.clone());
 
-    let tree_id: i32 = create_tree(&server).await;
-
+    let user = RegisterData::test_values();
     let co_author = RegisterData::test_values();
-    let co_author_id = register(&server, &co_author).await;
+    register(&test_state, &user).await;
+    let co_author_id = register(&test_state, &co_author).await;
+
+    let server = test_state.server;
+    login(&server, user.email).await;
+    let tree_id: i32 = create_tree(&server).await;
 
     let is_co_author = async || {
         is_co_author_of_tree(&db, &tree_id, &co_author_id)
