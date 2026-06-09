@@ -179,5 +179,6 @@
     "manageCoAuthors": "Manage co-authors",
     "deleteOwnedTrees": "Delete all my trees",
     "deleteAccount": "Delete account",
-    "deleteAccountConfirmation": "Are you sure you want to delete your account?"
+    "deleteAccountConfirmation": "Are you sure you want to delete your account?",
+    "logout": "Logout"
 }
