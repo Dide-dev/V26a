@@ -92,7 +92,7 @@ pub async fn get_all_feedback(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_feedback_count(db: impl PgExecutor<'_>) -> Result<i64, ApiError> {
     // `!` forces non-nullability. `COUNT(*)` is guaranteed to return a non-null value, so sqlx can safely refer the count as i64, instead of Option<i64>.
-    let feedback_count = query_scalar!(r#"SELECT COUNT(*) as "count!" FROM feedback"#)
+    let feedback_count = query_scalar!(r#"SELECT COUNT(*) AS "count!" FROM feedback"#)
         .fetch_one(db)
         .await?;
 
