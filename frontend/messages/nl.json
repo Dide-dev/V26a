@@ -165,7 +165,7 @@
     "owner": "Eigenaar",
     "heuristicTrees": "Heuristiekbomen",
     "pendingRegistrationTitle": "E-mailverificatie vereist",
-    "pendingRegistrationBody": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}. Verifier je account om in te loggen.",
+    "pendingRegistrationBody": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}. Verifieer je account om in te loggen.",
     "verificationSuccessTitle": "Account geverifieerd",
     "verificationSuccessBody": "Je account is geverifieerd, je kan nu inloggen.",
     "verificationFailureTitle": "Verificatie mislukt",
