@@ -100,7 +100,7 @@ pub enum FrontendMessage {
 pub enum BackendMessage {
     /// Lock achieved, the tree is safe to edit.
     LockAchieved,
-    /// Could not achive lock, because another user is active.
+    /// Could not achieve lock, because another user is active.
     LockFailed { active_user: i32 },
     /// Used to have a lock, but another user kicked you out.
     /// The websocket will be closed by the backend after this message was sent.
@@ -112,7 +112,7 @@ impl FrontendMessage {
     /// or if the socket closed or had an error.
     ///
     /// This function *is* cancellation safe.
-    pub async fn try_receive(socket: &mut WebSocket) -> Option<Self> {
+    pub async fn receive_and_parse(socket: &mut WebSocket) -> Option<Self> {
         let response = socket.recv().await?;
 
         if let Ok(message) = response
@@ -127,7 +127,11 @@ impl FrontendMessage {
 }
 
 impl BackendMessage {
-    pub async fn try_send(&self, socket: &mut WebSocket) {
+    /// Sends a message over the websocket.
+    /// Ignores any possible error that can happen if the message could not be send.
+    ///
+    /// This function *is* cancellation safe.
+    pub async fn serialize_and_send(&self, socket: &mut WebSocket) {
         let Ok(txt) = serde_json::to_string(self) else {
             // This never happens, but because it is rust we have to handle it somehow
             unreachable!()
@@ -163,12 +167,12 @@ async fn handle_socket_without_lock(
 
         match tree_edit_locks.entry(tree_id) {
             Entry::Occupied(occupied_entry) => {
-                // Locking failed because someone else is has it.
+                // Locking failed because someone else has it.
 
                 let message = BackendMessage::LockFailed {
                     active_user: occupied_entry.get().user_id,
                 };
-                message.try_send(&mut socket).await;
+                message.serialize_and_send(&mut socket).await;
             }
             Entry::Vacant(vacant_entry) => {
                 // Locking succeeded!
@@ -183,7 +187,7 @@ async fn handle_socket_without_lock(
 
     // If other messages are added, this should turn into a loop.
     // Currently the only message would return out of the loop.
-    if let Some(msg) = FrontendMessage::try_receive(&mut socket).await {
+    if let Some(msg) = FrontendMessage::receive_and_parse(&mut socket).await {
         match msg {
             FrontendMessage::Force => {
                 let mut tree_edit_locks = state.tree_edit_locks.lock().await;
@@ -219,11 +223,13 @@ async fn handle_socket_with_lock(
     tree_id: i32,
     mut my_receiver: Receiver<i32>,
 ) {
-    BackendMessage::LockAchieved.try_send(&mut socket).await;
+    BackendMessage::LockAchieved
+        .serialize_and_send(&mut socket)
+        .await;
 
     loop {
         tokio::select! {
-            msg = FrontendMessage::try_receive(&mut socket) => {
+            msg = FrontendMessage::receive_and_parse(&mut socket) => {
                 let Some(msg) = msg else {
                     // Client disconnected or something else went wrong
                     break;
@@ -240,7 +246,7 @@ async fn handle_socket_with_lock(
                 // if not just let the browser treat it as if the server went offline.
                 if let Ok(other_user) = msg {
                     let message = BackendMessage::KickedOutBy { user_id: other_user };
-                    message.try_send(&mut socket).await;
+                    message.serialize_and_send(&mut socket).await;
                 }
 
                 // Dropping it closes the connection
