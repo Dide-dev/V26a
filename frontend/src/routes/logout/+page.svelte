@@ -10,4 +10,4 @@
     });
 </script>
 
-<h1>{m.loading()}</h1>
+<p>{m.loading()}</p>
