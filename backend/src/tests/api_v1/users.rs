@@ -289,10 +289,10 @@ async fn test_invalid_validation_code(db: PgPool) {
 #[sqlx::test]
 async fn test_verify_unpruned_account(db: PgPool) {
     let mut config = Config::load();
-    // Set verification timer to 0 so a pending account is considered expired immediately.
+    // Set verification timer to -1 seconds so a pending account is considered expired immediately.
     // The task is not running so it will not be pruned from the state, but it should still be
     // considered as expired.
-    config.verification_timer = 0;
+    config.verification_timer = -1;
 
     let test_state = setup_config(db, &mut config);
 

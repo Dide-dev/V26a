@@ -3,7 +3,6 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
 use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
@@ -22,6 +21,7 @@ use crate::db_structs::users::{
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
@@ -202,21 +202,26 @@ async fn verify(
 ) -> Result<Json<UserResponse>, ApiError> {
     let mut pending_accounts = state.pending_accounts.lock().await;
 
-    let Some(pending_registration) = pending_accounts
-        // remove the entry with code and return its value
-        .remove(&code)
-        // If the registration has expired, consider it not found.
-        .filter(|p| Utc::now().timestamp() < p.expires)
-    else {
-        return Ok(Json(InvalidVerification));
+    let entry = match pending_accounts.entry(code) {
+        Entry::Occupied(occupied_entry) => {
+            if occupied_entry.get().expires < Utc::now().timestamp() {
+                return Ok(Json(InvalidVerification));
+            }
+            occupied_entry
+        }
+        Entry::Vacant(_) => {
+            return Ok(Json(InvalidVerification));
+        }
     };
 
     let user_id = add_user(
         get_connection!(db),
-        &pending_registration.register_data,
+        &entry.get().register_data,
         state.config.bcrypt_cost,
     )
     .await?;
+
+    entry.remove();
 
     Ok(Json(UserResponse::Success { user_id }))
 }
