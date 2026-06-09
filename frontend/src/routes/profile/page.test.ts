@@ -47,7 +47,8 @@ test('No submission without name', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -78,7 +79,8 @@ test('Submission with full data', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -121,7 +123,8 @@ test('New password without upper case letter shows error', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -161,7 +164,8 @@ test('New password without lower case letter shows error', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -201,7 +205,8 @@ test('New password without special character shows error', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -241,7 +246,8 @@ test('New password without number shows error', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -281,7 +287,8 @@ test('Differing new password and repeat password shows error', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -321,7 +328,8 @@ test('No submission without old password', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -359,7 +367,8 @@ test('No submission without new password', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -396,7 +405,8 @@ test('No submission without repeat password', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -434,7 +444,8 @@ test('No submission when old and new password are the same', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
@@ -474,7 +485,8 @@ test('Submission when all password expectations have been met', async () => {
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = getUserInfo as MockedFunction<typeof getUserInfo>;
