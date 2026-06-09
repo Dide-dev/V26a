@@ -67,7 +67,7 @@
     let websocket: WebSocket;
 
     function initializeWebsocket() {
-        websocket = new WebSocket(`/api/v1/trees/${treeId}/acquire-edit-lock`);
+        websocket = new WebSocket(`/api/v1/trees/${treeId}/edit-lock`);
         websocket.onmessage = (event) => {
             let message: BackendMessage = JSON.parse(event.data);
             localState = message;

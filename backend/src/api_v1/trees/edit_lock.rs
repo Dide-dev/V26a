@@ -25,7 +25,7 @@ use crate::{
 
 #[utoipa::path(
     get,
-    path = "/acquire-edit-lock",
+    path = "/edit-lock",
     context_path = "/api/v1/trees/{tree_id}",
     tag="crate::api_v1::trees",
     request_body = FrontendMessage,

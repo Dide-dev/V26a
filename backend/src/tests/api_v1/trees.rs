@@ -1084,13 +1084,13 @@ async fn test_acquire_lock(db: PgPool) {
     login(&server, user1.email.clone()).await;
     let tree_id = create_tree(&server).await;
     server
-        .post(&format!("/trees/{tree_id}/authorize/{}", user2.data.name))
+        .post(&format!("/trees/{tree_id}/co-authors/{}", user2.data.name))
         .await
         .assert_status_ok();
 
     let create_ws = async || {
         let response = server
-            .get_websocket(&format!("/trees/{tree_id}/acquire-edit-lock"))
+            .get_websocket(&format!("/trees/{tree_id}/edit-lock"))
             .await;
         response.assert_status_switching_protocols();
         response.into_websocket().await
