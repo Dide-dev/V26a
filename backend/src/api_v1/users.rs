@@ -4,7 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::ArcState;
 use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
@@ -21,6 +20,7 @@ use crate::db_structs::users::{
     RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
+use crate::{ArcState, get_connection};
 use std::collections::HashMap;
 
 use crate::api_v1::users::UserResponse::InvalidVerification;
@@ -170,23 +170,19 @@ async fn add_new_user(
 }
 
 /// Struct for a verification code for the /users/verify endpoint.
-/// Needs to be a struct so it can be read from the correct query parameter "code".
 #[derive(serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct VerificationCode {
     pub code: String,
 }
 
 #[utoipa::path(
-    get,
+    post,
     path = "/verify",
     context_path = "/api/v1/users",
-    request_body = RegisterData,
+    request_body = VerificationCode,
     responses(
         (status = 200, description = "Successfully verified user, or verification expired.", body = UserResponse, content_type = "application/json"),
         (status = 500, description = "Internal server error."),
-    ),
-    params(
-        ("code" = VerificationCode, Query),
     )
 )]
 /// Verify a user who is pending registration
@@ -202,36 +198,27 @@ pub struct VerificationCode {
 async fn verify(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
-    Json(code): Json<VerificationCode>,
+    Json(VerificationCode { code }): Json<VerificationCode>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let code = code.code;
     let mut pending_accounts = state.pending_accounts.lock().await;
 
     let Some(pending_registration) = pending_accounts
-        .get(&code)
+        // remove the entry with code and return its value
+        .remove(&code)
         // If the registration has expired, consider it not found.
         .filter(|p| Utc::now().timestamp() < p.expires)
     else {
         return Ok(Json(InvalidVerification));
     };
 
-    let mut tx = db.begin().await?;
     let user_id = add_user(
-        &mut tx,
+        get_connection!(db),
         &pending_registration.register_data,
         state.config.bcrypt_cost,
     )
     .await?;
 
-    if pending_accounts.remove(&code).is_none() {
-        // Somehow, the program failed to find the verification code in state.
-        // Do not commit the transaction and fail.
-        tx.rollback().await?;
-        Ok(Json(InvalidVerification))
-    } else {
-        tx.commit().await?;
-        Ok(Json(UserResponse::Success { user_id }))
-    }
+    Ok(Json(UserResponse::Success { user_id }))
 }
 
 #[utoipa::path(
