@@ -4,16 +4,21 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db::classrooms::{add_classroom, add_lesson, generate_random_code, get_classroom_owner};
+use crate::db::classrooms::{
+    add_classroom, add_lesson, generate_random_code, get_classroom_from_code, get_classroom_owner,
+    get_lessons_with_tree_ids_from_classroom,
+};
 use crate::db_structs::Validated;
-use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData, LessonAddData};
+use crate::db_structs::classrooms::{
+    ClassroomData, ClassroomGeneratedData, JoinClassroomData, LessonAddData,
+};
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
 use crate::db_structs::users::AccountType;
 use axum::extract::Path;
-use axum::routing::{post, get};
+use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use sqlx::{PgConnection, PgPool};
 
@@ -123,11 +128,20 @@ async fn add_new_lesson(
 }
 
 async fn get_classroom_content(
-    claims: Claims,
     Extension(db): Extension<PgPool>,
     Path(join_code): Path<String>,
-) -> Result<Json<ClassroomData>, ApiError> {
+) -> Result<Option<Json<JoinClassroomData>>, ApiError> {
+    let classroom = get_classroom_from_code(&db, join_code).await?;
+    let Some(classroom) = classroom else {
+        return Ok(None);
+    };
 
+    let lessons = get_lessons_with_tree_ids_from_classroom(&db, classroom.gen_data.id).await?;
+
+    Ok(Some(Json(JoinClassroomData {
+        data: classroom,
+        lessons,
+    })))
 }
 
 /// Checks whether the classroom exists and if it is owned by the user, or if the user is an admin.

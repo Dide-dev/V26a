@@ -4,15 +4,16 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::db_structs::Validated;
+use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
     LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH,
 };
-use sqlx::FromRow;
+use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
+use sqlx::{FromRow, Row};
 use utoipa::ToSchema;
-use crate::db_structs::trees::TreeMetadata;
 
 /// The basic data of the classroom that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
@@ -110,32 +111,39 @@ impl Validated for LessonAddData {
 }
 
 /// All data on lessons, except the order number and classroom id.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LessonData {
-    id: i32,
-    created_at: DateTime<Utc>,
-    name: String,
-    description: String,
-    published: bool,
-}
-/// The structure of a lesson; its trees and order number.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct LessonStructure {
+    pub id: i32,
     pub order_number: i32,
-    pub trees: Vec<TreeMetadata>,
+    pub created_at: DateTime<Utc>,
+    pub name: String,
+    pub description: String,
+    pub published: bool,
 }
 
 /// The data of the lesson along with its trees.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LessonMetaData {
-    pub data: LessonAddData,
-    pub structure: LessonStructure,
+    pub data: LessonData,
+    pub trees: Vec<TreeMetadata>,
 }
 
-/// The basic data of the lesson that is filled in by the user.
+impl LessonData {
+    pub fn from_pg_row(row: &PgRow) -> sqlx::Result<Self> {
+        Ok(Self {
+            id: row.try_get("lesson_id")?,
+            order_number: row.try_get("order_number")?,
+            name: row.try_get("lesson_name")?,
+            description: row.try_get("lesson_description")?,
+            published: row.try_get("lesson_published")?,
+            created_at: row.try_get("lesson_created_at")?,
+        })
+    }
+}
+
+/// The data of the classroom obtained upon joining.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct JoinClassroomData {

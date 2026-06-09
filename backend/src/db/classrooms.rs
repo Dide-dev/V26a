@@ -4,14 +4,18 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::db_structs::classrooms::{
-    ClassroomData, ClassroomGeneratedData, ClassroomMetaData, LessonAddData,
+    ClassroomData, ClassroomGeneratedData, ClassroomMetaData, LessonAddData, LessonData,
+    LessonMetaData,
 };
 use crate::db_structs::pagination::PaginationOptions;
+use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
 use chrono::{DateTime, Utc};
 use rand::prelude::*;
 use rand::rngs::SysRng;
-use sqlx::{Acquire, PgConnection, PgExecutor, query, query_scalar};
+use sqlx::postgres::PgRow;
+use sqlx::{Acquire, PgConnection, PgExecutor, Row, query, query_scalar};
+use std::collections::HashMap;
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -175,6 +179,31 @@ pub async fn get_classroom_count(db: impl PgExecutor<'_>, id: i32) -> Result<i64
     Ok(classroom_count)
 }
 
+pub async fn get_classroom_from_code(
+    db: impl PgExecutor<'_>,
+    code: String,
+) -> Result<Option<ClassroomMetaData>, ApiError> {
+    let classroom = query!("SELECT * FROM classrooms WHERE join_code=$1", code,)
+        .fetch_optional(db)
+        .await?;
+    let Some(classroom) = classroom else {
+        return Ok(None); // Classroom doesn't exist, to throw an error or not?
+    };
+    let data = ClassroomMetaData {
+        data: ClassroomData {
+            name: classroom.name,
+            description: classroom.description,
+        },
+        gen_data: ClassroomGeneratedData {
+            id: classroom.id,
+            owner_id: classroom.owner_id,
+            join_code: classroom.join_code,
+            created_at: classroom.created_at,
+        },
+    };
+    Ok(Some(data))
+}
+
 /// Get the id of the owner of a classroom.
 ///
 /// # Arguments
@@ -241,6 +270,42 @@ pub async fn add_lesson(
     transaction.commit().await?;
 
     Ok(id)
+}
+
+pub async fn get_lessons_with_tree_ids_from_classroom(
+    db: impl PgExecutor<'_>,
+    classroom_id: i32,
+) -> Result<Vec<LessonMetaData>, ApiError> {
+    let rows: Vec<PgRow> = query!(
+        "SELECT l.id as lesson_id,
+        l.name as lesson_name,
+        l.description as lesson_description,
+        l.published as lesson_published,
+        l.created_at as lesson_created_at
+        , t.*
+        FROM lessons l
+        JOIN lesson_trees lt ON l.id = lt.lesson_id
+        JOIN trees t ON lt.tree_id = t.id
+        WHERE classroom_id=$1"
+    )
+    .bind(classroom_id)
+    .fetch_all(db)
+    .await?;
+    let mut lessons = HashMap::<i32, LessonMetaData>::new();
+    for row in rows {
+        let lesson_id = row.try_get("lesson_id")?;
+        let tree = TreeMetadata::from_pg_row(&row)?;
+        lessons
+            .entry(lesson_id)
+            .or_insert_with(|| LessonMetaData {
+                data: LessonData::from_pg_row(&row)?,
+                trees: Vec::new(),
+            })
+            .trees
+            .push(tree);
+    }
+    let data = Vec::from_iter(lessons.values().cloned());
+    Ok(data)
 }
 
 #[cfg(test)]
