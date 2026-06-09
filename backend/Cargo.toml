@@ -20,8 +20,7 @@ chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 governor = "0.10.4"
 infer = "0.19.0"
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
-lettre = { version = "0.11.21", features = ["tokio1-native-tls"] }
+lettre = { version = "0.11.21", default-features = false, features = ["builder", "smtp-transport", "tokio1"] }
 percent-encoding = "2.3.2"
 rand = "0.10.1"
 serde = { version = "1.0.228", features = ["derive"] }
