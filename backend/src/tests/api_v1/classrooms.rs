@@ -44,7 +44,7 @@ async fn test_new_classroom(db: PgPool) {
 
 #[sqlx::test]
 async fn test_new_classroom_forbidden(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
@@ -77,7 +77,7 @@ async fn test_get_classrooms(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classrooms_unauthorized(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let response = server.get("/users/me/classrooms").await;
     response.assert_status_unauthorized();
@@ -85,7 +85,15 @@ async fn test_get_classrooms_unauthorized(db: PgPool) {
 
 #[sqlx::test]
 async fn test_new_lesson(db: PgPool) {
-    let mut server = setup_login(db.clone()).await;
+    let test_state = setup(db);
+
+    let teacher_account = RegisterData::test_values();
+    let other_account = RegisterData::test_values();
+    register(&test_state, &teacher_account).await;
+    register(&test_state, &other_account).await;
+    // Mutable to be able to clear cookies later
+    let mut server = test_state.server;
+    login(&server, teacher_account.email).await;
     let classroom_id: i32 = i32::MAX;
 
     let lesson_add_data = LessonAddData {
@@ -118,9 +126,7 @@ async fn test_new_lesson(db: PgPool) {
     response.assert_status_unauthorized();
     response.assert_text(ApiError::MissingAuthentication.to_string());
 
-    let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
-    login(&server, register_data.email).await;
+    login(&server, other_account.email).await;
     let response = server
         .post(&format!("/classrooms/{classroom_id}/lessons"))
         .json(&lesson_add_data)
