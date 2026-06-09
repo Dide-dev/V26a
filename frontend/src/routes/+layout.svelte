@@ -186,6 +186,10 @@
             text: m.privacy()
         }),
         new FooterLink({
+            href: '/conditions',
+            text: m.conditions()
+        }),
+        new FooterLink({
             href: '/colophon',
             text: m.colophon()
         }),

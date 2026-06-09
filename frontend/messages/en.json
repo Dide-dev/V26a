@@ -129,6 +129,7 @@
     "agreeToTOS": "I acknowledge that I have read the {#link to=|/privacy|}privacy policy{/link} and {#link to=|/conditions|}terms and conditions{/link} and agree with their contents.",
     "mustAgreeToTOS": "You must agree to the privacy policy and terms and conditions to continue.",
     "privacy": "Privacy",
+    "conditions": "Terms and conditions",
     "exampleName": "John_Smith",
     "exampleNickname": "Johnny Doe",
     "exampleTitle": "{name}'s heuristic tree",
