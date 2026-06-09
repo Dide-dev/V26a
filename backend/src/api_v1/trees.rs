@@ -33,6 +33,7 @@ use utoipa::ToSchema;
 
 use crate::db_structs::Validated;
 use crate::db_structs::cards::CardData;
+use crate::messages::Message;
 use std::collections::HashMap;
 
 pub mod edit_lock;
@@ -891,7 +892,7 @@ pub async fn duplicate_tree(
     let this_user = get_user(&db, claims.sub).await?;
     new_data.title = format!(
         "{} {}",
-        this_user.data.language.to_copy_of_text(),
+        Message::CopyOf.localized(&this_user.data.language),
         new_data.title
     );
     if new_data.title.chars().count() > TREE_TITLE_MAX_LENGTH {

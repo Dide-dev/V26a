@@ -5,7 +5,7 @@
 */
 
 use crate::db_structs::users::AccountType;
-use crate::db_structs::{Validated, validate_email};
+use crate::db_structs::{Validated, parse_email};
 use crate::errors::ApiError;
 use crate::limits::PASSWORD_LOGIN_MIN_LENGTH;
 use serde::{Deserialize, Serialize};
@@ -24,10 +24,9 @@ impl Validated for LoginRequestBody {
     ///
     /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     ///
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
-    /// with at least 1 character in front of it and behind it.
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
     fn validate_inputs(&self) -> Result<(), ApiError> {
-        validate_email(&self.email)?;
+        parse_email(&self.email)?;
 
         if self.password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet(

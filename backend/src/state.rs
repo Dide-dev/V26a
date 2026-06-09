@@ -4,11 +4,11 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use std::{collections::HashMap, sync::Arc};
-
-use tokio::sync::{Mutex, oneshot};
-
 use crate::config::Config;
+use crate::db_structs::users::PendingRegisterData;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::{Mutex, oneshot};
 
 /// This needs to be a wrapper type, so that the `api_v1/session.rs` can
 /// implement `FromRequestParts<ArcState>` for `Option<Claims>`.
@@ -43,10 +43,8 @@ pub struct TreeEditLock {
 /// Use the [`ArcState`] type for this.
 pub struct State {
     pub config: Config,
-
     pub tree_edit_locks: Mutex<HashMap<i32, TreeEditLock>>,
-    // Later, we will add fields for
-    // sessions and email validation.
+    pub pending_accounts: Mutex<HashMap<String, PendingRegisterData>>,
 }
 
 impl ArcState {
@@ -54,6 +52,7 @@ impl ArcState {
         ArcState(Arc::new(State {
             config,
             tree_edit_locks: Mutex::default(),
+            pending_accounts: Mutex::default(),
         }))
     }
 }

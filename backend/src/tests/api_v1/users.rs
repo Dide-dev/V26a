@@ -7,17 +7,18 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{ChangePasswordResponse, UserResponse};
+use crate::api_v1::users::{ChangePasswordResponse, UserResponse, VerificationCode};
+use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
     PasswordChangeRequestBody, RegisterData, UserData, UserGetData, UserLanguage,
 };
-use crate::tests::api_v1::{login, register, setup};
+use crate::tests::api_v1::{TestState, login, register, setup, setup_config, try_verify};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_get_and_update_own_user_data(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create an account
     let register_data = RegisterData {
@@ -32,13 +33,8 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
         },
     };
 
-    let response = server.post("/users").json(&register_data).await;
-    response.assert_status_ok();
-    let response = response.json::<UserResponse>();
-    let UserResponse::Success { user_id: _ } = response else {
-        // Adding a user should never fail in a test
-        panic!("Something unexpected failed while adding a user")
-    };
+    register(&test_state, &register_data).await;
+    let server = test_state.server;
 
     let expected_user_data = UserGetData {
         email: register_data.email.clone(),
@@ -101,10 +97,11 @@ async fn test_get_and_update_own_user_data(db: PgPool) {
 
 #[sqlx::test]
 async fn test_successful_password_change(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
+    register(&test_state, &register_data).await;
+    let server = test_state.server;
     login(&server, register_data.email.clone()).await;
 
     let change_password_data = PasswordChangeRequestBody {
@@ -137,10 +134,11 @@ async fn test_successful_password_change(db: PgPool) {
 
 #[sqlx::test]
 async fn test_change_password_incorrect_old_password(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
+    register(&test_state, &register_data).await;
+    let server = test_state.server;
     login(&server, register_data.email.clone()).await;
 
     // The default password set is `4$$wOrd!`, hence this request should fail.
@@ -174,10 +172,11 @@ async fn test_change_password_incorrect_old_password(db: PgPool) {
 
 #[sqlx::test]
 async fn test_password_change_invalidates_other_sessions(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     let register_data = RegisterData::test_values();
-    let user_id = register(&server, &register_data).await;
+    let user_id = register(&test_state, &register_data).await;
+    let server = test_state.server;
 
     // Create two sessions.
     login(&server, register_data.email.clone()).await;
@@ -210,10 +209,11 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
+    register(&test_state, &register_data).await;
+    let server = test_state.server;
     login(&server, register_data.email).await;
     let response = server.delete("/users/me?deleteOwnedTrees=false").await;
     response.assert_status_ok();
@@ -232,10 +232,11 @@ async fn test_delete_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     let register_data = RegisterData::test_values();
-    let user_id = register(&server, &register_data).await;
+    let user_id = register(&test_state, &register_data).await;
+    let server = test_state.server;
     login(&server, register_data.email.clone()).await;
     login(&server, register_data.email.clone()).await;
 
@@ -257,4 +258,114 @@ async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
         .await
         .unwrap();
     assert_eq!(sessions, Some(0));
+}
+
+#[sqlx::test]
+async fn test_invalid_validation_code(db: PgPool) {
+    let TestState { server, state } = setup(db);
+
+    let register_data = RegisterData::test_values();
+    let response = server.post("/users").json(&register_data).await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::Pending);
+
+    let before_pending_count = { state.pending_accounts.lock().await.len() };
+
+    let response = server
+        .post("/users/verification")
+        .json(&VerificationCode {
+            code: "1".to_string(),
+        })
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::InvalidVerification);
+
+    let after_pending_count = { state.pending_accounts.lock().await.len() };
+    assert_eq!(before_pending_count, after_pending_count);
+}
+
+#[sqlx::test]
+async fn test_verify_unpruned_account(db: PgPool) {
+    let mut config = Config::load();
+    // Set verification timer to -1 seconds so a pending account is considered expired immediately.
+    // The task is not running so it will not be pruned from the state, but it should still be
+    // considered as expired.
+    config.verification_timer = -1;
+
+    let test_state = setup_config(db, &mut config, false);
+
+    let register_data = RegisterData::test_values();
+    let response = test_state.server.post("/users").json(&register_data).await;
+    response.assert_status_ok();
+
+    let response = try_verify(&test_state, register_data.email).await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::InvalidVerification);
+}
+
+#[sqlx::test]
+async fn test_register_pending_user(db: PgPool) {
+    let server = setup(db).server;
+
+    let pending_user_data = RegisterData::test_values();
+    let response = server.post("/users").json(&pending_user_data).await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::Pending);
+
+    let name_already_used_data = RegisterData {
+        data: UserData {
+            name: pending_user_data.data.name,
+            nickname: String::new(),
+            about_me: String::new(),
+            email_visible: false,
+            language: UserLanguage::Nl,
+        },
+        ..RegisterData::test_values()
+    };
+    let response = server.post("/users").json(&name_already_used_data).await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::UsernameAlreadyUsed);
+
+    let email_already_used_data = RegisterData {
+        email: pending_user_data.email,
+        ..RegisterData::test_values()
+    };
+    let response = server.post("/users").json(&email_already_used_data).await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::EmailAlreadyUsed);
+}
+
+#[sqlx::test]
+async fn test_update_pending_user(db: PgPool) {
+    let test_state = setup(db);
+
+    let verified_user_data = RegisterData::test_values();
+    register(&test_state, &verified_user_data).await;
+
+    let server = test_state.server;
+    let pending_user_data = RegisterData::test_values();
+    let response = server.post("/users").json(&pending_user_data).await;
+    response.assert_status_ok();
+
+    login(&server, verified_user_data.email).await;
+    let updated_user = UserData {
+        name: pending_user_data.data.name,
+        nickname: "bob".to_string(),
+        about_me: "I'm still bob".to_string(),
+        email_visible: false,
+        language: UserLanguage::En,
+    };
+    let response = server.put("/users/me").json(&updated_user).await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::UsernameAlreadyUsed);
 }

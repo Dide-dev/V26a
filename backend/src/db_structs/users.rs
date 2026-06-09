@@ -4,19 +4,22 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::{Validated, validate_email, validate_password};
+use crate::db_structs::{Validated, parse_email, validate_password};
 use crate::errors::ApiError;
 use crate::limits::{
     PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
+use tracing::log::info;
 use utoipa::ToSchema;
 
 /// Data the user can modify, except email and password.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
     pub name: String,
@@ -130,7 +133,7 @@ impl Validated for UserGeneralData {
 }
 
 /// Data needed to add a user to the database.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterData {
     pub email: String,
@@ -168,18 +171,48 @@ impl Validated for RegisterData {
     ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     ///
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
-    /// with at least 1 character in front of it and behind it.
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
     ///
     /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
 
-        validate_email(&self.email)?;
+        parse_email(&self.email)?;
 
         validate_password(&self.password, "password")?;
 
         Ok(())
+    }
+}
+
+/// User data to store before an account is verified.
+/// Stores their registration data and when the verification link should expire.
+#[derive(Debug)]
+pub struct PendingRegisterData {
+    pub register_data: RegisterData,
+    pub expires: i64,
+}
+
+/// A trait that can be used to remove expired accounts from a [`HashMap`] containing [`PendingRegisterData`].
+pub trait PendingAccountsExt {
+    fn remove_expired(&mut self);
+}
+
+impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
+    /// Removes pending accounts for which the expiration time has passed.
+    ///
+    /// This function mutates the [`HashMap`] in place.
+    fn remove_expired(&mut self) {
+        let before_len = self.len();
+
+        self.retain(|_, p| p.expires > Utc::now().timestamp());
+
+        // Subtraction with overflow is impossible, as there is a lock on the Map,
+        // and entries are only removed here.
+        let diff = before_len - self.len();
+        if diff != 0 {
+            info!("Removed {diff} pending accounts from cache.");
+        }
     }
 }
 
@@ -222,11 +255,10 @@ impl Validated for AdminUpdateData {
     ///
     /// Returns [`IllegalName`](ApiError::IllegalName) when the username contains an illegal character.
     ///
-    /// Returns [`IllegalEmailAddress`](ApiError::IllegalEmailAddress) when the email address does not have at least 1 '@'-symbol
-    /// with at least 1 character in front of it and behind it.
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         self.data.validate_inputs()?;
-        validate_email(&self.email)?;
+        parse_email(&self.email)?;
 
         Ok(())
     }
@@ -320,7 +352,7 @@ pub struct DeleteOwnedTrees {
 }
 
 /// The possible values of the `language` field of a user.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum UserLanguage {
     Nl,
@@ -344,16 +376,6 @@ impl FromStr for UserLanguage {
             "nl" => Ok(UserLanguage::Nl),
             "en" => Ok(UserLanguage::En),
             _ => Err(ApiError::InvalidDataFound),
-        }
-    }
-}
-
-impl UserLanguage {
-    /// Localize 'Copy of' string according to user language.
-    pub fn to_copy_of_text(&self) -> &str {
-        match &self {
-            UserLanguage::Nl => "Kopie van",
-            UserLanguage::En => "Copy of",
         }
     }
 }
@@ -384,5 +406,38 @@ impl FromStr for AccountType {
             "author" => Ok(AccountType::Author),
             _ => Err(ApiError::InvalidDataFound),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db_structs::users::{PendingAccountsExt, PendingRegisterData, RegisterData};
+    use chrono::Utc;
+    use std::collections::HashMap;
+
+    #[tokio::test]
+    async fn test_remove_expired() {
+        let mut pending_accounts = HashMap::<String, PendingRegisterData>::new();
+        let register_data = RegisterData::test_values();
+
+        pending_accounts.insert(
+            "a".to_owned(),
+            PendingRegisterData {
+                register_data: register_data.clone(),
+                expires: 0,
+            },
+        );
+        pending_accounts.insert(
+            "b".to_owned(),
+            PendingRegisterData {
+                register_data: register_data.clone(),
+                expires: Utc::now().timestamp() + 60,
+            },
+        );
+
+        pending_accounts.remove_expired();
+
+        assert!(!pending_accounts.contains_key("a"));
+        assert!(pending_accounts.contains_key("b"));
     }
 }
