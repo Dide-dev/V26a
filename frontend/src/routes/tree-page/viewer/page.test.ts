@@ -128,7 +128,8 @@ test('shows Edit button when user is logged in', async () => {
     vi.mocked(getUserInfo).mockReturnValue({
         accountType: 'author',
         sub: 2098,
-        exp: 2000000000
+        name: 'John',
+        nickname: ''
     });
 
     render(PageComponent);
