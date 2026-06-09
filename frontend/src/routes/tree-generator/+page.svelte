@@ -20,24 +20,17 @@
         type TreeData
     } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
-    import {
-        getOwnUserData,
-        getUserInfo,
-        type UserGetData,
-        type UserInfo
-    } from '$lib/api-wrapper/users';
+    import { getOwnUserData, getUserInfo, type UserGetData } from '$lib/api-wrapper/users';
     import Editor from '$lib/rich-text/Editor.svelte';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 
-    let userInfo: UserInfo | null = $state(null);
     let userData: UserGetData | null = $state(null);
     let languages: Language[] | null = $state(null);
     let subjects: Record<string, Subject[]> | null = $state(null);
 
     onMount(async () => {
-        userInfo = getUserInfo();
-        if (userInfo === null) {
+        if (getUserInfo() === null) {
             await redirectLogin(page.url);
             return;
         }

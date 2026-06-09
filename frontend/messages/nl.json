@@ -176,5 +176,6 @@
     "invalidAuthorisationTarget": "De gebruiker die je probeerde te autoriseren lijkt niet te bestaan",
     "userAlreadyAuthorized": "De gebruiker die je probeert te autoriseren is al geautoriseerd.",
     "manageCoAuthors": "Beheer co-auteurs",
-    "conformPrivacy": "Uw e-mailadres wordt conform ons {#link to=|/privacy|}privacybeleid{/link} opgeslagen."
+    "conformPrivacy": "Uw e-mailadres wordt conform ons {#link to=|/privacy|}privacybeleid{/link} opgeslagen.",
+    "logout": "Log uit"
 }
