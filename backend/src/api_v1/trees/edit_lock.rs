@@ -84,6 +84,7 @@ pub async fn acquire_edit_lock(
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
+/// All possible messages that the frontend can send to the backend.
 pub enum FrontendMessage {
     /// Will force acquire the lock, kicking out any potential other user holding the lock
     Force,
@@ -95,6 +96,7 @@ pub enum FrontendMessage {
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
+/// All possible messages that the backend can send to the frontend.
 pub enum BackendMessage {
     /// Lock achieved, the tree is safe to edit.
     LockAchieved,
