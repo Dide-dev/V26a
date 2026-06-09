@@ -44,7 +44,7 @@ pub fn users() -> Router<ArcState> {
                 .delete(delete_user_data),
         )
         .route("/me/password", put(change_password))
-        .route("/me/classrooms", get(get_all_owned_classrooms))
+        .route("/{user_id}/classrooms", get(get_all_owned_classrooms))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
