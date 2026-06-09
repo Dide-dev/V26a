@@ -97,10 +97,10 @@ export type PublicUserData = {
 
 /** The data in the cookie */
 export type UserInfo = {
+    name: string;
+    nickname: string;
     /** This corresponds to userid of the current login. */
     sub: UserId;
-    /** Expiration datetime for the current login, represented as number of seconds since unix epoch. */
-    exp: number;
     accountType: AccountType;
 };
 
