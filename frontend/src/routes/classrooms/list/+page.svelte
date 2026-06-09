@@ -42,7 +42,6 @@
         } else {
             await redirectLogin(page.url);
         }
-        console.log(classroomListResponse);
     }
 
     let prevPageExists = $derived(thisPage > 1);
