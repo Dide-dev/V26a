@@ -7,6 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::trees::AuthorizeCoAuthorResponse;
+use crate::api_v1::trees::edit_lock::{BackendMessage, FrontendMessage};
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::CardData;
@@ -1074,7 +1075,6 @@ async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_acquire_lock(db: PgPool) {
-    use crate::api_v1::trees::edit_lock::{BackendMessage, FrontendMessage};
     let server = setup_with_options(db.clone(), true);
     let user1 = RegisterData::test_values();
     let user2 = RegisterData::test_values();
