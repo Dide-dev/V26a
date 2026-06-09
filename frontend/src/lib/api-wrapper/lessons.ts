@@ -9,7 +9,7 @@ import type { TreeId } from './trees';
 
 const prefix = 'lessons';
 
-function apiCallPostTreeToLesson(path: string) {
+function apiCallPostLessons(path: string) {
     return apiCallEmptyPost(prefix + path);
 }
 
@@ -17,5 +17,5 @@ export type LessonId = number;
 
 /** Add an existing tree to a lesson in the database */
 export function addTreeToLesson(lessonId: LessonId, treeId: TreeId): Promise<void> {
-    return apiCallPostTreeToLesson(`/${lessonId}/trees/${treeId}`);
+    return apiCallPostLessons(`/${lessonId}/trees/${treeId}`);
 }

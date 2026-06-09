@@ -28,6 +28,7 @@ async fn test_add_tree_to_lesson(db: PgPool) {
         .post(&format!("/classrooms/{classroom_id}/lessons"))
         .json(&lesson_data)
         .await;
+    response.assert_status_ok();
     let lesson_id: i32 = response.json();
 
     let tree_id = i32::MAX;

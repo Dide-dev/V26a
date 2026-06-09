@@ -248,7 +248,7 @@ pub async fn add_lesson(
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
 ///
-/// `lesson_id` - The id of the classroom of which the owner is queried.
+/// `lesson_id` - The id of the lesson of which the corresponding classroom is queried.
 ///
 /// # Returns
 /// The id of the classroom as a [`Some`] if the lesson exists, or a [`None`] if it doesn't.
@@ -276,7 +276,7 @@ pub async fn get_classroom_from_lesson(
 /// `tree_id` - The id of the tree which should be added to the lesson.
 ///
 /// # Returns
-/// Nothing
+/// Nothing.
 ///
 /// # Errors
 /// Returns a [`TreeAlreadyExistsWithinLesson`](ApiError::TreeAlreadyExistsWithinLesson) if the tree already exists the lesson.
@@ -296,7 +296,7 @@ pub async fn add_existing_tree_to_lesson(
     .fetch_optional(&mut *transaction)
     .await?;
     if is_duplicate.is_some() {
-        return Err(ApiError::TreeAlreadyExistsWithinLesson);
+        return Ok(());
     }
     query!(
         "INSERT INTO lesson_trees (lesson_id, tree_id) VALUES ($1, $2)",
@@ -315,7 +315,7 @@ mod tests {
         add_classroom, add_existing_tree_to_lesson, add_lesson, generate_random_code,
         get_all_classrooms, get_classroom_count, get_classroom_owner,
     };
-    use crate::db::test::{initialize_classroom, initialize_db};
+    use crate::db::test::{initialize_classroom, initialize_db, initialize_lesson};
     use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
     use crate::db_structs::pagination::PaginationOptions;
     use crate::get_connection_unwrap;
@@ -390,7 +390,7 @@ mod tests {
         let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
         assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 0);
 
-        let _ = initialize_classroom(get_connection_unwrap!(db), user_id).await;
+        initialize_classroom(get_connection_unwrap!(db), user_id).await;
 
         assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 1);
     }
@@ -449,14 +449,7 @@ mod tests {
     async fn test_add_existing_tree_to_lesson(db: PgPool) {
         let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
-        let lesson_add_data = LessonAddData {
-            name: "Lesson".to_string(),
-            description: "This is a test lesson".to_string(),
-            published: false,
-        };
-        let lesson_id = add_lesson(get_connection_unwrap!(db), &lesson_add_data, classroom_id)
-            .await
-            .unwrap();
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_id).await;
 
         add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
             .await
@@ -464,7 +457,7 @@ mod tests {
 
         let found_tree_id_in_lesson = query!(
             "SELECT tree_id FROM lesson_trees WHERE lesson_id = $1",
-            lesson_id
+            lesson_id,
         )
         .fetch_one(&db)
         .await

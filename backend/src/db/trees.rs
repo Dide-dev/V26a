@@ -1047,6 +1047,58 @@ pub async fn get_queried_list(
     Ok(trees)
 }
 
+/// Verify if the user is allowed to access the tree. The user is allowed to do so if the tree is made public or the user is an admin, owner or coauthor.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree.
+///
+/// `claims` - The session cookie of the user.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if the requested tree does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not permitted to access the tree.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn is_tree_accessible_by_user(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    claims: &Claims,
+) -> Result<(), ApiError> {
+    let tree = query!(
+        "SELECT published, owner_id, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors FROM trees WHERE id=$1",
+        tree_id)
+        .fetch_optional(db)
+        .await?;
+    let Some(tree) = tree else {
+        return Err(ApiError::MissingTree(tree_id));
+    };
+
+    if tree.published {
+        return Ok(());
+    }
+
+    if claims.account_type == AccountType::Admin || tree.owner_id == claims.sub {
+        return Ok(());
+    }
+
+    let Some(coauthors) = tree.co_authors else {
+        return Err(ApiError::NoPermission);
+    };
+    for c in coauthors {
+        if claims.sub == c {
+            return Ok(());
+        }
+    }
+
+    Err(ApiError::NoPermission)
+}
+
 #[cfg(test)]
 #[allow(clippy::inconsistent_digit_grouping)]
 mod tests {

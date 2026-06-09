@@ -3,8 +3,8 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
+
 use crate::api_v1::classrooms::verify_classroom_permissions;
-use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::classrooms::{add_existing_tree_to_lesson, get_classroom_from_lesson};
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
@@ -14,6 +14,7 @@ use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Router};
 use sqlx::{PgConnection, PgPool};
+use crate::db::trees::is_tree_accessible_by_user;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn lessons() -> Router<ArcState> {
@@ -56,7 +57,7 @@ pub fn lessons() -> Router<ArcState> {
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree which should be added to the lesson does not exist.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add edit the tree or classroom.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add the tree or edit the classroom.
 ///
 /// Returns [`TreeAlreadyExistsWithinLesson`](ApiError::TreeAlreadyExistsWithinLesson) if the tree already exists in the lesson.
 ///
@@ -67,14 +68,12 @@ async fn add_tree_to_lesson(
     Path((lesson_id, tree_id)): Path<(i32, i32)>,
 ) -> Result<(), ApiError> {
     verify_lesson_permissions(get_connection!(db), lesson_id, &claims).await?;
-    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    is_tree_accessible_by_user(get_connection!(db), tree_id, &claims).await?;
     add_existing_tree_to_lesson(get_connection!(db), lesson_id, tree_id).await?;
     Ok(())
 }
 
 /// Checks whether the lesson exists and if it belongs to a classroom. It checks edit permission through classroom ownership, or if the user is an admin.
-/// As of now this function does not take into account eventual collaborators as this is currently not implemented for classrooms or lessons,
-/// this function would need to be updated if this were the case in the future.
 ///
 /// This function uses the `verify_classroom_permissions` function internally.
 ///
@@ -87,9 +86,9 @@ async fn add_tree_to_lesson(
 /// Nothing.
 ///
 /// # Errors
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to modify the lesson for the given `lesson_id`.
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to modify the classroom the given `lesson_id` belongs to.
 ///
-/// Returns [`MissingLesson`](ApiError::MissingTree) if there is no lesson with `lesson_id`.
+/// Returns [`MissingLesson`](ApiError::MissingLesson) if there is no lesson with `lesson_id`.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn verify_lesson_permissions(
