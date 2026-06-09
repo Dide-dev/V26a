@@ -249,12 +249,14 @@ async fn handle_socket_with_lock(
                     message.serialize_and_send(&mut socket).await;
                 }
 
-                // Dropping it closes the connection
-                drop(socket);
                 break;
             }
         }
     }
+
+    // Dropping it closes the connection.
+    // The websocket could already be closed, but it does no harm dropping the socket in that case.
+    drop(socket);
 
     // Clean up the state.tree_edit_locks[tree_id], if not already overwritten by somebody else
     if !my_receiver.is_terminated() {
