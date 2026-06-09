@@ -151,7 +151,7 @@
                 <option value={null} selected class={['input__select_option']}>{m.none()}</option>
                 {#each subjects === null ? [] : subjects[treeData.languageCode] as value (value)}
                     <option value={value.id} class={['input__select_option']}>
-                        {value.name}
+                        {value.data.name}
                     </option>
                 {/each}
             </select>

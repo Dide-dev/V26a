@@ -6,17 +6,17 @@
 
 use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
-    get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
-    language_exists, remove_co_author, subject_exists,
+    add_co_author, add_language, add_subject, add_tree, db_get_tree_all_data, get_languages,
+    get_queried_count, get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree,
+    is_structure_valid, language_exists, remove_co_author, subject_exists, subject_id_exists,
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeFilters, TreeListResponse,
-    TreeStructure, TreeWithCards,
+    Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeFilters,
+    TreeListResponse, TreeStructure, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
@@ -42,8 +42,10 @@ pub mod edit_lock;
 pub fn trees() -> Router<ArcState> {
     Router::new()
         .route("/", get(get_list).post(add_new_tree))
-        .route("/languages", get(get_all_languages))
-        .route("/subjects", get(get_all_subjects))
+        .route("/languages", get(get_all_languages).post(add_new_language))
+        .route("/languages/{code}", put(update_language))
+        .route("/subjects", get(get_all_subjects).post(add_new_subject))
+        .route("/subjects/{id}", put(update_subject))
         .route(
             "/{tree_id}",
             get(get_tree_with_cards)
@@ -119,7 +121,7 @@ async fn add_new_tree(
         ));
     }
     if let Some(subject_id) = &tree_add_data.tree_data.subject_id
-        && !subject_exists(&mut *transaction, *subject_id).await?
+        && !subject_id_exists(&mut *transaction, *subject_id).await?
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
@@ -456,7 +458,7 @@ async fn update_tree_data(
         return Err(ApiError::MissingLanguage(new_data.language_code.clone()));
     }
     if let Some(subject_id) = &new_data.subject_id
-        && !subject_exists(&mut *transaction, *subject_id).await?
+        && !subject_id_exists(&mut *transaction, *subject_id).await?
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
@@ -812,6 +814,103 @@ pub async fn get_all_languages(
 }
 
 #[utoipa::path(
+    post,
+    path = "/languages",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully added a new language."),
+        (status = 400, description = "The language already exists."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Add a new language.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `language` - The language to add to the database, as [`Language`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`LanguageExists`](ApiError::LanguageExists) if the language already exists.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_new_language(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(language): Json<Language>,
+) -> Result<(), ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if language_exists(&mut *transaction, &language.code).await? {
+        return Err(ApiError::LanguageExists(language.code));
+    }
+
+    add_language(&mut *transaction, &language).await?;
+
+    transaction.commit().await?;
+    Ok(())
+}
+
+#[utoipa::path(
+    put,
+    path = "/languages/{code}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully updated the subject."),
+        (status = 400, description = "The subject does not exist or the new data contains a non-existent language code."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Updates an existing subject.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `id` - The id of the subject to update.
+///
+/// `new_data` - The new subject data, as [`SubjectData`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the given language code does not exist.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_language(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(code): Path<String>,
+    Json(new_name): Json<String>,
+) -> Result<(), ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if !language_exists(&mut *transaction, &code).await? {
+        return Err(ApiError::MissingLanguage(code));
+    }
+
+    db::trees::update_language(&mut *transaction, &code, &new_name).await?;
+
+    transaction.commit().await?;
+    Ok(())
+}
+
+#[utoipa::path(
     get,
     path = "/subjects",
     context_path = "/api/v1/trees",
@@ -834,6 +933,115 @@ pub async fn get_all_subjects(
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<HashMap<String, Vec<Subject>>>, ApiError> {
     Ok(Json(get_subjects(&db).await?))
+}
+
+#[utoipa::path(
+    post,
+    path = "/subjects",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully added a new subject."),
+        (status = 400, description = "The subject already exists or contains a non-existent language code."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Add a new subject.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `subject` - The subject to add to the database, as [`SubjectData`].
+///
+/// # Returns
+/// The id of the newly added subject.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`SubjectExists`](ApiError::SubjectExists) if the subject already exists.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the new subject contains a non-existent
+/// language code.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_new_subject(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(subject_data): Json<SubjectData>,
+) -> Result<Json<i32>, ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if subject_exists(&mut *transaction, &subject_data).await? {
+        return Err(ApiError::SubjectExists(subject_data.name));
+    }
+    if !language_exists(&mut *transaction, &subject_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(subject_data.language_code));
+    }
+
+    let id = add_subject(&mut *transaction, &subject_data).await?;
+
+    transaction.commit().await?;
+    Ok(Json(id))
+}
+
+#[utoipa::path(
+    put,
+    path = "/subjects/{id}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully updated the subject."),
+        (status = 400, description = "The subject does not exist or the new data contains a non-existent language code."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Updates an existing subject.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `id` - The id of the subject to update.
+///
+/// `new_data` - The new subject data, as [`SubjectData`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`MissingSubject`](ApiError::LanguageExists) if the given subject id does not exist.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the new subject data contains a non-existent
+/// language code.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_subject(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(id): Path<i32>,
+    Json(new_data): Json<SubjectData>,
+) -> Result<(), ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if !subject_id_exists(&mut *transaction, id).await? {
+        return Err(ApiError::MissingSubject(id));
+    }
+    if !language_exists(&mut *transaction, &new_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(new_data.language_code));
+    }
+
+    db::trees::update_subject(&mut *transaction, id, &new_data).await?;
+
+    transaction.commit().await?;
+    Ok(())
 }
 
 #[utoipa::path(

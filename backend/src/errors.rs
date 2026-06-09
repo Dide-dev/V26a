@@ -35,6 +35,8 @@ pub enum ApiError {
     InvalidIsbn,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
+    /// An error to return when the user attempts to add a language that already exists.
+    LanguageExists(String),
     /// An error to return when the user requests a page number that exceeds the defined maximum.
     MaxPageNumberExceeded(i32),
     /// An error to return when the user requests a page size that exceeds the defined maximum.
@@ -60,6 +62,8 @@ pub enum ApiError {
     NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
+    /// An error to return when the user attempts to add a subject that already exists.
+    SubjectExists(String),
 
     //-------------------//
     // 401: UNAUTHORIZED //
@@ -158,6 +162,7 @@ impl From<lettre::error::Error> for ApiError {
 // Define how errors should be converted to messages.
 #[allow(clippy::too_many_lines)]
 impl Display for ApiError {
+    #[allow(clippy::too_many_lines)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             //------------------//
@@ -191,6 +196,9 @@ impl Display for ApiError {
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
             }
+            ApiError::LanguageExists(language) => {
+                write!(f, "Language \"{language}\" already exists.")
+            }
             ApiError::MaxPageNumberExceeded(max_page) => {
                 write!(f, "You may not request a page higher than {max_page}.")
             }
@@ -222,6 +230,9 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
+            ApiError::SubjectExists(subject) => {
+                write!(f, "Subject \"{subject}\" already exists.")
+            }
 
             //-------------------//
             // 401: UNAUTHORIZED //
@@ -298,6 +309,7 @@ impl ApiError {
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
             | ApiError::InvalidPage
+            | ApiError::LanguageExists(_)
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
@@ -309,7 +321,8 @@ impl ApiError {
             | ApiError::MissingUser(_)
             | ApiError::MissingUsername(_)
             | ApiError::NoImageBodyProvidedException
-            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure
+            | ApiError::SubjectExists(_) => StatusCode::BAD_REQUEST,
 
             ApiError::ExpiredSession
             | ApiError::InvalidSession

@@ -236,6 +236,25 @@ async fn setup_login(db: PgPool) -> TestServer {
     server
 }
 
+/// Sets up an API test server with the given mock database, creates an admin account and logs in.
+///
+/// # Arguments
+/// `db` - A [`PgPool`] to use to create the [`TestServer`].
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints, including ones
+/// that require being logged in as admin, and saves cookies.
+async fn setup_admin(db: PgPool) -> TestServer {
+    let conn = crate::get_connection_unwrap!(db);
+    let server = setup(db);
+
+    let register_data = RegisterData::test_values();
+    register_admin(&server, &mut *conn, &register_data).await;
+    login(&server, register_data.email).await;
+
+    server
+}
+
 /// Creates a basic tree that can be used in tests.
 ///
 /// # Arguments
