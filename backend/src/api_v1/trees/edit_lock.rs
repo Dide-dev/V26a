@@ -175,7 +175,7 @@ async fn handle_socket_without_lock(
                 vacant_entry.insert(my_tree_lock);
 
                 // We must drop the MutexGuard since the `handle_socket_with_lock` will run for a long time.
-                std::mem::drop(tree_edit_locks);
+                drop(tree_edit_locks);
                 return handle_socket_with_lock(socket, state, tree_id, my_receiver).await;
             }
         }
@@ -196,7 +196,7 @@ async fn handle_socket_without_lock(
                 }
 
                 // We must drop the MutexGuard since the `handle_socket_with_lock` will run for a long time.
-                std::mem::drop(tree_edit_locks);
+                drop(tree_edit_locks);
 
                 // The function should return with this the result of this function,
                 // but currently there would be a clippy warning since this is not a loop.
@@ -244,7 +244,7 @@ async fn handle_socket_with_lock(
                 }
 
                 // Dropping it closes the connection
-                std::mem::drop(socket);
+                drop(socket);
                 break;
             }
         }
