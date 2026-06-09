@@ -59,6 +59,7 @@
                 {m.cancel()}
             </button>
             <button
+                data-testid="delete-confirm"
                 class="cursor-pointer rounded-md bg-red-400 p-2
             transition-colors hover:bg-red-600"
                 onclick={doDelete}

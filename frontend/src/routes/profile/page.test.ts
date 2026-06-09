@@ -4,11 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, waitFor } from '@testing-library/svelte';
 import DeleteButton from './DeleteButton.svelte';
 import { test, vi, afterEach, expect } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { goto } from '$app/navigation';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import {
@@ -18,7 +19,8 @@ import {
     changePassword,
     type UserGetData,
     type UserData,
-    type UserInfo
+    type UserInfo,
+    deleteMe
 } from '$lib/api-wrapper/users';
 
 vi.mock('$lib/api-wrapper/users', () => {
@@ -26,12 +28,22 @@ vi.mock('$lib/api-wrapper/users', () => {
         getOwnUserData: vi.fn(),
         getUserInfo: vi.fn(),
         updateUser: vi.fn(),
-        changePassword: vi.fn()
+        changePassword: vi.fn(),
+        deleteMe: vi.fn()
     };
 });
 afterEach(() => {
     vi.resetAllMocks();
 });
+
+vi.mock('$app/navigation', () => ({
+    goto: vi.fn(),
+    invalidateAll: vi.fn(),
+    invalidate: vi.fn(),
+    preloadData: vi.fn(),
+    beforeNavigate: vi.fn(),
+    afterNavigate: vi.fn()
+}));
 
 test('No submission without name', async () => {
     const userData: UserGetData = {
@@ -503,7 +515,7 @@ test('Submission when all password expectations have been met', async () => {
     expect(confirmation.textContent).toBe(m.successfulPasswordChange());
 });
 
-test('popup opens when delete button is clicked', async () => {
+test('Popup opens when delete button is clicked', async () => {
     const user = userEvent.setup();
 
     render(DeleteButton, {});
@@ -511,4 +523,35 @@ test('popup opens when delete button is clicked', async () => {
     await user.click(screen.getByTestId('delete-button'));
 
     screen.getByTestId('popup');
+});
+
+test('Deletes account and renavigate after confirming deletion', async () => {
+    const userData: UserGetData = {
+        email: 'john@test.com',
+        data: {
+            name: 'John_Test',
+            nickname: 'Johnny',
+            aboutMe: '',
+            emailVisible: false,
+            language: 'en'
+        }
+    };
+    const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
+    mockGetUser.mockResolvedValue(userData);
+
+    const user = userEvent.setup();
+
+    (deleteMe as MockedFunction<typeof deleteMe>).mockResolvedValue(undefined);
+
+    render(page);
+    render(DeleteButton, {});
+
+    await user.click(screen.getByTestId('delete-button'));
+    await user.click(screen.getByTestId('delete-confirm'));
+
+    // Check that the api function is called.
+    expect(deleteMe).toHaveBeenCalled();
+
+    // After deletion user is navigated to home page.
+    expect(goto).toHaveBeenCalledWith('/');
 });
