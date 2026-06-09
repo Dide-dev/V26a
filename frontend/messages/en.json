@@ -73,12 +73,14 @@
     "globalCounter": "Global Counter",
     "apiTesting": "Api Testing",
     "home": "Home",
-    "loadingTree": "The tree is growing...",
+    "loadingTree": "The tree is being loaded...",
     "repeatPassword": "Repeat password",
     "missingCharacter": "Password needs to contain at least one lowercase, one uppercase, one number and one special character",
     "emailAlreadyExists": "An account with this e-mail already exists",
     "unexpectedErrorOccurred": "An unexpected error occurred :(",
     "close": "Close",
+    "closeBranch": "Close this branch",
+    "openBranch": "Re-open this branch",
     "invalidCredentials": "Email or password is invalid. Please try again.",
     "passwordsNotTheSame": "Passwords are not the same.",
     "profile": "Profile",
@@ -180,5 +182,6 @@
     "successfulAuthorization": "Successfully authorized co-author",
     "invalidAuthorisationTarget": "The user you tried to authorize does not seem to exist",
     "userAlreadyAuthorized": "The user you tried to authorizes has already been authorized",
-    "manageCoAuthors": "Manage co-authors"
+    "manageCoAuthors": "Manage co-authors",
+    "logout": "Logout"
 }

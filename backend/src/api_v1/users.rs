@@ -58,6 +58,7 @@ pub fn users() -> Router<ArcState> {
 
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
 #[serde(tag = "type")]
+#[serde(rename_all_fields = "camelCase")]
 pub enum UserResponse {
     /// Return body signalling the user has been successfully added/updated with the contained `user_id`.
     Success { user_id: i32 },

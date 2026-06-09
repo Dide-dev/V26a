@@ -8,7 +8,7 @@ use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
     add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
-    language_exists, subject_exists,
+    language_exists, remove_co_author, subject_exists,
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
@@ -54,7 +54,7 @@ pub fn trees() -> Router<ArcState> {
         .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
         .route(
             "/{tree_id}/co-authors/{username}",
-            post(authorize_co_author),
+            post(authorize_co_author).delete(deauthorize_co_author),
         )
 }
 
@@ -647,8 +647,8 @@ pub enum AuthorizeCoAuthorResponse {
 
 #[utoipa::path(
     post,
-    path = "{tree_id}/co-authors/{username}",
-    context_path = "/api/v1/trees/",
+    path = "/{tree_id}/co-authors/{username}",
+    context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully attempted to add co-author to tree.", body = AuthorizeCoAuthorResponse, content_type = "application/json"),
         (status = 400, description = "Tree with given id cannot be found."),
@@ -709,6 +709,73 @@ async fn authorize_co_author(
     add_co_author(&db, tree_id, user_id).await?;
 
     Ok(Json(AuthorizeCoAuthorResponse::Success))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/{tree_id}/co-authors/{username}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully removed co-author from tree."),
+        (status = 400, description = "Tree with given id cannot be found or the given username cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("tree_id" = i32, Path),
+        ("username" = String, Path),
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Remove a co-author from a tree.
+///
+/// Only the owner of the given tree or an admin can do this.
+///
+/// If the given user was already not a co-author of the given tree,
+/// this function will still return a 200 OK status.
+/// This is also the case when trying to remove the owner of a tree as co-author,
+/// because the owner of tree can never become a co-author.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_id` - The id of the tree for which a co-author will be removed.
+///
+/// `username` - The user to revoke co-author rights from.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to remove a co-author from the tree.
+///
+/// Returns [`MissingTree`](ApiError::MissingTree) if the tree from which the user is removed as co-author does not exist.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn deauthorize_co_author(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path((tree_id, username)): Path<(i32, String)>,
+) -> Result<(), ApiError> {
+    let owner_id = get_tree_owner(&db, tree_id)
+        .await?
+        .ok_or(ApiError::MissingTree(tree_id))?;
+
+    // A user can only remove a co-author to their own tree, unless they are an admin.
+    if claims.sub != owner_id && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    // The frontend knows what all possible allowed usernames for this endpoint call are.
+    // So we can just return an ApiError here in the case where the username does not exist.
+    let Some(user_id) = get_user_by_name(&db, &username).await? else {
+        return Err(ApiError::MissingUsername(username));
+    };
+
+    remove_co_author(&db, tree_id, user_id).await?;
+
+    Ok(())
 }
 
 #[utoipa::path(

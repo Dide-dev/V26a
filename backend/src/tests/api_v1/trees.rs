@@ -1091,3 +1091,40 @@ async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
         AuthorizeCoAuthorResponse::UserAlreadyAuthorized
     );
 }
+
+#[sqlx::test]
+async fn test_deauthorize_co_author(db: PgPool) {
+    let server = setup_login(db.clone()).await;
+
+    let tree_id: i32 = create_tree(&server).await;
+
+    let co_author = RegisterData::test_values();
+    let co_author_id = register(&server, &co_author).await;
+
+    let is_co_author = async || {
+        is_co_author_of_tree(&db, &tree_id, &co_author_id)
+            .await
+            .unwrap()
+    };
+    assert!(!is_co_author().await);
+
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/co-authors/{}",
+            co_author.data.name
+        ))
+        .await;
+
+    response.assert_status_ok();
+    response.assert_json(&AuthorizeCoAuthorResponse::Success);
+    assert!(is_co_author().await);
+
+    let response = server
+        .delete(&format!(
+            "/trees/{tree_id}/co-authors/{}",
+            co_author.data.name
+        ))
+        .await;
+    response.assert_status_ok();
+    assert!(!is_co_author().await);
+}
