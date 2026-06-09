@@ -57,18 +57,7 @@ impl Config {
             .expect("Failed to parse environment variable LISTENING_PORT");
 
         let base_url = env::var("BASE_URL").expect("Environment variable BASE_URL must be set");
-        let (base_url, hostname) = if base_url.starts_with("http") {
-            (
-                base_url.clone(),
-                base_url
-                    .split("://")
-                    .last()
-                    .expect("Failed to get hostname from BASE_URL")
-                    .to_owned(),
-            )
-        } else {
-            (format!("https://{}", base_url.clone()), base_url)
-        };
+        let (base_url, hostname) = parse_base_url(base_url.as_str());
 
         let database_url =
             env::var("DATABASE_URL").expect("Environment variable DATABASE_URL must be set");
@@ -129,5 +118,74 @@ impl Config {
             rate_limit_per_minute,
             rate_limit_burst_size,
         }
+    }
+}
+
+/// Parses the `BASE_URL` environment variable similar to Caddy's rules, and returns the hostname and base url.
+///
+/// # Parameters
+/// `base_url` - the base URL, optionally specifying each of:
+/// - The scheme, with SCHEME:// at the start (defaults to HTTPS if absent)
+/// - The hostname (defaults to localhost if absent)
+/// - The port, with :PORT at the end (defaults to blank if absent)
+///
+/// # Returns
+/// A tuple, containing:
+/// - The base URL, which is the start of the URL to be used to point towards a page on the website,
+/// - The hostname, the name of the website
+fn parse_base_url(base_url: &str) -> (String, String) {
+    let (scheme, rest) = match base_url.split_once("://") {
+        None => ("https", base_url),
+        Some(split) => split,
+    };
+    let rest = if rest.is_empty() { "localhost" } else { rest };
+    match rest.split_once(':') {
+        None => (format!("{scheme}://{rest}"), rest.to_owned()),
+        Some((hostname, port)) => {
+            let hostname = if hostname.is_empty() {
+                "localhost"
+            } else {
+                hostname
+            };
+            (format!("{scheme}://{hostname}:{port}"), hostname.to_owned())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_parse_base_url() {
+        assert_eq!(
+            super::parse_base_url("http://localhost"),
+            ("http://localhost".to_owned(), "localhost".to_owned())
+        );
+        assert_eq!(
+            super::parse_base_url("http://localhost:3000"),
+            ("http://localhost:3000".to_owned(), "localhost".to_owned())
+        );
+        assert_eq!(
+            super::parse_base_url("https://example.com"),
+            ("https://example.com".to_owned(), "example.com".to_owned())
+        );
+        assert_eq!(
+            super::parse_base_url("sub.example.com"),
+            (
+                "https://sub.example.com".to_owned(),
+                "sub.example.com".to_owned()
+            )
+        );
+        assert_eq!(
+            super::parse_base_url("localhost"),
+            ("https://localhost".to_owned(), "localhost".to_owned())
+        );
+        assert_eq!(
+            super::parse_base_url("localhost:3000"),
+            ("https://localhost:3000".to_owned(), "localhost".to_owned())
+        );
+        assert_eq!(
+            super::parse_base_url("http://:3000"),
+            ("http://localhost:3000".to_owned(), "localhost".to_owned())
+        );
     }
 }
