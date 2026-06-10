@@ -13,7 +13,7 @@ use axum::http::request::Parts;
 impl FromRequestParts<ArcState> for Claims {
     type Rejection = ApiError;
 
-    /// Get [`Claims`] from a user's cookies
+    /// Get [`Claims`] from a user's cookies.
     ///
     /// # Example
     /// Passing `claims: `[`Claims`] into an axum function will automatically call this function.
@@ -40,7 +40,7 @@ impl FromRequestParts<ArcState> for Claims {
 impl FromRequestParts<ArcState> for Option<Claims> {
     type Rejection = ApiError;
 
-    /// Get optional [`Claims`] from a user's cookies
+    /// Get optional [`Claims`] from a user's cookies.
     ///
     /// # Example
     /// Passing `optional_claims: `[`Option<Claims>`](Claims) into an axum function will automatically call this function.
@@ -68,7 +68,7 @@ impl FromRequestParts<ArcState> for Option<Claims> {
 impl FromRequestParts<ArcState> for ClassroomClaims {
     type Rejection = ApiError;
 
-    /// Get [`ClassroomClaims`] from a user's cookies
+    /// Get [`ClassroomClaims`] from a user's cookies.
     ///
     /// # Example
     /// Passing `claims: `[`ClassroomClaims`] into an axum function will automatically call this function.
@@ -95,7 +95,7 @@ impl FromRequestParts<ArcState> for ClassroomClaims {
 impl FromRequestParts<ArcState> for Option<ClassroomClaims> {
     type Rejection = ApiError;
 
-    /// Get optional [`ClassroomClaims`] from a user's cookies
+    /// Get optional [`ClassroomClaims`] from a user's cookies.
     ///
     /// # Example
     /// Passing `optional_claims: `[`Option<ClassroomClaims>`](ClassroomClaims) into an axum function will automatically call this function.
@@ -123,7 +123,7 @@ impl FromRequestParts<ArcState> for Option<ClassroomClaims> {
 impl FromRequestParts<ArcState> for AllClassroomClaims {
     type Rejection = ApiError;
 
-    /// Get [`AllClassroomClaims`] from a user's cookies
+    /// Get [`AllClassroomClaims`] from a user's cookies.
     ///
     /// # Example
     /// Passing `claims: `[`AllClassroomClaims`] into an axum function will automatically call this function.
@@ -150,7 +150,7 @@ impl FromRequestParts<ArcState> for AllClassroomClaims {
 impl FromRequestParts<ArcState> for Option<AllClassroomClaims> {
     type Rejection = ApiError;
 
-    /// Get optional [`AllClassroomClaims`] from a user's cookies
+    /// Get optional [`AllClassroomClaims`] from a user's cookies.
     ///
     /// # Example
     /// Passing `optional_claims: `[`Option<AllClassroomClaims>`](AllClassroomClaims) into an axum function will automatically call this function.
