@@ -46,12 +46,7 @@
     }
 </script>
 
-<div
-    class={[
-        'flex w-full flex-col gap-1',
-        'border-t border-neutral-200 bg-neutral-50 p-2 transition-colors duration-200 hover:bg-neutral-100'
-    ]}
->
+<div class="list__entry">
     <div class="flex w-full flex-row justify-between gap-2">
         <div class="flex max-w-2/3 flex-col">
             <span class="flex gap-1 *:*:inline">

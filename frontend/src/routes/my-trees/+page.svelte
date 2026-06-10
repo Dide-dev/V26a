@@ -88,7 +88,7 @@
                 bind:pageSize
                 {handlePageSizeChange}
             >
-                <div class="mb-4 flex w-full flex-col border-b border-neutral-200">
+                <div class="list__container">
                     {#each treeListResponse?.trees as tree, i (tree.genData.id)}
                         <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
                     {/each}

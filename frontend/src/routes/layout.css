@@ -243,6 +243,34 @@
         }
     }
 
+    /* List formatting */
+    .list__container {
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        margin-bottom: var(--spacing-padding-normal);
+
+        border-bottom: 1px solid var(--color-neutral-200);
+
+        > .list__entry {
+            display: flex;
+            flex-direction: column;
+
+            width: 100%;
+            gap: var(--spacing-padding-minor);
+            padding: var(--spacing-padding-small);
+
+            border-top: 1px solid var(--color-neutral-200);
+            background-color: var(--color-neutral-50);
+            transition: background-color 200ms ease-in-out;
+
+            &:hover {
+                background-color: var(--color-neutral-100);
+            }
+        }
+    }
+
     @keyframes invalidInputClick {
         0% {
         }
