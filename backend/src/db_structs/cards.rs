@@ -106,7 +106,7 @@ impl Validated for LibraryCardAddData {
 pub struct LibraryCardGetData {
     pub card_id: i32,
     pub title: String,
-    pub owner_id: i32,
+    pub owner_name: String,
     pub created_at: DateTime<Utc>,
     pub tags: Vec<String>,
     pub front: String,
@@ -117,10 +117,9 @@ pub struct LibraryCardGetData {
 #[derive(serde::Deserialize, ToSchema, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CardFilters {
-    pub owner_id: Option<i32>,
-
-    #[serde(default)]
+    pub owner_name: Option<String>,
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
+    #[serde(default)]
     pub tags: Vec<String>,
 }
