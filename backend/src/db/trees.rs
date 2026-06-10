@@ -959,6 +959,7 @@ const TREE_LIST_QUERY_JOINS: &str = r"
 ";
 
 fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+    let tags = tags.iter().map(| tag | tag.to_lowercase()).collect::<Vec<_>>();
     query
         .push(
             r"
@@ -1249,11 +1250,11 @@ mod tests {
             .unwrap();
 
         // Update the tree data
-        let new_tree_data = TreeData {
+        let mut new_tree_data = TreeData {
             title: "Updated tree".to_string(),
             description: "Updated description".to_string(),
             language_code: "nl".to_string(),
-            tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            tags: vec!["tag1".to_string(), "TAG1".to_string(), "tag3".to_string()],
             subject_id: Some(3),
             book_name: "Updated book".to_string(),
             book_author: "John Writer".to_string(),
@@ -1268,7 +1269,8 @@ mod tests {
             .await
             .unwrap();
 
-        // Verify the data was updated
+        // Verify the data was updated and that the duplicate tag was left out
+        new_tree_data.tags = vec!["tag1".to_string(), "tag3".to_string()];
         let (found_tree_metadata, _) = db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
             .await
             .unwrap()
