@@ -130,15 +130,15 @@ async fn add_new_lesson(
 async fn get_classroom_content(
     Extension(db): Extension<PgPool>,
     Path(join_code): Path<String>,
-) -> Result<Option<Json<JoinClassroomData>>, ApiError> {
+) -> Result<Json<Option<JoinClassroomData>>, ApiError> {
     let classroom = get_classroom_from_code(&db, join_code).await?;
     let Some(classroom) = classroom else {
-        return Ok(None);
+        return Ok(Json(None));
     };
 
     let lessons = get_lessons_with_tree_ids_from_classroom(&db, classroom.gen_data.id).await?;
 
-    Ok(Some(Json(JoinClassroomData {
+    Ok(Json(Some(JoinClassroomData {
         data: classroom,
         lessons,
     })))

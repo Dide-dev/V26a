@@ -12,9 +12,8 @@ use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
 use chrono::{DateTime, Utc};
 use rand::prelude::*;
-use rand::rngs::SysRng;
 use sqlx::postgres::PgRow;
-use sqlx::{Acquire, PgConnection, PgExecutor, Row, query, query_scalar};
+use sqlx::{Acquire, PgConnection, PgExecutor, Row, query, query_scalar, Postgres, QueryBuilder};
 use std::collections::HashMap;
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
@@ -268,8 +267,8 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
 ) -> Result<Vec<LessonMetaData>, ApiError> {
-    let rows: Vec<PgRow> = query!(
-        "SELECT l.id as lesson_id,
+    let mut query = QueryBuilder::<Postgres>::new("");
+    query.push("SELECT l.id as lesson_id,
         l.name as lesson_name,
         l.description as lesson_description,
         l.published as lesson_published,
@@ -278,25 +277,27 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
         FROM lessons l
         JOIN lesson_trees lt ON l.id = lt.lesson_id
         JOIN trees t ON lt.tree_id = t.id
-        WHERE classroom_id=$1"
-    )
-    .bind(classroom_id)
+        WHERE classroom_id = ").push(classroom_id);
+
+    let rows: Vec<PgRow> = query
+    .build()
     .fetch_all(db)
     .await?;
     let mut lessons = HashMap::<i32, LessonMetaData>::new();
     for row in rows {
         let lesson_id = row.try_get("lesson_id")?;
         let tree = TreeMetadata::from_pg_row(&row)?;
+        let data = LessonData::from_pg_row(&row)?;
         lessons
             .entry(lesson_id)
             .or_insert_with(|| LessonMetaData {
-                data: LessonData::from_pg_row(&row)?,
+                data,
                 trees: Vec::new(),
             })
             .trees
             .push(tree);
     }
-    let data = Vec::from_iter(lessons.values().cloned());
+    let data = lessons.values().cloned().collect();
     Ok(data)
 }
 
