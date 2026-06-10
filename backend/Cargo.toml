@@ -9,7 +9,7 @@ edition = "2024"
 
 [dependencies]
 async-trait = "0.1.89"
-axum = { version = "0.8.8", features = ["multipart", "macros"] }
+axum = { version = "0.8.8", features = ["multipart", "macros", "ws"] }
 axum-extra = { version = "0.12.5", features = [
     "typed-header",
     "cookie",
@@ -46,4 +46,4 @@ tower = "0.5.3"
 uuid = { version = "1.23.0", features = ["v4"] }
 
 [dev-dependencies]
-axum-test = "20.0.0"
+axum-test = { version = "20.0.0", features = ["ws"] }
