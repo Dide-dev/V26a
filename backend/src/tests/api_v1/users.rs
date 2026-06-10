@@ -294,7 +294,7 @@ async fn test_verify_unpruned_account(db: PgPool) {
     // considered as expired.
     config.verification_timer = -1;
 
-    let test_state = setup_config(db, &mut config);
+    let test_state = setup_config(db, &mut config, false);
 
     let register_data = RegisterData::test_values();
     let response = test_state.server.post("/users").json(&register_data).await;

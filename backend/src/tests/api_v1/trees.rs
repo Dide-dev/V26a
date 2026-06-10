@@ -6,7 +6,9 @@
 
 #![cfg(test)]
 
+use crate::Config;
 use crate::api_v1::trees::AuthorizeCoAuthorResponse;
+use crate::api_v1::trees::edit_lock::{BackendMessage, FrontendMessage};
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::CardData;
@@ -18,7 +20,9 @@ use crate::db_structs::trees::{
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
+use crate::tests::api_v1::{
+    create_tree, login, register, register_admin, setup, setup_config, setup_login,
+};
 use axum_test::TestServer;
 use sqlx::{PgPool, query_scalar};
 use std::collections::{BTreeMap, HashMap};
@@ -1128,4 +1132,52 @@ async fn test_deauthorize_co_author(db: PgPool) {
         .await;
     response.assert_status_ok();
     assert!(!is_co_author().await);
+}
+
+#[sqlx::test]
+async fn test_acquire_lock(db: PgPool) {
+    let test_state = setup_config(db.clone(), &mut Config::load(), true);
+    let user1 = RegisterData::test_values();
+    let user2 = RegisterData::test_values();
+    let user_id1 = register(&test_state, &user1).await;
+    let user_id2 = register(&test_state, &user2).await;
+
+    let server = test_state.server;
+
+    login(&server, user1.email.clone()).await;
+    let tree_id = create_tree(&server).await;
+    server
+        .post(&format!("/trees/{tree_id}/co-authors/{}", user2.data.name))
+        .await
+        .assert_status_ok();
+
+    let create_ws = async || {
+        let response = server
+            .get_websocket(&format!("/trees/{tree_id}/edit-lock"))
+            .await;
+        response.assert_status_switching_protocols();
+        response.into_websocket().await
+    };
+
+    // First user 1 has the lock.
+    let mut ws1 = create_ws().await;
+    ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
+
+    // User 2 first fails, then forces.
+    login(&server, user2.email.clone()).await;
+    let mut ws2 = create_ws().await;
+    ws2.assert_receive_json(&BackendMessage::LockFailed {
+        active_user: user_id1,
+    })
+    .await;
+    ws2.send_json(&FrontendMessage::Force).await;
+    ws1.assert_receive_json(&BackendMessage::KickedOutBy { user_id: user_id2 })
+        .await;
+    ws2.assert_receive_json(&BackendMessage::LockAchieved).await;
+
+    // User 2 closes the websocket (by for example leaving page),
+    // the lock is gone, so user 1 doesn't need to force the lock.
+    ws2.close().await;
+    ws1 = create_ws().await;
+    ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
 }

@@ -36,6 +36,8 @@ use crate::db_structs::cards::CardData;
 use crate::messages::Message;
 use std::collections::HashMap;
 
+pub mod edit_lock;
+
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
@@ -55,6 +57,12 @@ pub fn trees() -> Router<ArcState> {
         .route(
             "/{tree_id}/co-authors/{username}",
             post(authorize_co_author).delete(deauthorize_co_author),
+        )
+        .route(
+            "/{tree_id}/edit-lock",
+            // This endpoint requires to be wrapped in an [`axum::routing::any`],
+            // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
+            axum::routing::any(edit_lock::acquire_edit_lock),
         )
 }
 
