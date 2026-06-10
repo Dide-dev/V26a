@@ -577,6 +577,37 @@ pub async fn add_co_author(
     Ok(())
 }
 
+/// Removes a co-author from a tree.
+/// If the given user id was not actually a co-author, this function just sends a query that does nothing.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree from which a co-author should be removed.
+///
+/// `co_author_id` - The id of the user that should be removed as co-author.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn remove_co_author(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+    co_author_id: i32,
+) -> Result<(), ApiError> {
+    query!(
+        "DELETE FROM co_authors
+        WHERE tree_id=$1 AND user_id=$2",
+        tree_id,
+        co_author_id
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 /// Checks whether the cards in a tree structure all exist in the `Cards` table, and link to the tree
 /// and whether any duplicate cards exist in the tree structure.
 ///

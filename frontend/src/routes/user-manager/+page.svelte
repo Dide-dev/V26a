@@ -88,7 +88,6 @@
     );
 
     const minInputLengths = {
-        email: 0,
         name: 2,
         nickname: 2,
         aboutMe: 0,
@@ -272,7 +271,6 @@
                         name="email"
                         type="email"
                         data-testid="email"
-                        minlength={minInputLengths.email}
                         maxlength={maxInputLengths.email}
                         oninput={() => {
                             inputsChanged.emailChanged = true;

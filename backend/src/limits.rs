@@ -27,7 +27,6 @@ pub const LESSON_TITLE_MIN_LENGTH: usize = 1;
 pub const EMAIL_MAX_LENGTH: usize = 128;
 pub const PASSWORD_MAX_LENGTH: usize = 72;
 // Minimums
-pub const EMAIL_MIN_LENGTH: usize = 3; // an email address cannot be physically shorter than 3 characters long.
 pub const PASSWORD_MIN_LENGTH: usize = 8;
 pub const PASSWORD_LOGIN_MIN_LENGTH: usize = 1; // To accommodate old accounts with a password shorter than the current imposed minimum.
 

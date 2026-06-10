@@ -6,24 +6,27 @@
 
 #![cfg(test)]
 
+use crate::api_v1::users::UserResponse;
 use crate::{
     db_structs::users::{
         AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData,
         UserGeneralData, UserListResponse,
     },
+    get_connection_unwrap,
     tests::api_v1::{login, register, register_admin, setup},
 };
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_get_all_users_non_admin(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
-    register(&server, &account2).await;
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    let server = test_state.server;
     login(&server, account2.email).await;
 
     let response = server.get("/admin/users").await;
@@ -33,13 +36,14 @@ async fn test_get_all_users_non_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_all_users_admin(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register_admin(&server, &db, &account1).await;
-    register(&server, &account2).await;
+    register_admin(&test_state, &db, &account1).await;
+    register(&test_state, &account2).await;
+    let server = test_state.server;
     login(&server, account1.email).await;
 
     let response = server.get("/admin/users").await;
@@ -51,13 +55,14 @@ async fn test_get_all_users_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_one_user_non_admin(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    let user_id = register(&server, &account1).await;
-    register(&server, &account2).await;
+    let user_id = register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    let server = test_state.server;
     login(&server, account2.email).await;
 
     let response = server.get(&format!("/admin/users/{user_id}")).await;
@@ -67,16 +72,17 @@ async fn test_get_one_user_non_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_one_user_admin(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     // Create one admin account and one author account and log in to the admin account.
     let admin_account = RegisterData::test_values();
-    register_admin(&server, &db, &admin_account).await;
+    register_admin(&test_state, &db, &admin_account).await;
 
     // Create an account
     let user_account = RegisterData::test_values();
+    let other_user_id = register(&test_state, &user_account).await;
 
-    let other_user_id = register(&server, &user_account).await;
+    let server = test_state.server;
     login(&server, admin_account.email).await;
 
     let response = server.get(&format!("/admin/users/{other_user_id}")).await;
@@ -98,7 +104,7 @@ async fn test_get_one_user_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_update_user(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
@@ -113,8 +119,9 @@ async fn test_update_user(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    let user_id = register(&server, &account1).await;
-    register(&server, &account2).await;
+    let user_id = register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    let server = test_state.server;
     login(&server, account2.email).await;
 
     let response = server
@@ -126,8 +133,66 @@ async fn test_update_user(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_admin_update_pending_user(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
+
+    let admin_user = RegisterData::test_values();
+    register_admin(&test_state, conn, &admin_user).await;
+
+    let other_user = RegisterData::test_values();
+    let other_user_id = register(&test_state, &other_user).await;
+
+    let server = test_state.server;
+    let pending_user = RegisterData::test_values();
+    let response = server.post("/users").json(&pending_user).await;
+    response.assert_status_ok();
+
+    login(&server, admin_user.email).await;
+    // Test username already used
+    let updated_user = AdminUpdateData {
+        email: other_user.email,
+        enabled: true,
+        account_type: AccountType::Admin,
+        data: UserGeneralData {
+            name: pending_user.data.name,
+            nickname: "bob".to_string(),
+            about_me: "I'm still bob".to_string(),
+        },
+    };
+    let response = server
+        .put(&format!("/admin/users/{other_user_id}"))
+        .json(&updated_user)
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::UsernameAlreadyUsed);
+
+    // Test email already used
+    let updated_user = AdminUpdateData {
+        email: pending_user.email,
+        enabled: true,
+        account_type: AccountType::Admin,
+        data: UserGeneralData {
+            name: "first".to_string(),
+            nickname: "bob".to_string(),
+            about_me: "I'm still bob".to_string(),
+        },
+    };
+    let response = server
+        .put(&format!("/admin/users/{other_user_id}"))
+        .json(&updated_user)
+        .await;
+    response.assert_status_ok();
+
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::EmailAlreadyUsed);
+}
+
+#[sqlx::test]
 async fn test_disable_user(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     let update_data = AdminUpdateData {
         email: "JohnSmith@gmail.com".to_owned(),
@@ -142,7 +207,13 @@ async fn test_disable_user(db: PgPool) {
 
     // Create an user that has 2 sessions active.
     let user_account = RegisterData::test_values();
-    let other_user_id = register(&server, &user_account).await;
+    let other_user_id = register(&test_state, &user_account).await;
+
+    // Create one admin account that can disable an user.
+    let admin_account = RegisterData::test_values();
+    register_admin(&test_state, &db, &admin_account).await;
+    let server = test_state.server;
+
     login(&server, user_account.email.clone()).await;
     login(&server, user_account.email.clone()).await;
 
@@ -155,10 +226,6 @@ async fn test_disable_user(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(sessions, Some(2));
-
-    // Create one admin account that can disable an user.
-    let admin_account = RegisterData::test_values();
-    register_admin(&server, &db, &admin_account).await;
     login(&server, admin_account.email).await;
 
     // Update the userdata to disable the account.
@@ -181,7 +248,7 @@ async fn test_disable_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_change_password(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let new_password = AdminPasswordChangeRequestBody {
         new_password: "Banaan123!".to_owned(),
@@ -189,8 +256,9 @@ async fn test_change_password(db: PgPool) {
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    let user_id = register(&server, &account1).await;
-    register(&server, &account2).await;
+    let user_id = register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    let server = test_state.server;
     login(&server, account2.email).await;
 
     let response = server
@@ -203,11 +271,14 @@ async fn test_change_password(db: PgPool) {
 
 #[sqlx::test]
 async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
-    let server = setup(db.clone());
+    let test_state = setup(db.clone());
 
     // Create a regular user with two sessions.
     let user_account = RegisterData::test_values();
-    let user_id = register(&server, &user_account).await;
+    let admin_account = RegisterData::test_values();
+    let user_id = register(&test_state, &user_account).await;
+    register_admin(&test_state, &db, &admin_account).await;
+    let server = test_state.server;
     login(&server, user_account.email.clone()).await;
     login(&server, user_account.email.clone()).await;
 
@@ -219,8 +290,6 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
     assert_eq!(sessions, Some(2));
 
     // Login as admin.
-    let admin_account = RegisterData::test_values();
-    register_admin(&server, &db, &admin_account).await;
     login(&server, admin_account.email).await;
 
     // Change the user's password as admin.

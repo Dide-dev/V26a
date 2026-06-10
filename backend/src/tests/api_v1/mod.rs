@@ -18,23 +18,74 @@ mod trees;
 mod users;
 
 use crate::ArcState;
-use crate::api_v1::users::UserResponse;
+use crate::api_v1::users::{UserResponse, VerificationCode};
+use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
+use crate::db_structs::mail::StubMailer;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
+use lettre::transport::stub::AsyncStubTransport;
 use percent_encoding::percent_decode_str;
 use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
+use std::sync::Arc;
 use tempfile::tempdir;
 
+/// A struct for testing, containing the [`TestServer`] and [`ArcState`].
+pub struct TestState {
+    pub server: TestServer,
+    pub state: ArcState,
+}
+
+/// Retrieve and decode the value of a cookie, as [`T: DeserializeOwned`](T)
+///
+/// # Arguments
+/// `cookie` - The [`Cookie`] to retrieve the value from
+///
+/// # Returns
+/// The retrieved value, decoded as type [`T: DeserializeOwned`](T)
 fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     let value = cookie.value();
     let decoded_value = percent_decode_str(value).decode_utf8().unwrap();
     serde_json::from_str(&decoded_value).unwrap()
+}
+
+/// Sets up an API test server with the given mock database and application config.
+/// The following settings will be overridden:
+/// - `upload_dir`,
+/// - `bcrypt_cost`,
+/// - `mailer`
+///
+/// # Arguments
+/// `db` - A [`PgPool`] to use for the [`TestServer`].
+///
+/// `config` - The [`Config`] options to use in the application.
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints and saves cookies.
+fn setup_config(db: PgPool, config: &mut Config) -> TestState {
+    // Apply some default settings during testing
+    let temp_dir = tempdir().unwrap();
+    let stub_mailer = AsyncStubTransport::new_ok();
+    config.upload_dir = temp_dir.path().to_string_lossy().to_string();
+    // Set a low bcrypt cost to speed up password hashing during testing.
+    config.bcrypt_cost = 4;
+    config.mailer = Arc::new(StubMailer {
+        transport: stub_mailer,
+    });
+
+    let state = ArcState::new(config.to_owned());
+    let router = crate::api_v1::v1_api(state.clone())
+        .layer(Extension(db))
+        .with_state(state.clone());
+    TestState {
+        server: TestServer::builder().save_cookies().build(router),
+        state,
+    }
 }
 
 /// Sets up an API test server with the given mock database.
@@ -44,32 +95,58 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
 ///
 /// # Returns
 /// A [`TestServer`] that can handle all the API endpoints and saves cookies.
-fn setup(db: PgPool) -> TestServer {
-    let temp_dir = tempdir().unwrap();
+fn setup(db: PgPool) -> TestState {
+    let mut config = Config::load();
 
-    let mut config = crate::Config::load();
-    config.upload_dir = temp_dir.path().to_string_lossy().to_string();
-    // Set a low bcrypt cost to speed up password hashing during testing.
-    config.bcrypt_cost = 4;
-
-    let state = ArcState::new(config);
-    let router = crate::api_v1::v1_api(state.clone())
-        .layer(Extension(db))
-        .with_state(state);
-    TestServer::builder().save_cookies().build(router)
+    setup_config(db, &mut config)
 }
 
-/// Creates an account with the given [`TestServer`]
+/// Try to verify an account on the test server with the given email.
 ///
 /// # Arguments
-/// `test_server` - The [`TestServer`] to use for making the API calls.
+/// `test_state` - The [`TestState`] to use for making the API calls and extracting the verification code.
 ///
-/// `email` - The new user's email address.
+/// `email` - The email address of the account to be verified.
+///
+/// # Returns
+/// The response of the verification request as a [`TestResponse`].
+///
+/// # Panics
+/// Will panic if no pending account with the given e-mail could be found.
+async fn try_verify(test_state: &TestState, email: String) -> TestResponse {
+    let verification_code = {
+        let pending_accounts = test_state.state.pending_accounts.lock().await;
+        pending_accounts
+            .iter()
+            .find(|(_, p)| p.register_data.email == email)
+            .unwrap()
+            .0
+            .clone()
+    };
+
+    test_state
+        .server
+        .post("/users/verification")
+        .json(&VerificationCode {
+            code: verification_code,
+        })
+        .await
+}
+
+/// Creates an account with the given [`TestState`]
+///
+/// # Arguments
+/// `test_state` - The [`TestState`] to use for making the API calls and extracting the verification code.
+///
+/// `register_data` - The new user's registration data.
 ///
 /// # Returns
 /// An i32 representing the id of the user created.
-async fn register(test_server: &TestServer, register_data: &RegisterData) -> i32 {
-    let response = test_server.post("/users").json(&register_data).await;
+async fn register(test_state: &TestState, register_data: &RegisterData) -> i32 {
+    let response = test_state.server.post("/users").json(&register_data).await;
+    response.assert_status_ok();
+
+    let response = try_verify(test_state, register_data.email.clone()).await;
     response.assert_status_ok();
 
     let response = response.json::<UserResponse>();
@@ -91,13 +168,13 @@ async fn register(test_server: &TestServer, register_data: &RegisterData) -> i32
 /// `email` - The new admin's email address.
 ///
 /// # Returns
-/// A tuple containing the id of the admin user created and the [`RegisterData`] used.
+/// An i32 representing the id of the admin created.
 async fn register_admin(
-    test_server: &TestServer,
+    test_state: &TestState,
     db: impl PgExecutor<'_>,
     register_data: &RegisterData,
 ) -> i32 {
-    let user_id = register(test_server, register_data).await;
+    let user_id = register(test_state, register_data).await;
 
     query!(
         r"UPDATE users SET account_type='admin' WHERE id = $1",
@@ -138,10 +215,12 @@ async fn login(test_server: &TestServer, email: String) -> TestResponse {
 /// A [`TestServer`] that can handle all the API endpoints, including ones
 /// that require being logged in, and saves cookies.
 async fn setup_login(db: PgPool) -> TestServer {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
+    register(&test_state, &register_data).await;
+
+    let server = test_state.server;
     login(&server, register_data.email).await;
 
     server
@@ -196,10 +275,11 @@ mod tests {
 
     #[sqlx::test]
     async fn test_normal_login(db: PgPool) {
-        let server = setup(db);
+        let test_state = setup(db);
 
         let register_data = RegisterData::test_values();
-        register(&server, &register_data).await;
+        register(&test_state, &register_data).await;
+        let server = test_state.server;
         let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
@@ -209,10 +289,11 @@ mod tests {
     #[sqlx::test]
     async fn test_admin_login(db: PgPool) {
         let conn = get_connection_unwrap!(db);
-        let server = setup(db);
+        let test_state = setup(db);
 
         let register_data = RegisterData::test_values();
-        register_admin(&server, conn, &register_data).await;
+        register_admin(&test_state, conn, &register_data).await;
+        let server = test_state.server;
         let res = login(&server, register_data.email).await;
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
