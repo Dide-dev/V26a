@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::{extract_token, rate_limit_layer};
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
 use crate::db::users::{
@@ -36,8 +36,7 @@ use lettre::message::header::ContentType;
 use lettre::{Address, Message};
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, query};
-use sqlx::{PgExecutor, PgPool};
+use sqlx::{PgExecutor, PgPool, query};
 use time::Duration;
 use utoipa::ToSchema;
 
@@ -413,7 +412,7 @@ async fn change_password(
     let token = Claims::extract_token(&jar)?;
 
     // All other sessions of the account are invalidated if password is changed.
-    Claims::delete_all_sessions_except(&db, claims.sub, &token).await?;
+    Claims::delete_all_sessions_except(&db, &token, &claims.sub).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
@@ -463,7 +462,7 @@ async fn delete_user_data(
     delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
     // Invalidate all the sessions based on userid.
-    Claims::delete_all_sessions_user(&mut *transaction, claims.sub).await?;
+    Claims::delete_all_sessions(&mut *transaction, &claims.sub).await?;
 
     transaction.commit().await?;
 
