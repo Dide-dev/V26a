@@ -227,7 +227,7 @@ pub struct TreeLinkedData {
     #[sqlx(rename = "subject_name?")]
     pub subject_name: Option<String>,
     pub language_name: String,
-    pub co_authors: Vec<i32>,
+    pub co_authors: Vec<String>,
 }
 
 /// The full metadata of the tree, includes `TreeData` and `TreeGeneratedData`.
