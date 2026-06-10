@@ -36,6 +36,8 @@ jobs:
       RUST_LOG: INFO
       JWT_SECRET: secret
       SESSION_EXPIRATION_SECONDS: 604800
+      BASE_URL: http://localhost
+      SMTP_SERVER: localhost
 
       RUSTFLAGS: -D warnings
       RUSTDOCFLAGS: -D warnings

@@ -15,7 +15,7 @@ use crate::db_structs::trees::{
     Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
     TreeStructure, TreeWithCards,
 };
-use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
+use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
@@ -158,7 +158,18 @@ async fn test_new_empty_tree_with_data(db: PgPool) {
 #[sqlx::test]
 async fn test_unpublished_trees(db: PgPool) {
     let conn = get_connection_unwrap!(db);
-    let mut server = setup_login(db).await;
+    let test_state = setup(db);
+
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let admin_account = RegisterData::test_values();
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    register_admin(&test_state, conn, &admin_account).await;
+
+    let mut server = test_state.server;
+
+    login(&server, account1.email).await;
 
     let tree_id: i32 = create_tree(&server).await;
 
@@ -172,16 +183,12 @@ async fn test_unpublished_trees(db: PgPool) {
     response.assert_status_unauthorized();
     assert_eq!(response.text(), ApiError::MissingAuthentication.to_string());
 
-    let second_user_data = RegisterData::test_values();
-    register(&server, &second_user_data).await;
-    login(&server, second_user_data.email).await;
+    login(&server, account2.email).await;
     let response = server.get(&format!("/trees/{tree_id}")).await;
     response.assert_status_forbidden();
     assert_eq!(response.text(), ApiError::NoPermission.to_string());
 
-    let admin_user_data = RegisterData::test_values();
-    register_admin(&server, conn, &admin_user_data).await;
-    login(&server, admin_user_data.email).await;
+    login(&server, admin_account.email).await;
     let response = server.get(&format!("/trees/{tree_id}")).await;
     response.assert_status_ok();
 }
@@ -390,14 +397,15 @@ async fn test_remove_card(db: PgPool) {
 #[sqlx::test]
 async fn test_filter_tree_list(db: PgPool) {
     let conn = get_connection_unwrap!(db);
-    let server = setup(db);
+    let test_state = setup(db);
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
     let admin_account = RegisterData::test_values();
-    register(&server, &account1).await;
-    register(&server, &account2).await;
-    register_admin(&server, &mut *conn, &admin_account).await;
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    register_admin(&test_state, &mut *conn, &admin_account).await;
+    let server = test_state.server;
     login(&server, account1.email.clone()).await;
 
     let subject_id = query_scalar!("SELECT id FROM subjects WHERE name = 'Wiskunde A'")
@@ -831,7 +839,7 @@ async fn test_update_metadata(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_languages(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let response = server.get("/trees/languages").await;
     response.assert_status_ok();
@@ -842,7 +850,7 @@ async fn test_get_languages(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_subjects(db: PgPool) {
-    let server = setup(db);
+    let server = setup(db).server;
 
     let response = server.get("/trees/subjects").await;
     response.assert_status_ok();
@@ -853,13 +861,14 @@ async fn test_get_subjects(db: PgPool) {
 
 #[sqlx::test]
 async fn test_duplicate_tree(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     // Create two accounts and log in as one of them.
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
-    let owner_id2 = register(&server, &account2).await;
+    register(&test_state, &account1).await;
+    let owner_id2 = register(&test_state, &account2).await;
+    let server = test_state.server;
     login(&server, account1.email).await;
 
     let tree_data = TreeData {
@@ -940,11 +949,17 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_verify_tree_permission_co_author(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
 
-    let tree_id: i32 = create_tree(&server).await;
+    let author_data = RegisterData::test_values();
     let co_author_data = RegisterData::test_values();
-    register(&server, &co_author_data).await;
+    register(&test_state, &author_data).await;
+    register(&test_state, &co_author_data).await;
+
+    let server = test_state.server;
+    login(&server, author_data.email).await;
+    let tree_id: i32 = create_tree(&server).await;
     server
         .post(&format!(
             "/trees/{tree_id}/co-authors/{}",
@@ -957,18 +972,24 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
+    let result = verify_tree_permissions(conn, tree_id, &claims).await;
 
     assert!(result.is_ok());
 }
 
 #[sqlx::test]
 async fn test_authorize_co_author_success(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let conn = get_connection_unwrap!(db);
+    let test_state = setup(db);
 
-    let tree_id: i32 = create_tree(&server).await;
+    let author_data = RegisterData::test_values();
     let co_author_data = RegisterData::test_values();
-    let co_author_id = register(&server, &co_author_data).await;
+    register(&test_state, &author_data).await;
+    let co_author_id = register(&test_state, &co_author_data).await;
+
+    let server = test_state.server;
+    login(&server, author_data.email).await;
+    let tree_id: i32 = create_tree(&server).await;
     let response = server
         .post(&format!(
             "/trees/{tree_id}/co-authors/{}",
@@ -980,7 +1001,7 @@ async fn test_authorize_co_author_success(db: PgPool) {
     let response_body: AuthorizeCoAuthorResponse = response.json();
     assert_eq!(response_body, AuthorizeCoAuthorResponse::Success);
 
-    let is_co_author = is_co_author_of_tree(&db, &tree_id, &co_author_id)
+    let is_co_author = is_co_author_of_tree(conn, &tree_id, &co_author_id)
         .await
         .unwrap();
 
@@ -989,19 +1010,24 @@ async fn test_authorize_co_author_success(db: PgPool) {
 
 #[sqlx::test]
 async fn test_non_owner_cannot_authorize_co_author(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let test_state = setup(db);
 
+    let owner_data = RegisterData::test_values();
+    let not_owner_data = RegisterData::test_values();
+    let co_author_data = RegisterData::test_values();
+    register(&test_state, &owner_data).await;
+    register(&test_state, &not_owner_data).await;
+    register(&test_state, &co_author_data).await;
+
+    let server = test_state.server;
+    login(&server, owner_data.email).await;
     let tree_id: i32 = create_tree(&server).await;
-    let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
-    login(&server, register_data.email).await;
+    login(&server, not_owner_data.email).await;
 
-    let co_author_register_data = RegisterData::test_values();
-    register(&server, &co_author_register_data).await;
     let response = server
         .post(&format!(
             "/trees/{tree_id}/co-authors/{}",
-            co_author_register_data.data.name
+            co_author_data.data.name
         ))
         .await;
 
@@ -1029,22 +1055,18 @@ async fn test_cannot_authorize_non_existing_user(db: PgPool) {
 
 #[sqlx::test]
 async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
-    let server = setup_login(db.clone()).await;
+    let test_state = setup(db);
+
+    let register_data = RegisterData::test_values();
+    let co_author_register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
+    register(&test_state, &co_author_register_data).await;
+
+    let server = test_state.server;
+    login(&server, register_data.email).await;
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let co_author_register_data = RegisterData {
-        email: "co_author@email.com".to_owned(),
-        password: "4$$wOrd!".to_owned(),
-        data: UserData {
-            name: "CoAuthor".to_owned(),
-            nickname: String::new(),
-            about_me: String::new(),
-            email_visible: false,
-            language: UserLanguage::En,
-        },
-    };
-    register(&server, &co_author_register_data).await;
     server
         .post(&format!(
             "/trees/{tree_id}/co-authors/{}",
@@ -1065,4 +1087,45 @@ async fn test_cannot_authorize_already_authorized_user(db: PgPool) {
         response_body,
         AuthorizeCoAuthorResponse::UserAlreadyAuthorized
     );
+}
+
+#[sqlx::test]
+async fn test_deauthorize_co_author(db: PgPool) {
+    let test_state = setup(db.clone());
+
+    let user = RegisterData::test_values();
+    let co_author = RegisterData::test_values();
+    register(&test_state, &user).await;
+    let co_author_id = register(&test_state, &co_author).await;
+
+    let server = test_state.server;
+    login(&server, user.email).await;
+    let tree_id: i32 = create_tree(&server).await;
+
+    let is_co_author = async || {
+        is_co_author_of_tree(&db, &tree_id, &co_author_id)
+            .await
+            .unwrap()
+    };
+    assert!(!is_co_author().await);
+
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id}/co-authors/{}",
+            co_author.data.name
+        ))
+        .await;
+
+    response.assert_status_ok();
+    response.assert_json(&AuthorizeCoAuthorResponse::Success);
+    assert!(is_co_author().await);
+
+    let response = server
+        .delete(&format!(
+            "/trees/{tree_id}/co-authors/{}",
+            co_author.data.name
+        ))
+        .await;
+    response.assert_status_ok();
+    assert!(!is_co_author().await);
 }

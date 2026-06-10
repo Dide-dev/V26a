@@ -253,12 +253,17 @@ export function getFilteredList(
 
 /** Duplicates a tree */
 export function duplicateTree(treeId: TreeId): Promise<TreeId> {
-    return apiCallDuplicateTree(`/${treeId}`);
+    return apiCallDuplicateTree(`/${treeId}/duplicate`);
 }
 
 /** Add user as co-author to a tree. */
 export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`/${treeId}/co-authors/${username}`, null);
+}
+
+/** Remove user as co-author from a tree. */
+export function removeCoAuthor(treeId: TreeId, username: string): Promise<void> {
+    return apiCallDeleteTree(`/${treeId}/co-authors/${username}`);
 }
 
 /** Get the list of all languages. */

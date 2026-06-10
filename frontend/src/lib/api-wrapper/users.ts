@@ -61,9 +61,21 @@ export type RegisterData = {
     data: UserData;
 };
 
+export type VerificationCode = {
+    code: string;
+};
+
 export type UserSuccess = {
     type: 'Success';
     userId: UserId;
+};
+
+export type UserInvalidVerification = {
+    type: 'InvalidVerification';
+};
+
+export type UserPending = {
+    type: 'Pending';
 };
 
 export type UserEmailInvalid = {
@@ -86,10 +98,10 @@ export type UserGetData = {
 
 /** The data in the cookie */
 export type UserInfo = {
+    name: string;
+    nickname: string;
     /** This corresponds to userid of the current login. */
     sub: UserId;
-    /** Expiration datetime for the current login, represented as number of seconds since unix epoch. */
-    exp: number;
     accountType: AccountType;
 };
 
@@ -102,8 +114,13 @@ export type ChangePasswordData = {
 /** Add a user to the database */
 export function addUser(
     user: RegisterData
-): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
+): Promise<UserPending | UserEmailInvalid | UsernameInvalid> {
     return apiCallPostUser('', user);
+}
+
+/* Verify a pending user */
+export function verifyUser(code: VerificationCode): Promise<UserSuccess | UserInvalidVerification> {
+    return apiCallPostUser(`/verification`, code);
 }
 
 /** Delete a user in the database */

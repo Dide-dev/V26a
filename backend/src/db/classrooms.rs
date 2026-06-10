@@ -10,7 +10,6 @@ use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
 use chrono::{DateTime, Utc};
 use rand::prelude::*;
-use rand::rngs::SysRng;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
@@ -26,23 +25,15 @@ use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiError> {
     let allowed_characters: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".chars().collect();
 
-    let mut rng = StdRng::try_from_rng(&mut SysRng).unwrap_or_else(|_| {
-        StdRng::from_seed({
-            let unix = Utc::now().timestamp_millis().to_be_bytes();
-            let mut array: [u8; 32] = [42; 32];
-            for chunk in array.chunks_mut(unix.len()) {
-                let len = chunk.len().min(unix.len());
-                chunk[..len].copy_from_slice(&unix[..len]);
-            }
-            array
-        })
-    });
     let mut number: String;
 
     loop {
-        number = (0..6)
-            .map(|_| allowed_characters.choose(&mut rng).unwrap())
-            .collect::<String>();
+        number = {
+            let mut rng = rand::rng();
+            (0..6)
+                .map(|_| allowed_characters.choose(&mut rng).unwrap())
+                .collect::<String>()
+        };
 
         let exists = query!(
             "SELECT EXISTS(SELECT * FROM classrooms WHERE join_code = $1)",

@@ -20,13 +20,15 @@ use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
 };
 
+use crate::api_v1::users::{check_email_used, check_username_used};
 use crate::db_structs::session::ClaimsType;
+use crate::db_structs::users::PendingAccountsExt;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
     db::users::{
-        admin_update_user, get_user_all_data, get_user_by_name, get_user_count,
-        get_user_list_by_page, update_password, user_id_exists,
+        admin_update_user, get_user_all_data, get_user_count, get_user_list_by_page,
+        update_password, user_id_exists,
     },
     db_structs::pagination::OptionalPaginationOptions,
     db_structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
@@ -152,6 +154,7 @@ async fn get_all_user_data(
 async fn update_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
+    State(state): State<ArcState>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     new_data.validate_inputs()?;
@@ -162,12 +165,18 @@ async fn update_user_data(
         return Err(ApiError::MissingUser(user_id));
     }
 
-    let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
+    // This lock should not be released until the user is updated.
+    let mut pending_accounts = state.pending_accounts.lock().await;
 
-    if let Some(id) = found_user_id
-        && id != user_id
-    {
+    // Remove pending accounts in case they have not been pruned yet.
+    pending_accounts.remove_expired();
+
+    if check_username_used(&db, &pending_accounts, &new_data.data.name, Some(user_id)).await? {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
+    }
+
+    if check_email_used(&db, &pending_accounts, &new_data.email).await? {
+        return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
     admin_update_user(&mut *transaction, user_id, &new_data).await?;

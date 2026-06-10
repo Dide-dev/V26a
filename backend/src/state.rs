@@ -4,9 +4,11 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use std::sync::Arc;
-
 use crate::config::Config;
+use crate::db_structs::users::PendingRegisterData;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// This needs to be a wrapper type, so that the `api_v1/claims` can
 /// implement `FromRequestParts<ArcState>` for the different optional claims.
@@ -31,12 +33,16 @@ impl std::ops::Deref for ArcState {
 /// Use the [`ArcState`] type for this.
 pub struct State {
     pub config: Config,
-    // Later, we will add fields for
-    // claims, email validation and websockets.
+    pub pending_accounts: Mutex<HashMap<String, PendingRegisterData>>,
 }
 
 impl ArcState {
     pub fn new(config: Config) -> ArcState {
-        ArcState(Arc::new(State { config }))
+        let pending_accounts = Mutex::default();
+
+        ArcState(Arc::new(State {
+            config,
+            pending_accounts,
+        }))
     }
 }
