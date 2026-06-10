@@ -914,7 +914,6 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 
@@ -931,7 +930,6 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Admin,
     };
 
@@ -956,7 +954,6 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 

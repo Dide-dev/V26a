@@ -1105,7 +1105,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
+        let claims = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             tags: vec!["tag1".to_string()],
@@ -1117,7 +1117,7 @@ mod tests {
             tree_structure: TreeStructure { root_nodes: vec![] },
         };
 
-        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, user_id)
+        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, claims.sub)
             .await
             .unwrap();
 
@@ -1127,7 +1127,7 @@ mod tests {
             .unwrap()
             .owner_id;
 
-        assert_eq!(found_owner_id, user_id);
+        assert_eq!(found_owner_id, claims.sub);
 
         let record = query!(
             "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
@@ -1196,7 +1196,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
         let tree_data = TreeData {
@@ -1213,7 +1213,7 @@ mod tests {
             tree_data,
             tree_structure,
         };
-        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, user_id)
+        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, claims.sub)
             .await
             .unwrap();
 
@@ -1247,7 +1247,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_db_get_tree_all_data(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
+        let claims = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             published: true,
@@ -1261,9 +1261,13 @@ mod tests {
             }],
         };
 
-        let tree_id =
-            initialize_tree_with_data(get_connection_unwrap!(db), user_id, &tree_data, &structure)
-                .await;
+        let tree_id = initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            claims.sub,
+            &tree_data,
+            &structure,
+        )
+        .await;
 
         let (found_tree_metadata, found_tree_structure) =
             db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
@@ -1273,16 +1277,16 @@ mod tests {
 
         assert_eq!(tree_data, found_tree_metadata.data);
         assert_eq!(tree_id, found_tree_metadata.gen_data.id);
-        assert_eq!(user_id, found_tree_metadata.gen_data.owner_id);
+        assert_eq!(claims.sub, found_tree_metadata.gen_data.owner_id);
         assert_eq!(structure, found_tree_structure);
     }
 
     #[sqlx::test]
     async fn test_get_tree_owner(db: PgPool) {
-        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
-        assert_eq!(found_owner_id, Some(user_id));
+        assert_eq!(found_owner_id, Some(claims.sub));
     }
 
     #[sqlx::test]
@@ -1364,7 +1368,6 @@ mod tests {
         );
         let admin_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Admin,
         };
 
@@ -1404,7 +1407,6 @@ mod tests {
     fn test_apply_tree_filters_own_unpublished_trees() {
         let user_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Author,
         };
 
@@ -1464,12 +1466,10 @@ mod tests {
     fn test_apply_tree_filters_unpublished_trees() {
         let user_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Author,
         };
         let admin_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Admin,
         };
 
@@ -1538,12 +1538,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_queried_count(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
-        let claims = Claims {
-            sub: user_id,
-            exp: 0,
-            account_type: AccountType::Author,
-        };
+        let claims = initialize_basic_user(&db).await;
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -1569,7 +1564,7 @@ mod tests {
             0
         );
 
-        initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
+        initialize_empty_tree(get_connection_unwrap!(db), claims.sub).await;
         assert_eq!(
             get_queried_count(&db, &empty_filters, None).await.unwrap(),
             0
@@ -1589,7 +1584,7 @@ mod tests {
         );
 
         for _ in 0..100 {
-            initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
+            initialize_empty_tree(get_connection_unwrap!(db), claims.sub).await;
         }
         assert_eq!(
             get_queried_count(&db, &show_private_filters, Some(&claims))
@@ -1604,7 +1599,7 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &public_tree,
             &basic_structure,
         )
@@ -1631,7 +1626,7 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &book_tree,
             &basic_structure,
         )
@@ -1645,12 +1640,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_queried_list(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
-        let claims = Claims {
-            sub: user_id,
-            exp: 0,
-            account_type: AccountType::Author,
-        };
+        let claims = initialize_basic_user(&db).await;
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -1678,14 +1668,14 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &private_tree,
             &basic_structure,
         )
         .await;
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &public_tree,
             &basic_structure,
         )
@@ -1789,7 +1779,7 @@ mod tests {
         };
         let book_tree_id = initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &book_tree,
             &basic_structure,
         )

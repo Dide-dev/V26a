@@ -67,10 +67,8 @@ pub enum ApiError {
     //-------------------//
     // 401: UNAUTHORIZED //
     //-------------------//
-    /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
-    /// an expired session.
-    ExpiredSession,
-    /// An error to be returned by `Axum` when a user provides a session that can not be decoded.
+    /// An error to be returned by `Axum` when a user provides a session that cannot be retrieved
+    /// from the database. It may have expired.
     InvalidSession,
     /// An error to be returned by `Axum` when a protected endpoint is accessed without providing
     /// a session.
@@ -211,8 +209,9 @@ impl Display for ApiError {
             //-------------------//
             // 401: UNAUTHORIZED //
             //-------------------//
-            ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
-            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
+            ApiError::InvalidSession => {
+                write!(f, "Invalid authorisation. Your session may have expired.")
+            }
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
 
             //----------------//
@@ -289,9 +288,7 @@ impl ApiError {
             | ApiError::WrongClassroomJoinCode(_)
             | ApiError::ClassroomIdRetrievalError => StatusCode::BAD_REQUEST,
 
-            ApiError::ExpiredSession
-            | ApiError::InvalidSession
-            | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
+            ApiError::InvalidSession | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
 

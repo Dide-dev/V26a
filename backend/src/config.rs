@@ -29,9 +29,6 @@ pub struct Config {
     pub upload_dir: String,
     pub max_upload_size: usize,
 
-    /// Max concurrent classroom sessions (should be no higher than 20)
-    pub max_concurrent_classroom_sessions: usize,
-
     /// Ratelimiter config (minute)
     pub rate_limit_per_minute: u64,
     pub rate_limit_burst_size: u32,
@@ -64,10 +61,6 @@ impl Config {
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
             .expect("Failed to parse environment variable SESSION_EXPIRATION_SECONDS");
-        let max_concurrent_classroom_sessions = env::var("MAX_CONCURRENT_CLASSROOM_SESSIONS")
-            .unwrap_or("10".to_string())
-            .parse::<usize>()
-            .expect("Failed to parse environment variable MAX_CONCURRENT_CLASSROOM_SESSIONS");
 
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
@@ -93,7 +86,6 @@ impl Config {
             log_level,
             bcrypt_cost,
             session_duration,
-            max_concurrent_classroom_sessions,
             upload_dir,
             max_upload_size,
             rate_limit_per_minute,

@@ -11,7 +11,7 @@ use crate::errors::ApiError;
 use chrono::{DateTime, Utc};
 use rand::prelude::*;
 use rand::rngs::SysRng;
-use sqlx::{Acquire, Connection, PgConnection, PgExecutor, query, query_scalar};
+use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -150,17 +150,17 @@ pub async fn add_new_user_to_classroom(
         "SELECT student_id_increment FROM classrooms WHERE id = $1 FOR NO KEY UPDATE",
         classroom_id
     )
-        .fetch_one(&mut *transaction)
-        .await?
-        .student_id_increment;
+    .fetch_one(&mut *transaction)
+    .await?
+    .student_id_increment;
 
     query!(
         "UPDATE classrooms SET student_id_increment = $1 WHERE id = $2",
         num + 1,
         classroom_id
     )
-        .execute(&mut *transaction)
-        .await?;
+    .execute(&mut *transaction)
+    .await?;
 
     transaction.commit().await?;
 
@@ -170,8 +170,8 @@ pub async fn add_new_user_to_classroom(
         name,
         num
     )
-        .execute(&mut *db)
-        .await?;
+    .execute(&mut *db)
+    .await?;
 
     Ok(num)
 }
@@ -197,12 +197,12 @@ pub async fn get_name_by_number(
     user_id: i32,
 ) -> Result<Option<String>, ApiError> {
     Ok(query_scalar!(
-        "SELECT name FROM classroom_users WHERE classroom_id = $1 AND id = $2",
+        "SELECT name FROM classroom_users WHERE classroom_id = $1 AND id_within_classroom = $2",
         classroom_id,
         user_id
     )
-        .fetch_optional(db)
-        .await?)
+    .fetch_optional(db)
+    .await?)
 }
 
 /// Get the list of all classrooms at a given page.
@@ -367,7 +367,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_classroom(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomData {
             name: "Classroom".to_owned(),
@@ -378,7 +378,7 @@ mod tests {
             .await
             .unwrap();
 
-        let (id, _) = add_classroom(&db, &classroom_add_data, user_id, &join_code)
+        let (id, _) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
@@ -398,7 +398,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_validate_join_code(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let join_code = "TESTIN";
 
@@ -409,7 +409,7 @@ mod tests {
             description: "This is a test classroom".to_owned(),
         };
 
-        let (id, _) = add_classroom(&db, &classroom_add_data, user_id, join_code)
+        let (id, _) = add_classroom(&db, &classroom_add_data, claims.sub, join_code)
             .await
             .unwrap();
 
@@ -421,7 +421,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_new_user_to_classroom(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomData {
             name: "Classroom".to_owned(),
@@ -432,7 +432,7 @@ mod tests {
             .await
             .unwrap();
 
-        let (id, _) = add_classroom(&db, &classroom_add_data, user_id, &join_code)
+        let (id, _) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
@@ -451,7 +451,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_all_classrooms(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomData {
             name: "Classroom".to_owned(),
@@ -462,13 +462,13 @@ mod tests {
             .await
             .unwrap();
 
-        let (classroom_id, _) = add_classroom(&db, &classroom_add_data, user_id, &join_code)
+        let (classroom_id, _) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
         let pagination_options = PaginationOptions::new(1, 5, 1000, 500).unwrap();
 
-        let classrooms = get_all_classrooms(&db, user_id, &pagination_options)
+        let classrooms = get_all_classrooms(&db, claims.sub, &pagination_options)
             .await
             .unwrap();
 
@@ -479,13 +479,13 @@ mod tests {
             classroom_add_data.description,
             classrooms[0].data.description
         );
-        assert_eq!(user_id, classrooms[0].gen_data.owner_id);
+        assert_eq!(claims.sub, classrooms[0].gen_data.owner_id);
     }
 
     #[sqlx::test]
     async fn test_get_classroom_count(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
-        assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 0);
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        assert_eq!(get_classroom_count(&db, claims.sub).await.unwrap(), 0);
 
         let classroom_add_data = ClassroomData {
             name: "Classroom".to_owned(),
@@ -496,28 +496,28 @@ mod tests {
             .await
             .unwrap();
 
-        add_classroom(&db, &classroom_add_data, user_id, &join_code)
+        add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
-        assert_eq!(get_classroom_count(&db, user_id).await.unwrap(), 1);
+        assert_eq!(get_classroom_count(&db, claims.sub).await.unwrap(), 1);
     }
 
     #[sqlx::test]
     async fn test_get_classroom_owner(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
 
         let found_owner_id = get_classroom_owner(get_connection_unwrap!(db), classroom_id)
             .await
             .unwrap();
-        assert_eq!(found_owner_id, Some(user_id));
+        assert_eq!(found_owner_id, Some(claims.sub));
     }
 
     #[sqlx::test]
     async fn test_add_lesson(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), user_id).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
 
         let lesson_add_data = LessonAddData {
             name: "Lesson".to_string(),

@@ -4,15 +4,15 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::ArcState;
-use crate::api_v1::{extract_token, rate_limit_layer};
+use crate::api_v1::{create_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_email;
-use crate::db::session::{create_session, delete_session};
 use crate::db::users::get_user;
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::session::{Claims, InfoCookieData};
+use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
+use crate::{ArcState, get_connection};
 use axum::extract::State;
 use axum::routing::{delete, post};
 use axum::{Extension, Json, Router};
@@ -80,16 +80,23 @@ async fn login(
     }
 
     let user_data = get_user(&db, credentials.user_id).await?;
+
+    let session_duration = state.config.session_duration;
+    let (token, expires_at) = create_token(session_duration);
+    Claims::create_session(
+        get_connection!(db),
+        &token,
+        expires_at,
+        &credentials.user_id,
+    )
+    .await?;
+
     let user_info = InfoCookieData {
         name: user_data.data.name,
         nickname: user_data.data.nickname,
         sub: credentials.user_id,
         account_type: credentials.account_type,
     };
-
-    let session_duration = state.config.session_duration;
-    let token = create_session(&db, credentials.user_id, session_duration).await?;
-
     let user_info_serialised = serde_json::to_string(&user_info)?;
 
     // The properties of the cookies are important to get right.
@@ -141,15 +148,21 @@ async fn login(
 /// `jar` - The jar with the cookies (`user_info` & session).
 ///
 /// # Returns
-/// The cookie jar with its user sessions removed.
+/// The cookie jar with its user claims removed.
 ///
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
 async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
-    let token = extract_token(&jar)?;
+    let token = Claims::extract_token(&jar)?;
+
+    // Just need some default values for delete session, these aren't used
+    let claims = Claims {
+        sub: -1,
+        account_type: AccountType::Author,
+    };
 
     // Invalidate the session.
-    delete_session(&db, &token).await?;
+    Claims::delete_session(&db, &token, &claims.sub).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM classroom_sessions WHERE (classroom_id, id_within_classroom) = ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d4111c9953b4b6be2a497fe4c13577fa7543416cec199de02cdda77f984a995d"
+}

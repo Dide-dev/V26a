@@ -5,8 +5,8 @@
 */
 
 use crate::db::classrooms::{
-    add_classroom, add_lesson, add_new_user_to_classroom, generate_random_code, get_classroom_owner,
-    get_name_by_number, validate_join_code,
+    add_classroom, add_lesson, add_new_user_to_classroom, generate_random_code,
+    get_classroom_owner, get_name_by_number, validate_join_code,
 };
 use crate::db_structs::Validated;
 use crate::db_structs::classrooms::{
@@ -18,14 +18,15 @@ use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
+use crate::api_v1::create_token;
 use axum::extract::{Path, State};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::Cookie;
 use chrono::Utc;
-use jsonwebtoken::{Header, Validation, decode, encode};
 use sqlx::{PgConnection, PgPool};
+use time::Duration;
 
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
@@ -100,12 +101,10 @@ async fn add_new_classroom(
 /// This function checks the validity of the join-code and then either creates or logs in a user.
 /// Then, user info and session cookies are created, so the user doesn't have to log in every time.
 ///
-/// This API-function should be the only function that deals with the entire `classroom_sessions` cookie.
-/// All other functions will contain /classrooms/{id}, so those can use `ClassroomClaims` where
-/// only the information for that classroom is provided.
-///
 /// # Arguments
 /// `jar` - The collection of cookies of the user.
+///
+/// `all_classroom_claims` - Retrieves the collection of classroom sessions the user already has, if they exist.
 ///
 /// `classroom_login_data` - The credentials provided to log in, as [`ClassroomUserLoginData`].
 /// Contains the join code and a username.
@@ -124,6 +123,7 @@ async fn add_new_classroom(
 /// - [`SerdeException`](ApiError::SerdeException)
 async fn classroom_login(
     jar: CookieJar,
+    all_classroom_claims: Option<AllClassroomClaims>,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(classroom_login_data): Json<ClassroomUserLoginData>,
@@ -151,28 +151,33 @@ async fn classroom_login(
         ),
     };
 
-    // Retrieve the config.
+    // Retrieve the config and session duration
     let config = &state.config;
+    let session_duration = config.session_duration;
 
-    // Define the classroom claims variable to put in the cookie.
-    let all_classroom_claims = get_classroom_claims(&jar, &state, classroom_id, num, &name);
+    let new_classroom_claims = ClassroomClaims {
+        id: classroom_id,
+        num,
+        name: name.clone(),
+    };
 
-    // Create the authorization token.
-    let token = encode(
-        &Header::default(),
-        &all_classroom_claims,
-        &config.jwt_keys.encoding,
+    // Get the updated or created classroom claims
+    let (all_classroom_claims, token) = get_classroom_claims_create_session(
+        &jar,
+        &db,
+        all_classroom_claims,
+        new_classroom_claims,
+        session_duration,
     )
-    .map_err(|_| ApiError::TokenCreationException)?;
+    .await?;
 
     // Create the user info
     let user_info = serde_json::to_string(&all_classroom_claims)?;
 
     // Age of a cookie (same for the two cookies)
-    let time = time::Duration::new(config.session_duration, 0);
+    let time = Duration::seconds(config.session_duration);
 
-    // Create classroom_sessions cookie. Multiple sessions can be put into this one cookie,
-    // however, only one session is allowed per classroom.
+    // Create classroom_sessions cookie.
     let cookie = Cookie::build((AllClassroomClaims::get_cookie_name(), token))
         .path("/api")
         .secure(true)
@@ -199,73 +204,51 @@ async fn classroom_login(
 }
 
 /// This function is to be used only in the `classroom_login` function.
-/// As opposed to `FromRequestParts` of `ClassroomClaims`, which retrieves only the appropriate
-/// classroom session, this function extracts all active classroom sessions from the `CookieJar`.
-/// This function also adds a new session to the collection of active sessions, after performing
-/// operations on the collection of sessions to make sure the resulting collection of active sessions is valid.
-fn get_classroom_claims(
+/// It checks if there are already valid active classroom sessions for the user.
+/// If they exist, then add or replace a new session for the user, utilizing the same token.
+/// Else, create a new token and add the new session to it.
+async fn get_classroom_claims_create_session(
     jar: &CookieJar,
-    state: &ArcState,
-    classroom_id: i32,
-    num: i32,
-    name: &str,
-) -> AllClassroomClaims {
-    let config = &state.config;
-    let all_sessions = jar.get(AllClassroomClaims::get_cookie_name());
+    db: &PgPool,
+    all_classroom_claims: Option<AllClassroomClaims>,
+    classroom_claims: ClassroomClaims,
+    session_duration: i64,
+) -> Result<(AllClassroomClaims, String), ApiError> {
+    if let Some(mut all_classroom_claims) = all_classroom_claims {
+        let token = AllClassroomClaims::extract_token(jar)?;
+        let expires_at = Utc::now() + chrono::Duration::seconds(session_duration);
 
-    let new_classroom_claims = ClassroomClaims {
-        id: classroom_id,
-        num,
-        name: name.to_owned(),
-        exp: Utc::now().timestamp() + config.session_duration,
-    };
-    let default_all_classroom_claims = AllClassroomClaims {
-        sessions: vec![new_classroom_claims.clone()],
-        exp: Utc::now().timestamp() + config.session_duration,
-    };
+        ClassroomClaims::create_session(
+            get_connection!(db),
+            &token,
+            expires_at,
+            &(classroom_claims.id, classroom_claims.num),
+        )
+        .await?;
 
-    // If cookie doesn't exist, set classroom claims as default value.
-    let Some(all_sessions) = all_sessions else {
-        println!("Could not find cookie");
-        return default_all_classroom_claims;
-    };
+        all_classroom_claims
+            .claims
+            .retain(|claims| claims.id != classroom_claims.id);
+        all_classroom_claims.claims.push(classroom_claims);
 
-    // Get the token data from the cookie.
-    let token_data = decode::<AllClassroomClaims>(
-        all_sessions.value(),
-        &state.config.jwt_keys.decoding,
-        &Validation::default(),
-    )
-    .ok();
-
-    // If token data is not retrievable from the cookie, set classroom claims as default value.
-    let Some(token_data) = token_data else {
-        println!("Could not decode");
-        return default_all_classroom_claims;
-    };
-
-    let mut claims = token_data.claims;
-
-    // Filter out expired sessions
-    claims.sessions.retain(|s| s.exp > Utc::now().timestamp());
-
-    let existing_session_index = claims.sessions.iter().position(|s| s.id == classroom_id);
-    if let Some(existing_session_index) = existing_session_index {
-        claims.sessions[existing_session_index] = new_classroom_claims.clone();
+        Ok((all_classroom_claims, token))
     } else {
-        // Sort the sessions on expiration date and take only the 9 latest.
-        claims.sessions.sort_by_key(|s| -s.exp);
-        claims
-            .sessions
-            .truncate(config.max_concurrent_classroom_sessions - 1);
+        // Create the authorization token.
+        let (token, expires_at) = create_token(session_duration);
+        let all_classroom_claims = AllClassroomClaims {
+            claims: vec![classroom_claims],
+        };
 
-        // Push the new session.
-        claims.sessions.push(new_classroom_claims);
+        AllClassroomClaims::create_session(
+            get_connection!(db),
+            &token,
+            expires_at,
+            &all_classroom_claims.claims,
+        )
+        .await?;
+
+        Ok((all_classroom_claims, token))
     }
-
-    // Return the classroom claims variable and reset the exp.
-    claims.exp = Utc::now().timestamp() + config.session_duration;
-    claims
 }
 
 #[utoipa::path(

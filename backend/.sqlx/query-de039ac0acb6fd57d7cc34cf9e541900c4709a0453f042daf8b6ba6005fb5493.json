@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM classroom_tokens WHERE token != $1 AND token IN (\n                    SELECT token FROM classroom_sessions\n                    WHERE (classroom_id, id_within_classroom) IN (\n                        SELECT * FROM unnest($2::int[], $3::int[])))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4Array",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "de039ac0acb6fd57d7cc34cf9e541900c4709a0453f042daf8b6ba6005fb5493"
+}

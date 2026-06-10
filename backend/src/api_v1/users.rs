@@ -5,17 +5,16 @@
 */
 
 use crate::ArcState;
-use crate::api_v1::{extract_token, rate_limit_layer};
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
-use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
     update_user, user_id_exists,
 };
 use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
-use crate::db_structs::session::{Claims, InfoCookieData};
+use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::db_structs::users::{
     DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
 };
@@ -29,7 +28,7 @@ use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, query};
 use time::Duration;
 use utoipa::ToSchema;
 
@@ -181,7 +180,7 @@ async fn get_own_user_data(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
-    mut jar: CookieJar,
+    jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
     Json(new_data): Json<UserData>,
@@ -204,14 +203,22 @@ async fn update_user_data(
         account_type: claims.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
-    let time = Duration::seconds(claims.exp - Utc::now().timestamp());
+
+    let expires_at = query!(
+        "SELECT expires_at FROM sessions WHERE token = $1",
+        Claims::extract_token(&jar)?
+    )
+    .fetch_one(&db)
+    .await?
+    .expires_at;
+
     let user_cookie = Cookie::build(("user_info", new_user_info))
         .path("/")
         .secure(true)
-        .max_age(time)
+        .max_age(Duration::seconds((expires_at - Utc::now()).num_seconds()))
         .http_only(false);
     // `add` automatically replaces the cookie values, `remove` sets the cookie to an empty value and the maxAge to 0.
-    jar = jar.add(user_cookie);
+    let jar = jar.add(user_cookie);
 
     Ok((
         jar,
@@ -285,10 +292,10 @@ async fn change_password(
     )
     .await?;
 
-    let token = extract_token(&jar)?;
+    let token = Claims::extract_token(&jar)?;
 
-    // All other sessions of the account are invalidated if password is changed.
-    delete_all_sessions_except(&db, claims.sub, &token).await?;
+    // All other claims of the account are invalidated if password is changed.
+    Claims::delete_all_sessions_except(&db, &token, &claims.sub).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
@@ -337,8 +344,8 @@ async fn delete_user_data(
 
     delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
-    // Invalidate all the sessions based on userid.
-    delete_all_sessions_user(&mut *transaction, claims.sub).await?;
+    // Invalidate all the claims based on userid.
+    Claims::delete_all_sessions(&mut *transaction, &claims.sub).await?;
 
     transaction.commit().await?;
 

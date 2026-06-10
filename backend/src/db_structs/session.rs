@@ -5,17 +5,21 @@
 */
 
 use crate::db_structs::users::AccountType;
+use crate::errors::ApiError;
+use axum::http::request::Parts;
+use axum_extra::extract::CookieJar;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::{PgConnection, PgExecutor};
+use std::fmt::Debug;
 use utoipa::ToSchema;
 
 /// The claims specify the user, expiration time and account type of the request's sender.
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Claims {
     /// The subject (whom the token refers to).
     pub sub: i32,
-    /// The expiration time (as UTC timestamp).
-    pub exp: i64,
     /// The account type
     pub account_type: AccountType,
 }
@@ -30,22 +34,9 @@ pub struct InfoCookieData {
     pub account_type: AccountType,
 }
 
-/// ONLY USED TO RETRIEVE ALL CLASSROOM SESSIONS, USE `ClassroomClaims`,
-/// THAT RETURNS THE CLAIMS OF JUST THE CLASSROOM ID PUT IN THE API-CALL `classrooms/{id}`.
-///
-/// All classroom claims contained in a JWT (JSON Web Token).
-/// Contains lists of classroom ids, user numbers, user names,
-/// session expiration timestamps and cookie expiration timestamp.
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct AllClassroomClaims {
-    pub sessions: Vec<ClassroomClaims>,
-    pub exp: i64,
-}
-
 /// The classroom claims contained in a JWT (JSON Web Token).
 /// Specifies the user number, user name and the expiration time.
-#[derive(Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomClaims {
     /// The classroom id
@@ -54,24 +45,79 @@ pub struct ClassroomClaims {
     pub num: i32,
     /// The user name (not unique).
     pub name: String,
-    /// The expiration time.
-    pub exp: i64,
 }
 
-/// Trait to ensure the function `get_claims` is only used for `db_structs` that implement this trait
-/// (so only our cookie `db_structs`).
-pub trait ClaimsType: Sized {
+#[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AllClassroomClaims {
+    pub claims: Vec<ClassroomClaims>,
+}
+
+/// Trait to ensure these function are only used for structs that implement this trait
+/// (so only our cookie structs).
+pub trait ClaimsType: Sized + Debug {
+    /// The type of options that are retrieved from the api uri.
+    type PathOptions;
+
+    /// A type that defines the information necessary to execute the create and delete sessions functions.
+    type ManageSessionInfo;
+
+    /// Get the cookie name connected to the cookie struct
     fn get_cookie_name() -> &'static str;
-}
 
-impl ClaimsType for Claims {
-    fn get_cookie_name() -> &'static str {
-        "session"
+    /// Get the value of the session cookie from the [`CookieJar`]
+    ///
+    /// # Arguments
+    /// `jar` - The [`CookieJar`] returned from a request.
+    ///
+    /// # Returns
+    /// The value of a session cookie as a [`String`].
+    ///
+    /// # Errors
+    /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication) instead.
+    fn extract_token(jar: &CookieJar) -> Result<String, ApiError> {
+        Ok(jar
+            .get(Self::get_cookie_name())
+            .ok_or(ApiError::MissingAuthentication)?
+            .value()
+            .to_string())
     }
-}
 
-impl ClaimsType for AllClassroomClaims {
-    fn get_cookie_name() -> &'static str {
-        "classroom_sessions"
-    }
+    /// Function that returns the claims from the [`Parts`].
+    async fn get_claims(parts: &mut Parts) -> Result<Self, ApiError>;
+
+    /// Function that retrieves a session from the database in some way.
+    async fn get_session(
+        db: impl PgExecutor<'_>,
+        token: &str,
+        options: Self::PathOptions,
+    ) -> Result<Option<Self>, ApiError>;
+
+    /// Function that creates a new session in some way.
+    async fn create_session(
+        db: &mut PgConnection,
+        token: &str,
+        expires_at: DateTime<Utc>,
+        info: &Self::ManageSessionInfo,
+    ) -> Result<(), ApiError>;
+
+    /// Function that deletes a session in some way.
+    async fn delete_session(
+        db: impl PgExecutor<'_>,
+        token: &str,
+        info: &Self::ManageSessionInfo,
+    ) -> Result<(), ApiError>;
+
+    /// Function that deletes all sessions in some way.
+    async fn delete_all_sessions(
+        db: impl PgExecutor<'_>,
+        info: &Self::ManageSessionInfo,
+    ) -> Result<(), ApiError>;
+
+    /// Function that deletes all sessions except one in some way.
+    async fn delete_all_sessions_except(
+        db: impl PgExecutor<'_>,
+        token: &str,
+        info: &Self::ManageSessionInfo,
+    ) -> Result<(), ApiError>;
 }
