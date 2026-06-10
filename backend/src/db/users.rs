@@ -99,7 +99,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`PublicUserData`] object containing the user's data, minus their password.
+/// A [`PublicUserData`] object containing the user's data, this does not include their password hash or account type. It also does not include the user's email if they set it to private.
 ///
 /// Or if no user by that id exists, returns [`None`].
 ///
