@@ -1957,4 +1957,35 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[sqlx::test]
+    async fn test_tree_is_accessible(db: PgPool) {
+        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let claims = Claims {
+            sub: user_id,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, &claims).await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: user_id + 1,
+            exp: i64::MAX,
+            account_type: AccountType::Admin,
+        };
+
+        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, &claims).await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: user_id + 2,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, &claims).await;
+        assert!(result.is_err());
+    }
 }

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT published, owner_id, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors FROM trees WHERE id=$1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "published",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "owner_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "co_authors",
+        "type_info": "Int4Array"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "093d3f8f16bcf97e26843d9d22e5d63bdcc699a2eca375c07fc60da9b3d87eda"
+}

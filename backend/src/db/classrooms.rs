@@ -270,8 +270,6 @@ pub async fn get_classroom_from_lesson(
 /// Nothing.
 ///
 /// # Errors
-/// Returns a [`TreeAlreadyExistsWithinLesson`](ApiError::TreeAlreadyExistsWithinLesson) if the tree already exists the lesson.
-///
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_existing_tree_to_lesson(
     db: &mut PgConnection,

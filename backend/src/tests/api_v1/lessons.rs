@@ -12,12 +12,21 @@ use crate::db_structs::session::Claims;
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{create_classroom, create_tree, login, register, setup_login};
+use crate::tests::api_v1::{create_classroom, create_tree, login, register, setup, setup_login};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_add_tree_to_lesson(db: PgPool) {
-    let mut server = setup_login(db.clone()).await;
+    let test_state = setup(db);
+
+    let register_data1 = RegisterData::test_values();
+    register(&test_state, &register_data1).await;
+    let register_data2 = RegisterData::test_values();
+    register(&test_state, &register_data2).await;
+
+    let mut server = test_state.server;
+    login(&server, register_data1.email).await;
+
     let classroom_id = create_classroom(&server).await;
     let lesson_data = LessonAddData {
         name: "Lesson".to_owned(),
@@ -47,8 +56,7 @@ async fn test_add_tree_to_lesson(db: PgPool) {
     let response = server
         .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
         .await;
-    response.assert_status_bad_request();
-    response.assert_text(ApiError::TreeAlreadyExistsWithinLesson.to_string());
+    response.assert_status_ok();
 
     server.clear_cookies();
     let response = server
@@ -57,9 +65,7 @@ async fn test_add_tree_to_lesson(db: PgPool) {
     response.assert_status_unauthorized();
     response.assert_text(ApiError::MissingAuthentication.to_string());
 
-    let register_data = RegisterData::test_values();
-    register(&server, &register_data).await;
-    login(&server, register_data.email).await;
+    login(&server, register_data2.email).await;
     let response = server
         .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
         .await;
@@ -76,6 +82,7 @@ async fn test_add_tree_to_lesson(db: PgPool) {
 #[sqlx::test]
 async fn test_verify_lesson_permissions(db: PgPool) {
     let server = setup_login(db.clone()).await;
+    let user_id = 1;
     let classroom_id = create_classroom(&server).await;
     let lesson_data = LessonAddData {
         name: "Lesson".to_owned(),
@@ -89,7 +96,7 @@ async fn test_verify_lesson_permissions(db: PgPool) {
     let lesson_id: i32 = response.json();
 
     let claims = Claims {
-        sub: 1,
+        sub: user_id,
         exp: i64::MAX,
         account_type: AccountType::Author,
     };
@@ -98,11 +105,20 @@ async fn test_verify_lesson_permissions(db: PgPool) {
     assert!(result.is_ok());
 
     let claims = Claims {
-        sub: 1,
+        sub: user_id + 1,
         exp: i64::MAX,
         account_type: AccountType::Admin,
     };
 
     let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &claims).await;
     assert!(result.is_ok());
+
+    let claims = Claims {
+        sub: user_id + 2,
+        exp: i64::MAX,
+        account_type: AccountType::Author,
+    };
+
+    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &claims).await;
+    assert!(result.is_err());
 }

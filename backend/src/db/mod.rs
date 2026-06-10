@@ -252,7 +252,6 @@ pub mod test {
             description: "This is a test lesson".to_string(),
             published: false,
         };
-        let number = add_lesson(db, &lesson_add_data, user_id).await.unwrap();
-        number
+        add_lesson(db, &lesson_add_data, user_id).await.unwrap()
     }
 }
