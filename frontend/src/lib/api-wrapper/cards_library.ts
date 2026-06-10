@@ -7,6 +7,7 @@
 import { apiCallPost, apiCallGet } from './index';
 import type { Option } from './types';
 import { isNullOrEmpty } from './trees';
+import type { Username } from '$lib/api-wrapper/users';
 
 const prefix = 'library';
 
@@ -29,7 +30,7 @@ export type LibraryCardAddData = {
 export type LibraryCardGetData = {
     cardId: number;
     title: string;
-    ownerName: string;
+    ownerName: Username;
     createdAt: Date;
     tags: string[];
     front: string;
@@ -37,7 +38,7 @@ export type LibraryCardGetData = {
 };
 
 export type CardFilterOptions = {
-    ownerName: Option<string>;
+    ownerName: Option<Username>;
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
     tags: string[];

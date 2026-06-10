@@ -27,6 +27,8 @@ function apiCallGetUser(path: string) {
 
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
+/** Unique username. */
+export type Username = string;
 
 /** The data a user can modify, except email or password
  *
@@ -36,7 +38,7 @@ export type AccountType = 'author' | 'admin';
  * database.
  */
 export type UserData = {
-    name: string;
+    name: Username;
     nickname: string;
     aboutMe: string;
     emailVisible: boolean;
@@ -50,7 +52,7 @@ export type UserData = {
  * database.
  */
 export type UserGeneralData = {
-    name: string;
+    name: Username;
     nickname: string;
     aboutMe: string;
 };
@@ -109,7 +111,7 @@ export type PublicUserData = {
 
 /** The data in the cookie */
 export type UserInfo = {
-    name: string;
+    name: Username;
     nickname: string;
     /** This corresponds to userid of the current login. */
     sub: UserId;
