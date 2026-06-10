@@ -226,6 +226,7 @@ pub struct TreeLinkedData {
     pub owner_name: String,
     #[sqlx(rename = "subject_name?")]
     pub subject_name: Option<String>,
+    pub language_name: String,
     pub co_authors: Vec<i32>,
 }
 
