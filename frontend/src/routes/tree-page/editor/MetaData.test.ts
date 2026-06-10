@@ -7,7 +7,7 @@
 import { render, screen } from '@testing-library/svelte';
 import { userEvent } from '@testing-library/user-event';
 import { beforeEach, expect, test, vi } from 'vitest';
-import MetaData from './+page.svelte';
+import MetaData from './TreeEditor.svelte';
 import { m } from '$lib/paraglide/messages.js';
 
 // mock API calls
