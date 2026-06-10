@@ -717,12 +717,14 @@ async fn test_filter_tree_list(db: PgPool) {
 
 #[sqlx::test]
 async fn test_filter_tree_list_editable(db: PgPool) {
-    let server = setup(db);
+    let test_state = setup(db);
 
     let account1 = RegisterData::test_values();
     let account2 = RegisterData::test_values();
-    register(&server, &account1).await;
-    register(&server, &account2).await;
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+
+    let server = test_state.server;
     login(&server, account1.email.clone()).await;
 
     let tree_data_1 = TreeData::default();
