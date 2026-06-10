@@ -74,9 +74,14 @@
         };
 
         websocket.onclose = () => {
-            if (localState.type !== 'kickedOutBy') {
-                localState = { type: 'serverDisconnected' };
-            }
+            // In case the page is being reloaded, this event also fires.
+            // We do not want the user to see this message in that case,
+            // so we introduce a delay here.
+            setTimeout(() => {
+                if (localState.type !== 'kickedOutBy') {
+                    localState = { type: 'serverDisconnected' };
+                }
+            }, 200);
         };
     }
 
