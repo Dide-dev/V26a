@@ -154,6 +154,21 @@
             animation: invalidInputClick linear 0.15s;
         }
 
+        .error.danger {
+            color: var(--color-black);
+            padding: var(--spacing-padding-minor);
+            border-radius: var(--radius-md);
+            border-width: 2px;
+            font-weight: var(--font-weight-bold);
+            font-size: var(--text-lg);
+            cursor: pointer;
+        }
+
+        .error.danger:hover {
+            background-color: var(--color-red-700);
+            border-color: var(--color-red-800);
+        }
+
         input + input {
             margin-top: var(--spacing-text-small);
         }
@@ -224,17 +239,6 @@
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
-            }
-        }
-
-        button[type='reset'].danger {
-            color: var(--color-black);
-            background-color: var(--color-red-500);
-            border-color: var(--color-red-600);
-
-            &:hover {
-                background-color: var(--color-red-700);
-                border-color: var(--color-red-800);
             }
         }
     }

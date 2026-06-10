@@ -30,7 +30,7 @@
     }
 </script>
 
-<button type="reset" data-testid="delete-button" class="danger" onclick={openPopup}>
+<button data-testid="delete-button" class="error danger" onclick={openPopup}>
     {m.deleteAccount()}
 </button>
 
@@ -49,7 +49,7 @@
             <button type="reset" onclick={cancelDelete}>
                 {m.cancel()}
             </button>
-            <button type="reset" data-testid="delete-confirm" class="danger" onclick={doDelete}>
+            <button data-testid="delete-confirm" class="error danger" onclick={doDelete}>
                 {m.yes()}
             </button>
         </div>

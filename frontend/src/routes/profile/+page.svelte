@@ -415,7 +415,9 @@
                 <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
                 <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
-            <DeleteButton />
+            <div>
+                <DeleteButton />
+            </div>
         </form>
     {/await}
 </div>
