@@ -30,12 +30,7 @@
     }
 </script>
 
-<button
-    data-testid="delete-button"
-    class=" mt-1 cursor-pointer rounded-md bg-red-800 p-2
-    text-black transition-colors hover:bg-red-900 hover:text-white"
-    onclick={openPopup}
->
+<button type="reset" data-testid="delete-button" class="danger" onclick={openPopup}>
     {m.deleteAccount()}
 </button>
 
@@ -51,19 +46,10 @@
         </label>
 
         <div class="flex justify-end gap-2">
-            <button
-                class="cursor-pointer rounded-md bg-gray-400 p-2
-            transition-colors hover:bg-gray-600"
-                onclick={cancelDelete}
-            >
+            <button type="reset" onclick={cancelDelete}>
                 {m.cancel()}
             </button>
-            <button
-                data-testid="delete-confirm"
-                class="cursor-pointer rounded-md bg-red-400 p-2
-            transition-colors hover:bg-red-600"
-                onclick={doDelete}
-            >
+            <button type="reset" data-testid="delete-confirm" class="danger" onclick={doDelete}>
                 {m.yes()}
             </button>
         </div>

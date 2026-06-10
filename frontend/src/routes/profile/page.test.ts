@@ -541,7 +541,7 @@ test('Deletes account and renavigate after confirming deletion', async () => {
 
     const user = userEvent.setup();
 
-    (deleteMe as MockedFunction<typeof deleteMe>).mockResolvedValue(undefined);
+    deleteMe as MockedFunction<typeof deleteMe>;
 
     render(page);
     render(DeleteButton, {});

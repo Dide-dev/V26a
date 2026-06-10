@@ -211,6 +211,7 @@
             color: var(--color-neutral-600);
             background-color: var(--color-neutral-400);
             border-color: currentColor;
+            transition: all 200ms ease-in-out;
         }
 
         &.completed button[type='submit'],
@@ -223,19 +224,18 @@
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
-                animation: completedFormButtonSelect 0.15s ease-in-out;
             }
         }
-    }
 
-    @keyframes completedFormButtonSelect {
-        0% {
-            background-color: var(--color-neutral-200);
+        button[type='reset'].danger {
             color: var(--color-black);
-        }
-        100% {
-            background-color: var(--color-neutral-600);
-            color: var(--color-white);
+            background-color: var(--color-red-500);
+            border-color: var(--color-red-600);
+
+            &:hover {
+                background-color: var(--color-red-700);
+                border-color: var(--color-red-800);
+            }
         }
     }
 
