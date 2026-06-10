@@ -6,7 +6,7 @@
 
 <div>
     <h1 class="page__title pb-1">Privacybeleid</h1>
-    <p class="pb-2 italic *:*:inline">Laatst geupdate: 8 juni 2026</p>
+    <p class="pb-2 italic *:*:inline">Laatst geupdatet: 8 juni 2026</p>
     <p class="pb-1.5">
         Freudenthal Instituut, gevestigd aan Princetonplein 5, 3584 CC UTRECHT, is verantwoordelijk
         voor de verwerking van persoonsgegevens zoals weergegeven in deze privacyverklaring.
@@ -27,12 +27,12 @@
     </p>
     <p class="pb-1.5">Hieronder vindt u een overzicht van de persoonsgegevens die wij verwerken:</p>
     <ul>
-        <li>Unieke gebruikersnaam</li>
-        <li>E-mailadres</li>
-        <li>Namen die gebruikers invoeren bij deelname aan klaslokalen</li>
+        <li>Unieke gebruikersnaam;</li>
+        <li>E-mailadres;</li>
+        <li>Namen die gebruikers invoeren bij deelname aan klaslokalen;</li>
         <li>
             Eventuele persoonsgegevens die gebruikers vrijwillig opnemen in hun gebruikersnaam en/of
-            profiel
+            profiel.
         </li>
     </ul>
     <h1 class="page__heading pb-2">Gebruik van de dienst door minderjarigen</h1>
@@ -48,7 +48,7 @@
         bepalen welke naam zij invoeren, kan het voorkomen dat persoonsgegevens van leerlingen
         worden verwerkt. De door leerlingen ingevoerde naam wordt uitsluitend gebruikt voor de
         werking van de klaslokaalfunctionaliteit en voor het tonen van deelnemers binnen het
-        betreffende klaslokaal.
+        betreffende klaslokaal aan de docent.
     </p>
     <p class="pb-1.5">
         Voor zover persoonsgegevens van minderjarigen worden verwerkt, gebeurt dit uitsluitend voor
@@ -64,19 +64,19 @@
         Freudenthal Instituut verwerkt jouw persoonsgegevens voor de volgende doelen:
     </h1>
     <ul>
-        <li>U de mogelijkheid te bieden een account aan te maken</li>
-        <li>U de mogelijkheid te bieden gebruik te maken van klaslokalen</li>
+        <li>U de mogelijkheid te bieden een account aan te maken;</li>
+        <li>U de mogelijkheid te bieden gebruik te maken van klaslokalen;</li>
         <li>
-            U te kunnen e-mailen indien dit nodig is om onze dienstverlening uit te kunnen voeren
+            U te kunnen e-mailen indien dit nodig is om onze dienstverlening uit te kunnen voeren;
         </li>
         <li>
             U te kunnen e-mailen indien u dit wenst na het geven van feedback via de <a
                 href="\feedback">feedback</a
-            > pagina
+            > pagina;
         </li>
         <li>
             Om andere gebruikers in staat te stellen u te e-mailen, indien u hier toestemming voor
-            geeft
+            geeft.
         </li>
     </ul>
 
@@ -88,14 +88,16 @@
     <h1 class="page__heading pb-2">Hoe lang we persoonsgegevens bewaren</h1>
     <p class="pb-1.5">
         Freudenthal Instituut bewaart uw persoonsgegevens niet langer dan strikt nodig is om de
-        doelen te realiseren waarvoor uw gegevens worden verzameld. Wij hanteren de volgende
-        bewaartermijn voor persoonsgegevens: 24 maanden.
+        doelen te realiseren waarvoor uw gegevens worden verzameld. Accounts en bijbehorende
+        persoonsgegevens worden verwijderd nadat gedurende 24 maanden geen activiteit heeft
+        plaatsgevonden. Voor de namen die gebruikt worden om deel te nemen aan een klaslokaal wordt
+        een bewaartermijn van 24 maanden gehanteerd.
     </p>
 
     <h1 class="page__heading pb-2">Delen van persoonsgegevens met derden</h1>
     <p class="pb-1.5">
-        Freudenthal Instituut verstrekt uitsluitend aan derden en alleen als dit nodig is voor de
-        uitvoering van onze overeenkomst met u of om te voldoen aan een wettelijke verplichting.
+        Freudenthal Instituut verstrekt uitsluitend aan derden als dit nodig is voor de uitvoering
+        van onze overeenkomst met u of om te voldoen aan een wettelijke verplichting.
     </p>
     <p class="pb-1.5">
         Voor het beheer van de website maken wij gebruik van ICT-diensten van de Universiteit
@@ -110,9 +112,11 @@
         klein tekstbestand dat bij het eerste bezoek aan deze website wordt opgeslagen op uw
         computer, tablet of smartphone. De cookies die wij gebruiken zijn noodzakelijk voor de
         technische werking van de website en uw gebruiksgemak. Ze zorgen ervoor dat de website naar
-        behoren werkt. U kunt zich afmelden voor cookies door uw internetbrowser zo in te stellen
-        dat deze geen cookies meer opslaat. Daarnaast kunt u ook alle informatie die eerder is
-        opgeslagen via de instellingen van uw browser verwijderen.
+        behoren werkt. Zo zorgen de cookies in onze dienst ervoor dat u kun inloggen en dat
+        onthouden wordt welke taal u de voorkeur geeft op de website. U kunt zich afmelden voor
+        cookies door uw internetbrowser zo in te stellen dat deze geen cookies meer opslaat.
+        Daarnaast kunt u ook alle informatie die eerder is opgeslagen via de instellingen van uw
+        browser verwijderen.
     </p>
 
     <h1 class="page__heading pb-2">Gegevens inzien, aanpassen of verwijderen</h1>
@@ -138,12 +142,12 @@
     </p>
     <p class="pb-1.5">
         Freudenthal Instituut wil u er tevens op wijzen dat u de mogelijkheid hebt om een klacht in
-        te dienen bij de nationale toezichthouder, de Autoriteit Persoonsgegevens. Dat kan via de
-        volgende link:
+        te dienen bij de nationale toezichthouder, de Autoriteit Persoonsgegevens. Dat kan via het
+
         <a
             href=" https://autoriteitpersoonsgegevens.nl/nl/contact-met-de-autoriteit-persoonsgegevens/tip-ons"
-            >https://autoriteitpersoonsgegevens.nl/nl/contact-met-de-autoriteit-persoonsgegevens/tip-ons</a
-        >
+            >tipformulier van de Autoriteit Persoonsgegevens</a
+        >.
     </p>
     <h1 class="page__heading pb-2">Hoe wij persoonsgegevens beveiligen</h1>
     <p class="pb-1.5">

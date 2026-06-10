@@ -27,10 +27,10 @@
     </p>
     <p class="pb-1.5">Below is an overview of the personal data we process:</p>
     <ul>
-        <li>Unique username</li>
-        <li>Email address</li>
-        <li>Names that users enter when joining classrooms</li>
-        <li>Any personal data that users voluntarily include in their username and/or profile</li>
+        <li>Unique username;</li>
+        <li>Email address;</li>
+        <li>Names that users enter when joining classrooms;</li>
+        <li>Any personal data that users voluntarily include in their username and/or profile.</li>
     </ul>
     <h1 class="page__heading pb-2">Use of the service by minors</h1>
     <p class="pb-1.5">
@@ -42,14 +42,14 @@
     <p class="pb-1.5">
         When joining a classroom, a pupil is asked to enter a name. We ask users not to provide any
         unnecessary personal data. As users themselves decide which name to enter, it is possible
-        that pupils’ personal data may be processed. The name entered by pupils is used exclusively
+        that pupils' personal data may be processed. The name entered by pupils is used exclusively
         for the operation of the classroom functionality and for displaying participants within the
-        relevant classroom.
+        relevant classroom to the teacher.
     </p>
     <p class="pb-1.5">
         Where personal data relating to minors is processed, this is done solely for the purpose of
         providing and operating the service within an educational context. If a parent, carer or
-        educational institution believes that a minor’s personal data has been processed incorrectly
+        educational institution believes that a minor's personal data has been processed incorrectly
         or unlawfully, please contact us at <a href="mailto:fi@uu.nl">fi@uu.nl</a>. We will
         investigate such a request and, if the processing proves to be unlawful or the data is no
         longer necessary, take appropriate measures, including the deletion of the data in question.
@@ -58,15 +58,15 @@
         Freudenthal Institute processes your personal data for the following purposes:
     </h1>
     <ul>
-        <li>To enable you to create an account</li>
-        <li>To enable you to use classrooms</li>
-        <li>To be able to email you if this is necessary to provide our services</li>
+        <li>To enable you to create an account;</li>
+        <li>To enable you to use classrooms;</li>
+        <li>To be able to email you if this is necessary to provide our services;</li>
         <li>
             To be able to email you if you wish, after you have provided feedback via the <a
                 href="\feedback">feedback</a
-            > page
+            > page;
         </li>
-        <li>To enable other users to email you, if you give your consent</li>
+        <li>To enable other users to email you, if you give your consent.</li>
     </ul>
 
     <h1 class="page__heading pb-2">Automated decision-making</h1>
@@ -75,8 +75,9 @@
     <h1 class="page__heading pb-2">How long we retain personal data</h1>
     <p class="pb-1.5">
         Freudenthal Institute does not retain your personal data for longer than is strictly
-        necessary to achieve the purposes for which your data is collected. We apply the following
-        retention period for personal data: 24 months.
+        necessary to achieve the purposes for which your data is collected. Accounts and associated
+        personal data are deleted after 24 months of inactivity. For the names used to participate
+        in a classroom, a retention period of 24 months applies.
     </p>
 
     <h1 class="page__heading pb-2">Sharing personal data with third parties</h1>
@@ -95,15 +96,17 @@
         Freudenthal Institute uses only technical and functional cookies. A cookie is a small text
         file that is stored on your computer, tablet or smartphone when you first visit this
         website. The cookies we use are necessary for the technical functioning of the website and
-        your ease of use. They ensure that the website works properly. You can opt out of cookies by
-        adjusting your web browser settings so that it no longer stores cookies. In addition, you
-        can also delete all information previously stored via your browser settings.
+        your ease of use. They ensure that the website works properly. For example, the cookies used
+        in our service ensure that you can log in and that your preferred language on the website is
+        remembered. You can opt out of cookies by adjusting your web browser settings so that it no
+        longer stores cookies. In addition, you can also delete all information previously stored
+        via your browser settings.
     </p>
 
     <h1 class="page__heading pb-2">View, edit or delete data</h1>
     <p class="pb-1.5">
         You have the right to access, correct or delete your personal data. You can do this yourself
-        via your account’s personal settings. In addition, you have the right to withdraw any
+        via your account's personal settings. In addition, you have the right to withdraw any
         consent you have given for the processing of your data or to object to the processing of
         your personal data by our institute, and you have the right to data portability. This means
         that you can submit a request to us to have the personal data we hold about you in a
@@ -123,11 +126,11 @@
     <p class="pb-1.5">
         Freudenthal Institute would also like to inform you that you have the option of filing a
         complaint with the national supervisory authority, the Dutch Data Protection Authority. You
-        can do so via the following link:
+        can do so via the
         <a
             href="https://autoriteitpersoonsgegevens.nl/en/submitting-a-tip-off-or-a-complaint-to-the-ap"
-            >https://autoriteitpersoonsgegevens.nl/en/submitting-a-tip-off-or-a-complaint-to-the-ap</a
-        >
+            >Dutch Data Protection Authority's reporting form</a
+        >.
     </p>
     <h1 class="page__heading pb-2">How we protect personal data</h1>
     <p class="pb-1.5">

@@ -6,7 +6,7 @@
 
 <div>
     <h1 class="page__title pb-1">Voorwaarden</h1>
-    <p class="pb-2 italic *:*:inline">Laatst geupdate: 9 juni 2026</p>
+    <p class="pb-2 italic *:*:inline">Laatst geupdatet: 9 juni 2026</p>
 
     <h1 class="page__heading">Artikel 1 - Definities</h1>
     <p class="pb-1.5">In deze voorwaarden wordt verstaan onder:</p>
@@ -34,7 +34,7 @@
     <p class="pb-1.5">
         <b>Boominhoud:</b> alle gegevens die onderdeel uitmaken van of gekoppeld zijn aan een Heuristiekboom,
         waaronder mede begrepen opdrachtteksten, afbeeldingen, beschrijvingen, boekgegevens, ISBN-nummers,
-        auteursnamen, hoofdstukverwijzingen, opgavenummers, vakken, tages, titels, en overige data.
+        auteursnamen, hoofdstukverwijzingen, opgavenummers, vakken, labels, titels, en overige data.
     </p>
 
     <h1 class="page__heading">Artikel 2 - Toepasselijkheid</h1>
