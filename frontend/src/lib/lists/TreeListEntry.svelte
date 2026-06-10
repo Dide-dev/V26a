@@ -135,14 +135,14 @@
             <span class={[!expanded && 'line-clamp-1', 'text-neutral-700']}>
                 {tree.data.tags.map((tag) => `#${tag}`).join(' ')}
             </span>
-            <div class="mt-0.5 grid w-fit grid-cols-[auto_auto] gap-0.5 justify-self-end">
+            <div class="mt-0.5 grid w-fit grid-cols-[auto_auto] gap-0.5 justify-self-end text-left">
                 <LanguageOutline class="inline h-5 w-5 shrink-0" />
                 {tree.linkedData.languageName}
                 {#if expanded}
                     {#if tree.data.bookIsbn !== null}
                         <BookOutline class="inline h-5 w-5 shrink-0" />
                         <span>
-                            {tree.data.bookName},
+                            {tree.data.bookName + (tree.data.bookAuthor !== '' ? ',' : '')}
                             {tree.data.bookAuthor}
                         </span>
                     {/if}
