@@ -25,7 +25,7 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
     Router::new()
-        .route("/", post(login).layer(rate_limit_layer(15, 30)))
+        .route("/", post(login).layer(rate_limit_layer(3, 5)))
         .route("/", delete(logout))
 }
 

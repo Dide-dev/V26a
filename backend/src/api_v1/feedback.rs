@@ -16,7 +16,7 @@ use sqlx::PgPool;
 
 /// Creates an `Axum` [`Router`] for the feedback category.
 pub fn feedback() -> Router<ArcState> {
-    Router::new().route("/", post(provide_feedback).layer(rate_limit_layer(5, 10)))
+    Router::new().route("/", post(provide_feedback).layer(rate_limit_layer(5, 50)))
 }
 
 #[utoipa::path(

@@ -44,8 +44,8 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<ArcState> {
     Router::new()
-        .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/verification", post(verify))
+        .route("/", post(add_new_user).layer(rate_limit_layer(2, 5)))
+        .route("/verification", post(verify).layer(rate_limit_layer(2, 5)))
         .route("/{user_id}/public", get(get_public_user_data))
         .route(
             "/me",

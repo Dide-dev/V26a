@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
 use utoipa::ToSchema;
 
+use crate::api_v1::rate_limit_layer;
 use crate::db_structs::Validated;
 use crate::db_structs::cards::CardData;
 use crate::messages::Message;
@@ -41,7 +42,8 @@ pub mod edit_lock;
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
-        .route("/", get(get_list).post(add_new_tree))
+        .route("/", get(get_list))
+        .route("/", post(add_new_tree).layer(rate_limit_layer(10, 20)))
         .route("/languages", get(get_all_languages))
         .route("/subjects", get(get_all_subjects))
         .route(
@@ -50,9 +52,18 @@ pub fn trees() -> Router<ArcState> {
                 .put(update_tree_data)
                 .delete(remove_tree),
         )
-        .route("/{tree_id}/duplicate", post(duplicate_tree))
-        .route("/{tree_id}/structure", put(update_tree_structure))
-        .route("/{tree_id}/cards", post(add_new_card))
+        .route(
+            "/{tree_id}/duplicate",
+            post(duplicate_tree).layer(rate_limit_layer(5, 10)),
+        )
+        .route(
+            "/{tree_id}/structure",
+            put(update_tree_structure).layer(rate_limit_layer(25, 50)),
+        )
+        .route(
+            "/{tree_id}/cards",
+            post(add_new_card).layer(rate_limit_layer(25, 50)),
+        )
         .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
         .route(
             "/{tree_id}/co-authors/{username}",

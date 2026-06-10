@@ -11,6 +11,7 @@ use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 
+use crate::api_v1::rate_limit_layer;
 use crate::db_structs::users::AccountType;
 use axum::extract::Path;
 use axum::routing::post;
@@ -20,8 +21,11 @@ use sqlx::{PgConnection, PgPool};
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
     Router::new()
-        .route("/", post(add_new_classroom))
-        .route("/{classroom_id}/lessons", post(add_new_lesson))
+        .route("/", post(add_new_classroom).layer(rate_limit_layer(10, 10)))
+        .route(
+            "/{classroom_id}/lessons",
+            post(add_new_lesson).layer(rate_limit_layer(10, 10)),
+        )
 }
 
 #[utoipa::path(

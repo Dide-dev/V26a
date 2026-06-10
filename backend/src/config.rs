@@ -79,12 +79,12 @@ impl Config {
             .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
 
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
-            .unwrap_or("30".to_string())
+            .unwrap_or("300".to_string())
             .parse::<u64>()
             .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
 
         let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
-            .unwrap_or("40".to_string())
+            .unwrap_or("500".to_string())
             .parse::<u32>()
             .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
 
