@@ -5,8 +5,6 @@
 -->
 
 <script lang="ts">
-    import { PaginationNav } from 'flowbite-svelte';
-    import { ChevronLeftOutline, ChevronRightOutline } from 'flowbite-svelte-icons';
     import { m } from '$lib/paraglide/messages.js';
     import {
         getFilteredList,
@@ -18,7 +16,8 @@
     import { getUserInfo } from '$lib/api-wrapper/users';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
-    import TreeListEntry from '$lib/TreeListEntry.svelte';
+    import TreeListEntry from '$lib/lists/TreeListEntry.svelte';
+    import ListPagination from '$lib/lists/ListPagination.svelte';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
@@ -104,20 +103,11 @@
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <div class="mb-4 flex w-full flex-col border-b border-neutral-200">
                 {#each treeListResponse?.trees as tree, i (tree.genData.id)}
-                    <TreeListEntry {tree} index={i} bind:entriesExpanded />
+                    <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
                 {/each}
             </div>
 
-            <PaginationNav {currentPage} {totalPages} onPageChange={handlePageChange}>
-                {#snippet prevContent()}
-                    <span class="sr-only">{m.previousPage()}</span>
-                    <ChevronLeftOutline class="h-5 w-5" />
-                {/snippet}
-                {#snippet nextContent()}
-                    <span class="sr-only">{m.nextPage()}</span>
-                    <ChevronRightOutline class="h-5 w-5" />
-                {/snippet}
-            </PaginationNav>
+            <ListPagination {currentPage} {totalPages} {handlePageChange} />
         </div>
     {/if}
 </div>

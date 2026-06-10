@@ -307,15 +307,30 @@
         font-size: 1.125rem;
     }
 
-    p a {
-        color: var(--color-blue-600);
+    p {
+        a {
+            color: var(--color-blue-600);
 
-        &:hover {
-            text-decoration: underline;
+            &:hover {
+                text-decoration: underline;
+            }
+
+            &:active {
+                color: var(--color-blue-800);
+            }
         }
 
-        &:active {
-            color: var(--color-blue-800);
+        ul li,
+        ol li {
+            margin-left: 1.5rem;
+        }
+
+        ul > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: disc;
+        }
+
+        ol > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: decimal;
         }
     }
 
@@ -335,23 +350,11 @@
             position: absolute;
             inset-inline-start: 2px;
         }
+
         p {
             /*margin-left: 1.5rem;*/
             color: #444;
         }
-    }
-
-    ul li,
-    ol li {
-        margin-left: 1.5rem;
-    }
-
-    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: disc;
-    }
-
-    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: decimal;
     }
 
     hr {

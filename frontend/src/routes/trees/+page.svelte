@@ -15,7 +15,8 @@
     import { timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import TreeListEntry from '$lib/TreeListEntry.svelte';
+    import TreeListEntry from '$lib/lists/TreeListEntry.svelte';
+    import ListPagination from '$lib/lists/ListPagination.svelte';
 
     let treeListResponse = $state(null as null | TreeListResponse);
 
@@ -135,20 +136,11 @@
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <div class="mb-4 flex w-full flex-col border-b border-neutral-200">
                 {#each treeListResponse?.trees as tree, i (tree.genData.id)}
-                    <TreeListEntry {tree} index={i} bind:entriesExpanded />
+                    <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
                 {/each}
             </div>
 
-            <PaginationNav {currentPage} {totalPages} onPageChange={handlePageChange}>
-                {#snippet prevContent()}
-                    <span class="sr-only">{m.previousPage()}</span>
-                    <ChevronLeftOutline class="h-5 w-5" />
-                {/snippet}
-                {#snippet nextContent()}
-                    <span class="sr-only">{m.nextPage()}</span>
-                    <ChevronRightOutline class="h-5 w-5" />
-                {/snippet}
-            </PaginationNav>
+            <ListPagination {currentPage} {totalPages} {handlePageChange} />
         </div>
     {/if}
 </div>
