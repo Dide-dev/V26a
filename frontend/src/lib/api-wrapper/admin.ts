@@ -35,7 +35,14 @@ export type AllUsersGetData = {
 };
 
 /** The data of the user that is returned when requesting the data of one user */
-export type UserAllData = {
+export type AdminGetUserData = {
+    createdAt: Date;
+    lastLogin: Date;
+    updateableData: AdminUpdateData;
+};
+
+/** The data of the user that can be updated */
+export type AdminUpdateData = {
     email: string;
     data: UserGeneralData;
     enabled: boolean;
@@ -73,13 +80,13 @@ export function getAllUserData(pageOptions: PaginationOptions): Promise<UserList
 }
 
 /** Get the data of a specific user */
-export function getUserAllData(userId: UserId): Promise<UserAllData> {
+export function getUserAllData(userId: UserId): Promise<AdminGetUserData> {
     return apiCallGetAdmin(`/users/${userId}`);
 }
 /** Update the data of a user */
 export function updateUserData(
     userId: UserId,
-    newData: UserAllData
+    newData: AdminUpdateData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPutAdmin(`/users/${userId}`, newData);
 }

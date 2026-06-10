@@ -6,8 +6,8 @@
 
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
-    AccountType, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData, UserData,
-    UserGeneralData, UserGetData, UserLanguage,
+    AccountType, AdminGetUserData, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData,
+    UserData, UserGeneralData, UserGetData, UserLanguage,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -55,6 +55,30 @@ pub async fn add_user(
     .id;
 
     Ok(user_id)
+}
+
+/// Update the last login to 'now', for the given user id.
+/// If the given user id does not exist, no error will be returned and no rows will be updated.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn user_update_last_login(db: impl PgExecutor<'_>, id: i32) -> Result<(), ApiError> {
+    query!(
+        "UPDATE users SET last_login=CURRENT_TIMESTAMP WHERE id=$1",
+        id,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
 }
 
 /// Query the private data for the given user id in the given database.
@@ -143,7 +167,7 @@ pub async fn get_user_public_data(
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`AdminUpdateData`] object containing the user's data, minus their password.
+/// A [`AdminGetUserData`] object containing the user's data, minus their password.
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
@@ -152,23 +176,27 @@ pub async fn get_user_public_data(
 pub async fn get_user_all_data(
     db: impl PgExecutor<'_>,
     id: i32,
-) -> Result<AdminUpdateData, ApiError> {
+) -> Result<AdminGetUserData, ApiError> {
     let record = query!(
-        "SELECT email, name, enabled, nickname, about_me, account_type FROM users WHERE id = $1",
+        "SELECT email, name, enabled, nickname, about_me, account_type, created_at, last_login FROM users WHERE id = $1",
         id,
     )
     .fetch_one(db)
     .await?;
 
-    Ok(AdminUpdateData {
-        email: record.email,
-        data: UserGeneralData {
-            name: record.name,
-            nickname: record.nickname,
-            about_me: record.about_me,
+    Ok(AdminGetUserData {
+        created_at: record.created_at,
+        last_login: record.last_login,
+        updateable_data: AdminUpdateData {
+            email: record.email,
+            data: UserGeneralData {
+                name: record.name,
+                nickname: record.nickname,
+                about_me: record.about_me,
+            },
+            enabled: record.enabled,
+            account_type: AccountType::from_str(record.account_type.as_str())?,
         },
-        enabled: record.enabled,
-        account_type: AccountType::from_str(record.account_type.as_str())?,
     })
 }
 
@@ -674,7 +702,7 @@ mod tests {
             account_type: AccountType::Author,
         };
 
-        assert_eq!(user_data, expected_user_data);
+        assert_eq!(user_data.updateable_data, expected_user_data);
     }
 
     #[sqlx::test]
