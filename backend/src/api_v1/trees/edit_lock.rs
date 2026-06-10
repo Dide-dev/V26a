@@ -216,7 +216,7 @@ async fn handle_socket_without_lock(
 /// as it will clean up the `state.tree_edit_locks[tree_id]` before returning when done.
 ///
 /// This function handles a websocket that already has the lock.
-/// So it will ignore the [`FrontendMessage::Force`] message and will update
+/// So it will ignore the [`FrontendMessage::Force`] message.
 async fn handle_socket_with_lock(
     mut socket: WebSocket,
     state: ArcState,
