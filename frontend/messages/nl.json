@@ -92,6 +92,8 @@
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde.",
     "profile": "Profiel",
     "profileOf": "Profiel van {username}",
+    "registeredOn": "Geregistreerd op",
+    "lastLogin": "Laatste login",
     "confirmChanges": "Bevestig wijzigingen",
     "edit": "Bewerk",
     "add": "Voeg toe",

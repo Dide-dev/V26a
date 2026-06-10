@@ -92,6 +92,8 @@
     "passwordsNotTheSame": "Passwords are not the same.",
     "profile": "Profile",
     "profileOf": "Profile of {username}",
+    "registeredOn": "Registered on",
+    "lastLogin": "Last login",
     "confirmChanges": "Confirm changes",
     "edit": "Edit",
     "add": "Add",

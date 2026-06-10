@@ -7,6 +7,7 @@
 #![cfg(test)]
 
 use crate::api_v1::users::UserResponse;
+use crate::db_structs::users::AdminGetUserData;
 use crate::{
     db_structs::users::{
         AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData,
@@ -88,7 +89,7 @@ async fn test_get_one_user_admin(db: PgPool) {
     let response = server.get(&format!("/admin/users/{other_user_id}")).await;
     // It should not fail because the user is an admin
     response.assert_status_ok();
-    let user_data: AdminUpdateData = response.json();
+    let user_data: AdminGetUserData = response.json();
     let expected_user_data = AdminUpdateData {
         email: user_account.email.clone(),
         data: UserGeneralData {
@@ -99,7 +100,7 @@ async fn test_get_one_user_admin(db: PgPool) {
         enabled: true,
         account_type: AccountType::Author,
     };
-    assert_eq!(user_data, expected_user_data);
+    assert_eq!(user_data.updateable_data, expected_user_data);
 }
 
 #[sqlx::test]

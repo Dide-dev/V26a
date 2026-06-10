@@ -397,7 +397,12 @@ mod tests {
         let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let owner_name = get_user_all_data(&db, claims.sub).await.unwrap().data.name;
+        let owner_name = get_user_all_data(&db, claims.sub)
+            .await
+            .unwrap()
+            .updateable_data
+            .data
+            .name;
         let title = "title".to_owned();
         let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();

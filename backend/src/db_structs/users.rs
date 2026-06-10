@@ -10,7 +10,7 @@ use crate::limits::{
     PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -245,6 +245,14 @@ pub struct AdminUpdateData {
     pub data: UserGeneralData,
     pub enabled: bool,
     pub account_type: AccountType,
+}
+
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminGetUserData {
+    pub created_at: DateTime<Utc>,
+    pub last_login: DateTime<Utc>,
+    pub updateable_data: AdminUpdateData,
 }
 
 impl Validated for AdminUpdateData {

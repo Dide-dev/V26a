@@ -15,10 +15,11 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::db_structs::{
-    Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
+    Validated, feedback::FeedbackListResponse, session::Claims, users::{AdminGetUserData, AdminUpdateData},
 };
+use crate::db::feedback::{get_all_feedback, get_feedback_count};
+
 
 use crate::api_v1::users::{check_email_used, check_username_used};
 use crate::db_structs::session::ClaimsType;
@@ -249,7 +250,7 @@ async fn change_password(
     path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = AdminUpdateData),
+        (status = 200, description = "Successfully retrieved data.", body = AdminGetUserData),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -266,7 +267,7 @@ async fn change_password(
 /// `user_id` - The user from whom we want to get the data.
 ///
 /// # Returns
-/// The data of a user as [`AdminUpdateData`].
+/// The data of a user as [`AdminGetUserData`].
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
@@ -281,7 +282,7 @@ async fn change_password(
 async fn get_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
-) -> Result<Json<AdminUpdateData>, ApiError> {
+) -> Result<Json<AdminGetUserData>, ApiError> {
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }

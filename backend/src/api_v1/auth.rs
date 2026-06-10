@@ -6,7 +6,7 @@
 
 use crate::api_v1::{create_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_email;
-use crate::db::users::get_user;
+use crate::db::users::{get_user, user_update_last_login};
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
@@ -123,6 +123,8 @@ async fn login(
         .max_age(duration)
         .http_only(false);
 
+    user_update_last_login(&db, credentials.user_id).await?;
+
     Ok((
         jar.add(cookie).add(user_info_cookie),
         Json(LoginResponse { succeeded: true }),
@@ -155,14 +157,8 @@ async fn login(
 async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
     let token = Claims::extract_token(&jar)?;
 
-    // Just need some default values for delete session, these aren't used
-    let claims = Claims {
-        sub: -1,
-        account_type: AccountType::Author,
-    };
-
     // Invalidate the session.
-    Claims::delete_session(&db, &token, &claims.sub).await?;
+    Claims::delete_session(&db, &token, -1).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar
