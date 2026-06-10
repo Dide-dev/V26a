@@ -29,7 +29,7 @@ use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
-use axum_extra::extract::{CookieJar, cookie::Cookie, Query};
+use axum_extra::extract::{CookieJar, Query, cookie::Cookie};
 use chrono::Utc;
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
