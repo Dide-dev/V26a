@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT trees.*, users.name AS owner_name, subjects.name AS \"subject_name?\", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors\n        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        WHERE trees.id = $1",
+  "query": "SELECT\n            trees.*,\n            users.name AS owner_name,\n            subjects.name AS \"subject_name?\",\n            languages.name AS language_name,\n            COALESCE(books.title, '') AS book_name,\n            COALESCE(books.author, '') AS book_author,\n            COALESCE(books.edition, '') AS book_edition,\n            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags,\n            ARRAY(SELECT\n                (SELECT name FROM users as co_users WHERE co_users.id = co_authors.user_id)\n                FROM co_authors WHERE tree_id = trees.id\n            ) AS co_authors        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        LEFT JOIN languages ON trees.language_code = languages.code\n        WHERE trees.id = $1",
   "describe": {
     "columns": [
       {
@@ -95,28 +95,33 @@
       },
       {
         "ordinal": 18,
-        "name": "book_name",
+        "name": "language_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 19,
-        "name": "book_author",
+        "name": "book_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 20,
-        "name": "book_edition",
+        "name": "book_author",
         "type_info": "Varchar"
       },
       {
         "ordinal": 21,
+        "name": "book_edition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 22,
         "name": "tags",
         "type_info": "VarcharArray"
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "co_authors",
-        "type_info": "Int4Array"
+        "type_info": "VarcharArray"
       }
     ],
     "parameters": {
@@ -143,6 +148,7 @@
       true,
       false,
       false,
+      false,
       null,
       null,
       null,
@@ -150,5 +156,5 @@
       null
     ]
   },
-  "hash": "e31c1a7efde5ccf411c5197e82c94c89c16ca2354ef7c927fc71b9198eca8c2b"
+  "hash": "aa7b58dc46e15c0cb148ff3b8feff2f1acc62508d65586403c78c658388edc31"
 }

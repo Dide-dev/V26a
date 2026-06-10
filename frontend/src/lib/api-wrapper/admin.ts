@@ -11,7 +11,8 @@ import {
     type UserEmailInvalid,
     type UsernameInvalid,
     type ChangePasswordResponse,
-    type UserGeneralData
+    type UserGeneralData,
+    type Username
 } from './users';
 import { type PaginationOptions, getPaginationParams } from '$lib/pagination';
 
@@ -29,7 +30,7 @@ function apiCallPutAdmin(path: string, body: unknown) {
 export type AllUsersGetData = {
     id: number;
     email: string;
-    name: string;
+    name: Username;
     enabled: boolean;
 };
 
