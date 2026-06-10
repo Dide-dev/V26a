@@ -20,7 +20,7 @@
 
     let {
         treeId,
-        /** These children will only be mounted if the lock is aquired */
+        /** These children will only be mounted if the lock is aquired. */
         children
     }: { treeId: TreeId; children: Snippet } = $props();
 
@@ -83,7 +83,7 @@
     function retry() {
         localState = { type: 'waiting' };
 
-        // Artificial delay so that the user actually sees that there is a retry
+        // Artificial delay so that the user actually sees that there is a retry.
         setTimeout(initializeWebsocket, 200);
     }
 
@@ -121,7 +121,7 @@
                     <button
                         class="cursor-pointer rounded bg-green-300 p-1"
                         onclick={() => {
-                            // This check is unnecessary, but typescript doesn't realize that
+                            // This check is unnecessary, but typescript doesn't realize that.
                             if (localState.type !== 'lockFailed') return;
 
                             localState.popupOpen = false;
@@ -158,7 +158,7 @@
                 <button
                     class="cursor-pointer rounded bg-red-300 p-1"
                     onclick={() => {
-                        // This check is unnecessary, but typescript doesn't realize that
+                        // This check is unnecessary, but typescript doesn't realize that.
                         if (localState.type !== 'lockFailed') return;
 
                         localState.popupOpen = true;

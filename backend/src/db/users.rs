@@ -101,7 +101,7 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// # Returns
 /// A [`PublicUserData`] object containing the user's data, minus their password.
 ///
-/// Or if no user by that id exists, returns [`None`]
+/// Or if no user by that id exists, returns [`None`].
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.

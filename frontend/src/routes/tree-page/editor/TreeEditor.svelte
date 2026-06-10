@@ -5,7 +5,7 @@
 -->
 
 <!--component
-    This is the top level component, after the Lock.svelte and +page.svelte
+    This is the top level component, after the Lock.svelte and +page.svelte.
  -->
 
 <script lang="ts">
@@ -126,7 +126,7 @@
         tree!.sidebar = null;
         redo(tree!.history);
     }
-    // The undo & redo keyboard shortcuts
+    // The undo & redo keyboard shortcuts.
     function onkeydown(event: KeyboardEvent) {
         if (event.ctrlKey && event.key == 'z') {
             undoButtonClick();

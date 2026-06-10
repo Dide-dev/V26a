@@ -1162,11 +1162,11 @@ async fn test_acquire_lock(db: PgPool) {
         response.into_websocket().await
     };
 
-    // First user 1 has the lock
+    // First user 1 has the lock.
     let mut ws1 = create_ws().await;
     ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
 
-    // User 2 first fails, then forces
+    // User 2 first fails, then forces.
     login(&server, user2.email.clone()).await;
     let mut ws2 = create_ws().await;
     ws2.assert_receive_json(&BackendMessage::LockFailed {

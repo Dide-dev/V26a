@@ -233,7 +233,7 @@ pub struct PublicUserData {
     pub about_me: String,
     pub language: UserLanguage,
 
-    /// If email is not visible, this will be set to None
+    /// If email is not visible, this will be set to None.
     pub email: Option<String>,
 }
 

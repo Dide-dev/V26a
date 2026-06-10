@@ -133,7 +133,7 @@ impl BackendMessage {
     /// This function *is* cancellation safe.
     pub async fn serialize_and_send(&self, socket: &mut WebSocket) {
         let Ok(txt) = serde_json::to_string(self) else {
-            // This never happens, but because it is rust we have to handle it somehow
+            // This never happens, but because it is rust we have to handle it somehow.
             unreachable!()
         };
         socket.send(Message::Text(txt.into())).await.ok();
@@ -209,7 +209,7 @@ async fn handle_socket_without_lock(
         }
     }
 
-    // Socket closed without any lock, nothing to do here
+    // Socket closed without any lock, nothing to do here.
 }
 
 /// This function is **NOT** cancellation safe,
@@ -231,13 +231,13 @@ async fn handle_socket_with_lock(
         tokio::select! {
             msg = FrontendMessage::receive_and_parse(&mut socket) => {
                 let Some(msg) = msg else {
-                    // Client disconnected or something else went wrong
+                    // Client disconnected or something else went wrong.
                     break;
                 };
 
                 match msg {
                     FrontendMessage::Force => {
-                        // Nothing to do here, tree is already locked by this user
+                        // Nothing to do here, tree is already locked by this user.
                     },
                 }
             }
@@ -258,7 +258,7 @@ async fn handle_socket_with_lock(
     // The websocket could already be closed, but it does no harm dropping the socket in that case.
     drop(socket);
 
-    // Clean up the state.tree_edit_locks[tree_id], if not already overwritten by somebody else
+    // Clean up the state.tree_edit_locks[tree_id], if not already overwritten by somebody else.
     if !my_receiver.is_terminated() {
         let mut tree_edit_locks = state.tree_edit_locks.lock().await;
 
