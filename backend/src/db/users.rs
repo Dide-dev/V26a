@@ -6,8 +6,8 @@
 
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
-    AccountType, AdminUpdateData, AllUsersGetData, RegisterData, UserData, UserGeneralData,
-    UserGetData, UserLanguage,
+    AccountType, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData, UserData,
+    UserGeneralData, UserGetData, UserLanguage,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -57,7 +57,7 @@ pub async fn add_user(
     Ok(user_id)
 }
 
-/// Query the data for the given user id in the given database.
+/// Query the private data for the given user id in the given database.
 ///
 /// # Arguments
 /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
@@ -89,6 +89,50 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
             language: UserLanguage::from_str(record.language_code.as_str())?,
         },
     })
+}
+
+/// Query the public data for the given user id in the given database.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user.
+///
+/// # Returns
+/// A [`PublicUserData`] object containing the user's data, this does not include their password hash or account type. It also does not include the user's email if they set it to private.
+///
+/// Or if no user by that id exists, returns [`None`].
+///
+/// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_user_public_data(
+    db: impl PgExecutor<'_>,
+    id: i32,
+) -> Result<Option<PublicUserData>, ApiError> {
+    let record = query!(
+        "SELECT name, nickname, about_me, email_visible, email, language_code FROM users WHERE id = $1",
+        id,
+    )
+    .fetch_optional(db)
+    .await?;
+
+    let Some(record) = record else {
+        return Ok(None);
+    };
+
+    Ok(Some(PublicUserData {
+        name: record.name,
+        nickname: record.nickname,
+        about_me: record.about_me,
+        language: UserLanguage::from_str(record.language_code.as_str())?,
+        email: if record.email_visible {
+            Some(record.email)
+        } else {
+            None
+        },
+    }))
 }
 
 /// Query the data for the given user id in the given database.
