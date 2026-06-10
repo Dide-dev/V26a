@@ -444,15 +444,21 @@ pub async fn db_get_tree_all_data(
     let field = query!(
         r#"SELECT
             trees.id, owner_id, trees.created_at, last_modified, published, times_visited, last_visited, trees.title, description, book_chapter, book_exercise, assignment_text, structure, trees.language_code, subject_id, book_isbn,
-            users.name AS owner_name, subjects.name AS "subject_name?",
+            users.name AS owner_name,
+            subjects.name AS "subject_name?",
+            languages.name AS language_name,
             COALESCE(books.title, '') AS book_name,
             COALESCE(books.author, '') AS book_author,
             COALESCE(books.edition, '') AS book_edition,
-            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
-        FROM trees
+            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags,
+            ARRAY(SELECT
+                (SELECT name FROM users as co_users WHERE co_users.id = co_authors.user_id)
+                FROM co_authors WHERE tree_id = trees.id
+            ) AS co_authors        FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
         LEFT JOIN users ON users.id = trees.owner_id
         LEFT JOIN subjects ON subjects.id = trees.subject_id
+        LEFT JOIN languages ON trees.language_code = languages.code
         WHERE trees.id = $1"#,
         tree_id,
     )
@@ -492,6 +498,7 @@ pub async fn db_get_tree_all_data(
         linked_data: TreeLinkedData {
             owner_name: field.owner_name,
             subject_name: field.subject_name,
+            language_name: field.language_name,
             co_authors: field.co_authors.unwrap_or(Vec::new()),
         },
     };
@@ -990,6 +997,7 @@ const TREE_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN books ON books.isbn = trees.book_isbn
     LEFT JOIN users ON users.id = trees.owner_id
     LEFT JOIN subjects ON subjects.id = trees.subject_id
+    LEFT JOIN languages ON languages.code = trees.language_code
 ";
 
 fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
@@ -1070,16 +1078,21 @@ pub async fn get_queried_list(
     query.push(
         r#"
     SELECT trees.*,
-       users.name                                                     AS owner_name,
-       subjects.name                                                  AS "subject_name?",
-       COALESCE(books.title, '')                                      AS book_name,
-       COALESCE(books.author, '')                                     AS book_author,
-       COALESCE(books.edition, '')                                    AS book_edition,
-       ARRAY(SELECT name
-             FROM tags
-                      JOIN tree_tags ON tag_id = id
-             WHERE tree_id = trees.id)                                AS tags,
-       ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors"#,
+        users.name                                                     AS owner_name,
+        subjects.name                                                  AS "subject_name?",
+        languages.name                                                 AS language_name,
+        COALESCE(books.title, '')                                      AS book_name,
+        COALESCE(books.author, '')                                     AS book_author,
+        COALESCE(books.edition, '')                                    AS book_edition,
+        ARRAY(SELECT name
+            FROM tags
+                JOIN tree_tags ON tag_id = id
+            WHERE tree_id = trees.id)                                  AS tags,
+        ARRAY(SELECT
+            (SELECT name
+                FROM users as co_users
+                WHERE co_users.id = co_authors.user_id)
+            FROM co_authors WHERE tree_id = trees.id)                  AS co_authors"#,
     );
     query.push(TREE_LIST_QUERY_JOINS);
 

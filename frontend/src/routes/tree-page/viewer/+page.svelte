@@ -61,7 +61,7 @@
 
         const isOwner = tree.metadata.genData.ownerId === userInfo?.sub;
         const isAdmin = userInfo?.accountType === 'admin';
-        const isCoAuthor = tree.metadata.linkedData.coAuthors.includes(userInfo?.sub ?? 0);
+        const isCoAuthor = tree.metadata.linkedData.coAuthors.includes(userInfo?.name ?? '');
 
         if (isOwner || isAdmin || isCoAuthor) {
             userAllowedToEdit = true;
