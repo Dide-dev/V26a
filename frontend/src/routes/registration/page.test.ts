@@ -11,8 +11,6 @@ import userEvent from '@testing-library/user-event';
 import page from './+page.svelte';
 import { m } from '$lib/paraglide/messages.js';
 import { addUser } from '$lib/api-wrapper/users';
-import { goto } from '$app/navigation';
-import { appLink } from '$lib';
 import { getLocale } from '$lib/paraglide/runtime.js';
 
 vi.mock('$lib/api-wrapper/users', () => {
@@ -112,10 +110,10 @@ test('Differing password and repeatPassword shows error', async () => {
     expect(error.textContent).toBe(m.passwordsNotTheSame());
 });
 
-test('Redirection after successful registration', async () => {
+test('Page changes after successful registration', async () => {
     const user = userEvent.setup();
 
-    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Success', userId: 1 });
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Pending' });
 
     render(page);
 
@@ -130,14 +128,13 @@ test('Redirection after successful registration', async () => {
     await user.click(screen.getByTestId('agreeToTOS'));
 
     await user.click(screen.getByRole('button', { name: m.register() }));
-
-    expect(goto).toHaveBeenCalledWith(appLink('/login'));
+    expect(await screen.findByTestId('verification-pending')).toBeTruthy();
 });
 
 test('Submission with correct data', async () => {
     const user = userEvent.setup();
 
-    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Success', userId: 1 });
+    (addUser as MockedFunction<typeof addUser>).mockResolvedValue({ type: 'Pending' });
 
     render(page);
 
