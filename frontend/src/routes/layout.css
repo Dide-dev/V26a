@@ -154,6 +154,21 @@
             animation: invalidInputClick linear 0.15s;
         }
 
+        .error.danger {
+            color: var(--color-black);
+            padding: var(--spacing-padding-minor);
+            border-radius: var(--radius-md);
+            border-width: 2px;
+            font-weight: var(--font-weight-bold);
+            font-size: var(--text-lg);
+            cursor: pointer;
+        }
+
+        .error.danger:hover {
+            background-color: var(--color-red-700);
+            border-color: var(--color-red-800);
+        }
+
         input + input {
             margin-top: var(--spacing-text-small);
         }
@@ -211,6 +226,7 @@
             color: var(--color-neutral-600);
             background-color: var(--color-neutral-400);
             border-color: currentColor;
+            transition: all 200ms ease-in-out;
         }
 
         &.completed button[type='submit'],
@@ -223,19 +239,7 @@
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
-                animation: completedFormButtonSelect 0.15s ease-in-out;
             }
-        }
-    }
-
-    @keyframes completedFormButtonSelect {
-        0% {
-            background-color: var(--color-neutral-200);
-            color: var(--color-black);
-        }
-        100% {
-            background-color: var(--color-neutral-600);
-            color: var(--color-white);
         }
     }
 
