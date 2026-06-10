@@ -46,7 +46,7 @@
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
     }
 
-    function changePageSize() {
+    function handlePageSizeChange() {
         // Update the length of the description shown array, and reset values to false.
         if (pageSizeNumber > entriesExpanded.length) {
             entriesExpanded = Array.from({ length: pageSizeNumber }, () => false);
@@ -109,21 +109,6 @@
             </label>
             <button type="submit">{m.applyFilters()}</button>
         </form>
-
-        <!-- Change the number of trees per page -->
-        <label>
-            {m.numberPerPage({ n: m.treesUncapitalized() })}
-            <select
-                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
-                bind:value={pageSizeString}
-                onchange={changePageSize}
-            >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-            </select>
-        </label>
     </div>
 
     {#if treeListResponse?.trees === null}
@@ -134,13 +119,19 @@
         </div>
     {:else}
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
-            <div class="mb-4 flex w-full flex-col border-b border-neutral-200">
-                {#each treeListResponse?.trees as tree, i (tree.genData.id)}
-                    <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
-                {/each}
-            </div>
-
-            <ListPagination {currentPage} {totalPages} {handlePageChange} />
+            <ListPagination
+                {currentPage}
+                {totalPages}
+                {handlePageChange}
+                bind:pageSize={pageSizeString}
+                {handlePageSizeChange}
+            >
+                <div class="mb-4 flex w-full flex-col border-b border-neutral-200">
+                    {#each treeListResponse?.trees as tree, i (tree.genData.id)}
+                        <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
+                    {/each}
+                </div>
+            </ListPagination>
         </div>
     {/if}
 </div>

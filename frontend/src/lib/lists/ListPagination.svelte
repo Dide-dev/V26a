@@ -18,17 +18,40 @@
     import { PaginationNav } from 'flowbite-svelte';
     import { ChevronLeftOutline, ChevronRightOutline } from 'flowbite-svelte-icons';
     import { m } from '$lib/paraglide/messages.js';
+    import type { Snippet } from 'svelte';
 
     let {
         currentPage,
         totalPages,
-        handlePageChange
+        handlePageChange,
+        pageSize = $bindable(),
+        handlePageSizeChange,
+        children
     }: {
         currentPage: number;
         totalPages: number;
         handlePageChange: (currentPage: number) => void;
+        pageSize: string;
+        handlePageSizeChange: () => void;
+        children: Snippet;
     } = $props();
 </script>
+
+<label>
+    {m.numberPerPage({ n: m.treesUncapitalized() })}
+    <select
+        class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
+        bind:value={pageSize}
+        onchange={handlePageSizeChange}
+    >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+    </select>
+</label>
+
+{@render children()}
 
 <PaginationNav {currentPage} {totalPages} onPageChange={handlePageChange}>
     {#snippet prevContent()}
