@@ -10,7 +10,6 @@ use crate::db::users::{get_user, user_update_last_login};
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
 use axum::extract::State;
@@ -158,7 +157,7 @@ async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<Cook
     let token = Claims::extract_token(&jar)?;
 
     // Invalidate the session.
-    Claims::delete_session(&db, &token, -1).await?;
+    Claims::delete_session(&db, &token, &-1).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar

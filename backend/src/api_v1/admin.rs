@@ -15,11 +15,13 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db_structs::{
-    Validated, feedback::FeedbackListResponse, session::Claims, users::{AdminGetUserData, AdminUpdateData},
-};
 use crate::db::feedback::{get_all_feedback, get_feedback_count};
-
+use crate::db_structs::{
+    Validated,
+    feedback::FeedbackListResponse,
+    session::Claims,
+    users::{AdminGetUserData, AdminUpdateData},
+};
 
 use crate::api_v1::users::{check_email_used, check_username_used};
 use crate::db_structs::session::ClaimsType;
