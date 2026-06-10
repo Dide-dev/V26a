@@ -9,29 +9,21 @@
     import { timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
+    import UserListEntry from '$lib/lists/UserListEntry.svelte';
+    import ListPagination from '$lib/lists/ListPagination.svelte';
+    import FeedbackListEntry from '$lib/lists/FeedbackListEntry.svelte';
 
-    let timeFormat = new Intl.DateTimeFormat(timeFormatString);
-    let pageSizeString = $state('10');
-    let pageSizeNumber = $derived(Number(pageSizeString));
-    let thisPage = $state(1);
+    let feedbackListResponse = $state(null as null | FeedbackListResponse);
+
+    let pageSize = $state(10);
+    let currentPage = $state(1);
+    let totalPages = $derived(calcTotalPages(feedbackListResponse?.feedbackTotal ?? 0, pageSize));
+
+    let entriesExpanded = $state(Array.from({ length: 10 }, () => false));
 
     let paginationOptions: PaginationOptions = $derived({
-        page: thisPage,
-        size: pageSizeNumber
-    });
-
-    let feedbackListResponse: null | FeedbackListResponse = $state(null);
-    let expanded = $state<Record<number, boolean>>({});
-
-    function getFeedbackText(feedback: string, expanded: boolean) {
-        return expanded || feedback.length <= 200 ? feedback : feedback.slice(0, 200) + '...';
-    }
-
-    let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived.by(() => {
-        // For some reason svelte does not understand the type of feedbackListResponse so we have to manually cast it.
-        const total = (feedbackListResponse as FeedbackListResponse | null)?.feedbackTotal ?? 0;
-        return thisPage < calcTotalPages(total, pageSizeNumber);
+        page: currentPage,
+        size: pageSize
     });
 
     onMount(async () => {
@@ -42,106 +34,38 @@
         feedbackListResponse = await getFeedback(paginationOptions);
     }
 
-    function changePageSize() {
-        thisPage = 1;
+    function handlePageChange() {
         loadFeedback();
     }
 
-    function prevPage() {
-        thisPage -= 1;
-        loadFeedback();
-    }
-
-    function nextPage() {
-        thisPage += 1;
+    function handlePageSizeChange() {
+        currentPage = 1;
         loadFeedback();
     }
 </script>
 
-<div class="flex w-full justify-center">
-    <div class="flex-col">
-        <!-- Change the number of feedback entries per page -->
-        <label>
-            {m.numberPerPage({ n: m.feedbackEntries() })}
-            <select
-                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
-                bind:value={pageSizeString}
-                onchange={changePageSize}
-            >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-            </select>
-        </label>
-    </div>
-</div>
-
-{#if feedbackListResponse?.feedback === null}
-    <p>{m.loading()}</p>
-{:else if feedbackListResponse?.feedback.length === 0}
-    <div class="text-center">
-        <p class="flex justify-center text-2xl">{m.noFeedbackFound()}</p>
-    </div>
-{:else}
-    <div class="100vw flex flex-col items-center justify-center overflow-auto">
-        <table class="border-separate border-spacing-2">
-            <thead>
-                <tr>
-                    <th class="text-left">{m.email()}</th>
-                    <th class="text-center">Feedback</th>
-                    <th class="text-center">{m.feedbackAddDate()}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {#each feedbackListResponse?.feedback as feedback (feedback.feedbackId)}
-                    <tr>
-                        <td class="min-w-10 pr-4 align-text-top wrap-anywhere">
-                            {#if feedback.email == '' || feedback.email == null}
-                                -
-                            {:else}
-                                <a
-                                    class="hover:text-blue-800 hover:underline"
-                                    href="mailto:{feedback.email}">{feedback.email}</a
-                                >
-                            {/if}
-                        </td>
-                        <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere">
-                            {getFeedbackText(feedback.feedback, expanded[feedback.feedbackId])}
-                            {#if feedback.feedback.length > 200}
-                                <button
-                                    onclick={() => {
-                                        expanded[feedback.feedbackId] =
-                                            !expanded[feedback.feedbackId];
-                                    }}
-                                    class="text__link"
-                                >
-                                    {expanded[feedback.feedbackId] ? m.showLess() : m.showMore()}
-                                </button>
-                            {/if}</td
-                        >
-                        <td class="pr-4 align-text-top">
-                            <!-- This formats the date in the local timezone in the form: dd-mm-yyyy -->
-                            {timeFormat.format(new Date(feedback.createdAt))}
-                        </td>
-                    </tr>
-                {/each}
-            </tbody>
-        </table>
-        <div>
-            <button
-                onclick={prevPage}
-                disabled={!prevPageExists}
-                class="mx-5"
-                class:cursor-pointer={prevPageExists}>Prev</button
-            >
-            {thisPage}/{calcTotalPages(feedbackListResponse?.feedbackTotal ?? 0, pageSizeNumber)}
-            <button
-                onclick={nextPage}
-                disabled={!nextPageExists}
-                class="mx-5"
-                class:cursor-pointer={nextPageExists}>Next</button
-            >
+<div class="flex w-7/8 max-w-lg flex-col">
+    {#if feedbackListResponse?.feedback === null}
+        <p>{m.loading()}</p>
+    {:else if feedbackListResponse?.feedback.length === 0}
+        <div class="text-center">
+            <p class="flex justify-center text-2xl">{m.noFeedbackFound()}</p>
         </div>
-    </div>
-{/if}
+    {:else}
+        <div class="flex w-full flex-col items-center justify-center overflow-auto">
+            <ListPagination
+                bind:currentPage
+                {totalPages}
+                {handlePageChange}
+                bind:pageSize
+                {handlePageSizeChange}
+            >
+                <div class="list__container">
+                    {#each feedbackListResponse?.feedback as feedback, i (feedback)}
+                        <FeedbackListEntry {feedback} expanded={entriesExpanded[i]} />
+                    {/each}
+                </div>
+            </ListPagination>
+        </div>
+    {/if}
+</div>

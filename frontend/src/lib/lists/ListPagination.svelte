@@ -44,7 +44,7 @@
 
 <form class="mb-2 flex w-full flex-row justify-end">
     <label for="page-size" class="flex flex-col justify-center">
-        {m.numberPerPage({ n: m.treesUncapitalized() })}
+        {m.numberPerPage()}
     </label>
     <select
         id="page-size"
