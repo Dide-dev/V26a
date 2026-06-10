@@ -37,7 +37,7 @@
         }
     }
     function handleError(err: PromiseRejectionEvent) {
-        if (err?.reason?.message === 'string') {
+        if (typeof err?.reason?.message === 'string') {
             errors.push(err.reason.message);
         }
     }
@@ -129,8 +129,8 @@
                             text: m.profile()
                         },
                         {
-                            href: '/login',
-                            text: m.login()
+                            href: '/logout',
+                            text: m.logout()
                         }
                     ]
                 })

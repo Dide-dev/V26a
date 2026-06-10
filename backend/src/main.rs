@@ -12,11 +12,14 @@ mod db;
 mod db_structs;
 mod errors;
 mod limits;
+mod messages;
 mod state;
+mod tasks;
 mod tests;
 
 use crate::api_v1::rate_limit_layer;
 use crate::errors::ApiError;
+use crate::tasks::state_cleaner;
 use crate::{api_v1::v1_api, config::Config, state::ArcState};
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
@@ -24,6 +27,7 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::{Extension, Router};
 use sqlx::postgres::PgPoolOptions;
+use tokio::task;
 use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
@@ -57,26 +61,34 @@ async fn main() {
         );
     }
     let config = Config::load();
+    let state = ArcState::new(config);
 
     // Set up logging.
     tracing_subscriber::registry()
-        .with(config.log_level.clone())
+        .with(state.config.log_level.clone())
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let db = setup_db(&config.database_url).await;
+    let db = setup_db(&state.config.database_url).await;
+
+    // Start background task for email verification code expiry
+    let state_clone = state.clone();
+    task::spawn(async move { state_cleaner::task_handler(state_clone).await });
 
     // Build our application with a route.
     let app = Router::new()
-        .nest_service("/uploads", ServeDir::new(&config.upload_dir))
-        .nest("/api", backend(config.clone(), db))
+        .nest_service("/uploads", ServeDir::new(&state.config.upload_dir))
+        .nest("/api", backend(state.clone(), db))
         // Add documentation routes.
         .merge(
             SwaggerUi::new("/api-docs").url("/api-docs/openapi.json", api_doc::ApiDoc::openapi()),
         );
 
     // Serve the application.
-    let addr = (config.listening_ip.as_str(), config.listening_port);
+    let addr = (
+        state.config.listening_ip.as_str(),
+        state.config.listening_port,
+    );
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .unwrap_or_else(|err| {
@@ -107,7 +119,7 @@ async fn setup_db(database_url: &str) -> sqlx::PgPool {
 
 /// Creates an `Axum` [`Router`] for the backend API, combining all the API versions.
 /// Also sets up the global configuration and the database.
-fn backend(config: Config, db: sqlx::PgPool) -> Router {
+fn backend(state: ArcState, db: sqlx::PgPool) -> Router {
     // Map status code 429 to api-error.
     fn map_response_error(res: Response) -> Response {
         if res.status() == StatusCode::TOO_MANY_REQUESTS {
@@ -115,8 +127,6 @@ fn backend(config: Config, db: sqlx::PgPool) -> Router {
         }
         res
     }
-
-    let state = ArcState::new(config);
 
     // Extract ratelimiter config and create governor layer.
     let governor_layer = ServiceBuilder::new()
