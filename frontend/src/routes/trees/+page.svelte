@@ -4,8 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 <script lang="ts">
-    import { Datepicker, PaginationNav } from 'flowbite-svelte';
-    import { ChevronLeftOutline, ChevronRightOutline } from 'flowbite-svelte-icons';
+    import { Datepicker } from 'flowbite-svelte';
     import { m } from '$lib/paraglide/messages.js';
     import {
         type FilterOptions,
@@ -20,10 +19,9 @@
 
     let treeListResponse = $state(null as null | TreeListResponse);
 
-    let pageSizeString = $state('10');
-    let pageSizeNumber = $derived(Number(pageSizeString));
+    let pageSize = $state(10);
     let currentPage = $state(1);
-    let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber));
+    let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSize));
 
     let filterOptions: FilterOptions = $state({
         ownerId: null,
@@ -35,7 +33,7 @@
     });
     let paginationOptions: PaginationOptions = $derived({
         page: currentPage,
-        size: pageSizeNumber
+        size: pageSize
     });
 
     onMount(async () => {
@@ -48,16 +46,16 @@
 
     function handlePageSizeChange() {
         // Update the length of the description shown array, and reset values to false.
-        if (pageSizeNumber > entriesExpanded.length) {
-            entriesExpanded = Array.from({ length: pageSizeNumber }, () => false);
+        if (pageSize > entriesExpanded.length) {
+            entriesExpanded = Array.from({ length: pageSize }, () => false);
         }
         // Move to page 1, to prevent out-of-range page errors.
-        handlePageChange(1);
+        currentPage = 1;
+        loadTrees();
     }
 
-    function handlePageChange(page: number) {
-        currentPage = page;
-        // Reset the shown description to false.
+    function handlePageChange() {
+        // Reset the expanded flags to false.
         entriesExpanded.fill(false);
         loadTrees();
     }
@@ -66,7 +64,7 @@
 </script>
 
 <div class="flex w-7/8 max-w-xl flex-col">
-    <div class="flex-col">
+    <div class="mb-4 flex-col">
         <!-- Filter options -->
         <form class="completed flex w-full flex-col gap-2" onsubmit={loadTrees}>
             <b>{m.creationDate()}</b>
@@ -120,10 +118,10 @@
     {:else}
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <ListPagination
-                {currentPage}
+                bind:currentPage
                 {totalPages}
                 {handlePageChange}
-                bind:pageSize={pageSizeString}
+                bind:pageSize
                 {handlePageSizeChange}
             >
                 <div class="mb-4 flex w-full flex-col border-b border-neutral-200">

@@ -6,12 +6,17 @@
 
 <!--
     @component
-    Render the buttons to change pages on a list page with pagination options.
+    Render the buttons to change pages and page size on a list page with pagination options.
+
+    The `currentPage` and `pageSize` fields should be bound to be updated properly.
 
     ## Params
-    - `currentPage: number` - The current page index.
+    - `currentPage: number` - The bindable current page index.
     - `totalPages: number` - The total number of pages.
-    - `handlePageChange: (currentPage: number) => void` - The function to update the `currentPage`.
+    - `handlePageChange: () => void` - The function to run when updating the `currentPage`.
+    - `pageSize: string` - The bindable current page size.
+    - `handlePageSizeChange: () => void` - The function to run when updating the page size.
+    - `children: Snippet` - The contents of the pagination to be rendered based on the page and page size.
 -->
 
 <script lang="ts">
@@ -21,7 +26,7 @@
     import type { Snippet } from 'svelte';
 
     let {
-        currentPage,
+        currentPage = $bindable(),
         totalPages,
         handlePageChange,
         pageSize = $bindable(),
@@ -30,30 +35,40 @@
     }: {
         currentPage: number;
         totalPages: number;
-        handlePageChange: (currentPage: number) => void;
-        pageSize: string;
+        handlePageChange: () => void;
+        pageSize: number;
         handlePageSizeChange: () => void;
         children: Snippet;
     } = $props();
 </script>
 
-<label>
-    {m.numberPerPage({ n: m.treesUncapitalized() })}
+<form class="mb-2 flex w-full flex-row justify-end">
+    <label for="page-size" class="flex flex-col justify-center">
+        {m.numberPerPage({ n: m.treesUncapitalized() })}
+    </label>
     <select
-        class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
+        id="page-size"
+        class="input__select ml-2"
         bind:value={pageSize}
         onchange={handlePageSizeChange}
     >
-        <option value="5">5</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
+        <option value={5}> 5 </option>
+        <option value={10}>10</option>
+        <option value={20}>20</option>
+        <option value={50}>50</option>
     </select>
-</label>
+</form>
 
 {@render children()}
 
-<PaginationNav {currentPage} {totalPages} onPageChange={handlePageChange}>
+<PaginationNav
+    {currentPage}
+    {totalPages}
+    onPageChange={(newPage: number) => {
+        currentPage = newPage;
+        handlePageChange();
+    }}
+>
     {#snippet prevContent()}
         <span class="sr-only">{m.previousPage()}</span>
         <ChevronLeftOutline class="h-5 w-5" />

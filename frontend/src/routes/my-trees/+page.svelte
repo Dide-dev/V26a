@@ -23,10 +23,9 @@
     // because then updating it browser-side for tree deletion is not possible.
     let treeListResponse: TreeListResponse = $state({ totalTrees: 0, trees: [] });
 
-    let pageSizeString = $state('10');
-    let pageSizeNumber = $derived(Number(pageSizeString));
+    let pageSize = $state(10);
     let currentPage = $state(1);
-    let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber));
+    let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSize));
 
     onMount(async () => {
         await loadTrees();
@@ -45,7 +44,7 @@
         };
         let paginationOptions: PaginationOptions = {
             page: currentPage,
-            size: pageSizeNumber
+            size: pageSize
         };
         if (userInfo !== null) {
             treeListResponse = await getFilteredList(paginationOptions, filterOptions);
@@ -56,16 +55,16 @@
 
     function handlePageSizeChange() {
         // Update the length of the description shown array, and reset values to false.
-        if (pageSizeNumber > entriesExpanded.length) {
-            entriesExpanded = Array.from({ length: pageSizeNumber }, () => false);
+        if (pageSize > entriesExpanded.length) {
+            entriesExpanded = Array.from({ length: pageSize }, () => false);
         }
         // Move to page 1, to prevent out-of-range page errors.
-        handlePageChange(1);
+        currentPage = 1;
+        loadTrees();
     }
 
-    function handlePageChange(page: number) {
-        currentPage = page;
-        // Reset the shown description to false.
+    function handlePageChange() {
+        // Reset the expanded flags to false.
         entriesExpanded.fill(false);
         loadTrees();
     }
@@ -83,10 +82,10 @@
     {:else}
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <ListPagination
-                {currentPage}
+                bind:currentPage
                 {totalPages}
                 {handlePageChange}
-                bind:pageSize={pageSizeString}
+                bind:pageSize
                 {handlePageSizeChange}
             >
                 <div class="mb-4 flex w-full flex-col border-b border-neutral-200">
