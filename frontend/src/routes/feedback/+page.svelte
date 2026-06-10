@@ -14,7 +14,6 @@
     });
 
     const minInputLengths = {
-        email: 3,
         feedback: 6
     };
 
@@ -61,7 +60,6 @@
                 placeholder={m.optionalPlaceholder({ value: m.yourEmail() })}
                 data-testid="email"
                 maxLength={maxInputLengths.email}
-                minLength={minInputLengths.email}
             />
         </div>
         <div>
