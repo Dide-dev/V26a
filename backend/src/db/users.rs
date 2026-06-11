@@ -334,7 +334,7 @@ pub async fn delete_user(
         r#"
         UPDATE users
         SET enabled = false,
-            email = 'deleted',
+            email = CONCAT('deleted email_', id),
             name = CONCAT('deleted user_', id),
             nickname = '',
             about_me = '',
@@ -963,7 +963,7 @@ mod tests {
         };
 
         let expected_user_data = RegisterData {
-            email: ("deleted").to_string(),
+            email: format!("deleted email_{user_id}"),
             password: String::new(),
             data: UserData {
                 name: format!("deleted user_{0}", claims.sub),

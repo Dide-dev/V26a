@@ -502,8 +502,8 @@ async fn delete_user_data(
 
     // Unset the cookies by changing the date to a time in the past.
     Ok(jar
-        .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info")))
+        .remove(Cookie::build("session").path("/api/"))
+        .remove(Cookie::build("user_info").path("/")))
 }
 
 #[utoipa::path(
