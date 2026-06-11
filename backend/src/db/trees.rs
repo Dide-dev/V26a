@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::api_v1::trees::verify_tree_permissions;
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
@@ -16,7 +17,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
+use sqlx::{Acquire, PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
 /// Check whether the given subject exists.
@@ -1097,15 +1098,64 @@ pub async fn get_queried_list(
     Ok(trees)
 }
 
+/// Verify if the user is allowed to access the tree. The user is allowed to do so if the tree is made public or the user is an admin, owner or coauthor.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree.
+///
+/// `claims` - The session cookie of the user, as an [`Option`]. The cookie is only necessary for attempting verification of private trees.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if the requested tree does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not permitted to access the tree.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn verify_tree_accessible_by_user(
+    db: &mut PgConnection,
+    tree_id: i32,
+    claims: Option<Claims>,
+) -> Result<(), ApiError> {
+    let mut transaction = db.begin().await?;
+
+    let tree = query!("SELECT published FROM trees WHERE id=$1", tree_id)
+        .fetch_optional(&mut *transaction)
+        .await?;
+
+    let Some(tree) = tree else {
+        return Err(ApiError::MissingTree(tree_id));
+    };
+
+    if tree.published {
+        return Ok(());
+    }
+
+    let Some(claims) = claims else {
+        return Err(ApiError::MissingAuthentication);
+    };
+
+    verify_tree_permissions(&mut transaction, tree_id, &claims).await?;
+
+    transaction.commit().await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 #[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
     use super::*;
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
-        initialize_tree_with_data,
+        initialize_tree_with_data, initialize_user,
     };
     use crate::db_structs::trees::{Node, RootNode};
+    use crate::db_structs::users::RegisterData;
     use crate::get_connection_unwrap;
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
@@ -1923,5 +1973,62 @@ mod tests {
         let result = add_co_author(&db, tree_id, co_author_id).await;
 
         assert!(result.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_tree_is_accessible(db: PgPool) {
+        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let claims = Claims {
+            sub: user_id,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: user_id + 1,
+            exp: i64::MAX,
+            account_type: AccountType::Admin,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: user_id + 2,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_err());
+
+        let register_data = RegisterData::test_values();
+        let coauthor_id = initialize_user(get_connection_unwrap!(db), &register_data).await;
+        add_co_author(&db, tree_id, coauthor_id).await.unwrap();
+
+        let claims = Claims {
+            sub: coauthor_id,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        query!("UPDATE trees SET published = true WHERE id = $1 ", tree_id)
+            .execute(&db)
+            .await
+            .unwrap();
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, None).await;
+        assert!(result.is_ok());
     }
 }
