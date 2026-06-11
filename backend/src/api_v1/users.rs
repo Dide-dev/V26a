@@ -507,6 +507,12 @@ async fn get_all_owned_classrooms(
 
     let mut transaction = db.begin().await?;
     let classroom_count = get_classroom_count(&mut *transaction, claims.sub).await?;
+    if classroom_count == 0 {
+        return Ok(Json(ClassroomListResponse {
+            total_classrooms: 0,
+            classrooms: Vec::new(),
+        }));
+    }
 
     let classrooms = get_all_classrooms(&mut *transaction, claims.sub, &page).await?;
     transaction.commit().await?;
