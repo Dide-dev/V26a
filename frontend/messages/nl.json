@@ -111,6 +111,7 @@
     "id": "id",
     "enabled": "ingeschakeld",
     "userList": "Gebruikerslijst",
+    "feedbackList": "Ingezonden feedback",
     "newPassword": "Nieuw wachtwoord",
     "oldPassword": "Oud wachtwoord",
     "changePassword": "Wachtwoord wijzigen",

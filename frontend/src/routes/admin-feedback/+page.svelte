@@ -43,6 +43,7 @@
 </script>
 
 <div class="flex w-7/8 max-w-lg flex-col">
+    <h1 class="page__title">{m.feedbackList()}</h1>
     {#if feedbackListResponse?.feedback === null}
         <p>{m.loading()}</p>
     {:else if feedbackListResponse?.feedback.length === 0}

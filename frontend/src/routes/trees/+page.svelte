@@ -64,6 +64,8 @@
 </script>
 
 <div class="flex w-7/8 max-w-xl flex-col">
+    <h1 class="page__title">{m.allTrees()}</h1>
+
     <div class="mb-4 flex-col">
         <!-- Filter options -->
         <form class="completed flex w-full flex-col gap-2" onsubmit={loadTrees}>
@@ -112,7 +114,7 @@
     {#if treeListResponse?.trees === null}
         <p>{m.loading()}</p>
     {:else if treeListResponse?.trees.length === 0}
-        <h2 class="page__heading">{m.noAllTreesFound()}</h2>
+        <p class="mt-4 font-semibold italic">{m.noAllTreesFound()}</p>
     {:else}
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <ListPagination

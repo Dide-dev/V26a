@@ -41,6 +41,7 @@
 </script>
 
 <div class="flex w-7/8 max-w-lg flex-col">
+    <h1 class="page__title">{m.userList()}</h1>
     {#if userListResponse?.users === null}
         <p>{m.loading()}</p>
     {:else}

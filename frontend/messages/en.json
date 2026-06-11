@@ -111,6 +111,7 @@
     "id": "id",
     "enabled": "enabled",
     "userList": "User list",
+    "feedbackList": "Received feedback",
     "newPassword": "New password",
     "oldPassword": "Old password",
     "changePassword": "Change password",
