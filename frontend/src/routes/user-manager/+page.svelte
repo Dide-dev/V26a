@@ -102,14 +102,6 @@
         inputsChanged.error = false;
     }
 
-    function resetInputResponses() {
-        passwordMissingChar = false;
-        usernameAlreadyExists = false;
-        emailAlreadyExists = false;
-        successfulPasswordChange = false;
-        passwordNotSame = false;
-    }
-
     async function handleSubmit(event: SubmitEvent, userData: AdminUpdateData) {
         event.preventDefault();
 
@@ -164,10 +156,7 @@
             throw new Error('ERROR: Unexpected output from API.');
         }
 
-        // Effectively reloads the page. This is not really necessary, but prevents
-        // the displayed data from being inconsistent with the database in case something
-        // goes wrong.
-        userDataPromise = getUserAllData(id);
+        await goto(appLink('/user-list'));
     }
 
     async function handlePasswordChange(id: number) {
@@ -209,15 +198,7 @@
     async function handleCancel(e: Event) {
         e.preventDefault();
 
-        if (!formChanged) {
-            return;
-        }
-
-        resetInputStates();
-        resetInputResponses();
-        changePasswordData.newPassword = '';
-        repeatPassword = '';
-        userDataPromise = getUserAllData(id);
+        await goto(appLink('/user-list'));
     }
 </script>
 
