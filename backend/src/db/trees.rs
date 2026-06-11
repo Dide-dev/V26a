@@ -1639,6 +1639,23 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_tags_filter_case_insensitive() {
+        let mut query1 = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let mut query2 = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let lower_case_tags = TreeFilters {
+            tag: vec!["tag1".to_owned(), "tag2".to_owned()],
+            ..Default::default()
+        };
+        let upper_case_tags = TreeFilters {
+            tag: vec!["TAG1".to_owned(), "TAG2".to_owned()],
+            ..Default::default()
+        };
+        apply_tree_filters(&mut query1, &lower_case_tags, None).unwrap();
+        apply_tree_filters(&mut query2, &upper_case_tags, None).unwrap();
+        assert_eq!(query1.sql(), query2.sql());
+    }
+
+    #[sqlx::test]
     async fn test_get_queried_count(db: PgPool) {
         let user_id = initialize_basic_user(&db).await;
         let claims = Claims {
