@@ -102,6 +102,7 @@
                 <tr>
                     <th class="text-left">{m.classroom()}</th>
                     <th class="text-left">{m.description()}</th>
+                    <th class="text-left">{m.code()}</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,6 +118,9 @@
                         </td>
                         <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
                             >{classroom.data.description}</td
+                        >
+                        <td class="max-w-96 pr-4 pl-4 align-text-top wrap-anywhere"
+                            >{classroom.genData.joinCode}</td
                         >
                     </tr>
                 {/each}
