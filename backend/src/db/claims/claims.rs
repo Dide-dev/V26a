@@ -240,9 +240,7 @@ mod tests {
             .await
             .unwrap();
 
-        Claims::delete_session(&db, &token)
-            .await
-            .unwrap();
+        Claims::delete_session(&db, &token).await.unwrap();
 
         let claims: Option<Claims> = Claims::get_session(&db, &token).await.unwrap();
 

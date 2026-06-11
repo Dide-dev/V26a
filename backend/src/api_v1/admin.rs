@@ -24,7 +24,6 @@ use crate::db_structs::{
 };
 
 use crate::api_v1::users::{check_email_used, check_username_used};
-use crate::db_structs::session::ClaimsType;
 use crate::db_structs::users::PendingAccountsExt;
 use crate::{
     ArcState,

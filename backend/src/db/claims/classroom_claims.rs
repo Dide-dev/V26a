@@ -132,8 +132,8 @@ impl ClassroomClaims {
             num,
             expires_at,
         )
-            .execute(db)
-            .await?;
+        .execute(db)
+        .await?;
 
         Ok(())
     }

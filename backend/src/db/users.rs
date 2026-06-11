@@ -963,7 +963,7 @@ mod tests {
         };
 
         let expected_user_data = RegisterData {
-            email: format!("deleted email_{user_id}"),
+            email: format!("deleted email_{0}", claims.sub),
             password: String::new(),
             data: UserData {
                 name: format!("deleted user_{0}", claims.sub),

@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::db_structs::Validated;
+use crate::db_structs::session::ClassroomClaims;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
@@ -12,7 +13,6 @@ use crate::limits::{
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
-use crate::db_structs::session::ClassroomClaims;
 
 /// The basic data of the classroom that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
