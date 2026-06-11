@@ -37,8 +37,8 @@ pub async fn add_tags(
     // This needs to be queried separately because the previous query doesn't insert all of the tags
     // if there are duplicates.
     let tag_ids = query!(
-        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
-        tags
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
+        &tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>()
     )
     .fetch_all(&mut *db)
     .await?;
@@ -186,14 +186,15 @@ const CARD_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN users ON users.id = library_cards.owner_id
 ";
 
-fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
+    let tags = tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>();
     query
         .push(
             r"
             WITH requested_tags AS (
                 SELECT id
                 FROM tags
-                WHERE name = ANY(",
+                WHERE LOWER(name) = ANY(",
         )
         .push_bind(tags)
         .push("))");

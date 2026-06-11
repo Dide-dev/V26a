@@ -421,13 +421,13 @@ async fn test_filter_tree_list(db: PgPool) {
             published: true,
             language_code: "nl".to_owned(),
             subject_id: Some(subject_id),
-            tags: vec!["Coco".to_owned(), "Fork".to_owned()],
+            tags: vec!["Coco".to_owned(), "fork".to_owned()],
             ..Default::default()
         },
         TreeData {
             book_isbn: Some("9780061120084".to_string()),
             language_code: "fr".to_owned(),
-            tags: vec!["Fork".to_owned(), "Gargoyle".to_owned()],
+            tags: vec!["fork".to_owned(), "Gargoyle".to_owned()],
             published: true,
             ..Default::default()
         },

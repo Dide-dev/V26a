@@ -251,8 +251,8 @@ pub async fn add_tags(
     // This needs to be queried separately because the previous query doesn't insert all of the tags
     // if there are duplicates.
     let tag_ids = query!(
-        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
-        tags
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
+        &tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>()
     )
     .fetch_all(&mut *db)
     .await?;
@@ -973,7 +973,7 @@ const TREE_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN languages ON languages.code = trees.language_code
 ";
 
-fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
     let tags = tags.iter().map(| tag | tag.to_lowercase()).collect::<Vec<_>>();
     query
         .push(
@@ -981,7 +981,7 @@ fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a
             WITH requested_tags AS (
                 SELECT id
                 FROM tags
-                WHERE name = ANY(",
+                WHERE LOWER(name) = ANY(",
         )
         .push_bind(tags)
         .push("))");
@@ -1642,16 +1642,20 @@ mod tests {
     async fn test_tags_filter_case_insensitive() {
         let mut query1 = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let mut query2 = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+
         let lower_case_tags = TreeFilters {
             tag: vec!["tag1".to_owned(), "tag2".to_owned()],
             ..Default::default()
         };
+
         let upper_case_tags = TreeFilters {
             tag: vec!["TAG1".to_owned(), "TAG2".to_owned()],
             ..Default::default()
         };
+
         apply_tree_filters(&mut query1, &lower_case_tags, None).unwrap();
         apply_tree_filters(&mut query2, &upper_case_tags, None).unwrap();
+
         assert_eq!(query1.sql(), query2.sql());
     }
 
