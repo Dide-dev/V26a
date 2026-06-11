@@ -107,7 +107,6 @@ pub fn rate_limit_layer(
 ///
 /// Returns a [`DateTime<Utc>`] containing the expiration time.
 pub fn create_token(session_duration: i64) -> (String, DateTime<Utc>) {
-    // Create the authorization token. The opaque session token to store.
     let token = {
         let mut rng = rand::rng();
         Alphanumeric.sample_string(&mut rng, 64)

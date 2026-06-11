@@ -87,6 +87,11 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     response.assert_status_ok();
 
     let classroom_login_response = response.json::<ClassroomLoginResponse>();
+    let classroom_login_response = match classroom_login_response {
+        ClassroomLoginResponse::Success { login_data } => login_data,
+        ClassroomLoginResponse::JoinCodeIncorrect { join_code } => { panic!("Join code {join_code} incorrect") }
+        ClassroomLoginResponse::MissingUser { user_num } => { panic!("User {user_num} does not exist in classroom") }
+    };
 
     let cookie = response.cookie("classroom_user_infos");
     let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);

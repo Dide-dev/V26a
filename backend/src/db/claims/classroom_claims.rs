@@ -12,14 +12,12 @@ use chrono::{DateTime, Utc};
 use sqlx::{PgConnection, PgExecutor, PgPool, query};
 
 impl ClaimsType for ClassroomClaims {
-    type PathOptions = i32;
-
-    type ManageSessionInfo = (i32, i32);
-
     fn get_cookie_name() -> &'static str {
         "classroom_sessions"
     }
+}
 
+impl ClassroomClaims {
     /// Used in `FromRequestParts` for `ClassroomClaims` to retrieve the `ClassroomClaims`.
     ///
     /// # Arguments
@@ -34,7 +32,7 @@ impl ClaimsType for ClassroomClaims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    async fn get_claims(parts: &mut Parts) -> Result<ClassroomClaims, ApiError> {
+    pub(crate) async fn get_claims(parts: &mut Parts) -> Result<ClassroomClaims, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -68,10 +66,10 @@ impl ClaimsType for ClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn get_session(
+    pub(crate) async fn get_session(
         db: impl PgExecutor<'_>,
         token: &str,
-        classroom_id: Self::PathOptions,
+        classroom_id: i32,
     ) -> Result<Option<ClassroomClaims>, ApiError> {
         if token.is_empty() {
             return Ok(None);
@@ -118,11 +116,11 @@ impl ClaimsType for ClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn create_session(
+    pub(crate) async fn create_session(
         db: &mut PgConnection,
         token: &str,
         expires_at: DateTime<Utc>,
-        (classroom_id, num): &Self::ManageSessionInfo,
+        (classroom_id, num): &(i32, i32),
     ) -> Result<(), ApiError> {
         query!(
             "INSERT INTO classroom_sessions (token, classroom_id, id_within_classroom, expires_at)
@@ -153,10 +151,10 @@ impl ClaimsType for ClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_session(
+    pub(crate) async fn delete_session(
         db: impl PgExecutor<'_>,
         token: &str,
-        (classroom_id, num): &Self::ManageSessionInfo,
+        (classroom_id, num): &(i32, i32),
     ) -> Result<(), ApiError> {
         query!("DELETE FROM classroom_sessions WHERE (token, classroom_id, id_within_classroom) = ($1, $2, $3)",
             token,
@@ -181,9 +179,9 @@ impl ClaimsType for ClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_all_sessions(
+    pub(crate) async fn delete_all_sessions(
         db: impl PgExecutor<'_>,
-        (classroom_id, num): &Self::ManageSessionInfo,
+        (classroom_id, num): &(i32, i32),
     ) -> Result<(), ApiError> {
         query!(
             "DELETE FROM classroom_sessions WHERE (classroom_id, id_within_classroom) = ($1, $2)",
@@ -210,10 +208,10 @@ impl ClaimsType for ClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_all_sessions_except(
+    pub(crate) async fn delete_all_sessions_except(
         db: impl PgExecutor<'_>,
         token: &str,
-        (classroom_id, num): &Self::ManageSessionInfo,
+        (classroom_id, num): &(i32, i32),
     ) -> Result<(), ApiError> {
         query!(
             "DELETE FROM classroom_sessions WHERE (classroom_id, id_within_classroom) = ($1, $2) AND token != $3",

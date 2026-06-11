@@ -14,14 +14,12 @@ use sqlx::{PgConnection, PgExecutor, PgPool, query};
 use std::str::FromStr;
 
 impl ClaimsType for Claims {
-    type PathOptions = ();
-
-    type ManageSessionInfo = i32;
-
     fn get_cookie_name() -> &'static str {
         "session"
     }
+}
 
+impl Claims {
     /// Used in `FromRequestParts` for `Claims` to retrieve the `Claims`.
     ///
     /// # Arguments
@@ -36,7 +34,7 @@ impl ClaimsType for Claims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    async fn get_claims(parts: &mut Parts) -> Result<Claims, ApiError> {
+    pub(crate) async fn get_claims(parts: &mut Parts) -> Result<Claims, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -46,7 +44,7 @@ impl ClaimsType for Claims {
         // Extract the token from the cookie jar.
         let token = Claims::extract_token(&jar)?;
 
-        Claims::get_session(db, &token, ())
+        Claims::get_session(db, &token)
             .await?
             .ok_or(ApiError::InvalidSession)
     }
@@ -58,8 +56,6 @@ impl ClaimsType for Claims {
     ///
     /// `token` - The opaque session token from the session cookie.
     ///
-    /// `()` - A type used when extra information is needed, not necessary for `Claims`.
-    ///
     /// # Returns
     /// Returns [`Ok(Some(Claims))`](Claims) containing the user id and account type.
     ///
@@ -67,10 +63,9 @@ impl ClaimsType for Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn get_session(
+    pub(crate) async fn get_session(
         db: impl PgExecutor<'_>,
         token: &str,
-        (): Self::PathOptions,
     ) -> Result<Option<Claims>, ApiError> {
         let row = query!(
             "SELECT s.user_id, u.account_type, s.expires_at AS exp
@@ -106,11 +101,11 @@ impl ClaimsType for Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn create_session(
+    pub(crate) async fn create_session(
         db: &mut PgConnection,
         token: &str,
         expires_at: DateTime<Utc>,
-        user_id: &Self::ManageSessionInfo,
+        user_id: &i32,
     ) -> Result<(), ApiError> {
         query!(
             "INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)",
@@ -131,14 +126,11 @@ impl ClaimsType for Claims {
     ///
     /// `token` - The token of the session to delete.
     ///
-    /// `_user_id` - The user id, not used in this function for `Claims`.
-    ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_session(
+    pub(crate) async fn delete_session(
         db: impl PgExecutor<'_>,
         token: &str,
-        _user_id: &Self::ManageSessionInfo,
     ) -> Result<(), ApiError> {
         query!("DELETE FROM sessions WHERE token = $1", token)
             .execute(db)
@@ -156,9 +148,9 @@ impl ClaimsType for Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_all_sessions(
+    pub(crate) async fn delete_all_sessions(
         db: impl PgExecutor<'_>,
-        user_id: &Self::ManageSessionInfo,
+        user_id: &i32,
     ) -> Result<(), ApiError> {
         query!("DELETE FROM sessions WHERE user_id = $1", user_id)
             .execute(db)
@@ -178,10 +170,10 @@ impl ClaimsType for Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_all_sessions_except(
+    pub(crate) async fn delete_all_sessions_except(
         db: impl PgExecutor<'_>,
         token: &str,
-        user_id: &Self::ManageSessionInfo,
+        user_id: &i32,
     ) -> Result<(), ApiError> {
         query!(
             "DELETE FROM sessions WHERE user_id = $1 AND token != $2",
@@ -212,7 +204,7 @@ mod tests {
             .await
             .unwrap();
 
-        let retrieved_claims = Claims::get_session(&db, &token, ()).await.unwrap().unwrap();
+        let retrieved_claims = Claims::get_session(&db, &token).await.unwrap().unwrap();
 
         // Validates if the user is in claims, meaning the session is returned if it is true.
         assert_eq!(retrieved_claims, claims);
@@ -248,11 +240,11 @@ mod tests {
             .await
             .unwrap();
 
-        Claims::delete_session(&db, &token, &claims.sub)
+        Claims::delete_session(&db, &token)
             .await
             .unwrap();
 
-        let claims: Option<Claims> = Claims::get_session(&db, &token, ()).await.unwrap();
+        let claims: Option<Claims> = Claims::get_session(&db, &token).await.unwrap();
 
         assert!(claims.is_none());
     }
@@ -272,8 +264,8 @@ mod tests {
 
         Claims::delete_all_sessions(&db, &claims.sub).await.unwrap();
 
-        let claims1 = Claims::get_session(&db, "token-1", ()).await.unwrap();
-        let claims2 = Claims::get_session(&db, "token-2", ()).await.unwrap();
+        let claims1 = Claims::get_session(&db, "token-1").await.unwrap();
+        let claims2 = Claims::get_session(&db, "token-2").await.unwrap();
 
         // Deleting multiple claims would result in multiple rows being empty.
         assert!(claims1.is_none());
@@ -297,8 +289,8 @@ mod tests {
             .await
             .unwrap();
 
-        let claims1 = Claims::get_session(&db, &token1, ()).await.unwrap();
-        let claims2 = Claims::get_session(&db, &token2, ()).await.unwrap();
+        let claims1 = Claims::get_session(&db, &token1).await.unwrap();
+        let claims2 = Claims::get_session(&db, &token2).await.unwrap();
 
         // This session is the exception and should not be deleted.
         assert!(claims1.is_some());

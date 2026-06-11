@@ -157,7 +157,7 @@ async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<Cook
     let token = Claims::extract_token(&jar)?;
 
     // Invalidate the session.
-    Claims::delete_session(&db, &token, &-1).await?;
+    Claims::delete_session(&db, &token).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar

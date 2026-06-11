@@ -7,9 +7,7 @@
 CREATE TABLE classroom_users
 (
     classroom_id            INTEGER             NOT NULL,
-    name                    VARCHAR(32)         NOT NULL,
-    --^ name is once again not UNIQUE, not even within a classroom,
-    -- because users are identified by their id_within_classroom in a classroom.
+    name                    VARCHAR(32)         NOT NULL, -- name is not UNIQUE, because users are identified by their id_within_classroom in a classroom.
     id_within_classroom     INTEGER             NOT NULL,
     created_at              TIMESTAMPTZ         NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

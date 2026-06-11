@@ -12,14 +12,12 @@ use chrono::{DateTime, Utc};
 use sqlx::{PgConnection, PgExecutor, PgPool, query};
 
 impl ClaimsType for AllClassroomClaims {
-    type PathOptions = ();
-
-    type ManageSessionInfo = Vec<ClassroomClaims>;
-
     fn get_cookie_name() -> &'static str {
         "classroom_sessions"
     }
+}
 
+impl AllClassroomClaims {
     /// Used in `FromRequestParts` for `AllClassroomClaims` to retrieve the `AllClassroomClaims`.
     ///
     /// # Arguments
@@ -34,7 +32,7 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    async fn get_claims(parts: &mut Parts) -> Result<AllClassroomClaims, ApiError> {
+    pub(crate) async fn get_claims(parts: &mut Parts) -> Result<AllClassroomClaims, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -44,7 +42,7 @@ impl ClaimsType for AllClassroomClaims {
         // Extract the token from the cookie jar.
         let token = AllClassroomClaims::extract_token(&jar)?;
 
-        AllClassroomClaims::get_session(db, &token, ())
+        AllClassroomClaims::get_session(db, &token)
             .await?
             .ok_or(ApiError::InvalidSession)
     }
@@ -56,8 +54,6 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// `token` - The opaque session token from the session cookie.
     ///
-    /// `()` - A type used when extra information is needed, not necessary for `AllClassroomClaims`.
-    ///
     /// # Returns
     /// Returns [`Ok(Some(AllClassroomClaims))`](AllClassroomClaims) containing the user id and account type.
     ///
@@ -65,10 +61,9 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn get_session(
+    pub(crate) async fn get_session(
         db: impl PgExecutor<'_>,
         token: &str,
-        (): Self::PathOptions,
     ) -> Result<Option<AllClassroomClaims>, ApiError> {
         let rows = query!(
             "SELECT s.classroom_id, s.id_within_classroom, u.name
@@ -87,11 +82,11 @@ impl ClaimsType for AllClassroomClaims {
 
         Ok(Some(AllClassroomClaims {
             claims: rows
-                .iter()
+                .into_iter()
                 .map(|row| ClassroomClaims {
                     id: row.classroom_id,
                     num: row.id_within_classroom,
-                    name: row.name.clone(),
+                    name: row.name,
                 })
                 .collect::<Vec<ClassroomClaims>>(),
         }))
@@ -113,11 +108,11 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn create_session(
+    pub(crate) async fn create_session(
         db: &mut PgConnection,
         token: &str,
         expires_at: DateTime<Utc>,
-        all_claims: &Self::ManageSessionInfo,
+        all_claims: &Vec<ClassroomClaims>,
     ) -> Result<(), ApiError> {
         query!("INSERT INTO classroom_tokens (token) VALUES ($1)", token,)
             .execute(&mut *db)
@@ -144,10 +139,10 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_session(
+    pub(crate) async fn delete_session(
         db: impl PgExecutor<'_>,
         token: &str,
-        _all_claims: &Self::ManageSessionInfo,
+        _all_claims: &Vec<ClassroomClaims>,
     ) -> Result<(), ApiError> {
         query!("DELETE FROM classroom_tokens WHERE token = $1", token)
             .execute(db)
@@ -168,9 +163,9 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_all_sessions(
+    pub(crate) async fn delete_all_sessions(
         db: impl PgExecutor<'_>,
-        all_claims: &Self::ManageSessionInfo,
+        all_claims: &Vec<ClassroomClaims>,
     ) -> Result<(), ApiError> {
         let ids: Vec<i32> = all_claims.iter().map(|claims| claims.id).collect();
         let nums: Vec<i32> = all_claims.iter().map(|claims| claims.id).collect();
@@ -203,10 +198,10 @@ impl ClaimsType for AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    async fn delete_all_sessions_except(
+    pub(crate) async fn delete_all_sessions_except(
         db: impl PgExecutor<'_>,
         token: &str,
-        all_claims: &Self::ManageSessionInfo,
+        all_claims: &Vec<ClassroomClaims>,
     ) -> Result<(), ApiError> {
         let ids: Vec<i32> = all_claims.iter().map(|claims| claims.id).collect();
         let nums: Vec<i32> = all_claims.iter().map(|claims| claims.id).collect();

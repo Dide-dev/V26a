@@ -3,9 +3,7 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::classrooms::{
-    ClassroomData, ClassroomGeneratedData, ClassroomMetaData, LessonAddData,
-};
+use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData, ClassroomMetaData, LessonAddData};
 use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
 use chrono::{DateTime, Utc};
@@ -100,19 +98,19 @@ pub async fn add_classroom(
 /// If the join code is not correct or the classroom is not joinable, returns a [`WrongClassroomJoinCode`](ApiError::WrongClassroomJoinCode).
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
-pub async fn validate_join_code(db: impl PgExecutor<'_>, join_code: &str) -> Result<i32, ApiError> {
+pub async fn validate_join_code(db: impl PgExecutor<'_>, join_code: &str) -> Result<Option<i32>, ApiError> {
     let classroom = query!(
         "SELECT id, joinable FROM classrooms WHERE join_code = $1",
         join_code
     )
     .fetch_optional(db)
-    .await?
-    .ok_or(ApiError::WrongClassroomJoinCode(join_code.to_string()))?;
+    .await?;
+    
+    let Some(classroom) = classroom else { return Ok(None) };
 
-    if !classroom.joinable {
-        return Err(ApiError::WrongClassroomJoinCode(join_code.to_string()));
-    }
-    Ok(classroom.id)
+    if !classroom.joinable { return Ok(None) };
+    
+    Ok(Some(classroom.id))
 }
 
 /// Adds a new user to the `classroom_users` database table for some classroom.
@@ -407,7 +405,7 @@ mod tests {
         let retrieved_id = validate_join_code(&db, join_code).await;
 
         assert!(retrieved_id.is_ok());
-        assert_eq!(retrieved_id.unwrap(), id);
+        assert_eq!(retrieved_id.unwrap(), Some(id));
     }
 
     #[sqlx::test]

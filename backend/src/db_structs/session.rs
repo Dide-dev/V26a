@@ -6,11 +6,8 @@
 
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
-use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgConnection, PgExecutor};
 use std::fmt::Debug;
 use utoipa::ToSchema;
 
@@ -56,12 +53,6 @@ pub struct AllClassroomClaims {
 /// Trait to ensure these function are only used for structs that implement this trait
 /// (so only our cookie structs).
 pub trait ClaimsType: Sized + Debug {
-    /// The type of options that are retrieved from the api uri.
-    type PathOptions;
-
-    /// A type that defines the information necessary to execute the create and delete sessions functions.
-    type ManageSessionInfo;
-
     /// Get the cookie name connected to the cookie struct
     fn get_cookie_name() -> &'static str;
 
@@ -82,42 +73,4 @@ pub trait ClaimsType: Sized + Debug {
             .value()
             .to_string())
     }
-
-    /// Function that returns the claims from the [`Parts`].
-    async fn get_claims(parts: &mut Parts) -> Result<Self, ApiError>;
-
-    /// Function that retrieves a session from the database in some way.
-    async fn get_session(
-        db: impl PgExecutor<'_>,
-        token: &str,
-        options: Self::PathOptions,
-    ) -> Result<Option<Self>, ApiError>;
-
-    /// Function that creates a new session in some way.
-    async fn create_session(
-        db: &mut PgConnection,
-        token: &str,
-        expires_at: DateTime<Utc>,
-        info: &Self::ManageSessionInfo,
-    ) -> Result<(), ApiError>;
-
-    /// Function that deletes a session in some way.
-    async fn delete_session(
-        db: impl PgExecutor<'_>,
-        token: &str,
-        info: &Self::ManageSessionInfo,
-    ) -> Result<(), ApiError>;
-
-    /// Function that deletes all sessions in some way.
-    async fn delete_all_sessions(
-        db: impl PgExecutor<'_>,
-        info: &Self::ManageSessionInfo,
-    ) -> Result<(), ApiError>;
-
-    /// Function that deletes all sessions except one in some way.
-    async fn delete_all_sessions_except(
-        db: impl PgExecutor<'_>,
-        token: &str,
-        info: &Self::ManageSessionInfo,
-    ) -> Result<(), ApiError>;
 }

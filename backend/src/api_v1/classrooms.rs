@@ -129,15 +129,19 @@ async fn classroom_login(
     Json(classroom_login_data): Json<ClassroomUserLoginData>,
 ) -> Result<(CookieJar, Json<ClassroomLoginResponse>), ApiError> {
     // Validate the join code. Also checks if the connected classroom is joinable.
-    let classroom_id = validate_join_code(&db, &classroom_login_data.join_code).await?;
+    let Some(classroom_id) = validate_join_code(&db, &classroom_login_data.join_code).await? else {
+        return Ok((jar, Json(ClassroomLoginResponse::JoinCodeIncorrect { join_code: classroom_login_data.join_code })));
+    };
 
     // Create a (num, name) pair either by creating a new user number or
     // retrieving the name connected to the existing user number.
     let (num, name): (i32, String) = match classroom_login_data.username.trim().parse::<i32>() {
         // Username is num.
         Ok(num) => (num, {
-            let name = get_name_by_number(&db, classroom_id, num).await?;
-            name.ok_or(ApiError::MissingUser(num))?
+            let Some(name) = get_name_by_number(&db, classroom_id, num).await? else {
+                return Ok((jar, Json(ClassroomLoginResponse::MissingUser { user_num: num })));
+            };
+            name
         }),
         // Username is name.
         Err(_) => (
@@ -166,7 +170,7 @@ async fn classroom_login(
         &jar,
         &db,
         all_classroom_claims,
-        new_classroom_claims,
+        new_classroom_claims.clone(),
         session_duration,
     )
     .await?;
@@ -195,11 +199,7 @@ async fn classroom_login(
     // This also overwrites any cookies with the same name already in the jar.
     Ok((
         jar.add(cookie).add(user_cookie),
-        Json(ClassroomLoginResponse {
-            id: classroom_id,
-            num,
-            name,
-        }),
+        Json(ClassroomLoginResponse::Success { login_data: new_classroom_claims }),
     ))
 }
 

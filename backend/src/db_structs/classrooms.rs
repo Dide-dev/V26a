@@ -12,6 +12,7 @@ use crate::limits::{
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
+use crate::db_structs::session::ClassroomClaims;
 
 /// The basic data of the classroom that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
@@ -117,10 +118,9 @@ pub struct ClassroomUserLoginData {
 }
 
 /// The data that is sent to the user after successfully logging in to a classroom.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
-#[serde(rename_all = "camelCase")]
-pub struct ClassroomLoginResponse {
-    pub id: i32,
-    pub num: i32,
-    pub name: String,
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+pub enum ClassroomLoginResponse {
+    Success { login_data: ClassroomClaims },
+    JoinCodeIncorrect { join_code: String },
+    MissingUser { user_num: i32 },
 }
