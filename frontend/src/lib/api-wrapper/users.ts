@@ -5,6 +5,7 @@
 */
 
 import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
+import type { Option } from './types';
 
 const prefix = 'users';
 
@@ -26,6 +27,8 @@ function apiCallGetUser(path: string) {
 
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
+/** Unique username. */
+export type Username = string;
 
 /** The data a user can modify, except email or password
  *
@@ -35,7 +38,7 @@ export type AccountType = 'author' | 'admin';
  * database.
  */
 export type UserData = {
-    name: string;
+    name: Username;
     nickname: string;
     aboutMe: string;
     emailVisible: boolean;
@@ -49,7 +52,7 @@ export type UserData = {
  * database.
  */
 export type UserGeneralData = {
-    name: string;
+    name: Username;
     nickname: string;
     aboutMe: string;
 };
@@ -90,15 +93,25 @@ export type ChangePasswordResponse = {
     succeeded: boolean;
 };
 
-/** The data of the user that is returned when requesting it */
+/** The private data of the user that is returned when requesting it */
 export type UserGetData = {
     email: string;
     data: UserData;
 };
 
+/** The public data for a user's profile page. */
+export type PublicUserData = {
+    name: string;
+    nickname: string;
+    aboutMe: string;
+    language: string;
+    /** Is null when the user set the `emailVisible` to false. */
+    email: Option<string>;
+};
+
 /** The data in the cookie */
 export type UserInfo = {
-    name: string;
+    name: Username;
     nickname: string;
     /** This corresponds to userid of the current login. */
     sub: UserId;
@@ -131,6 +144,11 @@ export function deleteMe(deleteTrees: boolean): Promise<void> {
 /** Get the user's own data */
 export function getOwnUserData(): Promise<UserGetData> {
     return apiCallGetUser('/me');
+}
+
+/** Get a user's public data. Is by default cached in a global variable, to reduce server load. */
+export function getPublicUserData(userId: UserId): Promise<PublicUserData> {
+    return apiCallGetUser(`/${userId}/public`);
 }
 
 /** Update a user's own data */

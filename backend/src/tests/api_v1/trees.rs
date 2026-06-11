@@ -6,7 +6,9 @@
 
 #![cfg(test)]
 
+use crate::Config;
 use crate::api_v1::trees::AuthorizeCoAuthorResponse;
+use crate::api_v1::trees::edit_lock::{BackendMessage, FrontendMessage};
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::CardData;
@@ -18,7 +20,9 @@ use crate::db_structs::trees::{
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{create_tree, login, register, register_admin, setup, setup_login};
+use crate::tests::api_v1::{
+    create_tree, login, register, register_admin, setup, setup_config, setup_login,
+};
 use axum_test::TestServer;
 use sqlx::{PgPool, query_scalar};
 use std::collections::{BTreeMap, HashMap};
@@ -712,6 +716,80 @@ async fn test_filter_tree_list(db: PgPool) {
 }
 
 #[sqlx::test]
+async fn test_filter_tree_list_editable(db: PgPool) {
+    let test_state = setup(db);
+
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+
+    let server = test_state.server;
+    login(&server, account1.email.clone()).await;
+
+    let tree_data_1 = TreeData::default();
+    let tree_data_2 = TreeData::default();
+    let tree_data_3 = TreeData::default();
+
+    let tree_add_data_1 = TreeAddData {
+        tree_data: tree_data_1.clone(),
+        tree_structure: TreeStructure {
+            root_nodes: Vec::new(),
+        },
+    };
+    let tree_add_data_2 = TreeAddData {
+        tree_data: tree_data_2.clone(),
+        tree_structure: TreeStructure {
+            root_nodes: Vec::new(),
+        },
+    };
+    let tree_add_data_3 = TreeAddData {
+        tree_data: tree_data_3.clone(),
+        tree_structure: TreeStructure {
+            root_nodes: Vec::new(),
+        },
+    };
+
+    let response = server.post("/trees").json(&tree_add_data_1).await;
+    response.assert_status_ok();
+    let tree_id_1: i32 = response.json();
+
+    login(&server, account2.email.clone()).await;
+
+    let response = server.post("/trees").json(&tree_add_data_2).await;
+    response.assert_status_ok();
+    let tree_id_2: i32 = response.json();
+    let response = server.post("/trees").json(&tree_add_data_3).await;
+    response.assert_status_ok();
+
+    let response = server
+        .post(&format!(
+            "/trees/{tree_id_2}/co-authors/{}",
+            account1.data.name
+        ))
+        .await;
+    response.assert_status_ok();
+
+    login(&server, account1.email.clone()).await;
+
+    // Query trees owned by users and trees they have been authorized for.
+    let response = server
+        .get("/trees?page=1&size=10&showOwnPrivate=true&editable=true")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+
+    // Reverse because the received trees are in reverse order (newest first).
+    let expected_tree_ids: Vec<i32> = [tree_id_2, tree_id_1].to_vec();
+    let requested_tree_ids = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.gen_data.id)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_tree_ids, expected_tree_ids);
+}
+
+#[sqlx::test]
 async fn test_update_and_get_tree(db: PgPool) {
     let server = setup_login(db).await;
 
@@ -1131,4 +1209,52 @@ async fn test_deauthorize_co_author(db: PgPool) {
         .await;
     response.assert_status_ok();
     assert!(!is_co_author().await);
+}
+
+#[sqlx::test]
+async fn test_acquire_lock(db: PgPool) {
+    let test_state = setup_config(db.clone(), &mut Config::load(), true);
+    let user1 = RegisterData::test_values();
+    let user2 = RegisterData::test_values();
+    let user_id1 = register(&test_state, &user1).await;
+    let user_id2 = register(&test_state, &user2).await;
+
+    let server = test_state.server;
+
+    login(&server, user1.email.clone()).await;
+    let tree_id = create_tree(&server).await;
+    server
+        .post(&format!("/trees/{tree_id}/co-authors/{}", user2.data.name))
+        .await
+        .assert_status_ok();
+
+    let create_ws = async || {
+        let response = server
+            .get_websocket(&format!("/trees/{tree_id}/edit-lock"))
+            .await;
+        response.assert_status_switching_protocols();
+        response.into_websocket().await
+    };
+
+    // First user 1 has the lock.
+    let mut ws1 = create_ws().await;
+    ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
+
+    // User 2 first fails, then forces.
+    login(&server, user2.email.clone()).await;
+    let mut ws2 = create_ws().await;
+    ws2.assert_receive_json(&BackendMessage::LockFailed {
+        active_user: user_id1,
+    })
+    .await;
+    ws2.send_json(&FrontendMessage::Force).await;
+    ws1.assert_receive_json(&BackendMessage::KickedOutBy { user_id: user_id2 })
+        .await;
+    ws2.assert_receive_json(&BackendMessage::LockAchieved).await;
+
+    // User 2 closes the websocket (by for example leaving page),
+    // the lock is gone, so user 1 doesn't need to force the lock.
+    ws2.close().await;
+    ws1 = create_ws().await;
+    ws1.assert_receive_json(&BackendMessage::LockAchieved).await;
 }

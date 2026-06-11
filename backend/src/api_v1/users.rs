@@ -8,15 +8,15 @@ use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
 use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
-    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
-    update_user, user_id_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
+    update_password, update_user, user_id_exists,
 };
 use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
     DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
-    RegisterData, UserData, UserGetData,
+    PublicUserData, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -26,7 +26,7 @@ use std::collections::hash_map::Entry;
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
 use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
@@ -46,6 +46,7 @@ pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
         .route("/verification", post(verify))
+        .route("/{user_id}/public", get(get_public_user_data))
         .route(
             "/me",
             get(get_own_user_data)
@@ -121,7 +122,7 @@ async fn add_new_user(
         // Remove pending accounts in case they have not been pruned yet.
         pending_accounts.remove_expired();
 
-        if check_email_used(&db, &pending_accounts, &user_data.email).await? {
+        if check_email_used(&db, &pending_accounts, &user_data.email, None).await? {
             return Ok(Json(UserResponse::EmailAlreadyUsed));
         }
 
@@ -260,6 +261,39 @@ async fn get_own_user_data(
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<UserGetData>, ApiError> {
     get_user(&db, claims.sub).await.map(Json)
+}
+
+#[utoipa::path(
+    get,
+    path = "/{user_id}/public",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Successfully retrieved public data of user.", body = PublicUserData),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Get a user's public data from the database.
+///
+/// # Returns
+/// The user's data as [`PublicUserData`].
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if no user of the given id could be found.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_public_user_data(
+    Path(user_id): Path<i32>,
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<PublicUserData>, ApiError> {
+    if let Some(user_data) = get_user_public_data(&db, user_id).await? {
+        Ok(Json(user_data))
+    } else {
+        Err(ApiError::MissingUser(user_id))
+    }
 }
 
 #[utoipa::path(
@@ -461,8 +495,8 @@ async fn delete_user_data(
 
     // Unset the cookies by changing the date to a time in the past.
     Ok(jar
-        .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info")))
+        .remove(Cookie::build("session").path("/api/"))
+        .remove(Cookie::build("user_info").path("/")))
 }
 
 #[utoipa::path(
@@ -569,6 +603,8 @@ pub async fn check_username_used(
 ///
 /// `check_email` - The e-mail, for which it should be checked if it can be used or not.
 ///
+/// `allowed_user_id` - An optional user id, who should be ignored if they have the username being checked.
+///
 /// # Returns
 /// A [`bool`], which is true if the e-mail has already been taken, or false if it has not.
 ///
@@ -578,8 +614,15 @@ pub async fn check_email_used(
     db: impl PgExecutor<'_>,
     pending_accounts: &HashMap<String, PendingRegisterData>,
     check_email: &str,
+    allowed_user_id: Option<i32>,
 ) -> Result<bool, ApiError> {
-    let used_by_other = get_user_by_email(db, check_email).await?.is_some();
+    let found_user_id = get_user_by_email(db, check_email).await?;
+    let used_by_other = found_user_id.is_some_and(|id| match allowed_user_id {
+        // Did not specify an allowed user id, so the email is a duplicate.
+        None => true,
+        // If there is an allowed user, the email has been used if the allowed user is not the found user.
+        Some(other_id) => id != other_id,
+    });
     let used_by_pending = pending_accounts
         .values()
         .any(|r| r.register_data.email.to_lowercase() == check_email.to_lowercase());
