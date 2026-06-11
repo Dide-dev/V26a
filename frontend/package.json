@@ -53,6 +53,7 @@
         "@types/hast": "^3.0.4",
         "@types/mdast": "^4.0.4",
         "flowbite-svelte": "^1.33.1",
+        "flowbite-svelte-icons": "^3.1.0",
         "hast-util-to-mdast": "^10.1.2",
         "katex": "^0.16.45",
         "mdast-util-to-hast": "^13.2.1",
