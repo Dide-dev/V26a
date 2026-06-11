@@ -15,8 +15,8 @@ use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
-    PublicUserData, RegisterData, UserData, UserGetData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt,
+    PendingRegisterData, PublicUserData, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -505,11 +505,14 @@ async fn delete_user_data(
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
+        (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
@@ -520,10 +523,14 @@ async fn delete_user_data(
 ///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
+/// `user_id` - User from whom to get the classrooms.
+///
 /// # Returns
 /// All the user's classrooms and the number of classrooms as [`ClassroomListResponse`].
 ///
 /// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
@@ -531,16 +538,28 @@ async fn delete_user_data(
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
 /// invalid or corrupted.
 ///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
+/// the classrooms of a user.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_owned_classrooms(
     claims: Claims,
+    Path(user_id): Path<i32>,
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,
 ) -> Result<Json<ClassroomListResponse>, ApiError> {
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
     let mut transaction = db.begin().await?;
-    let classroom_count = get_classroom_count(&mut *transaction, claims.sub).await?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+    if claims.account_type != AccountType::Admin && user_id != claims.sub {
+        return Err(ApiError::NoPermission);
+    }
+
+    let classroom_count = get_classroom_count(&mut *transaction, user_id).await?;
     if classroom_count == 0 {
         return Ok(Json(ClassroomListResponse {
             total_classrooms: 0,
@@ -548,7 +567,7 @@ async fn get_all_owned_classrooms(
         }));
     }
 
-    let classrooms = get_all_classrooms(&mut *transaction, claims.sub, &page).await?;
+    let classrooms = get_all_classrooms(&mut *transaction, user_id, &page).await?;
     transaction.commit().await?;
     let list = ClassroomListResponse {
         total_classrooms: i32::try_from(classroom_count)
