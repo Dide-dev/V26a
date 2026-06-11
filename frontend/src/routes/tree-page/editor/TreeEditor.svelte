@@ -18,7 +18,8 @@
         getTreeWithCards,
         type TreeData,
         type TreeId,
-        type TreeLinkedData
+        type TreeLinkedData,
+        type TreeMetadata
     } from '$lib/api-wrapper/trees';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
@@ -37,6 +38,7 @@
     import { branchColors } from '$lib/treePage';
     import CoAuthor from './CoAuthor.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
+    import TreeInformation from '../TreeInformation.svelte';
 
     let { id }: { id: TreeId } = $props();
 
@@ -96,6 +98,8 @@
         sidebarElement: null | SidebarComponent;
     } | null = $state(null);
 
+    let treeMetadata: TreeMetadata | null = $state(null);
+
     onMount(async () => {
         const fetchedTree = await getTreeWithCards(id);
         tree = {
@@ -109,6 +113,8 @@
             sidebar: null,
             sidebarElement: null
         };
+
+        treeMetadata = fetchedTree.metadata;
 
         const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
         const isAdmin = userInfo?.accountType === 'admin';
@@ -147,10 +153,11 @@
     {#if tree === null}
         <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
     {:else}
-        <h1 class="ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
-        <p class="ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-            {tree.data.description}
-        </p>
+        <TreeInformation tree={treeMetadata!}>
+            {#snippet titleSnippet()}
+                <h1 class="page__title mt-0">{tree?.data.title}</h1>
+            {/snippet}
+        </TreeInformation>
 
         <div class="m-2 flex gap-2">
             <EditMetadata
