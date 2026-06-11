@@ -6,10 +6,8 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import { getFeedback, type FeedbackListResponse } from '$lib/api-wrapper/admin';
-    import { timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import UserListEntry from '$lib/lists/UserListEntry.svelte';
     import ListPagination from '$lib/lists/ListPagination.svelte';
     import FeedbackListEntry from '$lib/lists/FeedbackListEntry.svelte';
 

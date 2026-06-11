@@ -20,6 +20,9 @@
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
 
+    /** Approximation of a good cut-off point for feedback text, depending on window width. */
+    let textLimit = $state(Math.min(50, window.innerWidth / 12));
+
     let {
         feedback,
         expanded = $bindable()
@@ -34,37 +37,53 @@
         <div class="flex max-w-2/3 flex-col">
             <span class="flex gap-1 *:*:inline">
                 <span class="font-semibold text-neutral-500">#{feedback.feedbackId}</span>
-                <span class="flex-auto grow-100"></span>
+                <span class="flex grow-100"></span>
             </span>
-            <em class="-mt-1 text-neutral-700">
-                {m.leftBy()}
-                <a
-                    href={`mailto:${feedback.email}`}
-                    target="_blank"
-                    rel="external"
-                    class="text__link"
-                >
-                    {feedback.email}
-                </a>
-            </em>
+            {#if feedback.email !== ''}
+                <em class="-mt-1 text-neutral-700">
+                    {m.leftBy()}
+                    <a
+                        href={`mailto:${feedback.email}`}
+                        target="_blank"
+                        rel="external"
+                        class="text__link"
+                    >
+                        {feedback.email}
+                    </a>
+                </em>
+            {/if}
         </div>
         <div class="max-w-1/3 text-right">
             <p class="font-semibold">{timeFormat.format(new Date(feedback.createdAt))}</p>
         </div>
     </div>
-    <div class={[(expanded || feedback.feedback.length <= 50) && 'inline', !expanded && 'flex']}>
-        <span class={[!expanded && 'line-clamp-1', 'w-fit flex-1 text-ellipsis']}>
+    <div
+        class={[
+            (expanded || feedback.feedback.length <= textLimit) && 'inline',
+            !expanded && 'flex'
+        ]}
+    >
+        <span
+            id="collapsible"
+            class={[!expanded && 'line-clamp-1', 'flex-1 wrap-break-word text-ellipsis']}
+        >
             {feedback.feedback}
         </span>
-        {#if feedback.feedback.length > 50}
+        {#if feedback.feedback.length > textLimit}
             <button
                 onclick={() => {
                     expanded = !expanded;
                 }}
-                class={[feedback.feedback.length <= 50 && 'block', 'text__link']}
+                class={[feedback.feedback.length <= textLimit && '', 'text__link']}
             >
                 {expanded ? m.showLess() : m.showMore()}
             </button>
         {/if}
     </div>
 </div>
+
+<svelte:window
+    onresize={() => {
+        textLimit = Math.min(50, window.innerWidth / 12);
+    }}
+/>

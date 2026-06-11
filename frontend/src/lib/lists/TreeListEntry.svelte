@@ -103,21 +103,26 @@
 
             <div
                 class={[
-                    (expanded || tree.data.description.length <= 50) && 'inline',
-                    !expanded && 'flex'
+                    (expanded || tree.data.description.length <= 40) && 'inline',
+                    !expanded && 'flex overflow-hidden'
                 ]}
             >
                 {#if tree.data.description.length > 0}
-                    <span class={[!expanded && 'line-clamp-1', 'w-fit flex-1 text-ellipsis']}>
+                    <span
+                        class={[
+                            !expanded && 'line-clamp-1',
+                            'w-fit flex-1 wrap-break-word text-ellipsis'
+                        ]}
+                    >
                         {tree.data.description}
                     </span>
                 {/if}
-                {#if tree.data.description.length > 50 || tree.data.bookIsbn !== null || tree.data.subjectId !== null}
+                {#if tree.data.description.length > 40 || tree.data.bookIsbn !== null || tree.data.subjectId !== null || tree.data.tags.length > 2}
                     <button
                         onclick={() => {
                             expanded = !expanded;
                         }}
-                        class={[tree.data.description.length <= 50 && 'block', 'text__link']}
+                        class={[tree.data.description.length <= 40 && 'block', 'text__link']}
                     >
                         {expanded ? m.showLess() : m.showMore()}
                     </button>
