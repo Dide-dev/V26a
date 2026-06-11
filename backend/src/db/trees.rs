@@ -974,7 +974,10 @@ const TREE_LIST_QUERY_JOINS: &str = r"
 ";
 
 fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
-    let tags = tags.iter().map(| tag | tag.to_lowercase()).collect::<Vec<_>>();
+    let tags = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<Vec<_>>();
     query
         .push(
             r"

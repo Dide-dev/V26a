@@ -187,7 +187,10 @@ const CARD_LIST_QUERY_JOINS: &str = r"
 ";
 
 fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
-    let tags = tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>();
+    let tags = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<Vec<_>>();
     query
         .push(
             r"
@@ -271,7 +274,7 @@ mod tests {
         let card_id = initialize_card(&db, tree_id).await;
 
         let title = "title".to_owned();
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(
@@ -301,6 +304,9 @@ mod tests {
             .fetch_all(&db)
             .await
             .unwrap();
+
+        // It should leave out the duplicate all caps tag.
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
 
         assert_eq!(
             found_tags
@@ -348,6 +354,27 @@ mod tests {
             partial_filters_query.sql(),
             "SELECT * FROM library_cards WHERE (users.name = $1) AND (library_cards.created_at >= $2)"
         );
+    }
+
+    #[sqlx::test]
+    async fn test_tags_filter_case_insensitive() {
+        let mut query1 = QueryBuilder::<Postgres>::new("SELECT * FROM cards");
+        let mut query2 = QueryBuilder::<Postgres>::new("SELECT * FROM cards");
+
+        let lower_case_tags = CardFilters {
+            tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+            ..Default::default()
+        };
+
+        let upper_case_tags = CardFilters {
+            tags: vec!["TAG1".to_owned(), "TAG2".to_owned()],
+            ..Default::default()
+        };
+
+        apply_card_filters(&mut query1, &lower_case_tags);
+        apply_card_filters(&mut query2, &upper_case_tags);
+
+        assert_eq!(query1.sql(), query2.sql());
     }
 
     #[sqlx::test]
@@ -405,7 +432,7 @@ mod tests {
             .data
             .name;
         let title = "title".to_owned();
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(
@@ -427,6 +454,9 @@ mod tests {
         .await
         .unwrap()
         .created_at;
+
+        // Remove duplicate for checking success.
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
 
         let success_outcome = vec![LibraryCardGetData {
             card_id,
