@@ -27,7 +27,7 @@ use crate::{
 };
 
 use crate::api_v1::users::{check_email_used, check_username_used};
-use crate::db_structs::users::PendingAccountsExt;
+use crate::db_structs::users::Clean;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},

@@ -29,6 +29,16 @@ pub struct UserData {
     pub language: UserLanguage,
 }
 
+impl Display for UserData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            get_display_name(self.name.clone(), self.nickname.clone())
+        )
+    }
+}
+
 impl Validated for UserData {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
@@ -73,6 +83,14 @@ impl Validated for UserData {
         }
 
         Ok(())
+    }
+}
+
+fn get_display_name(name: String, nickname: String) -> String {
+    if nickname.trim().is_empty() {
+        name
+    } else {
+        nickname
     }
 }
 
@@ -193,12 +211,12 @@ pub struct PendingRegisterData {
     pub expires: i64,
 }
 
-/// A trait that can be used to remove expired accounts from a [`HashMap`] containing [`PendingRegisterData`].
-pub trait PendingAccountsExt {
+/// A trait that can be implemented to remove expired data.
+pub trait Clean {
     fn remove_expired(&mut self);
 }
 
-impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
+impl Clean for HashMap<String, PendingRegisterData> {
     /// Removes pending accounts for which the expiration time has passed.
     ///
     /// This function mutates the [`HashMap`] in place.
@@ -212,6 +230,32 @@ impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
         let diff = before_len - self.len();
         if diff != 0 {
             info!("Removed {diff} pending accounts from cache.");
+        }
+    }
+}
+
+/// Data belonging to a password change request (forgot password).
+/// Stores the user ID and when the change password link should expire.
+#[derive(Debug)]
+pub struct PasswordChangeRequestData {
+    pub user_id: i32,
+    pub expires: i64,
+}
+
+impl Clean for HashMap<String, PasswordChangeRequestData> {
+    /// Removes password change requests for which the expiration time has passed.
+    ///
+    /// This function mutates the [`HashMap`] in place.
+    fn remove_expired(&mut self) {
+        let before_len = self.len();
+
+        self.retain(|_, p| p.expires > Utc::now().timestamp());
+
+        // Subtraction with overflow is impossible, as there is a lock on the Map,
+        // and entries are only removed here.
+        let diff = before_len - self.len();
+        if diff != 0 {
+            info!("Removed {diff} password reset requests from cache.");
         }
     }
 }
@@ -301,6 +345,25 @@ pub struct UserListResponse {
     /// The total amount of users that are visible in the query.
     pub total_users: i32,
     pub users: Vec<AllUsersGetData>,
+}
+
+/// The body for a change password request request that contains the email to which the password change link should be sent to.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestPasswordChangeRequestBody {
+    pub email: String,
+}
+
+impl Validated for RequestPasswordChangeRequestBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        parse_email(&self.email)?;
+
+        Ok(())
+    }
 }
 
 /// The body for a password change request that contains the old password, and the new password.
@@ -419,7 +482,7 @@ impl FromStr for AccountType {
 
 #[cfg(test)]
 mod tests {
-    use crate::db_structs::users::{PendingAccountsExt, PendingRegisterData, RegisterData};
+    use crate::db_structs::users::{Clean, PendingRegisterData, RegisterData};
     use chrono::Utc;
     use std::collections::HashMap;
 
@@ -447,5 +510,21 @@ mod tests {
 
         assert!(!pending_accounts.contains_key("a"));
         assert!(pending_accounts.contains_key("b"));
+    }
+
+    #[test]
+    fn test_get_display_name() {
+        assert_eq!(
+            super::get_display_name(String::new(), "Peter".to_owned()),
+            "Peter"
+        );
+        assert_eq!(
+            super::get_display_name("Lorax".to_owned(), " ".to_owned()),
+            "Lorax"
+        );
+        assert_eq!(
+            super::get_display_name("Lorax".to_owned(), "Santa_Claus".to_owned()),
+            "Santa_Claus"
+        );
     }
 }

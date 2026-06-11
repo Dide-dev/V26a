@@ -25,6 +25,21 @@ pub enum Message {
         verification_link: String,
         base_url: String,
     },
+    /// The subject of an e-mail sent to reset a user's password.
+    PasswordResetSubject,
+    /// The body of an e-mail sent to reset a user's password.
+    ///
+    /// # Parameters
+    /// `display_name` - The name that the receiver will be greeted as.
+    ///
+    /// `password_reset_link` - The link that the receiver can use to reset their password.
+    ///
+    /// `base_url` - The base URL of the website, to show in the footer.
+    PasswordResetBody {
+        display_name: String,
+        password_reset_link: String,
+        base_url: String,
+    },
     /// A text to be used as prefix in a copy of something.
     CopyOf,
 }

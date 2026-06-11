@@ -15,8 +15,9 @@ use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
-    PublicUserData, RegisterData, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordChangeRequestData, Clean,
+    PendingRegisterData, PublicUserData, RegisterData, RequestPasswordChangeRequestBody, UserData,
+    UserGetData,
 };
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -25,7 +26,7 @@ use std::collections::hash_map::Entry;
 
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
-use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
+use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject, PasswordResetBody, PasswordResetSubject};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
@@ -54,6 +55,8 @@ pub fn users() -> Router<ArcState> {
                 .delete(delete_user_data),
         )
         .route("/me/password", put(change_password))
+        .route("/reset-password-requests", post(request_password_change))
+        // put(change_forgotten_password)
         .route("/me/classrooms", get(get_all_owned_classrooms))
 }
 
@@ -144,11 +147,7 @@ async fn add_new_user(
         "{}/verify?code={}",
         state.config.base_url, verification_code
     );
-    let display_name = if user_data.data.nickname.is_empty() {
-        user_data.data.name.clone()
-    } else {
-        user_data.data.nickname.clone()
-    };
+    let display_name = user_data.data.to_string();
     let language = user_data.data.language;
     let message = Message::builder()
         .from(Mailbox::new(
@@ -442,6 +441,86 @@ async fn change_password(
     delete_all_sessions_except(&db, claims.sub, &token).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/reset-password-requests",
+    context_path = "/api/v1/users",
+    request_body = RequestPasswordChangeRequestBody,
+    responses(
+        (status = 200, description = "Password change request fulfilled."),
+        (status = 400, description = ApiError::EmailParseError.to_string()),
+        (status = 429, description = "Ratelimit exceeded."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Sends a change password e-mail to the specified e-mail, if an account with that email exists.
+///
+/// # Arguments
+/// `password_change_request` - The struct containing the e-mail address to which a change password
+/// e-mail should be sent as [`RequestPasswordChangeRequestBody`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException),
+/// [`EmailParseError`](ApiError::EmailParseError),
+/// [`SmtpError`](ApiError::SmtpError) or
+/// [`LettreException`](ApiError::LettreException) instead.
+async fn request_password_change(
+    Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
+    Json(password_change_request): Json<RequestPasswordChangeRequestBody>,
+) -> Result<(), ApiError> {
+    password_change_request.validate_inputs()?;
+    let email = password_change_request.email;
+    let parsed_email = parse_email(&email)?;
+
+    let Some(user_id) = get_user_by_email(&db, &email).await? else {
+        // Account with e-mail doesn't exist, do nothing.
+        return Ok(());
+    };
+    let user_data = get_user(&db, user_id).await?.data;
+
+    let password_reset_code = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
+
+    {
+        let mut password_change_requests = state.password_change_requests.lock().await;
+
+        let expires = Utc::now().timestamp() + state.config.verification_timer;
+        let password_change_request_data = PasswordChangeRequestData { user_id, expires };
+        password_change_requests.insert(password_reset_code.clone(), password_change_request_data);
+
+        // Release the lock, then send an email
+    }
+
+    let password_reset_link = format!(
+        "{}/reset-password?code={}",
+        state.config.base_url, password_reset_code
+    );
+    let display_name = user_data.to_string();
+    let language = user_data.language;
+    let message = Message::builder()
+        .from(Mailbox::new(
+            Some("BOOM!".to_owned()),
+            format!("noreply@{}", state.config.hostname).parse()?,
+        ))
+        .to(Mailbox::new(Some(display_name.clone()), parsed_email))
+        .header(ContentType::TEXT_PLAIN)
+        .subject(PasswordResetSubject.localized(&language))
+        .body(
+            PasswordResetBody {
+                display_name,
+                password_reset_link,
+                base_url: state.config.base_url.clone(),
+            }
+            .localized(&language),
+        )?;
+    state.config.mailer.send(message).await?;
+
+    Ok(())
 }
 
 #[utoipa::path(
