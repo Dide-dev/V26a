@@ -114,7 +114,7 @@ async fn add_new_lesson(
     Json(lesson_add_data): Json<LessonAddData>,
 ) -> Result<Json<i32>, ApiError> {
     lesson_add_data.validate_inputs()?;
-    // Check if the classroom exists and the user is permitted to perform this action.
+    // Check if the classroom exists and the user is permitted to manage it.
     verify_classroom_permissions(get_connection!(db), classroom_id, &claims).await?;
     let id = add_lesson(get_connection!(db), &lesson_add_data, classroom_id).await?;
 

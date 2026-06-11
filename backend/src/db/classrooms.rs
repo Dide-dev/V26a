@@ -254,6 +254,7 @@ pub async fn get_classroom_from_lesson(
         .fetch_optional(db)
         .await?
         .map(|r| r.classroom_id);
+
     Ok(classroom_id)
 }
 
@@ -277,6 +278,18 @@ pub async fn add_existing_tree_to_lesson(
     tree_id: i32,
 ) -> Result<(), ApiError> {
     let mut transaction = db.begin().await?;
+
+    let tree_exists = query!("SELECT EXISTS(SELECT 1 FROM trees WHERE id=$1)", tree_id)
+        .fetch_one(&mut *transaction)
+        .await?
+        .exists
+        .ok_or(ApiError::DatabaseException)
+        .unwrap();
+
+    if !tree_exists {
+        return Err(ApiError::MissingTree(tree_id));
+    }
+
     let is_duplicate = query!(
         "SELECT * FROM lesson_trees WHERE (lesson_id=$1 AND tree_id=$2)",
         lesson_id,
@@ -284,9 +297,11 @@ pub async fn add_existing_tree_to_lesson(
     )
     .fetch_optional(&mut *transaction)
     .await?;
+
     if is_duplicate.is_some() {
         return Ok(());
     }
+
     query!(
         "INSERT INTO lesson_trees (lesson_id, tree_id) VALUES ($1, $2)",
         lesson_id,
@@ -294,7 +309,9 @@ pub async fn add_existing_tree_to_lesson(
     )
     .execute(&mut *transaction)
     .await?;
+
     transaction.commit().await?;
+
     Ok(())
 }
 
@@ -442,7 +459,7 @@ mod tests {
 
         add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
             .await
-            .expect("");
+            .unwrap();
 
         let found_tree_id_in_lesson = query!(
             "SELECT tree_id FROM lesson_trees WHERE lesson_id = $1",

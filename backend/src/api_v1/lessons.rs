@@ -66,8 +66,9 @@ async fn add_tree_to_lesson(
     Path((lesson_id, tree_id)): Path<(i32, i32)>,
 ) -> Result<(), ApiError> {
     verify_lesson_permissions(get_connection!(db), lesson_id, &claims).await?;
-    is_tree_accessible_by_user(get_connection!(db), tree_id, &claims).await?;
+    is_tree_accessible_by_user(get_connection!(db), tree_id, Some(claims)).await?;
     add_existing_tree_to_lesson(get_connection!(db), lesson_id, tree_id).await?;
+
     Ok(())
 }
 
@@ -97,6 +98,8 @@ pub async fn verify_lesson_permissions(
     let classroom_id = get_classroom_from_lesson(&mut *db, lesson_id)
         .await?
         .ok_or(ApiError::MissingLesson(lesson_id))?;
+
     verify_classroom_permissions(&mut *db, classroom_id, claims).await?;
+
     Ok(())
 }

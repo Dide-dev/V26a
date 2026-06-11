@@ -53,6 +53,7 @@ async fn test_add_tree_to_lesson(db: PgPool) {
         .await;
     response.assert_status_ok();
 
+    // Duplicate trees should be ignored.
     let response = server
         .post(&format!("/lessons/{lesson_id}/trees/{tree_id}"))
         .await;
@@ -79,6 +80,7 @@ async fn test_add_tree_to_lesson(db: PgPool) {
     response.assert_status_bad_request();
     response.assert_text(ApiError::MissingLesson(lesson_id).to_string());
 }
+
 #[sqlx::test]
 async fn test_verify_lesson_permissions(db: PgPool) {
     let server = setup_login(db.clone()).await;

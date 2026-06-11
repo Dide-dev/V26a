@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::api_v1::trees::verify_tree_permissions;
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
@@ -16,7 +17,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
+use sqlx::{Acquire, PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
 /// Check whether the given subject exists.
@@ -1116,15 +1117,16 @@ pub async fn get_queried_list(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn is_tree_accessible_by_user(
-    db: impl PgExecutor<'_>,
+    db: &mut PgConnection,
     tree_id: i32,
-    claims: &Claims,
+    claims: Option<Claims>,
 ) -> Result<(), ApiError> {
-    let tree = query!(
-        "SELECT published, owner_id, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors FROM trees WHERE id=$1",
-        tree_id)
-        .fetch_optional(db)
+    let mut transaction = db.begin().await?;
+
+    let tree = query!("SELECT published FROM trees WHERE id=$1", tree_id)
+        .fetch_optional(&mut *transaction)
         .await?;
+
     let Some(tree) = tree else {
         return Err(ApiError::MissingTree(tree_id));
     };
@@ -1133,20 +1135,15 @@ pub async fn is_tree_accessible_by_user(
         return Ok(());
     }
 
-    if claims.account_type == AccountType::Admin || tree.owner_id == claims.sub {
-        return Ok(());
-    }
-
-    let Some(coauthors) = tree.co_authors else {
-        return Err(ApiError::NoPermission);
+    let Some(claims) = claims else {
+        return Err(ApiError::MissingAuthentication);
     };
-    for c in coauthors {
-        if claims.sub == c {
-            return Ok(());
-        }
-    }
 
-    Err(ApiError::NoPermission)
+    verify_tree_permissions(&mut transaction, tree_id, &claims).await?;
+
+    transaction.commit().await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1155,9 +1152,10 @@ mod tests {
     use super::*;
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
-        initialize_tree_with_data,
+        initialize_tree_with_data, initialize_user,
     };
     use crate::db_structs::trees::{Node, RootNode};
+    use crate::db_structs::users::RegisterData;
     use crate::get_connection_unwrap;
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
@@ -1986,7 +1984,8 @@ mod tests {
             account_type: AccountType::Author,
         };
 
-        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, &claims).await;
+        let result =
+            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_ok());
 
         let claims = Claims {
@@ -1995,7 +1994,8 @@ mod tests {
             account_type: AccountType::Admin,
         };
 
-        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, &claims).await;
+        let result =
+            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_ok());
 
         let claims = Claims {
@@ -2004,7 +2004,30 @@ mod tests {
             account_type: AccountType::Author,
         };
 
-        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, &claims).await;
+        let result =
+            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_err());
+
+        let register_data = RegisterData::test_values();
+        let coauthor_id = initialize_user(get_connection_unwrap!(db), &register_data).await;
+        add_co_author(&db, tree_id, coauthor_id).await.unwrap();
+
+        let claims = Claims {
+            sub: coauthor_id,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        query!("UPDATE trees SET published = true WHERE id = $1 ", tree_id)
+            .execute(&db)
+            .await
+            .unwrap();
+
+        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, None).await;
+        assert!(result.is_ok());
     }
 }

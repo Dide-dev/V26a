@@ -17,8 +17,6 @@ pub enum ApiError {
     //------------------//
     /// An error to be returned when `lettre` fails to parse an e-mail.
     EmailParseError,
-    /// An error to return when an email address does not match the correct pattern with the '@' symbol.
-    IllegalEmailAddress,
     /// An error to return when a name contains characters outside the accepted standard.
     IllegalName,
     /// An error to return when a password does not contain the appropriate characters.
@@ -168,9 +166,6 @@ impl Display for ApiError {
             // 400: BAD REQUEST //
             //------------------//
             ApiError::EmailParseError => write!(f, "Could not parse email."),
-            ApiError::IllegalEmailAddress => {
-                write!(f, "Email address does not follow pattern 'name@domain'.")
-            }
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
             ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
             ApiError::IllegalTag => write!(f, "Tag contains illegal characters."),
@@ -299,7 +294,6 @@ impl ApiError {
     fn to_status_code(&self) -> StatusCode {
         match &self {
             ApiError::EmailParseError
-            | ApiError::IllegalEmailAddress
             | ApiError::IllegalName
             | ApiError::IllegalPassword
             | ApiError::IllegalTag
