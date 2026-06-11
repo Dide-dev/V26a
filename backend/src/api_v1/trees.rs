@@ -8,7 +8,7 @@ use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
     add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
-    is_tree_accessible_by_user, language_exists, remove_co_author, subject_exists,
+    language_exists, remove_co_author, subject_exists, verify_tree_accessible_by_user,
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
@@ -510,7 +510,7 @@ async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    is_tree_accessible_by_user(get_connection!(db), tree_id, claims).await?;
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims).await?;
 
     let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?

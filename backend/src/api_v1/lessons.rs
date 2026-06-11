@@ -6,7 +6,7 @@
 
 use crate::api_v1::classrooms::verify_classroom_permissions;
 use crate::db::classrooms::{add_existing_tree_to_lesson, get_classroom_from_lesson};
-use crate::db::trees::is_tree_accessible_by_user;
+use crate::db::trees::verify_tree_accessible_by_user;
 use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::get_connection;
@@ -66,7 +66,7 @@ async fn add_tree_to_lesson(
     Path((lesson_id, tree_id)): Path<(i32, i32)>,
 ) -> Result<(), ApiError> {
     verify_lesson_permissions(get_connection!(db), lesson_id, &claims).await?;
-    is_tree_accessible_by_user(get_connection!(db), tree_id, Some(claims)).await?;
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, Some(claims)).await?;
     add_existing_tree_to_lesson(get_connection!(db), lesson_id, tree_id).await?;
 
     Ok(())

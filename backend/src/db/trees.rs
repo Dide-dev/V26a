@@ -1105,7 +1105,7 @@ pub async fn get_queried_list(
 ///
 /// `tree_id` - The id of the tree.
 ///
-/// `claims` - The session cookie of the user.
+/// `claims` - The session cookie of the user, as an [`Option`]. The cookie is only necessary for attempting verification of private trees.
 ///
 /// # Returns
 /// Nothing.
@@ -1116,7 +1116,7 @@ pub async fn get_queried_list(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user is not permitted to access the tree.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn is_tree_accessible_by_user(
+pub async fn verify_tree_accessible_by_user(
     db: &mut PgConnection,
     tree_id: i32,
     claims: Option<Claims>,
@@ -1985,7 +1985,7 @@ mod tests {
         };
 
         let result =
-            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_ok());
 
         let claims = Claims {
@@ -1995,7 +1995,7 @@ mod tests {
         };
 
         let result =
-            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_ok());
 
         let claims = Claims {
@@ -2005,7 +2005,7 @@ mod tests {
         };
 
         let result =
-            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_err());
 
         let register_data = RegisterData::test_values();
@@ -2019,7 +2019,7 @@ mod tests {
         };
 
         let result =
-            is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
         assert!(result.is_ok());
 
         query!("UPDATE trees SET published = true WHERE id = $1 ", tree_id)
@@ -2027,7 +2027,8 @@ mod tests {
             .await
             .unwrap();
 
-        let result = is_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, None).await;
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, None).await;
         assert!(result.is_ok());
     }
 }
