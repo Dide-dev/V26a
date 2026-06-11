@@ -105,32 +105,78 @@ async fn test_get_one_user_admin(db: PgPool) {
 
 #[sqlx::test]
 async fn test_update_user(db: PgPool) {
+    let conn = get_connection_unwrap!(db);
     let test_state = setup(db);
 
-    let update_data = AdminUpdateData {
-        email: "JohnSmith@gmail.com".to_owned(),
+    let account1 = RegisterData::test_values();
+    let account2 = RegisterData::test_values();
+    let admin_account = RegisterData::test_values();
+    let user_id = register(&test_state, &account1).await;
+    register(&test_state, &account2).await;
+    register_admin(&test_state, conn, &admin_account).await;
+
+    let server = test_state.server;
+    // Log in as a normal user
+    login(&server, account2.email.clone()).await;
+
+    let mut update_data = AdminUpdateData {
+        email: account1.email.clone(),
         data: UserGeneralData {
-            name: "John Smith".to_owned(),
+            name: "John_Smith".to_owned(),
             nickname: String::new(),
             about_me: String::new(),
         },
         enabled: true,
-        account_type: AccountType::Admin,
+        account_type: AccountType::Author,
     };
-    // Create two accounts and log in as one of them.
-    let account1 = RegisterData::test_values();
-    let account2 = RegisterData::test_values();
-    let user_id = register(&test_state, &account1).await;
-    register(&test_state, &account2).await;
-    let server = test_state.server;
-    login(&server, account2.email).await;
-
     let response = server
         .put(&format!("/admin/users/{user_id}"))
         .json(&update_data)
         .await;
     // It should fail because the user is not an admin
     response.assert_status_forbidden();
+
+    login(&server, admin_account.email.clone()).await;
+    // Update the user data, not changing the e-mail
+    let response = server
+        .put(&format!("/admin/users/{user_id}"))
+        .json(&update_data)
+        .await;
+    response.assert_status_ok();
+
+    let response = server.get(&format!("/admin/users/{user_id}")).await;
+    response.assert_status_ok();
+    let user_data: AdminGetUserData = response.json();
+    assert_eq!(user_data.updateable_data, update_data);
+
+    // Update the email
+    let new_email = "gerrit@ja".to_owned();
+    update_data.email = new_email.clone();
+    let response = server
+        .put(&format!("/admin/users/{user_id}"))
+        .json(&update_data)
+        .await;
+    response.assert_status_ok();
+
+    let response = server.get(&format!("/admin/users/{user_id}")).await;
+    response.assert_status_ok();
+    let user_data: AdminGetUserData = response.json();
+    assert_eq!(user_data.updateable_data.email, new_email);
+
+    // Try to use other user's email
+    update_data.email = account2.email.clone();
+    let response = server
+        .put(&format!("/admin/users/{user_id}"))
+        .json(&update_data)
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<UserResponse>();
+    assert_eq!(response, UserResponse::EmailAlreadyUsed);
+
+    let response = server.get(&format!("/admin/users/{user_id}")).await;
+    response.assert_status_ok();
+    let user_data: AdminGetUserData = response.json();
+    assert_eq!(user_data.updateable_data.email, new_email);
 }
 
 #[sqlx::test]

@@ -177,7 +177,7 @@ async fn update_user_data(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    if check_email_used(&db, &pending_accounts, &new_data.email).await? {
+    if check_email_used(&db, &pending_accounts, &new_data.email, Some(user_id)).await? {
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 

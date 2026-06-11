@@ -121,7 +121,7 @@ async fn add_new_user(
         // Remove pending accounts in case they have not been pruned yet.
         pending_accounts.remove_expired();
 
-        if check_email_used(&db, &pending_accounts, &user_data.email).await? {
+        if check_email_used(&db, &pending_accounts, &user_data.email, None).await? {
             return Ok(Json(UserResponse::EmailAlreadyUsed));
         }
 
@@ -610,6 +610,8 @@ pub async fn check_username_used(
 ///
 /// `check_email` - The e-mail, for which it should be checked if it can be used or not.
 ///
+/// `allowed_user_id` - An optional user id, who should be ignored if they have the username being checked.
+///
 /// # Returns
 /// A [`bool`], which is true if the e-mail has already been taken, or false if it has not.
 ///
@@ -619,8 +621,15 @@ pub async fn check_email_used(
     db: impl PgExecutor<'_>,
     pending_accounts: &HashMap<String, PendingRegisterData>,
     check_email: &str,
+    allowed_user_id: Option<i32>,
 ) -> Result<bool, ApiError> {
-    let used_by_other = get_user_by_email(db, check_email).await?.is_some();
+    let found_user_id = get_user_by_email(db, check_email).await?;
+    let used_by_other = found_user_id.is_some_and(|id| match allowed_user_id {
+        // Did not specify an allowed user id, so the email is a duplicate.
+        None => true,
+        // If there is an allowed user, the email has been used if the allowed user is not the found user.
+        Some(other_id) => id != other_id,
+    });
     let used_by_pending = pending_accounts
         .values()
         .any(|r| r.register_data.email.to_lowercase() == check_email.to_lowercase());
