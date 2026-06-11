@@ -115,7 +115,9 @@
                                 target="_blank">{classroom.data.name}</a
                             >
                         </td>
-                        <td class="pr-4">{classroom.data.description}</td>
+                        <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
+                            >{classroom.data.description}</td
+                        >
                     </tr>
                 {/each}
             </tbody>
