@@ -163,7 +163,7 @@
                         bind:value={formData.data.nickname}
                         name="name"
                         type="text"
-                        placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
+                        placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
                         minlength={minInputLengths.nickname}
                         maxlength={maxInputLengths.nickname}
                         autocomplete="name"

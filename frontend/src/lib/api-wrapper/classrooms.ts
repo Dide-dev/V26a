@@ -6,6 +6,7 @@
 
 import { apiCallPost } from '$lib/api-wrapper/index';
 import type { UserId } from './users';
+import type { LessonId } from '$lib/api-wrapper/lessons';
 import type { Option } from '$lib/api-wrapper/types';
 
 const prefix = 'classrooms';
@@ -15,7 +16,6 @@ function apiCallPostClassroom(path: string, body: unknown) {
 }
 
 export type ClassroomId = number;
-export type LessonId = number;
 
 export type ClassroomData = {
     name: string;
@@ -55,5 +55,5 @@ export function addLesson(
     lessonAddData: LessonAddData,
     classroomId: ClassroomId
 ): Promise<LessonId> {
-    return apiCallPostClassroom(`${classroomId}/lessons`, lessonAddData);
+    return apiCallPostClassroom(`/${classroomId}/lessons`, lessonAddData);
 }
