@@ -13,6 +13,7 @@ mod cards_library;
 mod classrooms;
 mod feedback;
 mod images;
+mod lessons;
 mod trees;
 mod users;
 
@@ -53,7 +54,7 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
     serde_json::from_str(&decoded_value).unwrap()
 }
 
-/// Sets up an API test server with the given mock database and application config.
+/// Sets up an API test server with the given mock database, application config, and other settings.
 /// The following settings will be overridden:
 /// - `upload_dir`,
 /// - `bcrypt_cost`,
@@ -64,9 +65,12 @@ fn get_cookie_data<T: DeserializeOwned>(cookie: &Cookie) -> T {
 ///
 /// `config` - The [`Config`] options to use in the application.
 ///
+/// `http_transport` - Configures the server to use real HTTP communication instead of mocking it.
+/// It is more expensive to run this way, but for testing websockets it is required.
+///
 /// # Returns
-/// A [`TestServer`] that can handle all the API endpoints and saves cookies.
-fn setup_config(db: PgPool, config: &mut Config) -> TestState {
+/// A [`TestState`] containing a [`TestServer`] that can handle all the API endpoints and saves cookies.
+fn setup_config(db: PgPool, config: &mut Config, http_transport: bool) -> TestState {
     // Apply some default settings during testing
     let temp_dir = tempdir().unwrap();
     let stub_mailer = AsyncStubTransport::new_ok();
@@ -78,26 +82,34 @@ fn setup_config(db: PgPool, config: &mut Config) -> TestState {
     });
 
     let state = ArcState::new(config.to_owned());
+
+    let transport = if http_transport {
+        axum_test::Transport::HttpRandomPort
+    } else {
+        axum_test::Transport::default()
+    };
+
     let router = crate::api_v1::v1_api(state.clone())
         .layer(Extension(db))
         .with_state(state.clone());
-    TestState {
-        server: TestServer::builder().save_cookies().build(router),
-        state,
-    }
+    let server = TestServer::builder()
+        .transport(transport)
+        .save_cookies()
+        .build(router);
+    TestState { server, state }
 }
 
-/// Sets up an API test server with the given mock database.
+/// Sets up an API test server with the given mock database, with default config and settings.
 ///
 /// # Arguments
 /// `db` - A [`PgPool`] to use for the [`TestServer`].
 ///
 /// # Returns
-/// A [`TestServer`] that can handle all the API endpoints and saves cookies.
+/// A [`TestState`] containing a [`TestServer`] that can handle all the API endpoints and saves cookies.
 fn setup(db: PgPool) -> TestState {
     let mut config = Config::load();
 
-    setup_config(db, &mut config)
+    setup_config(db, &mut config, false)
 }
 
 /// Try to verify an account on the test server with the given email.

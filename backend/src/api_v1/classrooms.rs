@@ -120,8 +120,8 @@ async fn add_new_lesson(
     Json(lesson_add_data): Json<LessonAddData>,
 ) -> Result<Json<i32>, ApiError> {
     lesson_add_data.validate_inputs()?;
-    // Check if the classroom exists and the user is permitted to perform this action.
-    verify_classroom_permissions(get_connection!(db), classroom_id, claims).await?;
+    // Check if the classroom exists and the user is permitted to manage it.
+    verify_classroom_permissions(get_connection!(db), classroom_id, &claims).await?;
     let id = add_lesson(get_connection!(db), &lesson_add_data, classroom_id).await?;
 
     Ok(Json(id))
@@ -165,7 +165,7 @@ async fn get_classroom_content(
 pub async fn verify_classroom_permissions(
     db: &mut PgConnection,
     classroom_id: i32,
-    claims: Claims,
+    claims: &Claims,
 ) -> Result<(), ApiError> {
     let owner_id = get_classroom_owner(&mut *db, classroom_id)
         .await?

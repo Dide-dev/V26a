@@ -154,6 +154,21 @@
             animation: invalidInputClick linear 0.15s;
         }
 
+        .error.danger {
+            color: var(--color-black);
+            padding: var(--spacing-padding-minor);
+            border-radius: var(--radius-md);
+            border-width: 2px;
+            font-weight: var(--font-weight-bold);
+            font-size: var(--text-lg);
+            cursor: pointer;
+        }
+
+        .error.danger:hover {
+            background-color: var(--color-red-700);
+            border-color: var(--color-red-800);
+        }
+
         input + input {
             margin-top: var(--spacing-text-small);
         }
@@ -211,6 +226,7 @@
             color: var(--color-neutral-600);
             background-color: var(--color-neutral-400);
             border-color: currentColor;
+            transition: all 200ms ease-in-out;
         }
 
         &.completed button[type='submit'],
@@ -223,19 +239,35 @@
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
-                animation: completedFormButtonSelect 0.15s ease-in-out;
             }
         }
     }
 
-    @keyframes completedFormButtonSelect {
-        0% {
-            background-color: var(--color-neutral-200);
-            color: var(--color-black);
-        }
-        100% {
-            background-color: var(--color-neutral-600);
-            color: var(--color-white);
+    /* List formatting */
+    .list__container {
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        margin-bottom: var(--spacing-padding-normal);
+
+        border-bottom: 1px solid var(--color-neutral-200);
+
+        > .list__entry {
+            display: flex;
+            flex-direction: column;
+
+            width: 100%;
+            gap: var(--spacing-padding-minor);
+            padding: var(--spacing-padding-small);
+
+            border-top: 1px solid var(--color-neutral-200);
+            background-color: var(--color-neutral-50);
+            transition: background-color 200ms ease-in-out;
+
+            &:hover {
+                background-color: var(--color-neutral-100);
+            }
         }
     }
 
@@ -303,15 +335,30 @@
         font-size: 1.125rem;
     }
 
-    p a {
-        color: var(--color-blue-600);
+    p {
+        a {
+            color: var(--color-blue-600);
 
-        &:hover {
-            text-decoration: underline;
+            &:hover {
+                text-decoration: underline;
+            }
+
+            &:active {
+                color: var(--color-blue-800);
+            }
         }
 
-        &:active {
-            color: var(--color-blue-800);
+        ul li,
+        ol li {
+            margin-left: 1.5rem;
+        }
+
+        ul > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: disc;
+        }
+
+        ol > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: decimal;
         }
     }
 
@@ -331,23 +378,11 @@
             position: absolute;
             inset-inline-start: 2px;
         }
+
         p {
             /*margin-left: 1.5rem;*/
             color: #444;
         }
-    }
-
-    ul li,
-    ol li {
-        margin-left: 1.5rem;
-    }
-
-    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: disc;
-    }
-
-    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: decimal;
     }
 
     hr {

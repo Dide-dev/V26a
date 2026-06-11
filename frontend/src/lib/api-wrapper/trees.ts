@@ -14,7 +14,7 @@ import {
     apiCallEmptyDelete
 } from './index';
 import type { Option } from './types';
-import type { UserId } from './users';
+import type { UserId, Username } from './users';
 import type { PaginationOptions } from '$lib/pagination';
 
 const prefix = 'trees';
@@ -97,9 +97,10 @@ export type TreeGeneratedData = {
 };
 
 export type TreeLinkedData = {
-    ownerName: Option<string>;
+    ownerName: Option<Username>;
     subjectName: Option<string>;
-    coAuthors: UserId[];
+    languageName: string;
+    coAuthors: Username[];
 };
 
 export type TreeMetadata = {
@@ -257,7 +258,7 @@ export function duplicateTree(treeId: TreeId): Promise<TreeId> {
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
+export function addCoAuthor(treeId: TreeId, username: Username): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`/${treeId}/co-authors/${username}`, null);
 }
 

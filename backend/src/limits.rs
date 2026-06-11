@@ -21,6 +21,7 @@ pub const LESSON_TITLE_MAX_LENGTH: usize = 32;
 pub const LESSON_DESCRIPTION_MAX_LENGTH: usize = 128;
 // Min
 pub const CLASSROOM_TITLE_MIN_LENGTH: usize = 1;
+pub const LESSON_TITLE_MIN_LENGTH: usize = 1;
 
 // Credential data limits
 pub const EMAIL_MAX_LENGTH: usize = 128;

@@ -8,7 +8,7 @@ use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
     add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
-    language_exists, remove_co_author, subject_exists,
+    language_exists, remove_co_author, subject_exists, verify_tree_accessible_by_user,
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
@@ -36,6 +36,8 @@ use crate::db_structs::cards::CardData;
 use crate::messages::Message;
 use std::collections::HashMap;
 
+pub mod edit_lock;
+
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
@@ -55,6 +57,12 @@ pub fn trees() -> Router<ArcState> {
         .route(
             "/{tree_id}/co-authors/{username}",
             post(authorize_co_author).delete(deauthorize_co_author),
+        )
+        .route(
+            "/{tree_id}/edit-lock",
+            // This endpoint requires to be wrapped in an [`axum::routing::any`],
+            // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
+            axum::routing::any(edit_lock::acquire_edit_lock),
         )
 }
 
@@ -502,18 +510,11 @@ async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims).await?;
+
     let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
-
-    if !metadata.data.published {
-        // If the tree is not published, only the author is allowed access
-        let Some(claims) = claims else {
-            return Err(ApiError::MissingAuthentication);
-        };
-
-        verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
-    }
 
     let tree_cards = get_tree_cards(&db, tree_id).await?;
 
