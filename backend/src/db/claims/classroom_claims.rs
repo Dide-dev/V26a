@@ -84,8 +84,8 @@ impl ClassroomClaims {
             token,
             classroom_id
         )
-        .fetch_optional(db)
-        .await?;
+            .fetch_optional(db)
+            .await?;
 
         let claims = match row {
             Some(row) => Some(ClassroomClaims {
@@ -132,95 +132,8 @@ impl ClassroomClaims {
             num,
             expires_at,
         )
-        .execute(db)
-        .await?;
-
-        Ok(())
-    }
-
-    /// Delete a classroom session from the database.
-    ///
-    /// Workings for `ClassroomClaims`: Deletes just a single session, but doesn't invalidate the token.
-    ///
-    /// # Arguments
-    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-    ///
-    /// `token` - The token of the session to delete.
-    ///
-    /// `(classroom_id, num)` - The combination of classroom id and classroom user number which session needs to be deleted.
-    ///
-    /// # Errors
-    /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn delete_session(
-        db: impl PgExecutor<'_>,
-        token: &str,
-        (classroom_id, num): &(i32, i32),
-    ) -> Result<(), ApiError> {
-        query!("DELETE FROM classroom_sessions WHERE (token, classroom_id, id_within_classroom) = ($1, $2, $3)",
-            token,
-            classroom_id,
-            num,
-        )
-        .execute(db)
-        .await?;
-
-        Ok(())
-    }
-
-    /// Delete all sessions for a combination of classroom id and user number from the database.
-    ///
-    /// Workings for `ClassroomClaims`: Deletes all sessions connected to a classroom id and user number.
-    /// Doesn't invalidate any tokens.
-    ///
-    /// # Arguments
-    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-    ///
-    /// `(classroom_id, num)` - The combination of classroom id and classroom user number which sessions will be deleted.
-    ///
-    /// # Errors
-    /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn delete_all_sessions(
-        db: impl PgExecutor<'_>,
-        (classroom_id, num): &(i32, i32),
-    ) -> Result<(), ApiError> {
-        query!(
-            "DELETE FROM classroom_sessions WHERE (classroom_id, id_within_classroom) = ($1, $2)",
-            classroom_id,
-            num,
-        )
-        .execute(db)
-        .await?;
-
-        Ok(())
-    }
-
-    /// Delete all sessions connected to a combination of classroom id and user number except for one.
-    ///
-    /// Workings for `ClassroomClaims`: For a tuple of classroom id and user number, deletes all sessions
-    /// except for the session connected to the token. Doesn't invalidate any tokens.
-    ///
-    /// # Arguments
-    /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
-    ///
-    /// `token` - The token of the session that should remain.
-    ///
-    /// `(classroom_id, num)` - The user whose sessions will be deleted.
-    ///
-    /// # Errors
-    /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn delete_all_sessions_except(
-        db: impl PgExecutor<'_>,
-        token: &str,
-        (classroom_id, num): &(i32, i32),
-    ) -> Result<(), ApiError> {
-        query!(
-            "DELETE FROM classroom_sessions WHERE (classroom_id, id_within_classroom) = ($1, $2) AND token != $3",
-            classroom_id,
-            num,
-            token,
-        )
-        .execute(db)
-        .await?;
+            .execute(db)
+            .await?;
 
         Ok(())
     }
