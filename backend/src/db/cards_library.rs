@@ -44,7 +44,7 @@ pub async fn add_tags(
     .await?;
 
     query!(
-        "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
         library_card_id,
         &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
     )

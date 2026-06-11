@@ -258,7 +258,7 @@ pub async fn add_tags(
     .await?;
 
     query!(
-        "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
         tree_id,
         &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
     )
