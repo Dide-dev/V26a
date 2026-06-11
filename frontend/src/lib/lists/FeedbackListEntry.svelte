@@ -74,7 +74,7 @@
                 onclick={() => {
                     expanded = !expanded;
                 }}
-                class={[feedback.feedback.length <= textLimit && '', 'text__link']}
+                class="text__link"
             >
                 {expanded ? m.showLess() : m.showMore()}
             </button>

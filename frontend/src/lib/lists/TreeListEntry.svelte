@@ -77,7 +77,7 @@
                 >
                     <ArrowUpRightFromSquareOutline class="mb-1 h-5 w-5 shrink-0" />
                 </a>
-                {#if userInfo?.sub === tree.genData.ownerId}
+                {#if userInfo?.sub === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '')}
                     <a
                         href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
                         aria-label="edit"
