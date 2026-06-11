@@ -76,7 +76,8 @@ function createTree(): TreeWithCards {
     const treeLinkedData: TreeLinkedData = {
         ownerName: 'Test owner name',
         subjectName: 'Test subject name',
-        coAuthors: []
+        coAuthors: [],
+        languageName: 'English'
     };
 
     const treeMetadata: TreeMetadata = {

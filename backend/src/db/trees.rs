@@ -442,11 +442,23 @@ pub async fn db_get_tree_all_data(
     tree_id: i32,
 ) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
-        r#"SELECT trees.*, users.name AS owner_name, subjects.name AS "subject_name?", COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags, ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors
-        FROM trees
+        r#"SELECT
+            trees.*,
+            users.name AS owner_name,
+            subjects.name AS "subject_name?",
+            languages.name AS language_name,
+            COALESCE(books.title, '') AS book_name,
+            COALESCE(books.author, '') AS book_author,
+            COALESCE(books.edition, '') AS book_edition,
+            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags,
+            ARRAY(SELECT
+                (SELECT name FROM users as co_users WHERE co_users.id = co_authors.user_id)
+                FROM co_authors WHERE tree_id = trees.id
+            ) AS co_authors        FROM trees
         LEFT JOIN books ON trees.book_isbn = books.isbn
         LEFT JOIN users ON users.id = trees.owner_id
         LEFT JOIN subjects ON subjects.id = trees.subject_id
+        LEFT JOIN languages ON trees.language_code = languages.code
         WHERE trees.id = $1"#,
         tree_id,
     )
@@ -486,6 +498,7 @@ pub async fn db_get_tree_all_data(
         linked_data: TreeLinkedData {
             owner_name: field.owner_name,
             subject_name: field.subject_name,
+            language_name: field.language_name,
             co_authors: field.co_authors.unwrap_or(Vec::new()),
         },
     };
@@ -738,7 +751,7 @@ fn apply_tree_filters<'a>(
         separated.push("(published = true");
 
         if *show_own_private && let Some(user_id) = option_user_id {
-            separated.push_unseparated(" OR (published = false AND (owner_id = ");
+            separated.push_unseparated(" OR (owner_id = ");
             separated.push_bind_unseparated(user_id);
 
             separated.push_unseparated(
@@ -748,7 +761,7 @@ fn apply_tree_filters<'a>(
                 WHERE co_authors.user_id = ",
             );
             separated.push_bind_unseparated(user_id);
-            separated.push_unseparated(")))");
+            separated.push_unseparated(" AND co_authors.tree_id = trees.id))");
         }
 
         separated.push_unseparated(")");
@@ -817,7 +830,7 @@ fn apply_tree_filters_editable(
                 WHERE co_authors.user_id = ",
         );
         separated.push_bind_unseparated(user_id);
-        separated.push_unseparated("))");
+        separated.push_unseparated(" AND co_authors.tree_id = trees.id))");
     }
 }
 
@@ -956,6 +969,7 @@ const TREE_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN books ON books.isbn = trees.book_isbn
     LEFT JOIN users ON users.id = trees.owner_id
     LEFT JOIN subjects ON subjects.id = trees.subject_id
+    LEFT JOIN languages ON languages.code = trees.language_code
 ";
 
 fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
@@ -1036,16 +1050,21 @@ pub async fn get_queried_list(
     query.push(
         r#"
     SELECT trees.*,
-       users.name                                                     AS owner_name,
-       subjects.name                                                  AS "subject_name?",
-       COALESCE(books.title, '')                                      AS book_name,
-       COALESCE(books.author, '')                                     AS book_author,
-       COALESCE(books.edition, '')                                    AS book_edition,
-       ARRAY(SELECT name
-             FROM tags
-                      JOIN tree_tags ON tag_id = id
-             WHERE tree_id = trees.id)                                AS tags,
-       ARRAY(SELECT user_id FROM co_authors WHERE tree_id = trees.id) AS co_authors"#,
+        users.name                                                     AS owner_name,
+        subjects.name                                                  AS "subject_name?",
+        languages.name                                                 AS language_name,
+        COALESCE(books.title, '')                                      AS book_name,
+        COALESCE(books.author, '')                                     AS book_author,
+        COALESCE(books.edition, '')                                    AS book_edition,
+        ARRAY(SELECT name
+            FROM tags
+                JOIN tree_tags ON tag_id = id
+            WHERE tree_id = trees.id)                                  AS tags,
+        ARRAY(SELECT
+            (SELECT name
+                FROM users as co_users
+                WHERE co_users.id = co_authors.user_id)
+            FROM co_authors WHERE tree_id = trees.id)                  AS co_authors"#,
     );
     query.push(TREE_LIST_QUERY_JOINS);
 
@@ -1415,7 +1434,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2)))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
+            "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -1470,7 +1489,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             show_own_private_with_id_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (published = false AND (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2))))",
+            "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id)))",
         );
 
         let mut hide_own_private_with_id_query =

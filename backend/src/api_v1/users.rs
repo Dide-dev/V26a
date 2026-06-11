@@ -8,15 +8,15 @@ use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
 use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
-    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
-    update_user, user_id_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
+    update_password, update_user, user_id_exists,
 };
 use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
     DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
-    RegisterData, UserData, UserGetData,
+    PublicUserData, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -26,7 +26,7 @@ use std::collections::hash_map::Entry;
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
 use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
@@ -46,6 +46,7 @@ pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
         .route("/verification", post(verify))
+        .route("/{user_id}/public", get(get_public_user_data))
         .route(
             "/me",
             get(get_own_user_data)
@@ -263,6 +264,39 @@ async fn get_own_user_data(
 }
 
 #[utoipa::path(
+    get,
+    path = "/{user_id}/public",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Successfully retrieved public data of user.", body = PublicUserData),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Get a user's public data from the database.
+///
+/// # Returns
+/// The user's data as [`PublicUserData`].
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if no user of the given id could be found.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_public_user_data(
+    Path(user_id): Path<i32>,
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<PublicUserData>, ApiError> {
+    if let Some(user_data) = get_user_public_data(&db, user_id).await? {
+        Ok(Json(user_data))
+    } else {
+        Err(ApiError::MissingUser(user_id))
+    }
+}
+
+#[utoipa::path(
     put,
     path = "/me",
     context_path = "/api/v1/users",
@@ -461,8 +495,8 @@ async fn delete_user_data(
 
     // Unset the cookies by changing the date to a time in the past.
     Ok(jar
-        .remove(Cookie::from("session"))
-        .remove(Cookie::from("user_info")))
+        .remove(Cookie::build("session").path("/api/"))
+        .remove(Cookie::build("user_info").path("/")))
 }
 
 #[utoipa::path(

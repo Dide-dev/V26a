@@ -8,7 +8,7 @@ use crate::ArcState;
 use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::session::{create_session, delete_session};
-use crate::db::users::get_user;
+use crate::db::users::{get_user, user_update_last_login};
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
@@ -115,6 +115,8 @@ async fn login(
         .secure(true)
         .max_age(duration)
         .http_only(false);
+
+    user_update_last_login(&db, credentials.user_id).await?;
 
     Ok((
         jar.add(cookie).add(user_info_cookie),

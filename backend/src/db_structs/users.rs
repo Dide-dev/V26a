@@ -10,7 +10,7 @@ use crate::limits::{
     PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -216,12 +216,25 @@ impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
     }
 }
 
-/// Data received when getting user data from the database.
+/// Data received when getting own user data from the database.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserGetData {
     pub email: String,
     pub data: UserData,
+}
+
+/// Data received when getting public user data from the database.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicUserData {
+    pub name: String,
+    pub nickname: String,
+    pub about_me: String,
+    pub language: UserLanguage,
+
+    /// If email is not visible, this will be set to None.
+    pub email: Option<String>,
 }
 
 /// Data needed for an admin to update a user in the database.
@@ -232,6 +245,14 @@ pub struct AdminUpdateData {
     pub data: UserGeneralData,
     pub enabled: bool,
     pub account_type: AccountType,
+}
+
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminGetUserData {
+    pub created_at: DateTime<Utc>,
+    pub last_login: DateTime<Utc>,
+    pub updateable_data: AdminUpdateData,
 }
 
 impl Validated for AdminUpdateData {
