@@ -60,7 +60,7 @@
     <div
         class={[
             (expanded || feedback.feedback.length <= textLimit) && 'inline',
-            !expanded && 'flex'
+            !expanded && 'flex overflow-hidden'
         ]}
     >
         <span
