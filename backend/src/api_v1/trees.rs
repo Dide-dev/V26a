@@ -865,19 +865,19 @@ pub async fn add_new_language(
     path = "/languages/{code}",
     context_path = "/api/v1/trees",
     responses(
-        (status = 200, description = "Successfully updated the subject."),
-        (status = 400, description = "The subject does not exist or the new data contains a non-existent language code."),
+        (status = 200, description = "Successfully updated the language."),
+        (status = 400, description = "The language does not exist."),
         (status = 500, description = "Internal server error."),
     )
 )]
-/// Updates an existing subject.
+/// Updates an existing language.
 ///
 /// # Arguments
 /// `db` - A reference to the database connection to use for the query.
 ///
-/// `id` - The id of the subject to update.
+/// `code` - The code of the language to update.
 ///
-/// `new_data` - The new subject data, as [`SubjectData`].
+/// `new_name` - The new name for the language.
 ///
 /// # Returns
 /// Nothing.

@@ -246,10 +246,12 @@ async fn setup_login(db: PgPool) -> TestServer {
 /// that require being logged in as admin, and saves cookies.
 async fn setup_admin(db: PgPool) -> TestServer {
     let conn = crate::get_connection_unwrap!(db);
-    let server = setup(db);
+    let test_state = setup(db);
 
     let register_data = RegisterData::test_values();
-    register_admin(&server, &mut *conn, &register_data).await;
+    register_admin(&test_state, &mut *conn, &register_data).await;
+
+    let server = test_state.server;
     login(&server, register_data.email).await;
 
     server
