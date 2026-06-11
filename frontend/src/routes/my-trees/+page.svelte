@@ -76,9 +76,7 @@
     {#if treeListResponse?.trees === null}
         <p>{m.loading()}</p>
     {:else if treeListResponse?.trees.length === 0}
-        <div class="text-center">
-            <p class="flex justify-center text-2xl">{m.noAllTreesFound()}</p>
-        </div>
+        <h2 class="page__heading">{m.noAllTreesFound()}</h2>
     {:else}
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <ListPagination

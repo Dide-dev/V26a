@@ -46,9 +46,7 @@
     {#if feedbackListResponse?.feedback === null}
         <p>{m.loading()}</p>
     {:else if feedbackListResponse?.feedback.length === 0}
-        <div class="text-center">
-            <p class="flex justify-center text-2xl">{m.noFeedbackFound()}</p>
-        </div>
+        <p>{m.noFeedbackFound()}</p>
     {:else}
         <div class="flex w-full flex-col items-center justify-center overflow-auto">
             <ListPagination
