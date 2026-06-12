@@ -215,8 +215,8 @@
             gap: var(--spacing);
         }
 
-        button[type='submit'],
-        button[type='reset'] {
+        button[type='submit']:not(.button__icon),
+        button[type='reset']:not(.button__icon) {
             padding: var(--spacing-padding-minor);
             border-radius: var(--radius-md);
             border-width: 2px;

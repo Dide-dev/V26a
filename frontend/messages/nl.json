@@ -99,6 +99,9 @@
     "duplicateTree": "Dupliceer boom",
     "editTree": "Bewerk boom",
     "editUser": "Bewerk gebruiker",
+    "addLanguage": "Voeg taal toe",
+    "editLanguage": "Bewerk taal",
+    "saveLanguage": "Sla taal op",
     "edit": "Bewerk",
     "add": "Voeg toe",
     "preview": "Voorbeeld",
@@ -111,6 +114,7 @@
     "id": "id",
     "enabled": "ingeschakeld",
     "userList": "Gebruikerslijst",
+    "languageList": "Talenlijst",
     "feedbackList": "Ingezonden feedback",
     "newPassword": "Nieuw wachtwoord",
     "oldPassword": "Oud wachtwoord",
@@ -208,5 +212,6 @@
     "deleteOwnedTrees": "Verwijder al mijn bomen",
     "deleteAccount": "Verwijder account",
     "deleteAccountConfirmation": "Weet je zeker dat je je account wilt verwijderen?",
-    "logout": "Log uit"
+    "logout": "Log uit",
+    "languageExists": "Een taal met code '{code}' bestaat al."
 }

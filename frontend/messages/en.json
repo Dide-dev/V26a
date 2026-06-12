@@ -99,6 +99,9 @@
     "duplicateTree": "Duplicate tree",
     "editTree": "Edit tree",
     "editUser": "Edit user",
+    "addLanguage": "Add language",
+    "editLanguage": "Edit language",
+    "saveLanguage": "Save language",
     "edit": "Edit",
     "add": "Add",
     "preview": "Preview",
@@ -111,6 +114,7 @@
     "id": "id",
     "enabled": "enabled",
     "userList": "User list",
+    "languageList": "Language list",
     "feedbackList": "Received feedback",
     "newPassword": "New password",
     "oldPassword": "Old password",
@@ -210,5 +214,6 @@
     "deleteOwnedTrees": "Delete all my trees",
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
-    "logout": "Logout"
+    "logout": "Logout",
+    "languageExists": "A language with code '{code}' already exists."
 }
