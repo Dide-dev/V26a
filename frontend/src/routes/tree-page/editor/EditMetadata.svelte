@@ -289,7 +289,7 @@
                             >
                             {#each subjects === null ? [] : subjects[treeData.languageCode] as value (value)}
                                 <option value={value.id} class={['input__select_option']}>
-                                    {value.name}
+                                    {value.data.name}
                                 </option>
                             {/each}
                         </select>

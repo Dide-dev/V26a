@@ -7,20 +7,19 @@
     import { m } from '$lib/paraglide/messages.js';
     import { getAllUserData, type UserListResponse } from '$lib/api-wrapper/admin';
     import { onMount } from 'svelte';
-    import iconEdit from '$lib/assets/icons/edit.svg?raw';
-    import { appLink } from '$lib';
-    import { booleanToString } from '$lib/index';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
+    import ListPagination from '$lib/lists/ListPagination.svelte';
+    import UserListEntry from '$lib/lists/UserListEntry.svelte';
 
-    let userListResponse: null | UserListResponse = $state(null);
+    let userListResponse = $state(null as null | UserListResponse);
 
-    let pageSizeString = $state('10');
-    let pageSizeNumber = $derived(Number(pageSizeString));
-    let thisPage = $state(1);
+    let pageSize = $state(10);
+    let currentPage = $state(1);
+    let totalPages = $derived(calcTotalPages(userListResponse?.totalUsers ?? 0, pageSize));
 
     let paginationOptions: PaginationOptions = $derived({
-        page: thisPage,
-        size: pageSizeNumber
+        page: currentPage,
+        size: pageSize
     });
 
     onMount(async () => {
@@ -31,94 +30,35 @@
         userListResponse = await getAllUserData(paginationOptions);
     }
 
-    let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived.by(() => {
-        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
-        const total = (userListResponse as UserListResponse | null)?.totalUsers ?? 0;
-        return thisPage < calcTotalPages(total, pageSizeNumber);
-    });
-
-    function changePageSize() {
-        thisPage = 1;
+    function handlePageChange() {
         loadUsers();
     }
 
-    function prevPage() {
-        thisPage -= 1;
-        loadUsers();
-    }
-
-    function nextPage() {
-        thisPage += 1;
+    function handlePageSizeChange() {
+        currentPage = 1;
         loadUsers();
     }
 </script>
 
-<div class="flex w-full justify-center">
-    <div class="flex-col">
-        <!-- Change the number of users per page -->
-        <label>
-            {m.numberPerPage({ n: m.users() })}
-            <select
-                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
-                bind:value={pageSizeString}
-                onchange={changePageSize}
+<div class="flex w-7/8 max-w-lg flex-col">
+    <h1 class="page__title">{m.userList()}</h1>
+    {#if userListResponse?.users === null}
+        <p>{m.loading()}</p>
+    {:else}
+        <div class="flex w-full flex-col items-center justify-center overflow-auto">
+            <ListPagination
+                bind:currentPage
+                {totalPages}
+                {handlePageChange}
+                bind:pageSize
+                {handlePageSizeChange}
             >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-            </select>
-        </label>
-    </div>
-</div>
-
-{#if userListResponse?.users === null}
-    <p>{m.loading()}</p>
-{:else}
-    <div class="100vw flex flex-col items-center justify-center overflow-auto">
-        <table class="border-separate border-spacing-2">
-            <thead>
-                <tr>
-                    <th class="text-left">{m.id()}</th>
-                    <th class="text-left">{m.email()}</th>
-                    <th class="text-left">{m.name()}</th>
-                    <th class="text-left">{m.enabled()}</th>
-                    <!-- Edit button -->
-                    <th class="text-left"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {#each userListResponse?.users as user (user.id)}
-                    <tr>
-                        <td class="pr-4 wrap-anywhere">{user.id}</td>
-                        <td class="pr-4 wrap-anywhere">{user.email}</td>
-                        <td class="pr-4">{user.name}</td>
-                        <td class="pr-4">{booleanToString(user.enabled)}</td>
-                        <td class="min-w-2 hover:fill-blue-800">
-                            <a href={appLink(`/user-manager?id=${user.id}`)} aria-label="edit">
-                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html iconEdit}
-                            </a>
-                        </td>
-                    </tr>
-                {/each}
-            </tbody>
-        </table>
-        <div>
-            <button
-                onclick={prevPage}
-                disabled={!prevPageExists}
-                class="mx-5"
-                class:cursor-pointer={prevPageExists}>Prev</button
-            >
-            {thisPage}/{calcTotalPages(userListResponse?.totalUsers ?? 0, pageSizeNumber)}
-            <button
-                onclick={nextPage}
-                disabled={!nextPageExists}
-                class="mx-5"
-                class:cursor-pointer={nextPageExists}>Next</button
-            >
+                <div class="list__container">
+                    {#each userListResponse?.users as user (user)}
+                        <UserListEntry {user} />
+                    {/each}
+                </div>
+            </ListPagination>
         </div>
-    </div>
-{/if}
+    {/if}
+</div>
