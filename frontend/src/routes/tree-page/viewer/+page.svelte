@@ -15,8 +15,7 @@
     import { branchColors } from '$lib/treePage';
     import TreeInformation from '../TreeInformation.svelte';
     import { getUserInfo } from '$lib/api-wrapper/users';
-    import editIcon from '$lib/assets/icons/edit.svg?raw';
-    import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
+    import { EditOutline, FileCloneOutline } from 'flowbite-svelte-icons';
 
     let tree: TreeWithCards | null = $state(null);
     let userAllowedToEdit = $state(false);
@@ -60,17 +59,17 @@
     {:else}
         <TreeInformation tree={tree.metadata}>
             {#snippet titleSnippet()}
-                <div class="flex">
+                <div class="flex gap-1">
                     <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
                     {#if userAllowedToEdit}
                         <div class="flex flex-col justify-center">
                             <a
                                 href={appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`)}
-                                class="page__title mt-3 ml-1"
+                                class="page__title mt-3"
                                 data-testid="edit-button"
+                                title={m.editTree()}
                             >
-                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html editIcon}
+                                <EditOutline class="h-7 w-7 shrink-0" />
                             </a>
                         </div>
                     {/if}
@@ -80,10 +79,10 @@
                                 onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
                                 aria-label="duplicate"
                                 class:cursor-pointer={true}
-                                class="page__title mt-3 ml-1"
+                                class="page__title mt-3"
+                                title={m.duplicateTree()}
                             >
-                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html iconDuplicate}
+                                <FileCloneOutline class="h-7 w-7 shrink-0" />
                             </button>
                         </div>
                     {/if}
