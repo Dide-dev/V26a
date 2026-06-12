@@ -50,6 +50,8 @@ pub enum ApiError {
     MissingClassroom(i32),
     /// An error to return when a non-existing `language` is used when creating or updating a tree.
     MissingLanguage(String),
+    /// An error to return when a non-existing `lesson_id` is used to access a lesson.
+    MissingLesson(i32),
     /// An error to return when a non-existing `subject_id` is used when creating or updating a tree.
     MissingSubject(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
@@ -217,6 +219,9 @@ impl Display for ApiError {
                 write!(f, "The classroom with id {id} could not be found.")
             }
             ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
+            ApiError::MissingLesson(id) => {
+                write!(f, "The lesson with id {id} could not be found.")
+            }
             ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
@@ -316,6 +321,7 @@ impl ApiError {
             | ApiError::MissingCard(_)
             | ApiError::MissingClassroom(_)
             | ApiError::MissingLanguage(_)
+            | ApiError::MissingLesson(_)
             | ApiError::MissingSubject(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)

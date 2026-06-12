@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM lesson_trees WHERE (lesson_id=$1 AND tree_id=$2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "lesson_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "tree_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "69ef33f86a3b65dd5e4a413fd66c7c85a20ee6c0d1c68bcdb81ddfcc03ad8e20"
+}

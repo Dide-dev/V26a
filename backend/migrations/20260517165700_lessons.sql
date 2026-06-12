@@ -15,7 +15,7 @@ CREATE TABLE lessons
     published           BOOLEAN         NOT NULL    DEFAULT FALSE,
 
     FOREIGN KEY (classroom_id) REFERENCES classrooms (id) ON DELETE CASCADE,
-    CONSTRAINT order_number_unique UNIQUE (id, order_number)
+    CONSTRAINT order_number_unique UNIQUE (classroom_id, order_number)
 );
 
 CREATE TABLE lesson_trees
