@@ -61,11 +61,9 @@ export type ClassroomLoginResponse =
     | ClassroomLoginResponseMissingUser;
 export type ClassroomLoginResponseSuccess = {
     type: 'Success';
-    loginData: {
-        id: ClassroomId;
-        num: number;
-        name: string;
-    };
+    id: ClassroomId;
+    num: number;
+    name: string;
 };
 export type ClassroomLoginResponseJoinCodeIncorrect = {
     type: 'JoinCodeIncorrect';
