@@ -119,8 +119,9 @@ pub struct ClassroomUserLoginData {
 
 /// The data that is sent to the user after successfully logging in to a classroom.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum ClassroomLoginResponse {
-    Success { login_data: ClassroomClaims },
-    JoinCodeIncorrect { join_code: String },
-    MissingUser { user_num: i32 },
+    Success(ClassroomClaims),
+    JoinCodeIncorrect(String),
+    MissingUser(i32),
 }

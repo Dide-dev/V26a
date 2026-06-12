@@ -32,7 +32,7 @@ impl AllClassroomClaims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    pub(crate) async fn get_claims(parts: &mut Parts) -> Result<AllClassroomClaims, ApiError> {
+    pub async fn get_claims(parts: &mut Parts) -> Result<AllClassroomClaims, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -61,7 +61,7 @@ impl AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn get_session(
+    pub async fn get_session(
         db: impl PgExecutor<'_>,
         token: &str,
     ) -> Result<Option<AllClassroomClaims>, ApiError> {
@@ -108,7 +108,7 @@ impl AllClassroomClaims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn create_session(
+    pub async fn create_session(
         db: &mut PgConnection,
         token: &str,
         expires_at: DateTime<Utc>,

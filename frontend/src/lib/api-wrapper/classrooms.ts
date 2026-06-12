@@ -55,11 +55,24 @@ export type ClassroomUserLoginData = {
     username: string;
 };
 
-export type ClassroomLoginResponse = {
-    id: ClassroomId;
-    num: number;
-    name: string;
+export type ClassroomLoginResponse = ClassroomLoginResponseSuccess | ClassroomLoginResponseJoinCodeIncorrect | ClassroomLoginResponseMissingUser;
+export type ClassroomLoginResponseSuccess = {
+    type: 'Success';
+    loginData: {
+        id: ClassroomId;
+        num: number;
+        name: string;
+    };
 };
+export type ClassroomLoginResponseJoinCodeIncorrect = {
+    type: 'JoinCodeIncorrect';
+    joinCode: string;
+};
+
+export type ClassroomLoginResponseMissingUser = {
+    type: 'MissingUser';
+    userNumber: number;
+}
 
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomData): Promise<ClassroomGeneratedData> {

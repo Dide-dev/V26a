@@ -34,7 +34,7 @@ impl Claims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    pub(crate) async fn get_claims(parts: &mut Parts) -> Result<Claims, ApiError> {
+    pub async fn get_claims(parts: &mut Parts) -> Result<Claims, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -63,7 +63,7 @@ impl Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn get_session(
+    pub async fn get_session(
         db: impl PgExecutor<'_>,
         token: &str,
     ) -> Result<Option<Claims>, ApiError> {
@@ -101,7 +101,7 @@ impl Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn create_session(
+    pub async fn create_session(
         db: &mut PgConnection,
         token: &str,
         expires_at: DateTime<Utc>,
@@ -128,7 +128,7 @@ impl Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn delete_session(
+    pub async fn delete_session(
         db: impl PgExecutor<'_>,
         token: &str,
     ) -> Result<(), ApiError> {
@@ -148,7 +148,7 @@ impl Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn delete_all_sessions(
+    pub async fn delete_all_sessions(
         db: impl PgExecutor<'_>,
         user_id: &i32,
     ) -> Result<(), ApiError> {
@@ -170,7 +170,7 @@ impl Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub(crate) async fn delete_all_sessions_except(
+    pub async fn delete_all_sessions_except(
         db: impl PgExecutor<'_>,
         token: &str,
         user_id: &i32,

@@ -131,9 +131,7 @@ async fn classroom_login(
     let Some(classroom_id) = validate_join_code(&db, &classroom_login_data.join_code).await? else {
         return Ok((
             jar,
-            Json(ClassroomLoginResponse::JoinCodeIncorrect {
-                join_code: classroom_login_data.join_code,
-            }),
+            Json(ClassroomLoginResponse::JoinCodeIncorrect(classroom_login_data.join_code)),
         ));
     };
 
@@ -145,7 +143,7 @@ async fn classroom_login(
             let Some(name) = get_name_by_number(&db, classroom_id, num).await? else {
                 return Ok((
                     jar,
-                    Json(ClassroomLoginResponse::MissingUser { user_num: num }),
+                    Json(ClassroomLoginResponse::MissingUser(num)),
                 ));
             };
             name
@@ -206,9 +204,7 @@ async fn classroom_login(
     // This also overwrites any cookies with the same name already in the jar.
     Ok((
         jar.add(cookie).add(user_cookie),
-        Json(ClassroomLoginResponse::Success {
-            login_data: new_classroom_claims,
-        }),
+        Json(ClassroomLoginResponse::Success(new_classroom_claims)),
     ))
 }
 
