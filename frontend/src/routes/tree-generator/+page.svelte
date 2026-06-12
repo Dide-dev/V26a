@@ -20,24 +20,17 @@
         type TreeData
     } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
-    import {
-        getOwnUserData,
-        getUserInfo,
-        type UserGetData,
-        type UserInfo
-    } from '$lib/api-wrapper/users';
+    import { getOwnUserData, getUserInfo, type UserGetData } from '$lib/api-wrapper/users';
     import Editor from '$lib/rich-text/Editor.svelte';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 
-    let userInfo: UserInfo | null = $state(null);
     let userData: UserGetData | null = $state(null);
     let languages: Language[] | null = $state(null);
     let subjects: Record<string, Subject[]> | null = $state(null);
 
     onMount(async () => {
-        userInfo = getUserInfo();
-        if (userInfo === null) {
+        if (getUserInfo() === null) {
             await redirectLogin(page.url);
             return;
         }
@@ -122,7 +115,7 @@
                 bind:value={treeData.description}
                 name="description"
                 data-testid="description"
-                placeholder={m.examplePlaceholder({ value: m.exampleDescription() })}
+                placeholder={m.examplePlaceholderOptional({ value: m.exampleDescription() })}
                 minlength={minInputLengths.description}
                 maxlength={maxInputLengths.description}
             ></textarea>
@@ -136,7 +129,7 @@
                 name="tags"
                 type="text"
                 data-testid="tags"
-                placeholder={m.examplePlaceholder({ value: m.exampleTags() })}
+                placeholder={m.examplePlaceholderOptional({ value: m.exampleTags() })}
             />
             {#if tagsInputError !== ''}
                 <p class="text__error" data-testid="tags-input-error">{tagsInputError}</p>
@@ -175,7 +168,7 @@
                 name="bookIsbn"
                 type="text"
                 data-testid="bookIsbn"
-                placeholder={m.examplePlaceholder({ value: m.exampleBookISBN() })}
+                placeholder={m.examplePlaceholderOptional({ value: m.exampleBookISBN() })}
                 minlength={minInputLengths.bookIsbn}
                 maxlength={maxInputLengths.bookIsbn}
             />
@@ -227,7 +220,7 @@
                     name="bookEdition"
                     type="text"
                     data-testid="bookEdition"
-                    placeholder={m.examplePlaceholder({ value: m.exampleBookEdition() })}
+                    placeholder={m.examplePlaceholderOptional({ value: m.exampleBookEdition() })}
                     minlength={minInputLengths.bookEdition}
                     maxlength={maxInputLengths.bookEdition}
                 />
@@ -243,7 +236,7 @@
                     name="chapter"
                     type="text"
                     data-testid="chapter"
-                    placeholder={m.examplePlaceholder({ value: m.exampleBookChapter() })}
+                    placeholder={m.examplePlaceholderOptional({ value: m.exampleBookChapter() })}
                     minlength={minInputLengths.bookChapter}
                     maxlength={maxInputLengths.bookChapter}
                 />
@@ -259,7 +252,7 @@
                     name="exercise"
                     type="text"
                     data-testid="exercise"
-                    placeholder={m.examplePlaceholder({ value: m.exampleExercise() })}
+                    placeholder={m.examplePlaceholderOptional({ value: m.exampleExercise() })}
                     minlength={minInputLengths.bookExercise}
                     maxlength={maxInputLengths.bookExercise}
                 />

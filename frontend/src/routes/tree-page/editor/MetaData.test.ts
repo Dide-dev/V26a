@@ -1,7 +1,13 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import { render, screen } from '@testing-library/svelte';
 import { userEvent } from '@testing-library/user-event';
 import { beforeEach, expect, test, vi } from 'vitest';
-import MetaData from './+page.svelte';
+import MetaData from './TreeEditor.svelte';
 import { m } from '$lib/paraglide/messages.js';
 
 // mock API calls
@@ -100,10 +106,10 @@ test('save calls updateTreeMetaData with correct data', async () => {
     await user.type(screen.getByLabelText(m.description()), 'New Apple');
     await user.click(screen.getByText(m.confirmChanges()));
 
-    expect(updateTreeMetaData).toHaveBeenCalledWith({
-        id: 1,
-        newData: expect.objectContaining({ description: 'New Apple' })
-    });
+    expect(updateTreeMetaData).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ description: 'New Apple' })
+    );
 });
 
 test('dropdown closes after save', async () => {

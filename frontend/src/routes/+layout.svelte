@@ -20,7 +20,7 @@
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
-    let errors: Error[] = $state([]);
+    let errors: string[] = $state([]);
 
     // Retrieve userinfo after navigating to another page (refreshes nav-bar).
     afterNavigate(() => {
@@ -32,14 +32,14 @@
     });
 
     function handleWindowError(event: Event) {
-        if (event instanceof ErrorEvent) {
-            errors.push(event.error);
-        } else {
-            errors.push(new Error('Unknown window error.'));
+        if (event instanceof ErrorEvent && typeof event?.error?.message === 'string') {
+            errors.push(event.error.message);
         }
     }
     function handleError(err: PromiseRejectionEvent) {
-        errors.push(err.reason);
+        if (typeof err?.reason?.message === 'string') {
+            errors.push(err.reason.message);
+        }
     }
 
     let leftLinks: NavLink[] = $derived.by(() => {
@@ -53,18 +53,18 @@
         if (userInfo === null) {
             result.push(
                 new NavLink({
-                    defaultHref: '/all-trees',
+                    defaultHref: '/trees',
                     text: m.allTrees()
                 })
             );
         } else {
             result.push(
                 new NavLink({
-                    defaultHref: '/all-trees',
+                    defaultHref: '/trees',
                     text: m.trees(),
                     children: [
                         {
-                            href: '/all-trees',
+                            href: '/trees',
                             text: m.allTrees()
                         },
                         {
@@ -129,8 +129,8 @@
                             text: m.profile()
                         },
                         {
-                            href: '/login',
-                            text: m.login()
+                            href: '/logout',
+                            text: m.logout()
                         }
                     ]
                 })
@@ -226,7 +226,7 @@
         {#each errors as err (err)}
             <div class="flex flex-col gap-2 rounded bg-neutral-500 p-4 text-red-800">
                 <b>{m.unexpectedErrorOccurred()}</b>
-                <b>{err.message}</b>
+                <b>{err}</b>
                 <button
                     class="rounded bg-blue-800 px-3 py-1 text-white"
                     onclick={() => errors.shift()}>{m.close()}</button

@@ -6,6 +6,7 @@
 
 @import 'tailwindcss';
 @import '../lib/assets/katex/katex.css';
+@import '../lib/theme.css';
 
 @plugin '@egoist/tailwindcss-icons';
 @plugin 'flowbite/plugin';
@@ -14,58 +15,6 @@
 @custom-variant dark (&:where(.light, .light *));
 
 @source '../../node_modules/flowbite-svelte/dist';
-
-@theme {
-    /* Custom colours */
-    --color-tree-50: oklch(0.982 0.02 142.42);
-    --color-tree-100: oklch(0.952 0.045 142.42);
-    --color-tree-125: oklch(0.925 0.035 142.42);
-    --color-tree-150: oklch(0.912 0.052 142.42);
-    --color-tree-200: oklch(0.882 0.072 142.42);
-    --color-tree-300: oklch(0.822 0.092 142.42);
-    --color-tree-400: oklch(0.732 0.112 142.42);
-    --color-tree-450: oklch(0.682 0.132 142.42);
-    --color-tree-500: oklch(0.66 0.132 142.42);
-    --color-tree-600: oklch(0.6 0.122 142.42);
-    --color-tree-610: oklch(0.58 0.118 142.42);
-    --color-tree-625: oklch(0.55 0.112 142.42);
-    --color-tree-650: oklch(0.525 0.102 142.42);
-    --color-tree-750: oklch(0.475 0.087 142.42);
-    --color-tree-800: oklch(0.405 0.077 142.42);
-    --color-tree-900: oklch(0.365 0.072 142.42);
-    --color-tree-950: oklch(0.325 0.067 142.42);
-
-    --color-tree-dim-50: oklch(0.9475 0.02 143.69);
-    --color-tree-dim-250: oklch(0.875 0.029 143.69);
-
-    --color-brown: oklch(0.638 0.0968 73.33);
-
-    --color-neutral-350: oklch(0.78 0 0);
-
-    --color-underline: var(--color-black);
-
-    /* Text spacing */
-    --spacing-text-normal: calc(var(--spacing) * 4);
-    --spacing-text-small: calc(var(--spacing) * 2);
-    --spacing-text-minor: calc(var(--spacing) * 1);
-
-    /* Padding */
-    --spacing-padding-lg: calc(var(--spacing) * 6);
-    --spacing-padding-normal: calc(var(--spacing) * 4);
-    --spacing-padding-small: calc(var(--spacing) * 2);
-    --spacing-padding-minor: calc(var(--spacing) * 1);
-
-    /* Spacing nav bar */
-    --spacing-nav-md: calc(var(--spacing) * 40);
-    --spacing-nav-th: calc(var(--spacing) * 28);
-    --spacing-nav-xt: calc(var(--spacing) * 14);
-
-    /* Spacing footer */
-    --spacing-footer-xl: calc(var(--spacing) * 54);
-    --spacing-footer-lg: calc(var(--spacing) * 40);
-    --spacing-footer-md: calc(var(--spacing) * 32);
-    --spacing-footer-th: calc(var(--spacing) * 20);
-}
 
 @layer base {
     /* Layout page with footer at the bottom. */
@@ -205,6 +154,21 @@
             animation: invalidInputClick linear 0.15s;
         }
 
+        .error.danger {
+            color: var(--color-black);
+            padding: var(--spacing-padding-minor);
+            border-radius: var(--radius-md);
+            border-width: 2px;
+            font-weight: var(--font-weight-bold);
+            font-size: var(--text-lg);
+            cursor: pointer;
+        }
+
+        .error.danger:hover {
+            background-color: var(--color-red-700);
+            border-color: var(--color-red-800);
+        }
+
         input + input {
             margin-top: var(--spacing-text-small);
         }
@@ -262,6 +226,7 @@
             color: var(--color-neutral-600);
             background-color: var(--color-neutral-400);
             border-color: currentColor;
+            transition: all 200ms ease-in-out;
         }
 
         &.completed button[type='submit'],
@@ -274,19 +239,35 @@
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
-                animation: completedFormButtonSelect 0.15s ease-in-out;
             }
         }
     }
 
-    @keyframes completedFormButtonSelect {
-        0% {
-            background-color: var(--color-neutral-200);
-            color: var(--color-black);
-        }
-        100% {
-            background-color: var(--color-neutral-600);
-            color: var(--color-white);
+    /* List formatting */
+    .list__container {
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        margin-bottom: var(--spacing-padding-normal);
+
+        border-bottom: 1px solid var(--color-neutral-200);
+
+        > .list__entry {
+            display: flex;
+            flex-direction: column;
+
+            width: 100%;
+            gap: var(--spacing-padding-minor);
+            padding: var(--spacing-padding-small);
+
+            border-top: 1px solid var(--color-neutral-200);
+            background-color: var(--color-neutral-50);
+            transition: background-color 200ms ease-in-out;
+
+            &:hover {
+                background-color: var(--color-neutral-100);
+            }
         }
     }
 
@@ -354,15 +335,30 @@
         font-size: 1.125rem;
     }
 
-    p a {
-        color: var(--color-blue-600);
+    p {
+        a {
+            color: var(--color-blue-600);
 
-        &:hover {
-            text-decoration: underline;
+            &:hover {
+                text-decoration: underline;
+            }
+
+            &:active {
+                color: var(--color-blue-800);
+            }
         }
 
-        &:active {
-            color: var(--color-blue-800);
+        ul li,
+        ol li {
+            margin-left: 1.5rem;
+        }
+
+        ul > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: disc;
+        }
+
+        ol > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: decimal;
         }
     }
 
@@ -382,23 +378,11 @@
             position: absolute;
             inset-inline-start: 2px;
         }
+
         p {
             /*margin-left: 1.5rem;*/
             color: #444;
         }
-    }
-
-    ul li,
-    ol li {
-        margin-left: 1.5rem;
-    }
-
-    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: disc;
-    }
-
-    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: decimal;
     }
 
     hr {

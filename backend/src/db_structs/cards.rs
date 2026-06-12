@@ -13,22 +13,6 @@ use crate::limits::{
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
-/// The basic data of the card, including the tree it belongs to.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CardAddData {
-    pub tree_id: i32,
-    pub data: CardData,
-}
-
-/// The basic data required to update an existing card.
-#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CardUpdateData {
-    pub card_id: i32,
-    pub data: CardData,
-}
-
 /// The basic data of the card
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -122,7 +106,7 @@ impl Validated for LibraryCardAddData {
 pub struct LibraryCardGetData {
     pub card_id: i32,
     pub title: String,
-    pub owner_id: i32,
+    pub owner_name: String,
     pub created_at: DateTime<Utc>,
     pub tags: Vec<String>,
     pub front: String,
@@ -133,10 +117,9 @@ pub struct LibraryCardGetData {
 #[derive(serde::Deserialize, ToSchema, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CardFilters {
-    pub owner_id: Option<i32>,
-
-    #[serde(default)]
+    pub owner_name: Option<String>,
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
+    #[serde(default)]
     pub tags: Vec<String>,
 }

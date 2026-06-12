@@ -54,10 +54,12 @@ services:
     volumes:
       - uploads:/uploads
     environment:
+      - BASE_URL=${BASE_URL}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
       - RUST_LOG=${RUST_LOG}
-      - JWT_SECRET=${JWT_SECRET}
       - SESSION_EXPIRATION_SECONDS=${SESSION_EXPIRATION_SECONDS}
+      - VERIFICATION_TIMER_SECONDS=${VERIFICATION_TIMER_SECONDS}
+      - SMTP_SERVER=${SMTP_SERVER}
     depends_on:
       db:
         condition: service_healthy
@@ -97,3 +99,16 @@ services:
           action: rebuild
     depends_on:
       - backend
+
+  # Local SMTP server for testing
+  mailpit:
+    profiles: [ "dev" ]
+    image: docker.io/axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      - MP_SMTP_BIND_ADDR=0.0.0.0:25
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+    ports:
+      - "25:25" # SMTP
+      - "8025:8025" # Web UI
+

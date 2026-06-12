@@ -17,14 +17,16 @@ pub const CARD_LIBRARY_TAG_MIN_LENGTH: usize = 2;
 // Classroom data limits
 pub const CLASSROOM_TITLE_MAX_LENGTH: usize = 32;
 pub const CLASSROOM_DESCRIPTION_MAX_LENGTH: usize = 256;
+pub const LESSON_TITLE_MAX_LENGTH: usize = 32;
+pub const LESSON_DESCRIPTION_MAX_LENGTH: usize = 128;
 // Min
 pub const CLASSROOM_TITLE_MIN_LENGTH: usize = 1;
+pub const LESSON_TITLE_MIN_LENGTH: usize = 1;
 
 // Credential data limits
 pub const EMAIL_MAX_LENGTH: usize = 128;
 pub const PASSWORD_MAX_LENGTH: usize = 72;
 // Minimums
-pub const EMAIL_MIN_LENGTH: usize = 3; // an email address cannot be physically shorter than 3 characters long.
 pub const PASSWORD_MIN_LENGTH: usize = 8;
 pub const PASSWORD_LOGIN_MIN_LENGTH: usize = 1; // To accommodate old accounts with a password shorter than the current imposed minimum.
 

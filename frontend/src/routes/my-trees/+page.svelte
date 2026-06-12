@@ -11,22 +11,21 @@
         type TreeListResponse,
         type FilterOptions
     } from '$lib/api-wrapper/trees';
-    import iconEdit from '$lib/assets/icons/edit.svg?raw';
-    import { appLink } from '$lib';
-    import RemoveButton from './RemoveButton.svelte';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import { booleanToString } from '$lib/index';
     import { getUserInfo } from '$lib/api-wrapper/users';
-    import { goto } from '$app/navigation';
+    import { redirectLogin } from '$lib/api-wrapper';
+    import { page } from '$app/state';
+    import TreeListEntry from '$lib/lists/TreeListEntry.svelte';
+    import ListPagination from '$lib/lists/ListPagination.svelte';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
     let treeListResponse: TreeListResponse = $state({ totalTrees: 0, trees: [] });
 
-    let pageSizeString = $state('10');
-    let pageSizeNumber = $derived(Number(pageSizeString));
-    let thisPage = $state(1);
+    let pageSize = $state(10);
+    let currentPage = $state(1);
+    let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSize));
 
     onMount(async () => {
         await loadTrees();
@@ -44,126 +43,56 @@
             editable: true
         };
         let paginationOptions: PaginationOptions = {
-            page: thisPage,
-            size: pageSizeNumber
+            page: currentPage,
+            size: pageSize
         };
         if (userInfo !== null) {
             treeListResponse = await getFilteredList(paginationOptions, filterOptions);
         } else {
-            await goto(appLink('/login'));
+            await redirectLogin(page.url);
         }
     }
 
-    let prevPageExists = $derived(thisPage > 1);
-    let nextPageExists = $derived.by(() => {
-        // For some reason svelte does not understand the type of treeListResponse so we have to manually cast it.
-        const total = (treeListResponse as TreeListResponse | null)?.totalTrees ?? 0;
-        return thisPage < calcTotalPages(total, pageSizeNumber);
-    });
-
-    function changePageSize() {
-        thisPage = 1;
+    function handlePageSizeChange() {
+        // Update the length of the description shown array, and reset values to false.
+        if (pageSize > entriesExpanded.length) {
+            entriesExpanded = Array.from({ length: pageSize }, () => false);
+        }
+        // Move to page 1, to prevent out-of-range page errors.
+        currentPage = 1;
         loadTrees();
     }
 
-    function prevPage() {
-        thisPage -= 1;
+    function handlePageChange() {
+        // Reset the expanded flags to false.
+        entriesExpanded.fill(false);
         loadTrees();
     }
 
-    function nextPage() {
-        thisPage += 1;
-        loadTrees();
-    }
+    let entriesExpanded = $state(Array.from({ length: 10 }, () => false));
 </script>
 
-<div class="flex w-full justify-center">
-    <div class="flex-col">
-        <!-- Change the number of trees per page -->
-        <label>
-            {m.numberPerPage({ n: m.treesUncapitalized() })}
-            <select
-                class="m-1 w-15 rounded-sm bg-neutral-200 p-1"
-                bind:value={pageSizeString}
-                onchange={changePageSize}
+<div class="flex w-7/8 max-w-xl flex-col">
+    <h1 class="page__title">{m.myTrees()}</h1>
+    {#if treeListResponse?.trees === null}
+        <p>{m.loading()}</p>
+    {:else if treeListResponse?.trees.length === 0}
+        <p class="mt-4 font-semibold italic">{m.noAllTreesFound()}</p>
+    {:else}
+        <div class="flex w-full flex-col items-center justify-center overflow-auto">
+            <ListPagination
+                bind:currentPage
+                {totalPages}
+                {handlePageChange}
+                bind:pageSize
+                {handlePageSizeChange}
             >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-            </select>
-        </label>
-    </div>
-</div>
-
-{#if treeListResponse.trees === null}
-    <p>{m.loading()}</p>
-{:else if treeListResponse.trees.length === 0}
-    <div class="text-center">
-        <p class="flex justify-center text-2xl">{m.noMyTreesFound()}</p>
-        <button class="m-2 rounded-sm bg-emerald-500 p-1"
-            ><a href={appLink('/tree-generator')}>{m.createTree()}</a></button
-        >
-    </div>
-{:else}
-    <div class="100vw flex flex-col items-center justify-center overflow-auto">
-        <table class="border-separate border-spacing-2">
-            <thead>
-                <tr>
-                    <th class="text-left">{m.title()}</th>
-                    <th class="text-left">{m.owner()}</th>
-                    <th class="text-left">{m.lastEdited()}</th>
-                    <th class="text-left">{m.published()}</th>
-                    <!-- Edit button -->
-                    <th class="text-left"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {#each treeListResponse.trees as tree (tree.genData.id)}
-                    <tr>
-                        <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
-                            <a
-                                href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
-                                target="_blank">{tree.data.title}</a
-                            >
-                        </td>
-                        <td class="pr-4">{tree.linkedData.ownerName}</td>
-                        <td class="pr-4">
-                            <!-- This formats the date in the local timezone in the form: dd-mm-yyyy, hh:mm:ss -->
-                            {new Date(tree.genData.lastModified.toString()).toLocaleString()}
-                        </td>
-                        <td class="pr-4">{booleanToString(tree.data.published)}</td>
-                        <td class="min-w-2 hover:fill-blue-800">
-                            <a
-                                href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
-                                target="_blank"
-                                aria-label="edit"
-                            >
-                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                {@html iconEdit}
-                            </a>
-                        </td>
-                        <td class="min-w-2 hover:fill-blue-800">
-                            <RemoveButton thisTree={tree} bind:allTrees={treeListResponse.trees} />
-                        </td>
-                    </tr>
-                {/each}
-            </tbody>
-        </table>
-        <div>
-            <button
-                onclick={prevPage}
-                disabled={!prevPageExists}
-                class="mx-5"
-                class:cursor-pointer={prevPageExists}>Prev</button
-            >
-            {thisPage}/{calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSizeNumber)}
-            <button
-                onclick={nextPage}
-                disabled={!nextPageExists}
-                class="mx-5"
-                class:cursor-pointer={nextPageExists}>Next</button
-            >
+                <div class="list__container">
+                    {#each treeListResponse?.trees as tree, i (tree.genData.id)}
+                        <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
+                    {/each}
+                </div>
+            </ListPagination>
         </div>
-    </div>
-{/if}
+    {/if}
+</div>

@@ -20,7 +20,6 @@
     let formCompleted: boolean = $derived(loginData.email !== '' && loginData.password !== '');
 
     const minInputLengths = {
-        email: 3,
         password: 1 // In case an old account has a password shorter than the current imposed minimum.
     };
 
@@ -72,7 +71,6 @@
                 type="email"
                 data-testid="email"
                 placeholder={m.yourEmail()}
-                minlength={minInputLengths.email}
                 maxlength={maxInputLengths.email}
                 autocomplete="email"
                 required

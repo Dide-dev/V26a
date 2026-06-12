@@ -11,10 +11,11 @@ import PageComponent from './+page.svelte';
 import { page } from '$app/state';
 import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
 import {
-    type UserAllData,
+    type AdminUpdateData,
     getUserAllData,
     updateUserData,
-    adminChangePassword
+    adminChangePassword,
+    type AdminGetUserData
 } from '$lib/api-wrapper/admin';
 import { m } from '$lib/paraglide/messages.js';
 
@@ -37,8 +38,19 @@ afterEach(() => {
     vi.resetAllMocks();
 });
 
+function mockAdminGetUserData(userData: AdminUpdateData) {
+    const getData: AdminGetUserData = {
+        createdAt: new Date(),
+        lastLogin: new Date(),
+        updateableData: userData
+    };
+
+    const mockGetUser = vi.mocked(getUserAllData);
+    mockGetUser.mockResolvedValue(getData);
+}
+
 test('No submission without name', async () => {
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -49,11 +61,11 @@ test('No submission without name', async () => {
         accountType: 'author'
     };
 
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -72,7 +84,7 @@ test('No submission without name', async () => {
 test('Submission with full data', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -82,11 +94,11 @@ test('Submission with full data', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -104,7 +116,7 @@ test('Submission with full data', async () => {
     await user.type(aboutMeInput, 'Some interesting backstory');
     await user.click(screen.getByTestId('confirm-button'));
 
-    const expectedUpdateData: UserAllData = {
+    const expectedUpdateData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -120,7 +132,7 @@ test('Submission with full data', async () => {
 test('New password without upper case letter shows error', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -130,11 +142,11 @@ test('New password without upper case letter shows error', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -148,7 +160,7 @@ test('New password without upper case letter shows error', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), '@ssword123');
+    await user.type(await screen.findByTestId('newPassword'), '@ssword123');
     await user.type(screen.getByTestId('repeatPassword'), '@ssword123');
 
     const button = screen.getByTestId('confirm-button');
@@ -161,7 +173,7 @@ test('New password without upper case letter shows error', async () => {
 test('New password without lower case letter shows error', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -171,11 +183,11 @@ test('New password without lower case letter shows error', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -189,7 +201,7 @@ test('New password without lower case letter shows error', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), '@SSWORD123');
+    await user.type(await screen.findByTestId('newPassword'), '@SSWORD123');
     await user.type(screen.getByTestId('repeatPassword'), '@SSWORD123');
 
     const button = screen.getByTestId('confirm-button');
@@ -202,7 +214,7 @@ test('New password without lower case letter shows error', async () => {
 test('New password without special character shows error', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -212,11 +224,11 @@ test('New password without special character shows error', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -230,7 +242,7 @@ test('New password without special character shows error', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), 'Password123');
+    await user.type(await screen.findByTestId('newPassword'), 'Password123');
     await user.type(screen.getByTestId('repeatPassword'), 'Password123');
 
     const button = screen.getByTestId('confirm-button');
@@ -243,7 +255,7 @@ test('New password without special character shows error', async () => {
 test('New password without number shows error', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -253,11 +265,11 @@ test('New password without number shows error', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -271,7 +283,7 @@ test('New password without number shows error', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword');
+    await user.type(await screen.findByTestId('newPassword'), 'P@ssword');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword');
 
     const button = screen.getByTestId('confirm-button');
@@ -284,7 +296,7 @@ test('New password without number shows error', async () => {
 test('Differing new password and repeat password shows error', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -294,11 +306,11 @@ test('Differing new password and repeat password shows error', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -312,7 +324,7 @@ test('Differing new password and repeat password shows error', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
+    await user.type(await screen.findByTestId('newPassword'), 'P@ssword123!');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword321!');
 
     const button = screen.getByTestId('confirm-button');
@@ -325,7 +337,7 @@ test('Differing new password and repeat password shows error', async () => {
 test('No submission without new password', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -335,11 +347,11 @@ test('No submission without new password', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -361,7 +373,7 @@ test('No submission without new password', async () => {
 test('No submission without repeat password', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -371,11 +383,11 @@ test('No submission without repeat password', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -389,7 +401,7 @@ test('No submission without repeat password', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
+    await user.type(await screen.findByTestId('newPassword'), 'P@ssword123!');
 
     const form = await screen.findByTestId('profile-form');
     expect(form.classList).not.toContain('completed');
@@ -400,7 +412,7 @@ test('No submission without repeat password', async () => {
 test('Submission when all password expectations have been met', async () => {
     page.url.searchParams.set('id', '1');
 
-    const userData: UserAllData = {
+    const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
             name: 'John Test',
@@ -410,11 +422,11 @@ test('Submission when all password expectations have been met', async () => {
         enabled: true,
         accountType: 'author'
     };
-    const mockGetUser = vi.mocked(getUserAllData);
-    mockGetUser.mockResolvedValue(userData);
+    mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
         sub: 1,
-        exp: 42,
+        name: 'John',
+        nickname: '',
         accountType: 'author'
     };
     const mockGetInfo = vi.mocked(getUserInfo);
@@ -432,7 +444,7 @@ test('Submission when all password expectations have been met', async () => {
     const user = userEvent.setup();
     render(PageComponent);
 
-    await user.type(screen.getByTestId('newPassword'), 'P@ssword123!');
+    await user.type(await screen.findByTestId('newPassword'), 'P@ssword123!');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123!');
 
     await user.click(screen.getByTestId('confirm-button'));

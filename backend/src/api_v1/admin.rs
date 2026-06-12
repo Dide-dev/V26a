@@ -10,22 +10,30 @@ use axum::{
     extract::{Path, State},
     middleware::{self, Next},
     response::Response,
-    routing::{get, post},
+    routing::{get, put},
 };
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::db_structs::{
     Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
 };
+use crate::{
+    db::{
+        feedback::{get_all_feedback, get_feedback_count},
+        session::delete_all_sessions_user,
+    },
+    db_structs::users::AdminGetUserData,
+};
 
+use crate::api_v1::users::{check_email_used, check_username_used};
+use crate::db_structs::users::PendingAccountsExt;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
     db::users::{
-        admin_update_user, get_user_all_data, get_user_by_name, get_user_count,
-        get_user_list_by_page, update_password, user_id_exists,
+        admin_update_user, get_user_all_data, get_user_count, get_user_list_by_page,
+        update_password, user_id_exists,
     },
     db_structs::pagination::OptionalPaginationOptions,
     db_structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
@@ -48,19 +56,19 @@ async fn check_if_admin(
 }
 
 /// Creates an `Axum` [`Router`] for the user category.
+/// All paths are going through a middleware to check if the user is an admin.
 pub fn admin(state: ArcState) -> Router<ArcState> {
     Router::new()
-        .route("/all-user-data", get(get_all_user_data))
-        .route("/users/{userId}", get(get_user_data))
-        .route("/users/{user_id}/update-data", post(update_user_data))
-        .route("/users/{user_id}/update-password", post(change_password))
-        .route("/get-feedback", get(get_feedback))
+        .route("/users", get(get_all_user_data))
+        .route("/users/{user_id}", get(get_user_data).put(update_user_data))
+        .route("/users/{user_id}/password", put(change_password))
+        .route("/feedback", get(get_feedback))
         .route_layer(middleware::from_fn_with_state(state, check_if_admin))
 }
 
 #[utoipa::path(
     get,
-    path = "/all-user-data",
+    path = "/users",
     context_path = "/api/v1/admin",
     responses(
         (status = 200, description = "Successfully retrieved data.", body = UserListResponse),
@@ -112,8 +120,8 @@ async fn get_all_user_data(
 }
 
 #[utoipa::path(
-    post,
-    path = "/users/{user_id}/update-data",
+    put,
+    path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     request_body = AdminUpdateData,
     responses(
@@ -151,29 +159,45 @@ async fn get_all_user_data(
 async fn update_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
+    State(state): State<ArcState>,
     Json(new_data): Json<AdminUpdateData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     new_data.validate_inputs()?;
-    if !user_id_exists(&db, user_id).await? {
+
+    let mut transaction = db.begin().await?;
+
+    if !user_id_exists(&mut *transaction, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
 
-    let found_user_id = get_user_by_name(&db, &new_data.data.name).await?;
+    // This lock should not be released until the user is updated.
+    let mut pending_accounts = state.pending_accounts.lock().await;
 
-    if let Some(id) = found_user_id
-        && id != user_id
-    {
+    // Remove pending accounts in case they have not been pruned yet.
+    pending_accounts.remove_expired();
+
+    if check_username_used(&db, &pending_accounts, &new_data.data.name, Some(user_id)).await? {
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    admin_update_user(&db, user_id, &new_data).await?;
+    if check_email_used(&db, &pending_accounts, &new_data.email, Some(user_id)).await? {
+        return Ok(Json(UserResponse::EmailAlreadyUsed));
+    }
+
+    admin_update_user(&mut *transaction, user_id, &new_data).await?;
+
+    if !new_data.enabled {
+        delete_all_sessions_user(&mut *transaction, user_id).await?;
+    }
+
+    transaction.commit().await?;
 
     Ok(Json(UserResponse::Success { user_id }))
 }
 
 #[utoipa::path(
-    post,
-    path = "/users/{user_id}/update-password",
+    put,
+    path = "/users/{user_id}/password",
     context_path = "/api/v1/admin",
     request_body = AdminPasswordChangeRequestBody,
     responses(
@@ -219,14 +243,18 @@ async fn change_password(
     )
     .await?;
 
+    // All sessions of the account are invalidated if password is changed.
+    delete_all_sessions_user(&db, user_id).await?;
+
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
+
 #[utoipa::path(
     get,
     path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = AdminUpdateData),
+        (status = 200, description = "Successfully retrieved data.", body = AdminGetUserData),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -243,7 +271,7 @@ async fn change_password(
 /// `user_id` - The user from whom we want to get the data.
 ///
 /// # Returns
-/// The data of a user as [`AdminUpdateData`].
+/// The data of a user as [`AdminGetUserData`].
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
@@ -258,7 +286,7 @@ async fn change_password(
 async fn get_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
-) -> Result<Json<AdminUpdateData>, ApiError> {
+) -> Result<Json<AdminGetUserData>, ApiError> {
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }
@@ -267,7 +295,7 @@ async fn get_user_data(
 
 #[utoipa::path(
     get,
-    path = "/get-feedback",
+    path = "/feedback",
     context_path = "/api/v1/admin",
     responses(
         (status = 200, description = "Feedback successfully retrieved.", body = FeedbackListResponse),
