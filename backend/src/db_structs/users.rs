@@ -237,12 +237,12 @@ impl Clean for HashMap<String, PendingRegisterData> {
 /// Data belonging to a password change request (forgot password).
 /// Stores the user ID and when the change password link should expire.
 #[derive(Debug)]
-pub struct PasswordChangeRequestData {
+pub struct PasswordResetRequestData {
     pub user_id: i32,
     pub expires: i64,
 }
 
-impl Clean for HashMap<String, PasswordChangeRequestData> {
+impl Clean for HashMap<String, PasswordResetRequestData> {
     /// Removes password change requests for which the expiration time has passed.
     ///
     /// This function mutates the [`HashMap`] in place.
@@ -347,20 +347,42 @@ pub struct UserListResponse {
     pub users: Vec<AllUsersGetData>,
 }
 
-/// The body for a change password request request that contains the email to which the password change link should be sent to.
+/// The request body for a password reset request that contains the email to which the password change link should be sent to.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestPasswordChangeRequestBody {
+pub struct RequestPasswordResetRequestBody {
     pub email: String,
 }
 
-impl Validated for RequestPasswordChangeRequestBody {
+impl Validated for RequestPasswordResetRequestBody {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     ///
     /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         parse_email(&self.email)?;
+
+        Ok(())
+    }
+}
+
+/// The request body for a password reset that contains the password reset code and the new password.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PasswordResetRequestBody {
+    pub code: String,
+    pub new_password: String,
+}
+
+impl Validated for PasswordResetRequestBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        validate_password(&self.new_password, "newPassword")?;
 
         Ok(())
     }
@@ -380,7 +402,7 @@ impl Validated for PasswordChangeRequestBody {
     ///
     /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     ///
-    /// Returns an [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
+    /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.old_password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet(

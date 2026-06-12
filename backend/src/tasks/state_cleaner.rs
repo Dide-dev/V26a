@@ -28,7 +28,7 @@ pub async fn prune_unverified_accounts(arc_state: ArcState) {
 }
 
 pub async fn prune_password_resets(arc_state: ArcState) {
-    let mut password_change_requests = arc_state.password_change_requests.lock().await;
+    let mut password_change_requests = arc_state.reset_password_requests.lock().await;
     password_change_requests.remove_expired();
     info!("Automatically pruning password reset requests.");
 }
