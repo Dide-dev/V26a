@@ -114,6 +114,7 @@
     "enabled": "enabled",
     "userList": "User list",
     "feedbackList": "Received feedback",
+    "filters": "Filters",
     "searchByOwner": "Search by owner name...",
     "newPassword": "New password",
     "oldPassword": "Old password",

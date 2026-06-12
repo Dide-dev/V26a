@@ -44,6 +44,12 @@
         margin-top: var(--spacing-text-small);
     }
 
+    .page__subheading {
+        font-size: var(--text-xl);
+        font-weight: var(--font-weight-bold);
+        margin-top: var(--spacing-text-minor);
+    }
+
     .text__link {
         color: var(--color-blue-600);
     }
