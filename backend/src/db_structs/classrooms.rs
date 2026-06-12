@@ -128,6 +128,6 @@ pub struct ClassroomUserLoginData {
 #[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum ClassroomLoginResponse {
     Success(ClassroomClaims),
-    JoinCodeIncorrect(String),
-    MissingUser(i32),
+    JoinCodeIncorrect { join_code: String },
+    MissingUser { user_number: i32 },
 }
