@@ -131,7 +131,9 @@ async fn classroom_login(
     let Some(classroom_id) = validate_join_code(&db, &classroom_login_data.join_code).await? else {
         return Ok((
             jar,
-            Json(ClassroomLoginResponse::JoinCodeIncorrect(classroom_login_data.join_code)),
+            Json(ClassroomLoginResponse::JoinCodeIncorrect(
+                classroom_login_data.join_code,
+            )),
         ));
     };
 
@@ -141,10 +143,7 @@ async fn classroom_login(
         // Username is num.
         Ok(num) => (num, {
             let Some(name) = get_name_by_number(&db, classroom_id, num).await? else {
-                return Ok((
-                    jar,
-                    Json(ClassroomLoginResponse::MissingUser(num)),
-                ));
+                return Ok((jar, Json(ClassroomLoginResponse::MissingUser(num))));
             };
             name
         }),

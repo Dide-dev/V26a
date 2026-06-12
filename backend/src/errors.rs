@@ -333,7 +333,7 @@ impl ApiError {
             | ApiError::MissingUsername(_)
             | ApiError::NoImageBodyProvidedException
             | ApiError::NonEmptyStructure
-            | ApiError::SubjectExists(_) => StatusCode::BAD_REQUEST,
+            | ApiError::SubjectExists(_)
             | ApiError::ClassroomIdRetrievalError => StatusCode::BAD_REQUEST,
 
             ApiError::InvalidSession | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,

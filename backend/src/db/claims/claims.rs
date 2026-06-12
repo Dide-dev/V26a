@@ -128,10 +128,7 @@ impl Claims {
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub async fn delete_session(
-        db: impl PgExecutor<'_>,
-        token: &str,
-    ) -> Result<(), ApiError> {
+    pub async fn delete_session(db: impl PgExecutor<'_>, token: &str) -> Result<(), ApiError> {
         query!("DELETE FROM sessions WHERE token = $1", token)
             .execute(db)
             .await?;

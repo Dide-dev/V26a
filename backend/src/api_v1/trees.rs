@@ -513,7 +513,7 @@ async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims).await?;
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims.as_ref()).await?;
 
     let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?

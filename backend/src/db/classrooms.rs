@@ -436,9 +436,9 @@ pub async fn add_existing_tree_to_lesson(
 #[cfg(test)]
 mod tests {
     use crate::db::classrooms::{
-        add_classroom, add_existing_tree_to_lesson, add_lesson, add_new_user_to_classroom, generate_random_code,
-        get_all_classrooms, get_classroom_count, get_classroom_owner, get_name_by_number,
-        validate_join_code,
+        add_classroom, add_existing_tree_to_lesson, add_lesson, add_new_user_to_classroom,
+        generate_random_code, get_all_classrooms, get_classroom_count, get_classroom_owner,
+        get_name_by_number, validate_join_code,
     };
     use crate::db::test::{initialize_classroom, initialize_db, initialize_lesson};
     use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
@@ -568,7 +568,7 @@ mod tests {
         let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
         assert_eq!(get_classroom_count(&db, claims.sub).await.unwrap(), 0);
 
-        initialize_classroom(get_connection_unwrap!(db), user_id).await;
+        initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
 
         assert_eq!(get_classroom_count(&db, claims.sub).await.unwrap(), 1);
     }

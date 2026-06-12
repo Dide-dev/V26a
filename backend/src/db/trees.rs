@@ -1256,7 +1256,7 @@ pub async fn get_queried_list(
 pub async fn verify_tree_accessible_by_user(
     db: &mut PgConnection,
     tree_id: i32,
-    claims: Option<Claims>,
+    claims: Option<&Claims>,
 ) -> Result<(), ApiError> {
     let mut transaction = db.begin().await?;
 
@@ -1276,7 +1276,7 @@ pub async fn verify_tree_accessible_by_user(
         return Err(ApiError::MissingAuthentication);
     };
 
-    verify_tree_permissions(&mut transaction, tree_id, &claims).await?;
+    verify_tree_permissions(&mut transaction, tree_id, claims).await?;
 
     transaction.commit().await?;
 
@@ -1298,7 +1298,7 @@ mod tests {
     use sqlx::PgPool;
 
     #[sqlx::test]
-    fn test_add_subject(db: PgPool) {
+    async fn test_add_subject(db: PgPool) {
         let subject_data = SubjectData {
             language_code: "nl".to_string(),
             name: "Not a real subject".to_string(),
@@ -1336,7 +1336,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    fn test_update_subject(db: PgPool) {
+    async fn test_update_subject(db: PgPool) {
         let old_subject_data = SubjectData {
             language_code: "en".to_string(),
             name: "Not a real subject".to_string(),
@@ -1372,7 +1372,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    fn test_add_language(db: PgPool) {
+    async fn test_add_language(db: PgPool) {
         let language = Language {
             code: "fc".to_string(),
             name: "Fake language".to_string(),
@@ -1404,7 +1404,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    fn test_update_language(db: PgPool) {
+    async fn test_update_language(db: PgPool) {
         let old_language = Language {
             code: "fc".to_string(),
             name: "Fake language".to_string(),
@@ -2249,49 +2249,47 @@ mod tests {
 
     #[sqlx::test]
     async fn test_tree_is_accessible(db: PgPool) {
-        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
-        let claims = Claims {
-            sub: user_id,
-            exp: i64::MAX,
-            account_type: AccountType::Author,
-        };
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
         assert!(result.is_ok());
 
         let claims = Claims {
-            sub: user_id + 1,
-            exp: i64::MAX,
+            sub: claims.sub + 1,
             account_type: AccountType::Admin,
         };
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
         assert!(result.is_ok());
 
         let claims = Claims {
-            sub: user_id + 2,
-            exp: i64::MAX,
+            sub: claims.sub + 2,
             account_type: AccountType::Author,
         };
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
         assert!(result.is_err());
 
         let register_data = RegisterData::test_values();
-        let coauthor_id = initialize_user(get_connection_unwrap!(db), &register_data).await;
-        add_co_author(&db, tree_id, coauthor_id).await.unwrap();
+        let coauthor_claims = initialize_user(get_connection_unwrap!(db), &register_data).await;
+        add_co_author(&db, tree_id, coauthor_claims.sub)
+            .await
+            .unwrap();
 
         let claims = Claims {
-            sub: coauthor_id,
-            exp: i64::MAX,
+            sub: coauthor_claims.sub,
             account_type: AccountType::Author,
         };
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
         assert!(result.is_ok());
 
         query!("UPDATE trees SET published = true WHERE id = $1 ", tree_id)
