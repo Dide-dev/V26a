@@ -124,6 +124,11 @@ export type ChangePasswordData = {
     newPassword: string;
 };
 
+/** The data needed to request a change to a user's password */
+export type ResetPasswordRequestData = {
+    email: string;
+};
+
 /** Add a user to the database */
 export function addUser(
     user: RegisterData
@@ -178,4 +183,11 @@ export function changePassword(
     changePasswordData: ChangePasswordData
 ): Promise<ChangePasswordResponse> {
     return apiCallPutUser('/me/password', changePasswordData);
+}
+
+/** Change a user's password */
+export function requestResetPassword(
+    resetPasswordRequestData: ResetPasswordRequestData
+): Promise<void> {
+    return apiCallPostUser('/reset-password-requests', resetPasswordRequestData);
 }

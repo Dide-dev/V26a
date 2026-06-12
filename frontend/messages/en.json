@@ -195,5 +195,10 @@
     "deleteOwnedTrees": "Delete all my trees",
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
-    "logout": "Logout"
+    "logout": "Logout",
+    "forgotPassword": "Forgot your password?",
+    "resetPassword": "Reset your password",
+    "resetPasswordInstructions": "In case you forgot your password, you can reset it here by providing the e-mail that your account uses. We will send you an e-mail with further instructions.",
+    "send": "Send",
+    "resetPasswordRequestSent": "We have sent an e-mail to {#link}{mail}{/link}. Please follow the instructions in the e-mail to reset your password."
 }
