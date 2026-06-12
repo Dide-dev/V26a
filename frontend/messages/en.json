@@ -196,6 +196,7 @@
     "feedbackEntries": "feedback entries",
     "users": "users",
     "treesUncapitalized": "trees",
+    "coAuthors": "Co-authors",
     "addCoAuthor": "Add co-author",
     "successfulAuthorization": "Successfully authorized co-author",
     "invalidAuthorisationTarget": "The user you tried to authorize does not seem to exist",

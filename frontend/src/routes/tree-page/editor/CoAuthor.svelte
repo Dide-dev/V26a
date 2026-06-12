@@ -13,11 +13,17 @@
 -->
 
 <script lang="ts">
-    import { addCoAuthor, type TreeId, type CoAuthorizeResponse } from '$lib/api-wrapper/trees';
+    import {
+        addCoAuthor,
+        type TreeId,
+        type CoAuthorizeResponse,
+        removeCoAuthor
+    } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
+    import iconTrash from '$lib/assets/icons/trash.svg?raw';
 
-    let { treeId }: { treeId: TreeId } = $props();
+    let { treeId, coAuthors = $bindable() }: { treeId: TreeId; coAuthors: string[] } = $props();
 
     let visible = $state(false);
 
@@ -40,19 +46,28 @@
 
         // The form submit keyboard shortcut
         if (event.ctrlKey && event.key == 'Enter') {
-            handleAddCoAuthor();
+            handleAddButton();
         }
     }
 
     let coAuthorName: string = $state('');
     let apiResponse: CoAuthorizeResponse | null = $state(null);
 
-    async function handleAddCoAuthor() {
+    async function handleAddButton() {
         if (coAuthorName === '') return;
 
         apiResponse = await addCoAuthor(treeId, coAuthorName);
 
+        if (apiResponse.type === 'Success') {
+            coAuthors.push(coAuthorName);
+        }
         coAuthorName = '';
+    }
+
+    async function handleRemoveButton(coAuthorName: string) {
+        coAuthors.splice(coAuthors.indexOf(coAuthorName), 1);
+
+        await removeCoAuthor(treeId, coAuthorName);
     }
 </script>
 
@@ -70,8 +85,34 @@
 {#if visible}
     <Popup>
         <div class="mb-3 flex w-64 flex-col" data-testid="co-author-popup">
-            <div class="w-64">
-                <label for="coAuthorName">{m.addCoAuthor()}</label>
+            <h2 class="page__heading">{m.coAuthors()}</h2>
+
+            {#if coAuthors.length === 0}
+                <p>{m.none()}</p>
+            {:else}
+                <div class="flex flex-col border-b border-neutral-200">
+                    {#each coAuthors as coAuthor (coAuthor)}
+                        <div
+                            class={[
+                                'flex w-full justify-between gap-1',
+                                'border-t border-neutral-200 bg-neutral-50 p-2 transition-colors duration-200 hover:bg-neutral-100'
+                            ]}
+                        >
+                            <p>{coAuthor}</p>
+                            <button
+                                class="cursor-pointer"
+                                onclick={() => handleRemoveButton(coAuthor)}
+                            >
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html iconTrash}
+                            </button>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+
+            <div class="mt-10 w-64">
+                <label for="coAuthorName" class="font-bold">{m.addCoAuthor()}</label>
                 <input
                     id="coAuthorName"
                     class="w-full rounded border p-1"
@@ -93,7 +134,7 @@
         </div>
         <button
             class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white"
-            onclick={handleAddCoAuthor}>{m.addCoAuthor()}</button
+            onclick={handleAddButton}>{m.addCoAuthor()}</button
         >
         <button class="cursor-pointer" onclick={closeEdit}>{m.close()}</button>
     </Popup>
