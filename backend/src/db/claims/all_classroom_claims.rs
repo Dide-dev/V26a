@@ -126,3 +126,49 @@ impl AllClassroomClaims {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::api_v1::create_token;
+    use crate::db::test::{initialize_basic_user, initialize_classroom, put_user_in_classroom};
+    use crate::db_structs::session::{AllClassroomClaims, ClassroomClaims};
+    use crate::get_connection_unwrap;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_create_and_get_all_sessions(db: PgPool) {
+        let claims = initialize_basic_user(&db).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+
+        let (token, expires_at) = create_token(3600);
+
+        let claims = ClassroomClaims {
+            id: classroom_id,
+            num: 1,
+            name: "slachtoffer".to_owned(),
+        };
+
+        put_user_in_classroom(&db, &claims).await;
+
+        let all_claims = AllClassroomClaims {
+            claims: vec![claims],
+        };
+
+        AllClassroomClaims::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &all_claims.claims,
+        )
+        .await
+        .unwrap();
+
+        let retrieved_claims = AllClassroomClaims::get_session(&db, &token)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // Validates if the user is in claims, meaning the session is returned if it is true.
+        assert_eq!(retrieved_claims, all_claims);
+    }
+}

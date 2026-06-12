@@ -53,7 +53,7 @@ pub mod test {
     use crate::db::trees::parse_isbn;
     use crate::db_structs::cards::CardData;
     use crate::db_structs::classrooms::ClassroomData;
-    use crate::db_structs::session::Claims;
+    use crate::db_structs::session::{Claims, ClassroomClaims};
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::{AccountType, RegisterData};
     use sqlx::{PgConnection, PgExecutor, query};
@@ -258,5 +258,21 @@ pub mod test {
             classroom_add_data.description,
             join_code,
         ).fetch_one(db).await.unwrap().id
+    }
+
+    pub async fn put_user_in_classroom(db: impl PgExecutor<'_>, claims: &ClassroomClaims) {
+        query!("INSERT INTO classroom_users (classroom_id, id_within_classroom, name) VALUES ($1, $2, $3)",
+            claims.id,
+            claims.num,
+            claims.name,
+        )
+        .execute(db).await.unwrap();
+    }
+
+    pub async fn put_classroom_token_in_db(db: impl PgExecutor<'_>, token: &str) {
+        query!("INSERT INTO classroom_tokens (token) VALUES ($1)", token)
+            .execute(db)
+            .await
+            .unwrap();
     }
 }

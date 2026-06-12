@@ -160,3 +160,65 @@ fn get_classroom_id_from_uri(uri: &str) -> Result<i32, ApiError> {
         None => Err(ApiError::ClassroomIdRetrievalError),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::api_v1::create_token;
+    use crate::db::classroom_claims::get_classroom_id_from_uri;
+    use crate::db::test::{
+        initialize_basic_user, initialize_classroom, put_classroom_token_in_db,
+        put_user_in_classroom,
+    };
+    use crate::db_structs::session::ClassroomClaims;
+    use crate::get_connection_unwrap;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_create_and_get_session(db: PgPool) {
+        let claims = initialize_basic_user(&db).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+
+        let (token, expires_at) = create_token(3600);
+        put_classroom_token_in_db(&db, &token).await;
+
+        let claims = ClassroomClaims {
+            id: classroom_id,
+            num: 1,
+            name: "slachtoffer".to_owned(),
+        };
+
+        put_user_in_classroom(&db, &claims).await;
+
+        ClassroomClaims::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &(claims.id, claims.num),
+        )
+        .await
+        .unwrap();
+
+        let retrieved_claims = ClassroomClaims::get_session(&db, &token, classroom_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // Validates if the user is in claims, meaning the session is returned if it is true.
+        assert_eq!(retrieved_claims, claims);
+    }
+
+    #[test]
+    fn test_get_classroom_id_from_uri_pass() {
+        let uri = "/all/hail/Lorax/1/classrooms/33/";
+        let result = get_classroom_id_from_uri(uri);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 33);
+    }
+
+    #[test]
+    fn test_get_classroom_id_from_uri_fail() {
+        let uri = "/all/hail/Lorax/1/classrooms/thirtythree/";
+        let result = get_classroom_id_from_uri(uri);
+        assert!(result.is_err());
+    }
+}
