@@ -817,10 +817,14 @@ pub async fn get_all_languages(
     post,
     path = "/languages",
     context_path = "/api/v1/trees",
+    request_body = Language,
     responses(
         (status = 200, description = "Successfully added a new language."),
         (status = 400, description = "The language already exists."),
         (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
     )
 )]
 /// Add a new language.
@@ -864,10 +868,15 @@ pub async fn add_new_language(
     put,
     path = "/languages/{code}",
     context_path = "/api/v1/trees",
+    request_body = String,
     responses(
         (status = 200, description = "Successfully updated the language."),
         (status = 400, description = "The language does not exist."),
         (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("code" = String, Path),
     )
 )]
 /// Updates an existing language.
@@ -939,10 +948,14 @@ pub async fn get_all_subjects(
     post,
     path = "/subjects",
     context_path = "/api/v1/trees",
+    request_body = SubjectData,
     responses(
         (status = 200, description = "Successfully added a new subject."),
         (status = 400, description = "The subject already exists or contains a non-existent language code."),
         (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
     )
 )]
 /// Add a new subject.
@@ -992,10 +1005,15 @@ pub async fn add_new_subject(
     put,
     path = "/subjects/{id}",
     context_path = "/api/v1/trees",
+    request_body = SubjectData,
     responses(
         (status = 200, description = "Successfully updated the subject."),
         (status = 400, description = "The subject does not exist or the new data contains a non-existent language code."),
         (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("id" = i32, Path),
     )
 )]
 /// Updates an existing subject.
