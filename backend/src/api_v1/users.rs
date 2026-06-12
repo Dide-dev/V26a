@@ -168,6 +168,7 @@ async fn add_new_user(
             EmailVerificationBody {
                 display_name,
                 verification_link,
+                duration_seconds: state.config.verification_timer,
                 base_url: state.config.base_url.clone(),
             }
             .localized(&language),
@@ -527,6 +528,7 @@ async fn request_password_reset(
             PasswordResetBody {
                 display_name,
                 password_reset_link,
+                duration_seconds: state.config.reset_password_timer,
                 base_url: state.config.base_url.clone(),
             }
             .localized(&language),
