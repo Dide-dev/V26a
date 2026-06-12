@@ -27,7 +27,7 @@
 
     let filterOptions: FilterOptions = $state({
         ownerId: null,
-        searchTerms: '',
+        searchTerms: null,
         book: [],
         createdAfter: null,
         createdBefore: null,
@@ -58,6 +58,10 @@
     }
 
     async function loadTrees() {
+        if (filterOptions.searchTerms !== null && filterOptions.searchTerms.trim().length === 0) {
+            filterOptions.searchTerms = null;
+        }
+
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
     }
 
