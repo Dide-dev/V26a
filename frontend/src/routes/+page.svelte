@@ -41,7 +41,7 @@
                         'daarvan word je niet meteen beter in het oplossen van problemen.',
                     'In plaats daarvan kun je ook gebruik maken van een heuristiekboom: ' +
                         'een set aan hintkaartjes waar je in een boomstructuur doorheen kunt lopen.',
-                    `Je kunt <a href=${appLink('/all-trees')} class="text__link">hier</a> talloze heuristiekbomen vinden, ` +
+                    `Je kunt <a href=${appLink('/trees')} class="text__link">hier</a> talloze heuristiekbomen vinden, ` +
                         'waarmee je meteen aan de slag kunt!'
                 ],
                 popOpenContents: [
@@ -222,7 +222,7 @@
                         'necessarily make you better at solving similar problems in the future.',
                     'Instead, you could use a heuristic tree: a set of hint-cards you can ' +
                         'traverse through a tree structure.',
-                    `<a href=${appLink('/all-trees')} class="text__link">Here</a> you may find ` +
+                    `<a href=${appLink('/trees')} class="text__link">Here</a> you may find ` +
                         'countless heuristic trees you can get started on right away!'
                 ],
                 popOpenContents: [

@@ -49,10 +49,10 @@ macro_rules! get_connection_unwrap {
 
 #[cfg(test)]
 pub mod test {
-    use crate::db::classrooms::generate_random_code;
+    use crate::db::classrooms::{add_lesson, generate_random_code};
     use crate::db::trees::parse_isbn;
     use crate::db_structs::cards::CardData;
-    use crate::db_structs::classrooms::ClassroomData;
+    use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
     use crate::db_structs::session::{Claims, ClassroomClaims};
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::{AccountType, RegisterData};
@@ -274,5 +274,14 @@ pub mod test {
             .execute(db)
             .await
             .unwrap();
+    }
+
+    pub async fn initialize_lesson(db: &mut PgConnection, user_id: i32) -> i32 {
+        let lesson_add_data = LessonAddData {
+            name: "Lesson".to_string(),
+            description: "This is a test lesson".to_string(),
+            published: false,
+        };
+        add_lesson(db, &lesson_add_data, user_id).await.unwrap()
     }
 }

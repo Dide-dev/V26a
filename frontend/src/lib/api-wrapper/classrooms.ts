@@ -7,6 +7,7 @@
 import { apiCallPost, apiCallGet } from '$lib/api-wrapper/index';
 import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
 import type { UserId } from './users';
+import type { LessonId } from '$lib/api-wrapper/lessons';
 import type { Option } from '$lib/api-wrapper/types';
 
 const prefix = 'classrooms';
@@ -20,7 +21,6 @@ function apiCallGetClassroom(path: string) {
 }
 
 export type ClassroomId = number;
-export type LessonId = number;
 
 export type ClassroomData = {
     name: string;
@@ -93,7 +93,7 @@ export function addLesson(
     lessonAddData: LessonAddData,
     classroomId: ClassroomId
 ): Promise<LessonId> {
-    return apiCallPostClassroom(`${classroomId}/lessons`, lessonAddData);
+    return apiCallPostClassroom(`/${classroomId}/lessons`, lessonAddData);
 }
 
 /** Log in to a classroom, creates a new user or logs in an existing user */

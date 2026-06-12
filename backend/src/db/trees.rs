@@ -4,22 +4,23 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::api_v1::trees::verify_tree_permissions;
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
 use crate::{
     db_structs::trees::{
-        Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeLinkedData,
-        TreeMetadata, TreeStructure,
+        Language, Subject, SubjectData, TreeAddData, TreeData, TreeFilters, TreeGeneratedData,
+        TreeLinkedData, TreeMetadata, TreeStructure,
     },
     errors::ApiError,
 };
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
+use sqlx::{Acquire, PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
-/// Check whether the given subject exists.
+/// Check whether a subject with the given id exists.
 ///
 /// # Arguments
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
@@ -31,12 +32,39 @@ use std::collections::{HashMap, HashSet};
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
+pub async fn subject_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
     query!("SELECT EXISTS (SELECT 1 FROM subjects WHERE id = $1)", id)
         .fetch_one(db)
         .await?
         .exists
         .ok_or(ApiError::DatabaseException)
+}
+
+/// Check whether the given subject exists.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `subject_data` - The data of the subject whose existence to check.
+///
+/// # Returns
+/// A `bool` indicating whether the given subject exists.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn subject_exists(
+    db: impl PgExecutor<'_>,
+    subject_data: &SubjectData,
+) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM subjects WHERE language_code = $1 AND name = $2)",
+        subject_data.language_code,
+        subject_data.name
+    )
+    .fetch_one(db)
+    .await?
+    .exists
+    .ok_or(ApiError::DatabaseException)
 }
 
 /// Retrieve the list of all subjects from the database.
@@ -53,16 +81,78 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 pub async fn get_subjects(
     db: impl PgExecutor<'_>,
 ) -> Result<HashMap<String, Vec<Subject>>, ApiError> {
-    let results = query_as!(Subject, "SELECT * FROM subjects")
-        .fetch_all(db)
-        .await?;
+    let results = query!("SELECT * FROM subjects").fetch_all(db).await?;
     let mut map: HashMap<String, Vec<Subject>> = HashMap::new();
-    for subject in results {
-        map.entry(subject.language_code.clone())
+    for record in results {
+        let subject = Subject {
+            id: record.id,
+            data: SubjectData {
+                language_code: record.language_code,
+                name: record.name,
+            },
+        };
+        map.entry(subject.data.language_code.clone())
             .and_modify(|vec| vec.push(subject.clone()))
             .or_insert(vec![subject]);
     }
     Ok(map)
+}
+
+/// Add a subject to the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `subject_data` - the data of the subject to add to the database.
+///
+/// # Returns
+/// The id of the new subject.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_subject(
+    db: impl PgExecutor<'_>,
+    subject_data: &SubjectData,
+) -> Result<i32, ApiError> {
+    let id = query!(
+        "INSERT INTO subjects (language_code, name) VALUES ($1, $2) RETURNING id",
+        subject_data.language_code,
+        subject_data.name
+    )
+    .fetch_one(db)
+    .await?
+    .id;
+    Ok(id)
+}
+
+/// Updates a subject in the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - the id of the subject to update.
+///
+/// `subject_data` - the new data of the subject.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_subject(
+    db: impl PgExecutor<'_>,
+    id: i32,
+    subject_data: &SubjectData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE subjects SET language_code = $1, name = $2 WHERE id = $3",
+        subject_data.language_code,
+        subject_data.name,
+        id,
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 /// Check whether the given language exists.
@@ -107,6 +197,54 @@ pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, Api
         .await?;
 
     Ok(results)
+}
+
+/// Add a language to the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `language` - the language to add to the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_language(db: impl PgExecutor<'_>, language: &Language) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO languages (code, name) VALUES ($1, $2)",
+        language.code,
+        language.name
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+/// Updates a language in the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `code` - the code of the language to update.
+///
+/// `name` - the new name of the language.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_language(
+    db: impl PgExecutor<'_>,
+    code: &str,
+    name: &str,
+) -> Result<(), ApiError> {
+    query!("UPDATE languages SET name = $1 WHERE code = $2", name, code,)
+        .execute(db)
+        .await?;
+    Ok(())
 }
 
 /// Parse an ISBN of either 10 or 13 digits, and return it as integer in the 13-digit
@@ -1097,18 +1235,212 @@ pub async fn get_queried_list(
     Ok(trees)
 }
 
+/// Verify if the user is allowed to access the tree. The user is allowed to do so if the tree is made public or the user is an admin, owner or coauthor.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree.
+///
+/// `claims` - The session cookie of the user, as an [`Option`]. The cookie is only necessary for attempting verification of private trees.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if the requested tree does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not permitted to access the tree.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn verify_tree_accessible_by_user(
+    db: &mut PgConnection,
+    tree_id: i32,
+    claims: Option<Claims>,
+) -> Result<(), ApiError> {
+    let mut transaction = db.begin().await?;
+
+    let tree = query!("SELECT published FROM trees WHERE id=$1", tree_id)
+        .fetch_optional(&mut *transaction)
+        .await?;
+
+    let Some(tree) = tree else {
+        return Err(ApiError::MissingTree(tree_id));
+    };
+
+    if tree.published {
+        return Ok(());
+    }
+
+    let Some(claims) = claims else {
+        return Err(ApiError::MissingAuthentication);
+    };
+
+    verify_tree_permissions(&mut transaction, tree_id, &claims).await?;
+
+    transaction.commit().await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 #[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
     use super::*;
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
-        initialize_tree_with_data,
+        initialize_tree_with_data, initialize_user,
     };
     use crate::db_structs::trees::{Node, RootNode};
+    use crate::db_structs::users::RegisterData;
     use crate::get_connection_unwrap;
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
+
+    #[sqlx::test]
+    fn test_add_subject(db: PgPool) {
+        let subject_data = SubjectData {
+            language_code: "nl".to_string(),
+            name: "Not a real subject".to_string(),
+        };
+
+        let exists = query!(
+            "SELECT EXISTS(SELECT * FROM subjects WHERE language_code = $1 AND name = $2)",
+            subject_data.language_code,
+            subject_data.name
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap()
+        .unwrap()
+        .exists
+        .unwrap();
+        assert!(!exists);
+
+        add_subject(get_connection_unwrap!(db), &subject_data)
+            .await
+            .unwrap();
+
+        let exists = query!(
+            "SELECT EXISTS(SELECT * FROM subjects WHERE language_code = $1 AND name = $2)",
+            subject_data.language_code,
+            subject_data.name
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap()
+        .unwrap()
+        .exists
+        .unwrap();
+        assert!(exists);
+    }
+
+    #[sqlx::test]
+    fn test_update_subject(db: PgPool) {
+        let old_subject_data = SubjectData {
+            language_code: "en".to_string(),
+            name: "Not a real subject".to_string(),
+        };
+        let new_subject_data = SubjectData {
+            language_code: "nl".to_string(),
+            name: "Niet een echt vak".to_string(),
+        };
+
+        let id = query!(
+            "INSERT INTO subjects (language_code, name) VALUES ($1, $2) RETURNING id",
+            old_subject_data.language_code,
+            old_subject_data.name
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        update_subject(get_connection_unwrap!(db), id, &new_subject_data)
+            .await
+            .unwrap();
+
+        let queried_data = query_as!(
+            SubjectData,
+            "SELECT language_code, name FROM subjects WHERE id = $1",
+            id
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!(queried_data, new_subject_data);
+    }
+
+    #[sqlx::test]
+    fn test_add_language(db: PgPool) {
+        let language = Language {
+            code: "fc".to_string(),
+            name: "Fake language".to_string(),
+        };
+
+        let queried_language = query_as!(
+            Language,
+            "SELECT * FROM languages WHERE code = $1",
+            language.code
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+        assert!(queried_language.is_none());
+
+        add_language(get_connection_unwrap!(db), &language)
+            .await
+            .unwrap();
+
+        let queried_language = query_as!(
+            Language,
+            "SELECT * FROM languages WHERE code = $1",
+            language.code
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+        assert_eq!(queried_language, Some(language));
+    }
+
+    #[sqlx::test]
+    fn test_update_language(db: PgPool) {
+        let old_language = Language {
+            code: "fc".to_string(),
+            name: "Fake language".to_string(),
+        };
+        let new_language = Language {
+            code: "fc".to_string(),
+            name: "Neptaal".to_string(),
+        };
+
+        query!(
+            "INSERT INTO languages (code, name) VALUES ($1, $2)",
+            old_language.code,
+            old_language.name
+        )
+        .execute(&db)
+        .await
+        .unwrap();
+
+        update_language(
+            get_connection_unwrap!(db),
+            &new_language.code,
+            &new_language.name,
+        )
+        .await
+        .unwrap();
+
+        let queried_language = query_as!(
+            Language,
+            "SELECT * FROM languages WHERE code = $1",
+            old_language.code
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!(queried_language, new_language);
+    }
 
     #[test]
     fn test_parse_isbn() {
@@ -1913,5 +2245,62 @@ mod tests {
         let result = add_co_author(&db, tree_id, co_author_id).await;
 
         assert!(result.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_tree_is_accessible(db: PgPool) {
+        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let claims = Claims {
+            sub: user_id,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: user_id + 1,
+            exp: i64::MAX,
+            account_type: AccountType::Admin,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: user_id + 2,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_err());
+
+        let register_data = RegisterData::test_values();
+        let coauthor_id = initialize_user(get_connection_unwrap!(db), &register_data).await;
+        add_co_author(&db, tree_id, coauthor_id).await.unwrap();
+
+        let claims = Claims {
+            sub: coauthor_id,
+            exp: i64::MAX,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(claims)).await;
+        assert!(result.is_ok());
+
+        query!("UPDATE trees SET published = true WHERE id = $1 ", tree_id)
+            .execute(&db)
+            .await
+            .unwrap();
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, None).await;
+        assert!(result.is_ok());
     }
 }

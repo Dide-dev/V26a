@@ -287,7 +287,7 @@ async fn test_new_lesson(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_verify_tree_permission_owner(db: PgPool) {
+async fn test_verify_classroom_permission_owner(db: PgPool) {
     let server = setup_login(db.clone()).await;
     let classroom_id: i32 = create_classroom(&server).await;
 
@@ -297,7 +297,7 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
     };
 
     let result =
-        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &claims).await;
     assert!(result.is_ok());
 }
 
@@ -312,6 +312,6 @@ async fn test_verify_classroom_permission_admin(db: PgPool) {
     };
 
     let result =
-        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, claims).await;
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &claims).await;
     assert!(result.is_ok());
 }

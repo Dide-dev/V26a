@@ -8,7 +8,7 @@ use crate::db_structs::session::ClassroomClaims;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
-    LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH,
+    LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH, LESSON_TITLE_MIN_LENGTH,
 };
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -103,6 +103,12 @@ impl Validated for LessonAddData {
             return Err(ApiError::InputLengthExceeded(
                 "description",
                 LESSON_DESCRIPTION_MAX_LENGTH,
+            ));
+        }
+        if self.name.chars().count() < LESSON_TITLE_MIN_LENGTH {
+            return Err(ApiError::InputLengthNotMet(
+                "title",
+                LESSON_TITLE_MIN_LENGTH,
             ));
         }
         Ok(())
