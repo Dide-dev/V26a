@@ -59,7 +59,9 @@
 
     --color-neutral-350: oklch(0.78 0 0);
 
+    /* Default animated underline values */
     --color-underline: var(--color-black);
+    --weight-underline: calc(var(--spacing) / 3);
 
     /* Text spacing */
     --spacing-text-normal: calc(var(--spacing) * 4);
