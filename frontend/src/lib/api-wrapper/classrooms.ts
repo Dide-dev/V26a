@@ -45,6 +45,31 @@ export type LessonAddData = {
     published: Option<boolean>;
 };
 
+export type ClassroomUserLoginData = {
+    joinCode: string;
+    username: string;
+};
+
+export type ClassroomLoginResponse =
+    | ClassroomLoginResponseSuccess
+    | ClassroomLoginResponseJoinCodeIncorrect
+    | ClassroomLoginResponseMissingUser;
+export type ClassroomLoginResponseSuccess = {
+    type: 'Success';
+    id: ClassroomId;
+    num: number;
+    name: string;
+};
+export type ClassroomLoginResponseJoinCodeIncorrect = {
+    type: 'JoinCodeIncorrect';
+    joinCode: string;
+};
+
+export type ClassroomLoginResponseMissingUser = {
+    type: 'MissingUser';
+    userNumber: number;
+};
+
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomData): Promise<ClassroomGeneratedData> {
     return apiCallPostClassroom('', classroomAddData);
@@ -56,4 +81,11 @@ export function addLesson(
     classroomId: ClassroomId
 ): Promise<LessonId> {
     return apiCallPostClassroom(`/${classroomId}/lessons`, lessonAddData);
+}
+
+/** Log in to a classroom, creates a new user or logs in an existing user */
+export function classroomLogin(
+    classroomUserLoginData: ClassroomUserLoginData
+): Promise<ClassroomLoginResponse> {
+    return apiCallPostClassroom('login', classroomUserLoginData);
 }
