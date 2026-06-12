@@ -40,8 +40,8 @@ vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
         getAllLanguages: vi.fn().mockResolvedValue(['Nederlands', 'English']),
         getAllSubjects: vi.fn().mockResolvedValue({
             nl: [
-                { id: 1, languageCode: 'nl', name: 'Nederlands' },
-                { id: 2, languageCode: 'nl', name: 'Wiskunde' }
+                { id: 1, data: { languageCode: 'nl', name: 'Nederlands' } },
+                { id: 2, data: { languageCode: 'nl', name: 'Wiskunde' } }
             ]
         }),
         updateTreeMetaData: vi.fn().mockResolvedValue(undefined)
