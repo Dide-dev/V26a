@@ -503,6 +503,14 @@ async fn request_password_reset(
     {
         let mut reset_password_requests = state.reset_password_requests.lock().await;
 
+        // Exit if a password reset has already been requested.
+        if reset_password_requests
+            .values()
+            .any(|r| r.user_id == user_id && Utc::now().timestamp() < r.expires)
+        {
+            return Ok(());
+        }
+
         let expires = Utc::now().timestamp() + state.config.reset_password_timer;
         let password_reset_request_data = PasswordResetRequestData { user_id, expires };
         reset_password_requests.insert(password_reset_code.clone(), password_reset_request_data);
