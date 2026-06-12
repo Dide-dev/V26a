@@ -210,7 +210,12 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classrooms(db: PgPool) {
-    let server = setup_login(db).await;
+    let test_state = setup(db);
+
+    let account1 = RegisterData::test_values();
+    let user_id = register(&test_state, &account1).await;
+    let server = test_state.server;
+    login(&server, account1.email).await;
 
     let classroom_add_data = ClassroomData {
         name: "Classroom".to_owned(),
@@ -220,7 +225,7 @@ async fn test_get_classrooms(db: PgPool) {
     let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
-    let response2 = server.get("/users/me/classrooms").await;
+    let response2 = server.get(&format!("/users/{user_id}/classrooms")).await;
     response2.assert_status_ok();
 
     let classroom_list: ClassroomListResponse = response2.json();
