@@ -91,7 +91,7 @@
             {/if}
         </div>
         <div class="mr-4 flex w-1/3 flex-col text-right">
-            {#if tree.data.bookIsbn !== null}
+            {#if tree.data.bookIsbn ?? '' !== ''}
                 <a
                     href={appLink(`/trees?isbn=${tree.data.bookIsbn}`)}
                     class="mt-text-minor flex w-fit self-end *:*:flex-col"
