@@ -30,7 +30,7 @@ pub fn localize_message(message: &Message) -> String {
         } => {
             let minutes = duration_seconds / 60;
             format!(
-                "Beste {display_name},\n\nJe ontvangt deze e-mail omdat er een wachtwoord reset is opgevraagd voor jouw account.\n\nJe kunt de volgende link gebruiken om je wachtwoord opnieuw in te stellen:\n{password_reset_link}\nDeze link is geldig voor {minutes} minuten.\n\nAls je dit verzoek niet herkent, kunt u deze e-mail veilig negeren.\n\nBOOM!\n{base_url}"
+                "Beste {display_name},\n\nJe ontvangt deze e-mail omdat er een wachtwoord reset is opgevraagd voor jouw account.\n\nJe kunt de volgende link gebruiken om je wachtwoord opnieuw in te stellen:\n{password_reset_link}\nDeze link is geldig voor {minutes} minuten.\n\nAls je dit verzoek niet herkent, kan je deze e-mail veilig negeren.\n\nBOOM!\n{base_url}"
             )
         },
     }
