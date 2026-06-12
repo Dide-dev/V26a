@@ -15,8 +15,8 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to return when an email address does not match the correct pattern with the '@' symbol.
-    IllegalEmailAddress,
+    /// An error to be returned when `lettre` fails to parse an e-mail.
+    EmailParseError,
     /// An error to return when a name contains characters outside the accepted standard.
     IllegalName,
     /// An error to return when a password does not contain the appropriate characters.
@@ -44,8 +44,12 @@ pub enum ApiError {
     MismatchedStructure,
     /// An error to return when a card is attempted to be updated, which does not yet exist.
     MissingCard(i32),
+    /// An error to return when a non-existing `classroom_id` is used to access a classroom.
+    MissingClassroom(i32),
     /// An error to return when a non-existing `language` is used when creating or updating a tree.
     MissingLanguage(String),
+    /// An error to return when a non-existing `lesson_id` is used to access a lesson.
+    MissingLesson(i32),
     /// An error to return when a non-existing `subject_id` is used when creating or updating a tree.
     MissingSubject(i32),
     /// An error to return when a non-existing `tree_id` is used to access a tree.
@@ -103,8 +107,12 @@ pub enum ApiError {
     InvalidDataFound,
     /// An error to be returned by `add_image` if adding the image to the database fails.
     ImageAddFail,
+    /// An exception to return when lettre fails on something unexpected.
+    LettreException,
     /// An exception to return when serde fails on something unexpected.
     SerdeException,
+    /// An exception to be returned when lettre fails to send an e-mail.
+    SmtpError,
     /// An error to be returned by `jsonwebtoken` if the encoding of a token fails.
     TokenCreationException,
 }
@@ -125,16 +133,39 @@ impl From<serde_json::Error> for ApiError {
     }
 }
 
+impl From<lettre::address::AddressError> for ApiError {
+    /// Convert `lettre` address errors to our own [`ApiError`], so that ? can be used on `lettre` address results.
+    fn from(error: lettre::address::AddressError) -> Self {
+        tracing::error!("lettre address error: {}", error);
+        ApiError::EmailParseError
+    }
+}
+
+impl From<lettre::transport::smtp::Error> for ApiError {
+    /// Convert `lettre` smtp errors to our own [`ApiError`], so that ? can be used on `lettre` smtp results.
+    fn from(error: lettre::transport::smtp::Error) -> Self {
+        tracing::error!("lettre smtp error: {}", error);
+        ApiError::SmtpError
+    }
+}
+
+impl From<lettre::error::Error> for ApiError {
+    /// Convert `lettre`'s generic errors to our own [`ApiError`], so that ? can be used on generic `lettre` results.
+    fn from(error: lettre::error::Error) -> Self {
+        tracing::error!("lettre generic error: {}", error);
+        ApiError::LettreException
+    }
+}
+
 // Define how errors should be converted to messages.
+#[allow(clippy::too_many_lines)]
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
-            ApiError::IllegalEmailAddress => {
-                write!(f, "Email address does not follow pattern 'name@domain'.")
-            }
+            ApiError::EmailParseError => write!(f, "Could not parse email."),
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
             ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
             ApiError::IllegalTag => write!(f, "Tag contains illegal characters."),
@@ -176,7 +207,13 @@ impl Display for ApiError {
                 "The provided structure does not match the cards found in the database. Make sure to update the database with any new or removed cards first."
             ),
             ApiError::MissingCard(id) => write!(f, "The card with id {id} could not be found."),
+            ApiError::MissingClassroom(id) => {
+                write!(f, "The classroom with id {id} could not be found.")
+            }
             ApiError::MissingLanguage(lang) => write!(f, "The language {lang} does not exist."),
+            ApiError::MissingLesson(id) => {
+                write!(f, "The lesson with id {id} could not be found.")
+            }
             ApiError::MissingSubject(id) => write!(f, "The subject with id {id} does not exist."),
             ApiError::MissingTree(id) => write!(f, "The tree with id {id} could not be found."),
             ApiError::MissingUser(id) => write!(f, "The user with id {id} could not be found."),
@@ -233,8 +270,17 @@ impl Display for ApiError {
                 )
             }
             ApiError::InvalidDataFound => write!(f, "Data was found corrupted."),
+            ApiError::LettreException => {
+                write!(
+                    f,
+                    "An unexpected error occurred while constructing an e-mail."
+                )
+            }
             ApiError::SerdeException => {
                 write!(f, "An unexpected (de)serialization error occurred.")
+            }
+            ApiError::SmtpError => {
+                write!(f, "An unexpected error occurred while sending an e-mail.")
             }
             ApiError::TokenCreationException => {
                 write!(f, "An unexpected session creation error occurred.")
@@ -247,7 +293,7 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::IllegalEmailAddress
+            ApiError::EmailParseError
             | ApiError::IllegalName
             | ApiError::IllegalPassword
             | ApiError::IllegalTag
@@ -261,7 +307,9 @@ impl ApiError {
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
             | ApiError::MissingCard(_)
+            | ApiError::MissingClassroom(_)
             | ApiError::MissingLanguage(_)
+            | ApiError::MissingLesson(_)
             | ApiError::MissingSubject(_)
             | ApiError::MissingTree(_)
             | ApiError::MissingUser(_)
@@ -284,7 +332,9 @@ impl ApiError {
             | ApiError::HashException
             | ApiError::ImageAddFail
             | ApiError::InvalidDataFound
+            | ApiError::LettreException
             | ApiError::SerdeException
+            | ApiError::SmtpError
             | ApiError::TokenCreationException => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

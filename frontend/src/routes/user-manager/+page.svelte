@@ -7,10 +7,11 @@
 <script lang="ts">
     import {
         getUserAllData,
-        type UserAllData,
+        type AdminUpdateData,
         updateUserData,
         adminChangePassword,
-        type AdminChangePasswordData
+        type AdminChangePasswordData,
+        type AdminGetUserData
     } from '$lib/api-wrapper/admin';
     import {
         checkLowercase,
@@ -23,34 +24,22 @@
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
     import { goto } from '$app/navigation';
-    import { appLink } from '$lib';
+    import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
 
     let id: number = $state(0);
+    let userDataPromise: Promise<AdminGetUserData> = $state(new Promise(() => {}));
 
     onMount(async () => {
         const pageId = page.url.searchParams.get('id');
-
         if (!pageId) {
-            goto(appLink('/'));
+            await goto(appLink('/'));
         }
-
         id = Number(pageId);
-
         if (Number.isNaN(id)) {
-            goto(appLink('/'));
+            await goto(appLink('/'));
         }
-        userDataPromise = await getUserAllData(id);
-    });
-    let userDataPromise: UserAllData = $state({
-        email: '',
-        data: {
-            name: '',
-            nickname: '',
-            aboutMe: ''
-        },
-        enabled: true,
-        accountType: 'author'
+        userDataPromise = getUserAllData(id);
     });
 
     let repeatPassword = $state('');
@@ -88,7 +77,6 @@
     );
 
     const minInputLengths = {
-        email: 0,
         name: 2,
         nickname: 2,
         aboutMe: 0,
@@ -122,7 +110,7 @@
         passwordNotSame = false;
     }
 
-    async function handleSubmit(event: SubmitEvent, userData: UserAllData) {
+    async function handleSubmit(event: SubmitEvent, userData: AdminUpdateData) {
         event.preventDefault();
 
         const pageId = page.url.searchParams.get('id');
@@ -179,7 +167,7 @@
         // Effectively reloads the page. This is not really necessary, but prevents
         // the displayed data from being inconsistent with the database in case something
         // goes wrong.
-        userDataPromise = await getUserAllData(id);
+        userDataPromise = getUserAllData(id);
     }
 
     async function handlePasswordChange(id: number) {
@@ -220,30 +208,16 @@
 
     async function handleCancel(e: Event) {
         e.preventDefault();
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
-            await goto(appLink('/'));
-            return;
-        }
-
-        let id = Number(pageId);
-
-        if (Number.isNaN(id)) {
-            await goto(appLink('/'));
-            return;
-        }
 
         if (!formChanged) {
             return;
         }
-        if (!formChanged) return;
-        e.preventDefault();
+
         resetInputStates();
         resetInputResponses();
         changePasswordData.newPassword = '';
         repeatPassword = '';
-        userDataPromise = await getUserAllData(id);
+        userDataPromise = getUserAllData(id);
     }
 </script>
 
@@ -254,10 +228,20 @@
         <form
             data-testid="profile-form"
             class={[formChanged && 'completed']}
-            onsubmit={(event) => handleSubmit(event, userData)}
+            onsubmit={(event) => handleSubmit(event, userData.updateableData)}
         >
-            <h1 class="page__title">{m.profileOf({ username: userData.data.name })}</h1>
+            <h1 class="page__title">
+                {m.profileOf({ username: userData.updateableData.data.name })}
+            </h1>
             <h2 class="page__heading">{m.general()}</h2>
+            <p class="italic">
+                {m.registeredOn()}:
+                {new Intl.DateTimeFormat(timeFormatString).format(new Date(userData.createdAt))}
+            </p>
+            <p class="italic">
+                {m.lastLogin()}:
+                {new Intl.DateTimeFormat(timeFormatString).format(new Date(userData.lastLogin))}
+            </p>
             <div>
                 <label for="email">{m.email()}</label>
                 <div class="input__container">
@@ -268,11 +252,10 @@
                             emailAlreadyExists && 'error',
                             'input__text'
                         ]}
-                        bind:value={userData.email}
+                        bind:value={userData.updateableData.email}
                         name="email"
                         type="email"
                         data-testid="email"
-                        minlength={minInputLengths.email}
                         maxlength={maxInputLengths.email}
                         oninput={() => {
                             inputsChanged.emailChanged = true;
@@ -294,7 +277,7 @@
                             usernameAlreadyExists && 'error',
                             'input__text'
                         ]}
-                        bind:value={userData.data.name}
+                        bind:value={userData.updateableData.data.name}
                         name="name"
                         type="text"
                         data-testid="name"
@@ -317,7 +300,7 @@
                     <input
                         id="nickname"
                         class={[!inputsChanged.nicknameChanged && 'inactive', 'input__text']}
-                        bind:value={userData.data.nickname}
+                        bind:value={userData.updateableData.data.nickname}
                         name="nickname"
                         type="text"
                         placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
@@ -334,7 +317,7 @@
                 <textarea
                     id="aboutMe"
                     class={[!inputsChanged.aboutMeChanged && 'inactive', 'input__long_text']}
-                    bind:value={userData.data.aboutMe}
+                    bind:value={userData.updateableData.data.aboutMe}
                     name="aboutMe"
                     placeholder={m.optional()}
                     minlength={minInputLengths.aboutMe}
@@ -352,7 +335,7 @@
                 <select
                     id="acccountType"
                     class={[!inputsChanged.accountTypeChanged && 'inactive', 'input__select']}
-                    bind:value={userData.accountType}
+                    bind:value={userData.updateableData.accountType}
                     oninput={() => {
                         inputsChanged.accountTypeChanged = true;
                     }}
@@ -365,7 +348,7 @@
                 <input
                     id="enabled"
                     class={[!inputsChanged.enabledChanged && 'inactive', 'input__checkbox']}
-                    bind:checked={userData.enabled}
+                    bind:checked={userData.updateableData.enabled}
                     name="enabled"
                     type="checkbox"
                     oninput={() => {

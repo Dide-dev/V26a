@@ -4,12 +4,16 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost } from './index';
+import { apiCallEmptyDelete, apiCallPost } from './index';
 
 const prefix = 'auth';
 
 function apiCallPostAuth(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
+}
+
+function apiCallDeleteAuth(path: string) {
+    return apiCallEmptyDelete(prefix + path);
 }
 
 /** The data required to login */
@@ -25,4 +29,9 @@ export type LoginResponse = {
 /** Log in with the provided credentials */
 export function login(credentials: LoginData): Promise<LoginResponse> {
     return apiCallPostAuth('', credentials);
+}
+
+/** Log out the user */
+export function logout(): Promise<void> {
+    return apiCallDeleteAuth('');
 }

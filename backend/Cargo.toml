@@ -8,7 +8,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0.8.8", features = ["multipart", "macros"] }
+async-trait = "0.1.89"
+axum = { version = "0.8.8", features = ["multipart", "macros", "ws"] }
 axum-extra = { version = "0.12.5", features = [
     "typed-header",
     "cookie",
@@ -19,7 +20,7 @@ chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 governor = "0.10.4"
 infer = "0.19.0"
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+lettre = { version = "0.11.21", default-features = false, features = ["builder", "smtp-transport", "tokio1"] }
 percent-encoding = "2.3.2"
 rand = "0.10.1"
 serde = { version = "1.0.228", features = ["derive"] }
@@ -45,4 +46,4 @@ tower = "0.5.3"
 uuid = { version = "1.23.0", features = ["v4"] }
 
 [dev-dependencies]
-axum-test = "20.0.0"
+axum-test = { version = "20.0.0", features = ["ws"] }

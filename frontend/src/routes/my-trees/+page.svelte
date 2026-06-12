@@ -9,7 +9,8 @@
     import {
         getFilteredList,
         type TreeListResponse,
-        type FilterOptions
+        type FilterOptions,
+        duplicateTree
     } from '$lib/api-wrapper/trees';
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import { appLink } from '$lib';
@@ -18,7 +19,9 @@
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import { booleanToString } from '$lib/index';
     import { getUserInfo } from '$lib/api-wrapper/users';
-    import { goto } from '$app/navigation';
+    import iconDuplicate from '$lib/assets/icons/duplicate.svg?raw';
+    import { redirectLogin } from '$lib/api-wrapper';
+    import { page } from '$app/state';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for tree deletion is not possible.
@@ -31,6 +34,11 @@
     onMount(async () => {
         await loadTrees();
     });
+
+    async function duplicateThisTree(id: number) {
+        let newTreeId = await duplicateTree(id);
+        await window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
+    }
 
     async function loadTrees() {
         let userInfo = getUserInfo();
@@ -50,7 +58,7 @@
         if (userInfo !== null) {
             treeListResponse = await getFilteredList(paginationOptions, filterOptions);
         } else {
-            await goto(appLink('/login'));
+            await redirectLogin(page.url);
         }
     }
 
@@ -142,6 +150,17 @@
                                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                                 {@html iconEdit}
                             </a>
+                        </td>
+                        <td class="min-w-2 hover:fill-blue-800">
+                            <button
+                                onclick={() => duplicateThisTree(tree.genData.id)}
+                                aria-label="duplicate"
+                                class:cursor-pointer={true}
+                                class="flex self-end"
+                            >
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                {@html iconDuplicate}
+                            </button>
                         </td>
                         <td class="min-w-2 hover:fill-blue-800">
                             <RemoveButton thisTree={tree} bind:allTrees={treeListResponse.trees} />

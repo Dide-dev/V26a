@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO lessons (classroom_id, order_number, name, description, published) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "00384f448369ae5678640626cb7d78a4e89c5872a715fe89194f3f3769e601bd"
+}

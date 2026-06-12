@@ -3,29 +3,41 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
-use crate::ArcState;
-use crate::api_v1::rate_limit_layer;
+use crate::api_v1::{extract_token, rate_limit_layer};
 use crate::db::auth::get_user_credentials_by_id;
+use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
+use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
-    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, update_password,
-    update_user, user_id_exists,
+    add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
+    update_password, update_user, user_id_exists,
 };
+use crate::db_structs::classrooms::ClassroomListResponse;
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, RegisterData, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
+    PublicUserData, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
+use crate::{ArcState, get_connection};
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
-use crate::db_structs::Validated;
+use crate::api_v1::users::UserResponse::InvalidVerification;
+use crate::db_structs::{Validated, parse_email};
+use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
 use axum::extract::{Path, State};
-use axum::routing::{delete, get, post, put};
+use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use chrono::Utc;
+use lettre::message::Mailbox;
+use lettre::message::header::ContentType;
+use lettre::{Address, Message};
+use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool};
 use time::Duration;
 use utoipa::ToSchema;
 
@@ -33,19 +45,31 @@ use utoipa::ToSchema;
 pub fn users() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_user).layer(rate_limit_layer(5, 20)))
-        .route("/me", get(get_own_user_data).put(update_user_data))
+        .route("/verification", post(verify))
+        .route("/{user_id}/public", get(get_public_user_data))
+        .route(
+            "/me",
+            get(get_own_user_data)
+                .put(update_user_data)
+                .delete(delete_user_data),
+        )
         .route("/me/password", put(change_password))
-        .route("/{user_id}", delete(delete_user_data))
+        .route("/me/classrooms", get(get_all_owned_classrooms))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
 #[serde(tag = "type")]
+#[serde(rename_all_fields = "camelCase")]
 pub enum UserResponse {
-    /// Return body signaling the user has been successfully added/updated with the contained `user_id`.
+    /// Return body signalling the user has been successfully added/updated with the contained `user_id`.
     Success { user_id: i32 },
-    /// Return body signaling the user could not be added/updated, as the e-mail was already in use.
+    /// Return body signalling the user data has been stored, but is pending verification.
+    Pending,
+    /// Return body signalling that the user tried to verify with a code that is invalid or expired.
+    InvalidVerification,
+    /// Return body signalling the user could not be added/updated, as the e-mail was already in use.
     EmailAlreadyUsed,
-    /// Return body signaling the user could not be added/updated, as the username was already in use.
+    /// Return body signalling the user could not be added/updated, as the username was already in use.
     UsernameAlreadyUsed,
 }
 
@@ -55,52 +79,151 @@ pub enum UserResponse {
     context_path = "/api/v1/users",
     request_body = RegisterData,
     responses(
-        (status = 200, description = "Successfully registered user with the returned id.", body = UserResponse, content_type = "application/json"),
-        (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 200, description = "Awaiting verification, email already used, or username already used."),
+        (status = 400, description = ApiError::EmailParseError.to_string()),
         (status = 429, description = "Ratelimit exceeded."),
         (status = 500, description = "Internal server error."),
     )
 )]
-/// Add a user to the database.
+/// Register a user, after which the account needs to be verified.
 ///
 /// # Arguments
 /// `user_data` - The data used to register the user, as [`RegisterData`].
 ///
 /// # Returns
-/// [`Success`](UserResponse::Success) with the id assigned to the new user
-/// if the email has not yet been used, or [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) otherwise.
-/// if the username has not yet been used, or [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) otherwise.
+/// [`Pending`](UserResponse::Pending) if the registration was successful and is now pending verification,
+///
+/// [`EmailAlreadyUsed`](UserResponse::EmailAlreadyUsed) if the email has already been used, or
+///
+/// [`UsernameAlreadyUsed`](UserResponse::UsernameAlreadyUsed) if the username has already been used.
 ///
 /// # Errors
-/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
-///
-/// May return a [`HashException`](ApiError::HashException) or
-/// [`DatabaseException`](ApiError::DatabaseException) instead.
+/// May return a [`HashException`](ApiError::HashException),
+/// [`DatabaseException`](ApiError::DatabaseException),
+/// [`EmailParseError`](ApiError::EmailParseError),
+/// [`SmtpError`](ApiError::SmtpError) or
+/// [`LettreException`](ApiError::LettreException) instead.
 async fn add_new_user(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(user_data): Json<RegisterData>,
 ) -> Result<Json<UserResponse>, ApiError> {
     user_data.validate_inputs()?;
+    let parsed_email: Address = parse_email(&user_data.email)?;
 
-    let mut transaction = db.begin().await?;
+    let verification_code = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
 
-    let found_user_id = get_user_by_email(&mut *transaction, &user_data.email).await?;
+    {
+        let mut pending_accounts = state.pending_accounts.lock().await;
 
-    if found_user_id.is_some() {
-        return Ok(Json(UserResponse::EmailAlreadyUsed));
+        // Remove pending accounts in case they have not been pruned yet.
+        pending_accounts.remove_expired();
+
+        if check_email_used(&db, &pending_accounts, &user_data.email, None).await? {
+            return Ok(Json(UserResponse::EmailAlreadyUsed));
+        }
+
+        if check_username_used(&db, &pending_accounts, &user_data.data.name, None).await? {
+            return Ok(Json(UserResponse::UsernameAlreadyUsed));
+        }
+
+        let expires = Utc::now().timestamp() + state.config.verification_timer;
+        let pending_data = PendingRegisterData {
+            register_data: user_data.clone(),
+            expires,
+        };
+        pending_accounts.insert(verification_code.clone(), pending_data);
+
+        // Release the lock, then send an email
     }
 
-    let found_user_id = get_user_by_name(&mut *transaction, &user_data.data.name).await?;
+    let verification_link = format!(
+        "{}/verify?code={}",
+        state.config.base_url, verification_code
+    );
+    let display_name = if user_data.data.nickname.is_empty() {
+        user_data.data.name.clone()
+    } else {
+        user_data.data.nickname.clone()
+    };
+    let language = user_data.data.language;
+    let message = Message::builder()
+        .from(Mailbox::new(
+            Some("BOOM!".to_owned()),
+            format!("noreply@{}", state.config.hostname).parse()?,
+        ))
+        .to(Mailbox::new(Some(display_name.clone()), parsed_email))
+        .header(ContentType::TEXT_PLAIN)
+        .subject(EmailVerificationSubject.localized(&language))
+        .body(
+            EmailVerificationBody {
+                display_name,
+                verification_link,
+                base_url: state.config.base_url.clone(),
+            }
+            .localized(&language),
+        )?;
+    state.config.mailer.send(message).await?;
 
-    if found_user_id.is_some() {
-        return Ok(Json(UserResponse::UsernameAlreadyUsed));
-    }
+    Ok(Json(UserResponse::Pending))
+}
 
-    let user_id = add_user(&mut transaction, &user_data, state.config.bcrypt_cost).await?;
+/// Struct for a verification code for the /users/verify endpoint.
+#[derive(serde::Deserialize, serde::Serialize, ToSchema)]
+pub struct VerificationCode {
+    pub code: String,
+}
 
-    transaction.commit().await?;
+#[utoipa::path(
+    post,
+    path = "/verify",
+    context_path = "/api/v1/users",
+    request_body = VerificationCode,
+    responses(
+        (status = 200, description = "Successfully verified user, or verification expired.", body = UserResponse, content_type = "application/json"),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Verify a user who is pending registration
+///
+/// # Arguments
+/// `code` - The verification code, given as a [`VerificationCode`] through a query.
+///
+/// # Returns
+/// [`Success`](UserResponse::Success) with the id assigned to the new user.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn verify(
+    Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
+    Json(VerificationCode { code }): Json<VerificationCode>,
+) -> Result<Json<UserResponse>, ApiError> {
+    let mut pending_accounts = state.pending_accounts.lock().await;
+
+    let entry = match pending_accounts.entry(code) {
+        Entry::Occupied(occupied_entry) => {
+            if occupied_entry.get().expires < Utc::now().timestamp() {
+                return Ok(Json(InvalidVerification));
+            }
+            occupied_entry
+        }
+        Entry::Vacant(_) => {
+            return Ok(Json(InvalidVerification));
+        }
+    };
+
+    let user_id = add_user(
+        get_connection!(db),
+        &entry.get().register_data,
+        state.config.bcrypt_cost,
+    )
+    .await?;
+
+    entry.remove();
 
     Ok(Json(UserResponse::Success { user_id }))
 }
@@ -141,6 +264,39 @@ async fn get_own_user_data(
 }
 
 #[utoipa::path(
+    get,
+    path = "/{user_id}/public",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Successfully retrieved public data of user.", body = PublicUserData),
+        (status = 400, description = "User with given id cannot be found."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Get a user's public data from the database.
+///
+/// # Returns
+/// The user's data as [`PublicUserData`].
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if no user of the given id could be found.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_public_user_data(
+    Path(user_id): Path<i32>,
+    Extension(db): Extension<PgPool>,
+) -> Result<Json<PublicUserData>, ApiError> {
+    if let Some(user_data) = get_user_public_data(&db, user_id).await? {
+        Ok(Json(user_data))
+    } else {
+        Err(ApiError::MissingUser(user_id))
+    }
+}
+
+#[utoipa::path(
     put,
     path = "/me",
     context_path = "/api/v1/users",
@@ -175,14 +331,18 @@ async fn update_user_data(
     mut jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
     Json(new_data): Json<UserData>,
 ) -> Result<(CookieJar, Json<UserResponse>), ApiError> {
     new_data.validate_inputs()?;
-    let found_user_id = get_user_by_name(&db, &new_data.name).await?;
 
-    if let Some(id) = found_user_id
-        && id != claims.sub
-    {
+    // This lock should not be released until the user is updated.
+    let mut pending_accounts = state.pending_accounts.lock().await;
+
+    // Remove pending accounts in case they have not been pruned yet.
+    pending_accounts.remove_expired();
+
+    if check_username_used(&db, &pending_accounts, &new_data.name, Some(claims.sub)).await? {
         return Ok((jar, Json(UserResponse::UsernameAlreadyUsed)));
     }
 
@@ -247,6 +407,7 @@ pub struct ChangePasswordResponse {
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
     claims: Claims,
+    jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(password_change_request): Json<PasswordChangeRequestBody>,
@@ -275,76 +436,196 @@ async fn change_password(
     )
     .await?;
 
+    let token = extract_token(&jar)?;
+
+    // All other sessions of the account are invalidated if password is changed.
+    delete_all_sessions_except(&db, claims.sub, &token).await?;
+
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
 
 #[utoipa::path(
     delete,
-    path = "/{user_id}",
+    path = "/me",
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "User data successfully deleted."),
-        (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
-        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("user_id" = i32, Path),
         ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
         ("session" = Claims, Cookie),
     )
 )]
-/// Delete a user from the database.
-///
-/// A user can only delete their own account, unless the user is an admin (permission to delete other accounts).
+/// Delete the logged-in user from the database.
 ///
 /// # Arguments
 /// `claims` - The session cookie of the user.
 ///
-/// `user_id` - The user to delete.
-///
 /// `deleteOwnedTrees` - Delete all the trees of the user.
 ///
 /// # Returns
-/// The (cookie) jar that is empty.
+/// The cookie jar with the session cookies removed.
 ///
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to delete
-/// the user.
-///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
-    mut jar: CookieJar,
+    jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
-    Path(user_id): Path<i32>,
     Query(delete): Query<DeleteOwnedTrees>,
 ) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await?;
 
-    if !user_id_exists(&mut *transaction, user_id).await? {
-        return Err(ApiError::MissingUser(user_id));
+    if !user_id_exists(&mut *transaction, claims.sub).await? {
+        return Err(ApiError::MissingUser(claims.sub));
     }
 
-    // A user can only delete their own account unless they are an admin.
-    if claims.sub != user_id && claims.account_type != AccountType::Admin {
-        return Err(ApiError::NoPermission);
-    }
+    delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
-    delete_user(&mut transaction, user_id, delete.delete_owned_trees).await?;
-
-    if claims.sub == user_id {
-        jar = jar
-            .remove(Cookie::from("session"))
-            .remove(Cookie::from("user_info"));
-    }
+    // Invalidate all the sessions based on userid.
+    delete_all_sessions_user(&mut *transaction, claims.sub).await?;
 
     transaction.commit().await?;
 
-    Ok(jar)
+    // Unset the cookies by changing the date to a time in the past.
+    Ok(jar
+        .remove(Cookie::build("session").path("/api/"))
+        .remove(Cookie::build("user_info").path("/")))
+}
+
+#[utoipa::path(
+    get,
+    path = "/{user_id}/classrooms",
+    context_path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
+    )
+)]
+/// Get the list of all classrooms a user has on a given page.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
+///
+/// # Returns
+/// All the user's classrooms and the number of classrooms as [`ClassroomListResponse`].
+///
+/// # Errors
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
+///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn get_all_owned_classrooms(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<ClassroomListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await?;
+    let classroom_count = get_classroom_count(&mut *transaction, claims.sub).await?;
+
+    let classrooms = get_all_classrooms(&mut *transaction, claims.sub, &page).await?;
+    transaction.commit().await?;
+    let list = ClassroomListResponse {
+        total_classrooms: i32::try_from(classroom_count)
+            .map_err(|_| ApiError::DatabaseMemoryCap)?,
+        classrooms,
+    };
+    Ok(Json(list))
+}
+
+/// Check if a username has already been used in the application.
+///
+/// It is considered taken if either an existing account or an account pending verification has the username.
+///
+/// # Parameters
+/// `db` - Either a [`&PgPool`](PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `pending_accounts` - The [`HashMap`] from the [`State`](crate::state::State), containing the accounts
+/// that are pending verification.
+///
+/// `check_username` - The username, for which it should be checked if it can be used or not.
+///
+/// `allowed_user_id` - An optional user id, who should be ignored if they have the username being checked.
+///
+/// # Returns
+/// A [`bool`], which is true if the username has already been taken, or false if it has not.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn check_username_used(
+    db: impl PgExecutor<'_>,
+    pending_accounts: &HashMap<String, PendingRegisterData>,
+    check_username: &str,
+    allowed_user_id: Option<i32>,
+) -> Result<bool, ApiError> {
+    let found_user_id = get_user_by_name(db, check_username).await?;
+    let used_by_other = found_user_id.is_some_and(|id| match allowed_user_id {
+        // Did not specify an allowed user id, so the username is a duplicate.
+        None => true,
+        // If there is an allowed user, the username has been used if the allowed user is not the found user.
+        Some(other_id) => id != other_id,
+    });
+    let used_by_pending = pending_accounts
+        .values()
+        .any(|r| r.register_data.data.name.to_lowercase() == check_username.to_lowercase());
+
+    Ok(used_by_other || used_by_pending)
+}
+
+/// Check if an e-mail has already been used in the application.
+///
+/// It is considered taken if either an existing account or an account pending verification has the e-mail.
+///
+/// # Parameters
+/// `db` - Either a [`&PgPool`](PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `pending_accounts` - The [`HashMap`] from the [`State`](crate::state::State), containing the accounts
+/// that are pending verification.
+///
+/// `check_email` - The e-mail, for which it should be checked if it can be used or not.
+///
+/// `allowed_user_id` - An optional user id, who should be ignored if they have the username being checked.
+///
+/// # Returns
+/// A [`bool`], which is true if the e-mail has already been taken, or false if it has not.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn check_email_used(
+    db: impl PgExecutor<'_>,
+    pending_accounts: &HashMap<String, PendingRegisterData>,
+    check_email: &str,
+    allowed_user_id: Option<i32>,
+) -> Result<bool, ApiError> {
+    let found_user_id = get_user_by_email(db, check_email).await?;
+    let used_by_other = found_user_id.is_some_and(|id| match allowed_user_id {
+        // Did not specify an allowed user id, so the email is a duplicate.
+        None => true,
+        // If there is an allowed user, the email has been used if the allowed user is not the found user.
+        Some(other_id) => id != other_id,
+    });
+    let used_by_pending = pending_accounts
+        .values()
+        .any(|r| r.register_data.email.to_lowercase() == check_email.to_lowercase());
+
+    Ok(used_by_other || used_by_pending)
 }

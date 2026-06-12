@@ -6,6 +6,7 @@
 
 <script lang="ts">
     import { locales } from '$lib/paraglide/runtime.js';
+    import DeleteButton from './DeleteButton.svelte';
     import {
         getOwnUserData,
         getUserInfo,
@@ -66,7 +67,6 @@
     );
 
     const minInputLengths = {
-        email: 3,
         name: 4,
         nickname: 2,
         aboutMe: 0,
@@ -231,7 +231,6 @@
                     name="email"
                     type="email"
                     data-testid="email"
-                    minlength={minInputLengths.email}
                     maxlength={maxInputLengths.email}
                     value={userData.email}
                     oninput={() => {
@@ -415,6 +414,9 @@
             <div class="mb-0 flex flex-row gap-1 *:w-1/2">
                 <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
                 <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
+            </div>
+            <div>
+                <DeleteButton />
             </div>
         </form>
     {/await}

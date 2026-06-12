@@ -14,7 +14,7 @@ import {
     apiCallEmptyDelete
 } from './index';
 import type { Option } from './types';
-import type { UserId } from './users';
+import type { UserId, Username } from './users';
 import type { PaginationOptions } from '$lib/pagination';
 
 const prefix = 'trees';
@@ -97,9 +97,10 @@ export type TreeGeneratedData = {
 };
 
 export type TreeLinkedData = {
-    ownerName: Option<string>;
+    ownerName: Option<Username>;
     subjectName: Option<string>;
-    coAuthors: UserId[];
+    languageName: string;
+    coAuthors: Username[];
 };
 
 export type TreeMetadata = {
@@ -252,13 +253,18 @@ export function getFilteredList(
 }
 
 /** Duplicates a tree */
-export function duplicateTree(treeId: TreeId): Promise<void> {
-    return apiCallDuplicateTree(`/${treeId}`);
+export function duplicateTree(treeId: TreeId): Promise<TreeId> {
+    return apiCallDuplicateTree(`/${treeId}/duplicate`);
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
+export function addCoAuthor(treeId: TreeId, username: Username): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`/${treeId}/co-authors/${username}`, null);
+}
+
+/** Remove user as co-author from a tree. */
+export function removeCoAuthor(treeId: TreeId, username: string): Promise<void> {
+    return apiCallDeleteTree(`/${treeId}/co-authors/${username}`);
 }
 
 /** Get the list of all languages. */

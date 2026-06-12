@@ -1,3 +1,9 @@
+/*
+    This program has been developed by students from the bachelor Computer Science at
+    Utrecht University within the Software Project course.
+    © Copyright Utrecht University (Department of Information and Computing Sciences)
+*/
+
 import { render, screen } from '@testing-library/svelte';
 import { expect, test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
@@ -70,7 +76,8 @@ function createTree(): TreeWithCards {
     const treeLinkedData: TreeLinkedData = {
         ownerName: 'Test owner name',
         subjectName: 'Test subject name',
-        coAuthors: []
+        coAuthors: [],
+        languageName: 'English'
     };
 
     const treeMetadata: TreeMetadata = {
@@ -122,7 +129,8 @@ test('shows Edit button when user is logged in', async () => {
     vi.mocked(getUserInfo).mockReturnValue({
         accountType: 'author',
         sub: 2098,
-        exp: 2000000000
+        name: 'John',
+        nickname: ''
     });
 
     render(PageComponent);

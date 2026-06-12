@@ -8,7 +8,7 @@ use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
     add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
     get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
-    language_exists, subject_exists,
+    language_exists, remove_co_author, subject_exists, verify_tree_accessible_by_user,
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
@@ -20,6 +20,7 @@ use crate::db_structs::trees::{
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
+use crate::limits::TREE_TITLE_MAX_LENGTH;
 use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
@@ -32,7 +33,10 @@ use utoipa::ToSchema;
 
 use crate::db_structs::Validated;
 use crate::db_structs::cards::CardData;
+use crate::messages::Message;
 use std::collections::HashMap;
+
+pub mod edit_lock;
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
@@ -52,7 +56,13 @@ pub fn trees() -> Router<ArcState> {
         .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
         .route(
             "/{tree_id}/co-authors/{username}",
-            post(authorize_co_author),
+            post(authorize_co_author).delete(deauthorize_co_author),
+        )
+        .route(
+            "/{tree_id}/edit-lock",
+            // This endpoint requires to be wrapped in an [`axum::routing::any`],
+            // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
+            axum::routing::any(edit_lock::acquire_edit_lock),
         )
 }
 
@@ -500,18 +510,11 @@ async fn get_tree_with_cards(
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims).await?;
+
     let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
-
-    if !metadata.data.published {
-        // If the tree is not published, only the author is allowed access
-        let Some(claims) = claims else {
-            return Err(ApiError::MissingAuthentication);
-        };
-
-        verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
-    }
 
     let tree_cards = get_tree_cards(&db, tree_id).await?;
 
@@ -645,8 +648,8 @@ pub enum AuthorizeCoAuthorResponse {
 
 #[utoipa::path(
     post,
-    path = "{tree_id}/co-authors/{username}",
-    context_path = "/api/v1/trees/",
+    path = "/{tree_id}/co-authors/{username}",
+    context_path = "/api/v1/trees",
     responses(
         (status = 200, description = "Successfully attempted to add co-author to tree.", body = AuthorizeCoAuthorResponse, content_type = "application/json"),
         (status = 400, description = "Tree with given id cannot be found."),
@@ -707,6 +710,73 @@ async fn authorize_co_author(
     add_co_author(&db, tree_id, user_id).await?;
 
     Ok(Json(AuthorizeCoAuthorResponse::Success))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/{tree_id}/co-authors/{username}",
+    context_path = "/api/v1/trees",
+    responses(
+        (status = 200, description = "Successfully removed co-author from tree."),
+        (status = 400, description = "Tree with given id cannot be found or the given username cannot be found."),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error.")
+    ),
+    params(
+        ("tree_id" = i32, Path),
+        ("username" = String, Path),
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Remove a co-author from a tree.
+///
+/// Only the owner of the given tree or an admin can do this.
+///
+/// If the given user was already not a co-author of the given tree,
+/// this function will still return a 200 OK status.
+/// This is also the case when trying to remove the owner of a tree as co-author,
+/// because the owner of tree can never become a co-author.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `tree_id` - The id of the tree for which a co-author will be removed.
+///
+/// `username` - The user to revoke co-author rights from.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to remove a co-author from the tree.
+///
+/// Returns [`MissingTree`](ApiError::MissingTree) if the tree from which the user is removed as co-author does not exist.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn deauthorize_co_author(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path((tree_id, username)): Path<(i32, String)>,
+) -> Result<(), ApiError> {
+    let owner_id = get_tree_owner(&db, tree_id)
+        .await?
+        .ok_or(ApiError::MissingTree(tree_id))?;
+
+    // A user can only remove a co-author to their own tree, unless they are an admin.
+    if claims.sub != owner_id && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    // The frontend knows what all possible allowed usernames for this endpoint call are.
+    // So we can just return an ApiError here in the case where the username does not exist.
+    let Some(user_id) = get_user_by_name(&db, &username).await? else {
+        return Err(ApiError::MissingUsername(username));
+    };
+
+    remove_co_author(&db, tree_id, user_id).await?;
+
+    Ok(())
 }
 
 #[utoipa::path(
@@ -815,9 +885,12 @@ pub async fn duplicate_tree(
     let this_user = get_user(&db, claims.sub).await?;
     new_data.title = format!(
         "{} {}",
-        this_user.data.language.to_copy_of_text(),
+        Message::CopyOf.localized(&this_user.data.language),
         new_data.title
     );
+    if new_data.title.chars().count() > TREE_TITLE_MAX_LENGTH {
+        new_data.title = new_data.title[0..(TREE_TITLE_MAX_LENGTH - 1)].to_owned() + "…";
+    }
 
     let tree_add_data = TreeAddData {
         tree_data: new_data,

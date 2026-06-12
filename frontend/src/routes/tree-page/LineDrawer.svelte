@@ -4,7 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
-<!--component
+<!--
+    @component
     This component expects te be in a flex row, and creates two elements:
     one is the svg with lines, the other is a flex column with the children.
  -->
@@ -15,11 +16,17 @@
     import type { Snippet } from 'svelte';
     import { lineOffset, strokeWidth, svgWidth } from './lineConstants';
 
-    let { children }: { children: Snippet } = $props();
+    let {
+        alwaysFullWidth,
+        children
+    }: {
+        alwaysFullWidth: boolean;
+        children: Snippet;
+    } = $props();
 
     let svgHeight = $state(0);
 
-    let container: Element;
+    let container = $state(undefined as Element | undefined);
     let svgLines: SvgLine[] = $state([]);
     type SvgLine = {
         x1: number;
@@ -28,7 +35,15 @@
         y2: number;
     };
 
+    let width = $derived(
+        alwaysFullWidth || container === undefined || container.children.length > 1
+            ? svgWidth
+            : svgWidth / 2
+    );
+
     function redrawLines() {
+        if (container === undefined) return;
+
         svgLines = [];
         svgHeight = 0;
 
@@ -42,9 +57,9 @@
                 container.children[container.children.length - 1].getBoundingClientRect();
             let childTop = lastChildBounding.top;
             svgLines.push({
-                x1: svgWidth / 2,
+                x1: width / 2,
                 y1: lineOffset,
-                x2: svgWidth / 2,
+                x2: width / 2,
                 y2: childTop - top + lineOffset
             });
             svgHeight = strokeWidth + childTop - top + lineOffset;
@@ -56,9 +71,9 @@
             let childTop = childBounding.top;
 
             svgLines.push({
-                x1: svgWidth / 2,
+                x1: width / 2,
                 y1: childTop + lineOffset - top,
-                x2: svgWidth,
+                x2: width,
                 y2: childTop + lineOffset - top
             });
         }
@@ -67,17 +82,21 @@
         svgLines.push({
             x1: 0,
             y1: lineOffset,
-            x2: svgWidth / 2,
+            x2: width / 2,
             y2: lineOffset
         });
     }
 
     onMount(() => {
+        if (container === undefined) return;
+
         // We set everything up so that each time any child element resizes,
         // the `redrawLines` function is called.
         // Any time the list of children changes, we also need to point the ResizeObserver to the new list of children.
         let resizeObserver = new ResizeObserver(redrawLines);
         function setupResizeObservers() {
+            if (container === undefined) return;
+
             resizeObserver.disconnect();
             for (let child of container.children) {
                 resizeObserver.observe(child);
@@ -96,7 +115,7 @@
     });
 </script>
 
-<svg width={svgWidth} height={svgHeight} class="shrink-0">
+<svg {width} height={svgHeight} class="shrink-0">
     {#each svgLines as line (line)}
         <line
             {...line}

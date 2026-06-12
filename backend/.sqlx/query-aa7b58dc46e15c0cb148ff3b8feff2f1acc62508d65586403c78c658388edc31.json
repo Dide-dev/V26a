@@ -1,0 +1,160 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            trees.*,\n            users.name AS owner_name,\n            subjects.name AS \"subject_name?\",\n            languages.name AS language_name,\n            COALESCE(books.title, '') AS book_name,\n            COALESCE(books.author, '') AS book_author,\n            COALESCE(books.edition, '') AS book_edition,\n            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags,\n            ARRAY(SELECT\n                (SELECT name FROM users as co_users WHERE co_users.id = co_authors.user_id)\n                FROM co_authors WHERE tree_id = trees.id\n            ) AS co_authors        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        LEFT JOIN languages ON trees.language_code = languages.code\n        WHERE trees.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "owner_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "last_modified",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "published",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "times_visited",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "last_visited",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "book_chapter",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "book_exercise",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "assignment_text",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "structure",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 13,
+        "name": "language_code",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "subject_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "book_isbn",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 16,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "subject_name?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "language_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "book_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 20,
+        "name": "book_author",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 21,
+        "name": "book_edition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 22,
+        "name": "tags",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 23,
+        "name": "co_authors",
+        "type_info": "VarcharArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "aa7b58dc46e15c0cb148ff3b8feff2f1acc62508d65586403c78c658388edc31"
+}
