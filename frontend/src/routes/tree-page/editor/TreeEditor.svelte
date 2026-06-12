@@ -11,16 +11,9 @@
 <script lang="ts">
     import iconUndo from '$lib/assets/icons/undo.svg?raw';
     import iconRedo from '$lib/assets/icons/redo.svg?raw';
-    import iconExternalLink from '$lib/assets/icons/externalLink.svg?raw';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import {
-        getTreeWithCards,
-        type TreeData,
-        type TreeId,
-        type TreeLinkedData,
-        type TreeMetadata
-    } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeId, type TreeMetadata } from '$lib/api-wrapper/trees';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
     import {
@@ -39,6 +32,7 @@
     import CoAuthor from './CoAuthor.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
     import TreeInformation from '../TreeInformation.svelte';
+    import { ArrowUpRightFromSquareOutline, FileCloneOutline } from 'flowbite-svelte-icons';
 
     let { id }: { id: TreeId } = $props();
 
@@ -91,20 +85,16 @@
     });
 
     let tree: {
-        data: TreeData;
-        linkedData: TreeLinkedData;
+        metadata: TreeMetadata;
         history: TreeHistory;
         sidebar: null | SideBar;
         sidebarElement: null | SidebarComponent;
     } | null = $state(null);
 
-    let treeMetadata: TreeMetadata | null = $state(null);
-
     onMount(async () => {
         const fetchedTree = await getTreeWithCards(id);
         tree = {
-            data: fetchedTree.metadata.data,
-            linkedData: fetchedTree.metadata.linkedData,
+            metadata: fetchedTree.metadata,
             history: initializeHistory(
                 fetchedTree.metadata.genData.id,
                 fetchedTree.structure,
@@ -113,8 +103,6 @@
             sidebar: null,
             sidebarElement: null
         };
-
-        treeMetadata = fetchedTree.metadata;
 
         const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
         const isAdmin = userInfo?.accountType === 'admin';
@@ -153,17 +141,39 @@
     {#if tree === null}
         <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
     {:else}
-        <TreeInformation tree={treeMetadata!}>
+        <TreeInformation tree={tree.metadata}>
             {#snippet titleSnippet()}
-                <h1 class="page__title mt-0">{tree?.data.title}</h1>
+                <div class="flex gap-1">
+                    <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
+                    <div class="flex flex-col justify-center">
+                        <a
+                            href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
+                            aria-label="view"
+                            class="page__title mt-3"
+                            title={m.viewTree()}
+                        >
+                            <ArrowUpRightFromSquareOutline class="h-7 w-7 shrink-0" />
+                        </a>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <button
+                            onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
+                            aria-label="duplicate"
+                            class="page__title mt-3 cursor-pointer"
+                            title={m.duplicateTree()}
+                        >
+                            <FileCloneOutline class="h-7 w-7 shrink-0" />
+                        </button>
+                    </div>
+                </div>
             {/snippet}
         </TreeInformation>
 
         <div class="m-2 flex gap-2">
             <EditMetadata
                 treeId={tree.history.treeId}
-                bind:prevTreeData={tree.data}
-                treeLinkedData={tree.linkedData}
+                bind:prevTreeData={tree.metadata.data}
+                treeLinkedData={tree.metadata.linkedData}
             />
             <button
                 class={[
@@ -192,15 +202,6 @@
             {#if userAllowedToAuthorizeCo}
                 <CoAuthor treeId={tree.history.treeId} bind:coAuthors={tree.linkedData.coAuthors} />
             {/if}
-            <a
-                class="rounded-sm bg-emerald-500 p-1 *:inline"
-                href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
-                target="_blank"
-            >
-                {m.viewTree()}
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html iconExternalLink}
-            </a>
         </div>
 
         <div class="relative w-full">
