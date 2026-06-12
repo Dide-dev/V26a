@@ -4,18 +4,17 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 <script lang="ts">
-    import { Datepicker } from 'flowbite-svelte';
     import { m } from '$lib/paraglide/messages.js';
     import {
         type FilterOptions,
         type TreeListResponse,
         getFilteredList
     } from '$lib/api-wrapper/trees';
-    import { timeFormatString } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import TreeListEntry from '$lib/lists/TreeListEntry.svelte';
     import ListPagination from '$lib/lists/ListPagination.svelte';
+    import TreeFilters from '$lib/lists/TreeFilters.svelte';
 
     let treeListResponse = $state(null as null | TreeListResponse);
 
@@ -77,7 +76,6 @@
             {handlePageChange}
             bind:pageSize
             {handlePageSizeChange}
-            filterFields={treeFilters}
             handleApplyFilters={loadTrees}
         >
             {#if treeListResponse?.trees === null}
@@ -91,43 +89,9 @@
                     {/each}
                 </div>
             {/if}
+            {#snippet filterFields()}
+                <TreeFilters bind:filterOptions />
+            {/snippet}
         </ListPagination>
     </div>
 </div>
-
-{#snippet treeFilters()}
-    <b>{m.creationDate()}</b>
-    <div class="flex">
-        <label class="m-1 flex-1/2">
-            {m.from()}
-            <Datepicker
-                bind:value={
-                    () => filterOptions.createdAfter ?? undefined,
-                    (v) => (filterOptions.createdAfter = v ?? null)
-                }
-                locale={timeFormatString}
-                translationLocale={timeFormatString}
-                placeholder={m.selectDate()}
-            />
-        </label>
-        <label class="m-1 flex-1/2">
-            {m.through()}
-            <Datepicker
-                bind:value={
-                    () => filterOptions.createdBefore ?? undefined,
-                    (v) =>
-                        (filterOptions.createdBefore = v
-                            ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
-                            : null)
-                }
-                locale={timeFormatString}
-                translationLocale={timeFormatString}
-                placeholder={m.selectDate()}
-            />
-        </label>
-    </div>
-    <label class="m-1">
-        {m.ownerId()}
-        <input class="rounded-md border-2" type="number" bind:value={filterOptions.ownerId} />
-    </label>
-{/snippet}
