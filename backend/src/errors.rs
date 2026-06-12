@@ -66,6 +66,7 @@ pub enum ApiError {
     NonEmptyStructure,
     /// An error to return when the user attempts to add a subject that already exists.
     SubjectExists(String),
+    /// An error to return when the classroom id could not be retrieved from the api uri.
     ClassroomIdRetrievalError,
 
     //-------------------//
