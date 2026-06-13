@@ -8,7 +8,7 @@
     import { getFeedback, type FeedbackListResponse } from '$lib/api-wrapper/admin';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import ListPagination from '$lib/lists/ListPagination.svelte';
+    import ListContainer from '$lib/lists/ListContainer.svelte';
     import FeedbackListEntry from '$lib/lists/FeedbackListEntry.svelte';
 
     let feedbackListResponse = $state(null as null | FeedbackListResponse);
@@ -42,7 +42,7 @@
     }
 </script>
 
-<ListPagination
+<ListContainer
     bind:currentPage
     {totalPages}
     {handlePageChange}
@@ -64,4 +64,4 @@
             {/each}
         </div>
     {/if}
-</ListPagination>
+</ListContainer>

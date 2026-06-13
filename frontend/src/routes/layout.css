@@ -55,7 +55,7 @@
         font-weight: var(--font-weight-semibold);
         margin-top: var(--spacing-text-minor);
     }
-    
+
     .text__link {
         color: var(--color-blue-600);
     }

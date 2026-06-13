@@ -8,7 +8,7 @@
     import { getAllUserData, type UserListResponse } from '$lib/api-wrapper/admin';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import ListPagination from '$lib/lists/ListPagination.svelte';
+    import ListContainer from '$lib/lists/ListContainer.svelte';
     import UserListEntry from '$lib/lists/UserListEntry.svelte';
 
     let userListResponse = $state(null as null | UserListResponse);
@@ -40,7 +40,7 @@
     }
 </script>
 
-<ListPagination
+<ListContainer
     bind:currentPage
     {totalPages}
     {handlePageChange}
@@ -60,4 +60,4 @@
             {/each}
         </div>
     {/if}
-</ListPagination>
+</ListContainer>

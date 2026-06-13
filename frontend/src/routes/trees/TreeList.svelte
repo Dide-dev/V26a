@@ -13,7 +13,7 @@
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
     import TreeListEntry from '$lib/lists/TreeListEntry.svelte';
-    import ListPagination from '$lib/lists/ListPagination.svelte';
+    import ListContainer from '$lib/lists/ListContainer.svelte';
     import TreeFilters from '$lib/lists/TreeFilters.svelte';
 
     let {
@@ -78,7 +78,7 @@
     let entriesExpanded = $state(Array.from({ length: 10 }, () => false));
 </script>
 
-<ListPagination
+<ListContainer
     bind:currentPage
     {totalPages}
     {handlePageChange}
@@ -103,4 +103,4 @@
     {#snippet filterFields()}
         <TreeFilters bind:filterOptions {handleFilterUpdate} {onlyOwnTrees} />
     {/snippet}
-</ListPagination>
+</ListContainer>
