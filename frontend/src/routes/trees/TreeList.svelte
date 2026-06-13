@@ -35,10 +35,19 @@
         size: pageSize
     });
 
-    // We update the trees whenever a filter is updated.
-    $effect(() => {
+    onMount(() => {
         loadTrees();
     });
+
+    async function handleFilterUpdate() {
+        await applyFilters();
+    }
+
+    async function applyFilters() {
+        currentPage = 1;
+
+        await loadTrees();
+    }
 
     async function loadTrees() {
         if (filterOptions.searchTerms !== null && filterOptions.searchTerms.trim().length === 0) {
@@ -73,7 +82,7 @@
     {handlePageChange}
     bind:pageSize
     {handlePageSizeChange}
-    handleApplyFilters={loadTrees}
+    handleApplyFilters={applyFilters}
 >
     {#snippet title()}
         <h1 class="page__title">{titleText}</h1>
@@ -90,6 +99,6 @@
         </div>
     {/if}
     {#snippet filterFields()}
-        <TreeFilters bind:filterOptions />
+        <TreeFilters bind:filterOptions {handleFilterUpdate} />
     {/snippet}
 </ListPagination>

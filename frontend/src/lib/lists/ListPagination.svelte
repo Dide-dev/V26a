@@ -175,7 +175,7 @@
             gap: var(--spacing-padding-small);
 
             @media (min-width: 48rem) {
-                grid-template-columns: var(--filter-col-width) 2.3fr;
+                grid-template-columns: var(--filter-col-width) 1.2fr;
             }
 
             @media (width < 48rem) {

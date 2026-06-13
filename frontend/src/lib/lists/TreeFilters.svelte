@@ -10,7 +10,7 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { AccordionItem, Accordion, Datepicker } from 'flowbite-svelte';
+    import { Accordion, AccordionItem, Datepicker } from 'flowbite-svelte';
     import { timeFormatString } from '$lib';
     import {
         type FilterOptions,
@@ -21,12 +21,31 @@
     } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
+    import type { Option } from '$lib/api-wrapper/types';
+    import { tryParseISBN } from '$lib/treeMetadata';
+    import { getUserInfo } from '$lib/api-wrapper/users';
 
     let {
-        filterOptions = $bindable()
+        filterOptions = $bindable(),
+        handleFilterUpdate
     }: {
         filterOptions: FilterOptions;
+        handleFilterUpdate: () => void;
     } = $props();
+
+    let userInfo = getUserInfo();
+
+    let localOptions = $state({
+        searchQuery: null as Option<string>,
+        ownerName: null as Option<string>,
+        book: [] as string[]
+    });
+    let newBook = $state('');
+
+    let errors = $state({
+        bookInvalidIsbns: [false],
+        newBookInvalid: false
+    });
 
     let languages = $state(null as Language[] | null);
 
@@ -79,6 +98,51 @@
         subjects: LanguageSubjects[];
     };
 
+    type Query = {
+        searchTerms: Option<string>;
+        tags: string[];
+    };
+
+    function handleSearch() {
+        const query = localOptions.searchQuery;
+
+        if (query === null || query === '') {
+            filterOptions.searchTerms = null;
+            filterOptions.tag = [];
+        } else {
+            const { searchTerms, tags } = extractTags(query);
+            filterOptions.searchTerms = searchTerms;
+            filterOptions.tag = tags;
+        }
+
+        handleFilterUpdate();
+    }
+
+    function extractTags(query: string): Query {
+        const words = query.trim().split(' ');
+
+        let tags = [];
+
+        for (let i = 0; i < words.length; i++) {
+            if (words[i][0] === '#') {
+                tags.push(words[i].slice(1));
+                words.splice(i, 1);
+                i--;
+            }
+        }
+
+        let searchTerms: Option<string> = words.join(' ');
+
+        if (searchTerms === '') {
+            searchTerms = null;
+        }
+
+        return {
+            searchTerms: searchTerms,
+            tags: tags
+        };
+    }
+
     function getLanguageName(languageCode: string) {
         if (languages === null) return '';
 
@@ -91,19 +155,62 @@
 
     /** Check whether the selected subject is still an option, and if not, reset the subject filter. */
     function checkSubject() {
-        // If all subjects are available, no issues will arise.
-        if (subjectOptions.type === 'all') return;
-
-        // If the subject is included in the selected language, no issues will arise.
+        // If the selected subject does not exist in the newly selected language, reset its value.
         if (
             subjectOptions.type === 'language' &&
-            subjectOptions.subjects !== undefined &&
-            subjectOptions.subjects.filter((s) => s.data.name === filterOptions.subject).length > 0
-        )
-            return;
+            (subjectOptions.subjects === undefined ||
+                subjectOptions.subjects.filter((s) => s.data.name === filterOptions.subject)
+                    .length === 0)
+        ) {
+            filterOptions.subject = null;
+        }
 
-        // Otherwise, reset the subject filter.
-        filterOptions.subject = null;
+        handleFilterUpdate();
+    }
+
+    function handleOwnerUpdate() {
+        if (localOptions.ownerName === '') localOptions.ownerName = null;
+        filterOptions.ownerName = localOptions.ownerName;
+
+        handleFilterUpdate();
+    }
+
+    function handleBookUpdate(i: number) {
+        errors.bookInvalidIsbns[i] = false;
+        let isbn = tryParseISBN(localOptions.book[i]);
+        if (isbn === null) {
+            errors.bookInvalidIsbns[i] = true;
+            return;
+        }
+
+        localOptions.book[i] = isbn;
+        filterOptions.book[i] = localOptions.book[i];
+
+        if (localOptions.book[i] === '') {
+            localOptions.book.splice(i, 1);
+            filterOptions.book.splice(i, 1);
+            errors.bookInvalidIsbns.splice(i, 1);
+        }
+
+        handleFilterUpdate();
+    }
+
+    function handleNewBook() {
+        errors.newBookInvalid = false;
+        let isbn = tryParseISBN(newBook);
+        if (isbn === null) {
+            errors.newBookInvalid = true;
+            return;
+        }
+
+        if (newBook !== '') {
+            localOptions.book.push(newBook);
+            filterOptions.book.push(newBook);
+            errors.bookInvalidIsbns.push(false);
+            newBook = '';
+        }
+
+        handleFilterUpdate();
     }
 
     onMount(async () => {
@@ -111,6 +218,8 @@
         allSubjects = await getAllSubjects();
     });
 </script>
+
+{@render searchBar()}
 
 <Accordion flush multiple>
     <AccordionItem open classes={{ button: 'page__subheading cursor-pointer p-1' }}>
@@ -124,7 +233,7 @@
             {@render languageRadioButton(language)}
         {/each}
     </AccordionItem>
-    <AccordionItem open classes={{ button: 'cursor-pointer page__subheading p-1' }}>
+    <AccordionItem classes={{ button: 'cursor-pointer page__subheading p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                 <p class="ml-1 text-left">{m.subject()}</p>
@@ -132,42 +241,60 @@
         {/snippet}
         {@render subjectFilters()}
     </AccordionItem>
+    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+        {#snippet header()}
+            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                <p class="ml-1 text-left">{m.creationDate()}</p>
+            </AnimatedUnderline>
+        {/snippet}
+        {@render dateFilters()}
+    </AccordionItem>
+    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+        {#snippet header()}
+            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                <p class="ml-1 text-left">{m.owner()}</p>
+            </AnimatedUnderline>
+        {/snippet}
+        {@render ownerFilters()}
+    </AccordionItem>
+    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+        {#snippet header()}
+            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                <p class="ml-1 text-left">{m.book()}</p>
+            </AnimatedUnderline>
+        {/snippet}
+        {@render bookFilters()}
+    </AccordionItem>
+    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+        {#snippet header()}
+            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                <p class="ml-1 text-left">{m.searchOptions()}</p>
+            </AnimatedUnderline>
+        {/snippet}
+        {@render optionCheckboxes()}
+    </AccordionItem>
 </Accordion>
 
-<b>{m.creationDate()}</b>
-<div class="flex">
-    <label class="m-1 flex-1/2">
-        {m.from()}
-        <Datepicker
-            bind:value={
-                () => filterOptions.createdAfter ?? undefined,
-                (v) => (filterOptions.createdAfter = v ?? null)
-            }
-            locale={timeFormatString}
-            translationLocale={timeFormatString}
-            placeholder={m.selectDate()}
+{#snippet searchBar()}
+    <div class="mx-1 flex flex-col gap-1">
+        <label for="search-bar">{m.search()}</label>
+        <input
+            id="search-bar"
+            class="input__text"
+            type="text"
+            name="search"
+            placeholder={m.examplePlaceholder({ value: m.searchTerms() })}
+            bind:value={localOptions.searchQuery}
+            onblur={handleSearch}
+            onkeydown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearch();
+                }
+            }}
         />
-    </label>
-    <label class="m-1 flex-1/2">
-        {m.through()}
-        <Datepicker
-            bind:value={
-                () => filterOptions.createdBefore ?? undefined,
-                (v) =>
-                    (filterOptions.createdBefore = v
-                        ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
-                        : null)
-            }
-            locale={timeFormatString}
-            translationLocale={timeFormatString}
-            placeholder={m.selectDate()}
-        />
-    </label>
-</div>
-<label class="m-1">
-    {m.ownerId()}
-    <input class="rounded-md border-2" type="number" bind:value={filterOptions.ownerName} />
-</label>
+    </div>
+{/snippet}
 
 {#snippet languageRadioButton(language: Language)}
     <div class="ml-1 flex items-center gap-2">
@@ -239,6 +366,7 @@
             type="radio"
             value={subject.data.name}
             bind:group={filterOptions.subject}
+            onchange={handleFilterUpdate}
         />
         <label for="subject-${subject.id}">{subject.data.name}</label>
     </div>
@@ -252,7 +380,126 @@
             type="radio"
             value={null}
             bind:group={filterOptions.subject}
+            onchange={handleFilterUpdate}
         />
         <label for="subject-any">{m.anySubject()}</label>
+    </div>
+{/snippet}
+
+{#snippet dateFilters()}
+    <div class="mx-1">
+        <Datepicker
+            id="date-from"
+            range
+            bind:rangeFrom={
+                () => filterOptions.createdAfter ?? undefined,
+                (v) => {
+                    filterOptions.createdAfter = v ?? null;
+                    handleFilterUpdate();
+                }
+            }
+            bind:rangeTo={
+                () => filterOptions.createdBefore ?? undefined,
+                (v) => {
+                    filterOptions.createdBefore = v
+                        ? new Date(v.getTime() + 24 * 60 * 60 * 1000 - 1) // Add 23:59:59.999 to make this date inclusive
+                        : null;
+                    handleFilterUpdate();
+                }
+            }
+            onchange={handleFilterUpdate}
+            locale={timeFormatString}
+            translationLocale={timeFormatString}
+            placeholder={m.selectDate()}
+            classes={{ dayButton: 'text-neutral-700 hover:text-black' }}
+        />
+    </div>
+{/snippet}
+
+{#snippet ownerFilters()}
+    <div class="mx-1">
+        <input
+            class="input__text w-full"
+            type="text"
+            name="username"
+            bind:value={localOptions.ownerName}
+            placeholder={m.searchByOwner()}
+            onblur={handleOwnerUpdate}
+            onkeydown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleOwnerUpdate();
+                }
+            }}
+        />
+    </div>
+{/snippet}
+
+{#snippet bookFilters()}
+    <div class="mx-1 flex flex-col gap-1">
+        <!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
+        {#each localOptions.book as _, i (i)}
+            <input
+                class={[errors.bookInvalidIsbns[i] && 'error', 'input__text w-full']}
+                type="text"
+                name="isbn"
+                bind:value={localOptions.book[i]}
+                placeholder={m.searchByBook()}
+                onblur={() => handleBookUpdate(i)}
+                onkeydown={(e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleBookUpdate(i);
+                    }
+                }}
+            />
+            {#if errors.bookInvalidIsbns[i]}
+                <p class="text__error">{m.invalidISBN()}</p>
+            {/if}
+        {/each}
+        <input
+            class={[errors.newBookInvalid && 'error', 'input__text w-full']}
+            type="text"
+            name="isbn"
+            bind:value={newBook}
+            placeholder={m.searchByBook()}
+            onblur={handleNewBook}
+            onkeydown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleNewBook();
+                }
+            }}
+        />
+        {#if errors.newBookInvalid}
+            <p class="text__error">{m.invalidISBN()}</p>
+        {/if}
+    </div>
+{/snippet}
+
+{#snippet optionCheckboxes()}
+    <div class="mx-1 flex flex-col gap-1">
+        <div class="flex gap-2">
+            <input
+                id="show-own-private"
+                class="input__checkbox ml-1"
+                type="checkbox"
+                bind:checked={filterOptions.showOwnPrivate}
+                onchange={handleFilterUpdate}
+            />
+            <label for="show-own-private">{m.showOwnPrivate()}</label>
+        </div>
+        {#if userInfo?.accountType === 'admin'}
+            <div class="flex gap-2">
+                <input
+                    id="show-all-private"
+                    class="input__checkbox ml-1"
+                    type="checkbox"
+                    bind:checked={filterOptions.showPrivate}
+                    onchange={handleFilterUpdate}
+                />
+                <label for="show-all-private">{m.showAllPrivate()}</label>
+            </div>
+        {/if}
     </div>
 {/snippet}

@@ -19,7 +19,7 @@
         subject: null,
         createdAfter: null,
         createdBefore: null,
-        showOwnPrivate: true,
+        showOwnPrivate: null,
         editable: null,
         showPrivate: null
     });
