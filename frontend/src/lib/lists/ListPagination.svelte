@@ -15,6 +15,7 @@
     The `currentPage` and `pageSize` fields should be bound to be updated properly.
 
     ## Params
+    - `title: Snippet` - The page title.
     - `currentPage: number` - The bindable current page index.
     - `totalPages: number` - The total number of pages.
     - `handlePageChange: () => void` - The function to run when updating the `currentPage`.

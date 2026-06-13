@@ -24,4 +24,4 @@
     });
 </script>
 
-<TreeList {filterOptions} titleText={m.myTrees()} onlyPrivate={true} />
+<TreeList {filterOptions} titleText={m.myTrees()} onlyOwnTrees={true} />

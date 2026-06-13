@@ -28,11 +28,11 @@
     let {
         filterOptions = $bindable(),
         handleFilterUpdate,
-        onlyPrivate = false
+        onlyOwnTrees = false
     }: {
         filterOptions: FilterOptions;
         handleFilterUpdate: () => void;
-        onlyPrivate?: boolean;
+        onlyOwnTrees?: boolean;
     } = $props();
 
     let userInfo = getUserInfo();
@@ -251,7 +251,7 @@
         {/snippet}
         {@render dateFilters()}
     </AccordionItem>
-    {#if !onlyPrivate}
+    {#if !onlyOwnTrees}
         <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
             {#snippet header()}
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
@@ -269,7 +269,7 @@
         {/snippet}
         {@render bookFilters()}
     </AccordionItem>
-    {#if !onlyPrivate}
+    {#if !onlyOwnTrees}
         <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
             {#snippet header()}
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
