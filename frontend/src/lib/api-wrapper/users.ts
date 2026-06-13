@@ -93,6 +93,14 @@ export type ChangePasswordResponse = {
     succeeded: boolean;
 };
 
+export type PassWordResetSuccess = {
+    type: 'Success';
+};
+
+export type PassWordResetInvalidCode = {
+    type: 'InvalidCode';
+};
+
 /** The private data of the user that is returned when requesting it */
 export type UserGetData = {
     email: string;
@@ -127,6 +135,12 @@ export type ChangePasswordData = {
 /** The data needed to request a change to a user's password */
 export type ResetPasswordRequestData = {
     email: string;
+};
+
+/** The data needed to reset a user's password */
+export type PasswordResetData = {
+    code: string;
+    newPassword: string;
 };
 
 /** Add a user to the database */
@@ -190,4 +204,10 @@ export function requestResetPassword(
     resetPasswordRequestData: ResetPasswordRequestData
 ): Promise<void> {
     return apiCallPostUser('/reset-password-requests', resetPasswordRequestData);
+}
+
+export function resetPassword(
+    passwordResetData: PasswordResetData
+): Promise<PassWordResetSuccess | PassWordResetInvalidCode> {
+    return apiCallPutUser('/reset-password-requests', passwordResetData);
 }
