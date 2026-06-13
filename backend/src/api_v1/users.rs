@@ -15,8 +15,8 @@ use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, RemoveExpired, DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetRequestBody,
-    PasswordResetRequestData, PendingRegisterData, PublicUserData, RegisterData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetRequestBody,
+    PasswordResetRequestData, PendingRegisterData, PublicUserData, RegisterData, RemoveExpired,
     RequestPasswordResetRequestBody, UserData, UserGetData,
 };
 use crate::errors::ApiError;

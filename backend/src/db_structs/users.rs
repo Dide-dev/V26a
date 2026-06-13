@@ -505,7 +505,7 @@ impl FromStr for AccountType {
 #[cfg(test)]
 mod tests {
     use crate::db_structs::users::{
-        RemoveExpired, PasswordResetRequestData, PendingRegisterData, RegisterData,
+        PasswordResetRequestData, PendingRegisterData, RegisterData, RemoveExpired,
     };
     use chrono::Utc;
     use std::collections::HashMap;
