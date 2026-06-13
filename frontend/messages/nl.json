@@ -115,6 +115,7 @@
     "userList": "Gebruikerslijst",
     "feedbackList": "Ingezonden feedback",
     "filters": "Filters",
+    "showFilters": "Toon filters",
     "anyLanguage": "Alle talen",
     "anySubject": "Alle vakken",
     "noSubjectsForLanguage": "Er konden geen vakken worden gevonden bij de geselecteerde taal.",

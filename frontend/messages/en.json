@@ -115,6 +115,7 @@
     "userList": "User list",
     "feedbackList": "Received feedback",
     "filters": "Filters",
+    "showFilters": "Show filters",
     "anyLanguage": "Any language",
     "anySubject": "Any subject",
     "noSubjectsForLanguage": "No languages could be found for the selected language.",

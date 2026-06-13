@@ -94,6 +94,7 @@
                                     'border-gray-500 bg-white transition-colors duration-200 ease-in-out hover:bg-neutral-100'
                                 ]}
                                 onclick={handleFilterToggle}
+                                title={m.showFilters()}
                             >
                                 <FilterOutline class="h-7 w-7 shrink-0" />
                             </button>
