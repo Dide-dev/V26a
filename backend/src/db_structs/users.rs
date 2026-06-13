@@ -212,11 +212,11 @@ pub struct PendingRegisterData {
 }
 
 /// A trait that can be implemented to remove expired data.
-pub trait Clean {
+pub trait RemoveExpired {
     fn remove_expired(&mut self);
 }
 
-impl Clean for HashMap<String, PendingRegisterData> {
+impl RemoveExpired for HashMap<String, PendingRegisterData> {
     /// Removes pending accounts for which the expiration time has passed.
     ///
     /// This function mutates the [`HashMap`] in place.
@@ -242,7 +242,7 @@ pub struct PasswordResetRequestData {
     pub expires: i64,
 }
 
-impl Clean for HashMap<String, PasswordResetRequestData> {
+impl RemoveExpired for HashMap<String, PasswordResetRequestData> {
     /// Removes password change requests for which the expiration time has passed.
     ///
     /// This function mutates the [`HashMap`] in place.
@@ -505,7 +505,7 @@ impl FromStr for AccountType {
 #[cfg(test)]
 mod tests {
     use crate::db_structs::users::{
-        Clean, PasswordResetRequestData, PendingRegisterData, RegisterData,
+        RemoveExpired, PasswordResetRequestData, PendingRegisterData, RegisterData,
     };
     use chrono::Utc;
     use std::collections::HashMap;
