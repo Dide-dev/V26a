@@ -13,22 +13,98 @@
     import { AccordionItem, Accordion, Datepicker } from 'flowbite-svelte';
     import { timeFormatString } from '$lib';
     import {
+        type FilterOptions,
         getAllLanguages,
         getAllSubjects,
         type Language,
         type Subject
     } from '$lib/api-wrapper/trees';
-    import { getLocale } from '$lib/paraglide/runtime';
     import { onMount } from 'svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
 
-    let { filterOptions = $bindable() } = $props();
+    let {
+        filterOptions = $bindable()
+    }: {
+        filterOptions: FilterOptions;
+    } = $props();
 
     let languages = $state(null as Language[] | null);
-    let selectedLanguage: string = $state(getLocale());
 
     let allSubjects = $state(null as Record<string, Subject[]> | null);
-    let subjects = $derived(allSubjects !== null ? allSubjects[selectedLanguage] : []);
+    /**
+     * Subjects, organized in an array that can be easily traversed.
+     *
+     * Sorted by descending number of subjects.
+     */
+    let allSubjectsArray = $derived(
+        Object.entries(allSubjects!)
+            .map(([key, value]) => {
+                return {
+                    type: 'language',
+                    language: key,
+                    subjects: value
+                } as LanguageSubjects;
+            })
+            .sort((a, b) => b.subjects.length - a.subjects.length)
+    );
+    let subjectOptions: Subjects = $derived(
+        allSubjects === null
+            ? { type: 'empty' }
+            : filterOptions.languageCode === null
+              ? {
+                    type: 'all',
+                    subjects: allSubjectsArray
+                }
+              : {
+                    type: 'language',
+                    language: filterOptions.languageCode,
+                    subjects: allSubjects[filterOptions.languageCode]
+                }
+    );
+
+    type Subjects = EmptySubjects | LanguageSubjects | AllSubjects;
+
+    type EmptySubjects = {
+        type: 'empty';
+    };
+
+    type LanguageSubjects = {
+        type: 'language';
+        language: string;
+        subjects: Subject[];
+    };
+
+    type AllSubjects = {
+        type: 'all';
+        subjects: LanguageSubjects[];
+    };
+
+    function getLanguageName(languageCode: string) {
+        if (languages === null) return '';
+
+        let result = languages.filter((l) => l.code === languageCode);
+
+        if (result.length === 0) return '';
+
+        return result[0].name;
+    }
+
+    /** Check whether the selected subject is still an option, and if not, reset the subject filter. */
+    function checkSubject() {
+        // If all subjects are available, no issues will arise.
+        if (subjectOptions.type === 'all') return;
+
+        // If the subject is included in the selected language, no issues will arise.
+        if (
+            subjectOptions.type === 'language' &&
+            subjectOptions.subjects !== undefined &&
+            subjectOptions.subjects.filter((s) => s.data.name === filterOptions.subject).length > 0
+        )
+            return;
+
+        // Otherwise, reset the subject filter.
+        filterOptions.subject = null;
+    }
 
     onMount(async () => {
         languages = await getAllLanguages();
@@ -36,38 +112,25 @@
     });
 </script>
 
-<Accordion flush>
-    <AccordionItem headerClass="cursor-pointer page__subheading p-1">
+<Accordion flush multiple>
+    <AccordionItem open classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                 <p class="text-left">{m.language()}</p>
             </AnimatedUnderline>
         {/snippet}
+        {@render anyLanguageRadioButton()}
         {#each languages as language (language)}
-            <div class="flex items-center gap-2">
-                <input
-                    id="language-${language.code}"
-                    name="language"
-                    type="radio"
-                    value={language.code}
-                    bind:group={selectedLanguage}
-                />
-                <label for="language-${language.code}">{language.name}</label>
-            </div>
+            {@render languageRadioButton(language)}
         {/each}
     </AccordionItem>
-    <AccordionItem headerClass="cursor-pointer page__subheading p-1">
+    <AccordionItem open classes={{ button: 'cursor-pointer page__subheading p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                 <p class="text-left">{m.subject()}</p>
             </AnimatedUnderline>
         {/snippet}
-        {#each subjects as subject (subject)}
-            <div class="flex items-center gap-2">
-                <input id="subject-${subject.id}" name="subject" type="radio" value={subject.id} />
-                <label for="subject-${subject.id}">{subject.name}</label>
-            </div>
-        {/each}
+        {@render subjectFilters()}
     </AccordionItem>
 </Accordion>
 
@@ -103,5 +166,91 @@
 </div>
 <label class="m-1">
     {m.ownerId()}
-    <input class="rounded-md border-2" type="number" bind:value={filterOptions.ownerId} />
+    <input class="rounded-md border-2" type="number" bind:value={filterOptions.ownerName} />
 </label>
+
+{#snippet languageRadioButton(language: Language)}
+    <div class="flex items-center gap-2">
+        <input
+            id="language-${language.code}"
+            name="language"
+            type="radio"
+            value={language.code}
+            bind:group={filterOptions.languageCode}
+            onchange={checkSubject}
+        />
+        <label for="language-${language.code}">{language.name}</label>
+    </div>
+{/snippet}
+
+{#snippet anyLanguageRadioButton()}
+    <div class="flex items-center gap-2">
+        <input
+            id="language-any"
+            name="language"
+            type="radio"
+            value={null}
+            bind:group={filterOptions.languageCode}
+            onchange={checkSubject}
+        />
+        <label for="language-any">{m.anyLanguage()}</label>
+    </div>
+{/snippet}
+
+{#snippet subjectFilters()}
+    {#if subjectOptions.type === 'empty'}
+        <div class="flex items-center gap-2">
+            <em>{m.loading()}</em>
+        </div>
+    {:else}
+        {@render anySubjectRadioButton()}
+    {/if}
+    {#if subjectOptions.type === 'language'}
+        {@render languageSubjectFilters(subjectOptions)}
+    {:else if subjectOptions.type === 'all'}
+        <Accordion flush multiple>
+            {#each subjectOptions.subjects as languageSubjects (languageSubjects)}
+                <AccordionItem classes={{ button: 'cursor-pointer page__subsubheading p-0.5' }}>
+                    {#snippet header()}
+                        <AnimatedUnderline>
+                            <p class="text-left">{getLanguageName(languageSubjects.language)}</p>
+                        </AnimatedUnderline>
+                    {/snippet}
+                    {@render languageSubjectFilters(languageSubjects)}
+                </AccordionItem>
+            {/each}
+        </Accordion>
+    {/if}
+{/snippet}
+
+{#snippet languageSubjectFilters(langSubjects: LanguageSubjects)}
+    {#each langSubjects.subjects as subject (subject)}
+        {@render subjectRadioButton(subject)}
+    {/each}
+{/snippet}
+
+{#snippet subjectRadioButton(subject: Subject)}
+    <div class="flex items-center gap-2">
+        <input
+            id="subject-${subject.id}"
+            name="subject"
+            type="radio"
+            value={subject.data.name}
+            bind:group={filterOptions.subject}
+        />
+        <label for="subject-${subject.id}">{subject.data.name}</label>
+    </div>
+{/snippet}
+
+{#snippet anySubjectRadioButton()}
+    <div class="flex items-center gap-2">
+        <input
+            id="subject-any"
+            name="subject"
+            type="radio"
+            value={null}
+            bind:group={filterOptions.subject}
+        />
+        <label for="subject-any">{m.anySubject()}</label>
+    </div>
+{/snippet}
