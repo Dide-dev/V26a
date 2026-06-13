@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
+    import { getLocale } from '$lib/paraglide/runtime';
     import {
         type FilterOptions,
         type TreeListResponse,
@@ -23,13 +24,17 @@
     let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSize));
 
     let filterOptions: FilterOptions = $state({
+        ownerName: null,
         searchTerms: null,
-        ownerId: null,
         book: [],
+        tag: [],
+        languageCode: getLocale(),
+        subject: null,
         createdAfter: null,
         createdBefore: null,
         showOwnPrivate: true,
-        editable: null
+        editable: null,
+        showPrivate: false
     });
     let paginationOptions: PaginationOptions = $derived({
         page: currentPage,
