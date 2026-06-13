@@ -6,6 +6,13 @@
 
 <!--
     @component
+    Render the set of filters used for tree pages.
+
+    ## Params
+    - `filterOptions: FilterOptions` - The bindable set of filters for trees.
+    - `handleFilterUpdate: () => void` - Function to call when a filter has been changed.
+    - `onlyOwnTrees: boolean` - Optional flag to hide certain fields which are not applicable
+                                if only one's own trees are shown.
 -->
 
 <script lang="ts">
@@ -114,21 +121,23 @@
 
     type Subjects = EmptySubjects | LanguageSubjects | AllSubjects;
 
+    /** No subjects have been found yet. */
     type EmptySubjects = {
         type: 'empty';
     };
-
+    /** Only the subjects for the given language are possible. */
     type LanguageSubjects = {
         type: 'language';
         language: string;
         subjects: Subject[];
     };
-
+    /** All subjects are possible, as there is no active language filter. */
     type AllSubjects = {
         type: 'all';
+        duplicateSubjects: SvelteSet<string>;
         subjects: LanguageSubjects[];
     };
-
+    /** Search bar entries, separated into search terms and tags. */
     type Query = {
         searchTerms: Option<string>;
         tags: string[];
@@ -148,12 +157,17 @@
 
         handleFilterUpdate();
     }
-
+    /**
+     * Extract any tags from a search query, and return both the sanitized search terms and the tags separately.
+     *
+     * Tags are found as words starting with a '#'.
+     */
     function extractTags(query: string): Query {
         const words = query.trim().split(' ');
 
         let tags = [];
 
+        // Find any words starting with a hashtag, add them to the tag list, and remove them from the search terms.
         for (let i = 0; i < words.length; i++) {
             if (words[i][0] === '#') {
                 tags.push(words[i].slice(1));
@@ -206,6 +220,13 @@
         handleFilterUpdate();
     }
 
+    /**
+     * Check if the entered string is a valid ISBN, and if so, update the search parameter.
+     *
+     * If the input field has been cleared out, the input is removed.
+     *
+     * @param i - The index of the book input that was updated.
+     */
     function handleBookUpdate(i: number) {
         errors.bookInvalidIsbns[i] = false;
         let isbn = tryParseISBN(localOptions.book[i]);
@@ -226,6 +247,10 @@
         handleFilterUpdate();
     }
 
+    /**
+     * Check if the entered string is a valid ISBN, and if so,
+     * add the entered string into a new input and update the search parameter.
+     */
     function handleNewBook() {
         errors.newBookInvalid = false;
         let isbn = tryParseISBN(newBook);
