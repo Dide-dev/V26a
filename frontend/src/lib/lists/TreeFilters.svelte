@@ -110,12 +110,6 @@
         languages = await getAllLanguages();
         allSubjects = await getAllSubjects();
     });
-
-    $effect(() => {
-        const _ = filterOptions;
-
-
-    })
 </script>
 
 <Accordion flush multiple>
@@ -219,7 +213,9 @@
                 <AccordionItem classes={{ button: 'cursor-pointer page__subsubheading p-0.5' }}>
                     {#snippet header()}
                         <AnimatedUnderline>
-                            <p class="text-left">{getLanguageName(languageSubjects.language)}</p>
+                            <p class="ml-1 text-left">
+                                {getLanguageName(languageSubjects.language)}
+                            </p>
                         </AnimatedUnderline>
                     {/snippet}
                     {@render languageSubjectFilters(languageSubjects)}

@@ -35,8 +35,9 @@
         size: pageSize
     });
 
-    onMount(async () => {
-        await loadTrees();
+    // We update the trees whenever a filter is updated.
+    $effect(() => {
+        loadTrees();
     });
 
     async function loadTrees() {
