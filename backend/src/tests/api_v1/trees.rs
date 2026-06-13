@@ -14,14 +14,14 @@ use crate::db::trees::is_co_author_of_tree;
 use crate::db_structs::cards::CardData;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeListResponse, TreeMetadata,
-    TreeStructure, TreeWithCards,
+    Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeListResponse,
+    TreeMetadata, TreeStructure, TreeWithCards,
 };
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::tests::api_v1::{
-    create_tree, login, register, register_admin, setup, setup_config, setup_login,
+    create_tree, login, register, register_admin, setup, setup_admin, setup_config, setup_login,
 };
 use axum_test::TestServer;
 use sqlx::{PgPool, query_scalar};
@@ -46,6 +46,145 @@ async fn add_multiple_trees(test_server: &TestServer, trees_data: &[TreeData]) {
             .await
             .assert_status_ok();
     }
+}
+
+#[sqlx::test]
+async fn test_new_invalid_language(db: PgPool) {
+    let server = setup_admin(db).await;
+
+    let new_language = Language {
+        code: "nl".to_string(),
+        name: "Dutch".to_string(),
+    };
+    let response = server.post("/trees/languages").json(&new_language).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::LanguageExists("nl".to_string()).to_string());
+}
+
+#[sqlx::test]
+async fn test_languages(db: PgPool) {
+    let server = setup_admin(db).await;
+
+    let old_language = Language {
+        code: "fc".to_string(),
+        name: "Totally real language".to_string(),
+    };
+    let new_language = Language {
+        code: "fc".to_string(),
+        name: "Echte taal".to_string(),
+    };
+
+    let response = server.get("/trees/languages").await;
+    response.assert_status_ok();
+    let list_before: Vec<Language> = response.json();
+
+    let response = server.post("/trees/languages").json(&old_language).await;
+    response.assert_status_ok();
+
+    let response = server.get("/trees/languages").await;
+    response.assert_status_ok();
+    let list_after: Vec<Language> = response.json();
+    assert_eq!(list_before.len() + 1, list_after.len());
+    assert!(!list_before.contains(&old_language));
+    assert!(list_after.contains(&old_language));
+
+    let response = server
+        .put("/trees/languages/nn")
+        .json(&new_language.name)
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingLanguage("nn".to_string()).to_string());
+
+    let response = server
+        .put(&format!("/trees/languages/{}", new_language.code))
+        .json(&new_language.name)
+        .await;
+    response.assert_status_ok();
+
+    let response = server.get("/trees/languages").await;
+    response.assert_status_ok();
+    let list_after_update: Vec<Language> = response.json();
+    assert!(list_after_update.contains(&new_language));
+}
+
+#[sqlx::test]
+async fn test_new_invalid_subject(db: PgPool) {
+    let server = setup_admin(db).await;
+
+    let new_subject = SubjectData {
+        language_code: "fc".to_string(),
+        name: "frobnication".to_string(),
+    };
+    let response = server.post("/trees/subjects").json(&new_subject).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingLanguage("fc".to_string()).to_string());
+
+    let new_subject = SubjectData {
+        language_code: "nl".to_string(),
+        name: "Engels".to_string(),
+    };
+    let response = server.post("/trees/subjects").json(&new_subject).await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::SubjectExists("Engels".to_string()).to_string());
+}
+
+#[sqlx::test]
+async fn test_subjects(db: PgPool) {
+    let server = setup_admin(db).await;
+
+    let old_subject = SubjectData {
+        language_code: "nl".to_string(),
+        name: "Totally real subject".to_string(),
+    };
+    let new_subject = SubjectData {
+        language_code: "nl".to_string(),
+        name: "Echt vak".to_string(),
+    };
+
+    let response = server.get("/trees/subjects").await;
+    response.assert_status_ok();
+    let subjects_before: HashMap<String, Vec<Subject>> = response.json();
+    let list_before = &subjects_before[&old_subject.language_code];
+
+    let response = server.post("/trees/subjects").json(&old_subject).await;
+    response.assert_status_ok();
+    let id: i32 = response.json();
+
+    let response = server.get("/trees/subjects").await;
+    response.assert_status_ok();
+    let subjects_after: HashMap<String, Vec<Subject>> = response.json();
+    let list_after = &subjects_after[&old_subject.language_code];
+    assert_eq!(list_before.len() + 1, list_after.len());
+    assert!(!list_before.contains(&Subject {
+        id,
+        data: old_subject.clone()
+    }));
+    assert!(list_after.contains(&Subject {
+        id,
+        data: old_subject
+    }));
+
+    let response = server
+        .put(&format!("/trees/subjects/{}", id + 1))
+        .json(&new_subject)
+        .await;
+    response.assert_status_bad_request();
+    response.assert_text(ApiError::MissingSubject(id + 1).to_string());
+
+    let response = server
+        .put(&format!("/trees/subjects/{id}"))
+        .json(&new_subject)
+        .await;
+    response.assert_status_ok();
+
+    let response = server.get("/trees/subjects").await;
+    response.assert_status_ok();
+    let subjects_after_update: HashMap<String, Vec<Subject>> = response.json();
+    let list_after_update = &subjects_after_update[&new_subject.language_code];
+    assert!(list_after_update.contains(&Subject {
+        id,
+        data: new_subject
+    }));
 }
 
 #[sqlx::test]
@@ -1016,7 +1155,6 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 
@@ -1033,7 +1171,6 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Admin,
     };
 
@@ -1064,7 +1201,6 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 
