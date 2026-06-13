@@ -561,6 +561,7 @@ async fn test_filter_tree_list(db: PgPool) {
             language_code: "nl".to_owned(),
             subject_id: Some(subject_id),
             tags: vec!["Coco".to_owned(), "Fork".to_owned()],
+            description: "Een omschrijving van iets met een mooi touWTje.".to_owned(),
             ..Default::default()
         },
         TreeData {
@@ -568,6 +569,7 @@ async fn test_filter_tree_list(db: PgPool) {
             language_code: "fr".to_owned(),
             tags: vec!["Fork".to_owned(), "Gargoyle".to_owned()],
             published: true,
+            description: "Niet mooi".to_owned(),
             ..Default::default()
         },
         TreeData {
@@ -660,6 +662,19 @@ async fn test_filter_tree_list(db: PgPool) {
             trees_data[0].clone()
         ]
     );
+
+    // Search terms
+    let response = server
+        .get("/trees?page=1&size=100&searchTerms=touwtje+dat+een+MOOIE+is")
+        .await;
+    response.assert_status_ok();
+    let requested_trees: TreeListResponse = response.json();
+    let requested_trees_data = requested_trees
+        .trees
+        .into_iter()
+        .map(|t| t.data)
+        .collect::<Vec<_>>();
+    assert_eq!(requested_trees_data, vec![trees_data[0].clone()]);
 
     // Multiple books
     let response = server

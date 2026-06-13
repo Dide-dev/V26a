@@ -36,6 +36,7 @@
 
         let filterOptions: FilterOptions = {
             ownerId: null,
+            searchTerms: null,
             book: [],
             createdAfter: null,
             createdBefore: null,

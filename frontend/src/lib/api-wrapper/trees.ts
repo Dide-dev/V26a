@@ -153,7 +153,10 @@ export type TreeListResponse = {
 };
 
 export type FilterOptions = {
+    searchTerms: Option<string>;
     ownerId: Option<number>;
+    // TODO: the rest of this struct is not exactly the same as on the backend.
+    // This should be fixed in the PR that updates the filters on the frontend.
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;

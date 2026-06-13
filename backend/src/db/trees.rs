@@ -581,7 +581,7 @@ pub async fn db_get_tree_all_data(
 ) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
         r#"SELECT
-            trees.*,
+            trees.id, owner_id, trees.created_at, last_modified, published, times_visited, last_visited, trees.title, description, book_chapter, book_exercise, assignment_text, structure, trees.language_code, subject_id, book_isbn,
             users.name AS owner_name,
             subjects.name AS "subject_name?",
             languages.name AS language_name,
@@ -851,6 +851,7 @@ fn apply_tree_filters<'a>(
 ) -> Result<(), ApiError> {
     let TreeFilters {
         owner_name,
+        search_terms,
         book,
         tag,
         language_code,
@@ -869,6 +870,7 @@ fn apply_tree_filters<'a>(
     // function as it would create an empty WHERE clause.
     let has_conditions = !(*show_private && is_admin)
         || owner_name.is_some()
+        || search_terms.as_ref().is_some_and(|t| !t.trim().is_empty())
         || (*editable && option_user_id.is_some())
         || !book.is_empty()
         || !tag.is_empty()
@@ -905,6 +907,7 @@ fn apply_tree_filters<'a>(
         separated.push_unseparated(")");
     }
     apply_tree_filters_owner_name(&mut separated, owner_name.as_ref());
+    apply_tree_filters_search_terms(&mut separated, search_terms.as_ref());
     apply_tree_filters_editable(&mut separated, *editable, option_user_id);
     apply_tree_filters_books(&mut separated, book)?;
     apply_tree_filters_tags(&mut separated, tag);
@@ -937,6 +940,31 @@ fn apply_tree_filters_owner_name<'args>(
             .push("(users.name = ")
             .push_bind_unseparated(owner_name)
             .push_unseparated(")");
+    }
+}
+
+/// Adds to a Postgres [`QueryBuilder`] the filters for matching search terms.
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `search_terms` - A string of space separated search terms.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_search_terms<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    search_terms: Option<&'args String>,
+) {
+    if let Some(search_terms) = search_terms {
+        let trimmed = search_terms.trim();
+
+        if !trimmed.is_empty() {
+            separated
+                .push("(trees.search_vector @@ websearch_to_tsquery('dutch',")
+                .push_bind_unseparated(trimmed)
+                .push_unseparated("))");
+        }
     }
 }
 
@@ -1756,6 +1784,7 @@ mod tests {
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_name: Some("67".to_owned()),
+            search_terms: Some("Aap".to_owned()),
             book: vec!["0-451-52493-4".to_owned()],
             tag: vec!["funky".to_owned()],
             language_code: Some("nl".to_owned()),
@@ -1769,7 +1798,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
+            "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))) AND (users.name = $3) AND (trees.search_vector @@ websearch_to_tsquery('dutch',$4)) AND (book_isbn = ANY($5)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $6) AND (subjects.name = $7) AND (trees.created_at >= $8) AND (trees.created_at <= $9)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
