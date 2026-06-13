@@ -110,13 +110,19 @@
         languages = await getAllLanguages();
         allSubjects = await getAllSubjects();
     });
+
+    $effect(() => {
+        const _ = filterOptions;
+
+
+    })
 </script>
 
 <Accordion flush multiple>
     <AccordionItem open classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                <p class="text-left">{m.language()}</p>
+                <p class="ml-1 text-left">{m.language()}</p>
             </AnimatedUnderline>
         {/snippet}
         {@render anyLanguageRadioButton()}
@@ -127,7 +133,7 @@
     <AccordionItem open classes={{ button: 'cursor-pointer page__subheading p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                <p class="text-left">{m.subject()}</p>
+                <p class="ml-1 text-left">{m.subject()}</p>
             </AnimatedUnderline>
         {/snippet}
         {@render subjectFilters()}
@@ -170,7 +176,7 @@
 </label>
 
 {#snippet languageRadioButton(language: Language)}
-    <div class="flex items-center gap-2">
+    <div class="ml-1 flex items-center gap-2">
         <input
             id="language-${language.code}"
             name="language"
@@ -184,7 +190,7 @@
 {/snippet}
 
 {#snippet anyLanguageRadioButton()}
-    <div class="flex items-center gap-2">
+    <div class="ml-1 flex items-center gap-2">
         <input
             id="language-any"
             name="language"
@@ -199,7 +205,7 @@
 
 {#snippet subjectFilters()}
     {#if subjectOptions.type === 'empty'}
-        <div class="flex items-center gap-2">
+        <div class="ml-1 flex items-center gap-2">
             <em>{m.loading()}</em>
         </div>
     {:else}
@@ -230,7 +236,7 @@
 {/snippet}
 
 {#snippet subjectRadioButton(subject: Subject)}
-    <div class="flex items-center gap-2">
+    <div class="ml-1 flex items-center gap-2">
         <input
             id="subject-${subject.id}"
             name="subject"
@@ -243,7 +249,7 @@
 {/snippet}
 
 {#snippet anySubjectRadioButton()}
-    <div class="flex items-center gap-2">
+    <div class="ml-1 flex items-center gap-2">
         <input
             id="subject-any"
             name="subject"

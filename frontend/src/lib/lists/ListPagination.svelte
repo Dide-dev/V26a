@@ -28,12 +28,14 @@
 
 <script lang="ts">
     import { PaginationNav } from 'flowbite-svelte';
-    import { ChevronLeftOutline, ChevronRightOutline } from 'flowbite-svelte-icons';
+    import { ChevronLeftOutline, ChevronRightOutline, FilterOutline } from 'flowbite-svelte-icons';
     import { m } from '$lib/paraglide/messages.js';
     import type { Snippet } from 'svelte';
-    import FilterContainer from '$lib/lists/FilterContainer.svelte';
+    import { Tween } from 'svelte/motion';
+    import { cubicOut } from 'svelte/easing';
 
     let {
+        title,
         currentPage = $bindable(),
         totalPages,
         handlePageChange,
@@ -43,6 +45,7 @@
         handleApplyFilters = null,
         children
     }: {
+        title: Snippet;
         currentPage: number;
         totalPages: number;
         handlePageChange: () => void;
@@ -52,28 +55,132 @@
         handleApplyFilters: (() => void) | null;
         children: Snippet;
     } = $props();
+
+    let filtersShown = $state(false);
+
+    let filterFraction = new Tween(0, {
+        duration: 400,
+        easing: cubicOut
+    });
+
+    function handleFilterToggle() {
+        filtersShown = !filtersShown;
+
+        filterFraction.target = filtersShown ? 1 : 0;
+    }
+
+    function handleSubmit(e: SubmitEvent) {
+        e.preventDefault();
+
+        handleFilterToggle();
+        handleApplyFilters!();
+    }
 </script>
 
-<FilterContainer bind:pageSize {handlePageSizeChange} {handleApplyFilters} {filterFields} />
+<div class={['flex max-h-full w-7/8 max-w-3xl flex-col']}>
+    <div class="list-grid" style={`--filter-col-width: ${filterFraction.current}fr`}>
+        <div></div>
+        <div>
+            {@render title()}
+            <div class="flex w-full flex-col items-center justify-center overflow-auto">
+                <div class="flex w-full flex-col">
+                    <form class="mb-2 flex w-full flex-row items-center justify-between gap-3">
+                        {#if filterFields !== null}
+                            <button
+                                type="button"
+                                class={[
+                                    'ml-1 flex h-10 w-16 cursor-pointer items-center justify-center rounded-md border-2',
+                                    'border-gray-500 bg-white transition-colors duration-200 ease-in-out hover:bg-neutral-100'
+                                ]}
+                                onclick={handleFilterToggle}
+                            >
+                                <FilterOutline class="h-7 w-7 shrink-0" />
+                            </button>
+                        {/if}
+                        <div class="flex flex-row gap-2">
+                            <label for="page-size" class="flex items-center text-right">
+                                {m.numberPerPage()}
+                            </label>
+                            <select
+                                id="page-size"
+                                class={[
+                                    'input__select',
+                                    'mr-1 flex h-10 w-20 cursor-pointer items-center justify-center rounded-md border-2',
+                                    'border-gray-500 transition-colors duration-200 ease-in-out hover:bg-neutral-100'
+                                ]}
+                                bind:value={pageSize}
+                                onchange={handlePageSizeChange}
+                            >
+                                <option value={5}> 5 </option>
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-{@render children()}
+        <div class="overflow-x-hidden overflow-y-auto">
+            {#if filterFields !== null}
+                <div
+                    class={[
+                        !filtersShown && 'not-md:hidden',
+                        !filtersShown && filterFraction.current === 0 && 'hidden'
+                    ]}
+                >
+                    <h3 class="page__subheading">{m.filters()}</h3>
+                    <form class="completed flex w-full flex-col gap-2" onsubmit={handleSubmit}>
+                        {@render filterFields!()}
+                    </form>
+                </div>
+            {/if}
+        </div>
 
-{#if totalPages > 0}
-    <PaginationNav
-        {currentPage}
-        {totalPages}
-        onPageChange={(newPage: number) => {
-            currentPage = newPage;
-            handlePageChange();
-        }}
-    >
-        {#snippet prevContent()}
-            <span class="sr-only">{m.previousPage()}</span>
-            <ChevronLeftOutline class="h-5 w-5" />
-        {/snippet}
-        {#snippet nextContent()}
-            <span class="sr-only">{m.nextPage()}</span>
-            <ChevronRightOutline class="h-5 w-5" />
-        {/snippet}
-    </PaginationNav>
-{/if}
+        <div class="flex flex-col items-center justify-start overflow-y-auto">
+            {@render children()}
+
+            {#if totalPages > 0}
+                <PaginationNav
+                    {currentPage}
+                    {totalPages}
+                    onPageChange={(newPage: number) => {
+                        currentPage = newPage;
+                        handlePageChange();
+                    }}
+                >
+                    {#snippet prevContent()}
+                        <span class="sr-only">{m.previousPage()}</span>
+                        <ChevronLeftOutline class="h-5 w-5" />
+                    {/snippet}
+                    {#snippet nextContent()}
+                        <span class="sr-only">{m.nextPage()}</span>
+                        <ChevronRightOutline class="h-5 w-5" />
+                    {/snippet}
+                </PaginationNav>
+            {/if}
+        </div>
+    </div>
+</div>
+
+<style>
+    @layer components {
+        .list-grid {
+            display: grid;
+            grid-auto-flow: row;
+            overflow: auto;
+            align-items: start;
+
+            gap: var(--spacing-padding-small);
+
+            @media (min-width: 48rem) {
+                grid-template-columns: var(--filter-col-width) 2.3fr;
+            }
+
+            @media (width < 48rem) {
+                grid-template-columns: auto;
+            }
+        }
+    }
+</style>

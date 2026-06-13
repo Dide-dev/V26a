@@ -72,31 +72,29 @@
     let entriesExpanded = $state(Array.from({ length: 10 }, () => false));
 </script>
 
-<div class="flex w-7/8 max-w-xl flex-col">
-    <h1 class="page__title">{m.allTrees()}</h1>
-    <div class="flex w-full flex-col items-center justify-center overflow-auto">
-        <ListPagination
-            bind:currentPage
-            {totalPages}
-            {handlePageChange}
-            bind:pageSize
-            {handlePageSizeChange}
-            handleApplyFilters={loadTrees}
-        >
-            {#if treeListResponse?.trees === null}
-                <p>{m.loading()}</p>
-            {:else if treeListResponse?.trees.length === 0}
-                <p class="m-4 font-semibold italic">{m.noAllTreesFound()}</p>
-            {:else}
-                <div class="list__container">
-                    {#each treeListResponse?.trees as tree, i (tree.genData.id)}
-                        <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
-                    {/each}
-                </div>
-            {/if}
-            {#snippet filterFields()}
-                <TreeFilters bind:filterOptions />
-            {/snippet}
-        </ListPagination>
-    </div>
-</div>
+<ListPagination
+    bind:currentPage
+    {totalPages}
+    {handlePageChange}
+    bind:pageSize
+    {handlePageSizeChange}
+    handleApplyFilters={loadTrees}
+>
+    {#snippet title()}
+        <h1 class="page__title">{m.allTrees()}</h1>
+    {/snippet}
+    {#if treeListResponse?.trees === null}
+        <p>{m.loading()}</p>
+    {:else if treeListResponse?.trees.length === 0}
+        <p class="m-4 font-semibold italic">{m.noAllTreesFound()}</p>
+    {:else}
+        <div class="list__container">
+            {#each treeListResponse?.trees as tree, i (tree.genData.id)}
+                <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
+            {/each}
+        </div>
+    {/if}
+    {#snippet filterFields()}
+        <TreeFilters bind:filterOptions />
+    {/snippet}
+</ListPagination>
