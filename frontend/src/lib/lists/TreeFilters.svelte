@@ -47,14 +47,15 @@
 
     let localOptions = $state({
         searchQuery: null as Option<string>,
-        ownerName: null as Option<string>,
-        book: [] as string[]
+        book: [] as string[],
+        ownerName: null as Option<string>
     });
     let newBook = $state('');
 
     let errors = $state({
         bookInvalidIsbns: [false],
-        newBookInvalid: false
+        newBookInvalid: false,
+        malformedUsername: false
     });
 
     let languages = $state(null as Language[] | null);
@@ -289,6 +290,14 @@
     <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                <p class="ml-1 text-left">{m.creationDate()}</p>
+            </AnimatedUnderline>
+        {/snippet}
+        {@render dateFilters()}
+    </AccordionItem>
+    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+        {#snippet header()}
+            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                 <p class="ml-1 text-left">{m.language()}</p>
             </AnimatedUnderline>
         {/snippet}
@@ -308,10 +317,10 @@
     <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                <p class="ml-1 text-left">{m.creationDate()}</p>
+                <p class="ml-1 text-left">{m.book()}</p>
             </AnimatedUnderline>
         {/snippet}
-        {@render dateFilters()}
+        {@render bookFilters()}
     </AccordionItem>
     {#if !onlyOwnTrees}
         <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
@@ -322,16 +331,6 @@
             {/snippet}
             {@render ownerFilters()}
         </AccordionItem>
-    {/if}
-    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
-        {#snippet header()}
-            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                <p class="ml-1 text-left">{m.book()}</p>
-            </AnimatedUnderline>
-        {/snippet}
-        {@render bookFilters()}
-    </AccordionItem>
-    {#if !onlyOwnTrees}
         <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
             {#snippet header()}
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
