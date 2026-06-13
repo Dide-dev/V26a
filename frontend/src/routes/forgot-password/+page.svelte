@@ -74,7 +74,7 @@
                 </ParaglideMessage>
             </p>
 
-            <button type="submit" class="cursor-pointer rounded px-3 py-1 mt-4" onclick={gotoLogin}
+            <button type="submit" class="mt-4 cursor-pointer rounded px-3 py-1" onclick={gotoLogin}
                 >{m.login()}
             </button>
         {/if}

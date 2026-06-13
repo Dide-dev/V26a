@@ -24,7 +24,6 @@ use crate::{ArcState, get_connection};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-use crate::api_v1::users::PasswordResetResponse::{InvalidCode, Success};
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
 use crate::messages::Message::{
@@ -574,7 +573,7 @@ pub enum PasswordResetResponse {
 ///
 /// # Returns
 /// [`Success`](PasswordResetResponse::Success) if successful,
-/// or [`InvalidCode`](UserResponse::InvalidCode) if the code is invalid or expired.
+/// or [`InvalidCode`](PasswordResetResponse::InvalidCode) if the code is invalid or expired.
 ///
 /// # Errors
 /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
@@ -598,12 +597,12 @@ async fn reset_password(
     let entry = match reset_password_requests.entry(password_reset_body.code) {
         Entry::Occupied(occupied_entry) => {
             if occupied_entry.get().expires < Utc::now().timestamp() {
-                return Ok(Json(InvalidCode));
+                return Ok(Json(PasswordResetResponse::InvalidCode));
             }
             occupied_entry
         }
         Entry::Vacant(_) => {
-            return Ok(Json(InvalidCode));
+            return Ok(Json(PasswordResetResponse::InvalidCode));
         }
     };
 
@@ -616,7 +615,7 @@ async fn reset_password(
     // All other sessions of the account are invalidated if password is changed.
     delete_all_sessions_user(&db, user_id).await?;
 
-    Ok(Json(Success))
+    Ok(Json(PasswordResetResponse::Success))
 }
 
 #[utoipa::path(
