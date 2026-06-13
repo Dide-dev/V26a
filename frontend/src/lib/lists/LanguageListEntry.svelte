@@ -11,23 +11,26 @@
     ## Params
     - `language: Language` - The language to display.
     - `creating: boolean` - Whether the entry is for creating a new language.
+    - `onUpdate: () => Promise<string | null>` - A callback for when the language is to be updated.
     - `onCreate: () => Promise<string | null>` - A callback for when the language is to be created.
     - `onCancel: () => void` - A callback for when language creation is cancelled.
 -->
 
 <script lang="ts">
-    import { updateLanguage, type Language } from '$lib/api-wrapper/trees';
+    import { type Language } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages.js';
     import { CloseOutline, EditOutline, ArrowLeftToBracketOutline } from 'flowbite-svelte-icons';
 
     let {
         language = $bindable(),
         creating = false,
+        onUpdate = async () => null,
         onCreate = async () => null,
         onCancel = () => {}
     }: {
         language: Language;
         creating?: boolean;
+        onUpdate?: () => Promise<string | null>;
         onCreate?: () => Promise<string | null>;
         onCancel?: () => void;
     } = $props();
@@ -37,9 +40,11 @@
     let oldLanguage: Language = $state.snapshot(language);
 
     async function update() {
-        await updateLanguage(language.code, language.name);
-        oldLanguage = language;
-        editing = false;
+        errorMessage = await onUpdate();
+        if (errorMessage === null) {
+            oldLanguage = language;
+            editing = false;
+        }
     }
 
     function cancel() {
@@ -141,6 +146,11 @@
                     </button>
                 </div>
             </form>
+            {#if errorMessage !== null}
+                <p class="text__error">
+                    {errorMessage}
+                </p>
+            {/if}
         {:else}
             <div class="flex w-full flex-row justify-between gap-2">
                 <strong>{language.name} ({language.code})</strong>

@@ -102,6 +102,9 @@
     "addLanguage": "Add language",
     "editLanguage": "Edit language",
     "saveLanguage": "Save language",
+    "addSubject": "Add subject",
+    "editSubject": "Edit subject",
+    "saveSubject": "Save subject",
     "edit": "Edit",
     "add": "Add",
     "preview": "Preview",
@@ -115,6 +118,7 @@
     "enabled": "enabled",
     "userList": "User list",
     "languageList": "Language list",
+    "subjectList": "Subject list",
     "feedbackList": "Received feedback",
     "newPassword": "New password",
     "oldPassword": "Old password",
@@ -215,5 +219,8 @@
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
     "logout": "Logout",
-    "languageExists": "A language with code '{code}' already exists."
+    "languageCodeExists": "A language with code '{code}' already exists.",
+    "languageNameExists": "A language named '{name}' already exists.",
+    "missingLanguage": "A language with code '{code}' does not exist.",
+    "subjectExists": "A subject with language code '{languageCode}' and name '{name}' already exists."
 }

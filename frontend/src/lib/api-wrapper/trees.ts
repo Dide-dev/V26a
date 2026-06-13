@@ -295,8 +295,8 @@ export function getAllSubjects(): Promise<Record<string, Subject[]>> {
 }
 
 /** Add a new subject. */
-export function addSubject(subject: Subject): Promise<void> {
-    return apiCallPostTree('/subjects', subject);
+export function addSubject(subjectData: SubjectData): Promise<number> {
+    return apiCallPostTree('/subjects', subjectData);
 }
 
 /** Update an existing subject. */
