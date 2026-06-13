@@ -42,27 +42,26 @@
     }
 </script>
 
-<div class="flex w-7/8 max-w-lg flex-col">
-    <h1 class="page__title">{m.feedbackList()}</h1>
+<ListPagination
+    bind:currentPage
+    {totalPages}
+    {handlePageChange}
+    bind:pageSize
+    {handlePageSizeChange}
+>
+    {#snippet title()}
+        <h1 class="page__title">{m.feedbackList()}</h1>
+    {/snippet}
+
     {#if feedbackListResponse?.feedback === null}
         <p>{m.loading()}</p>
     {:else if feedbackListResponse?.feedback.length === 0}
         <p>{m.noFeedbackFound()}</p>
     {:else}
-        <div class="flex w-full flex-col items-center justify-center overflow-auto">
-            <ListPagination
-                bind:currentPage
-                {totalPages}
-                {handlePageChange}
-                bind:pageSize
-                {handlePageSizeChange}
-            >
-                <div class="list__container">
-                    {#each feedbackListResponse?.feedback as feedback, i (feedback)}
-                        <FeedbackListEntry {feedback} expanded={entriesExpanded[i]} />
-                    {/each}
-                </div>
-            </ListPagination>
+        <div class="list__container">
+            {#each feedbackListResponse?.feedback as feedback, i (feedback)}
+                <FeedbackListEntry {feedback} expanded={entriesExpanded[i]} />
+            {/each}
         </div>
     {/if}
-</div>
+</ListPagination>

@@ -51,8 +51,8 @@
         handlePageChange: () => void;
         pageSize: number;
         handlePageSizeChange: () => void;
-        filterFields: Snippet | null;
-        handleApplyFilters: (() => void) | null;
+        filterFields?: Snippet | null;
+        handleApplyFilters?: (() => void) | null;
         children: Snippet;
     } = $props();
 

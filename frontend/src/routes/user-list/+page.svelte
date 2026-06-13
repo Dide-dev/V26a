@@ -40,25 +40,24 @@
     }
 </script>
 
-<div class="flex w-7/8 max-w-lg flex-col">
-    <h1 class="page__title">{m.userList()}</h1>
+<ListPagination
+    bind:currentPage
+    {totalPages}
+    {handlePageChange}
+    bind:pageSize
+    {handlePageSizeChange}
+>
+    {#snippet title()}
+        <h1 class="page__title">{m.userList()}</h1>
+    {/snippet}
+
     {#if userListResponse?.users === null}
         <p>{m.loading()}</p>
     {:else}
-        <div class="flex w-full flex-col items-center justify-center overflow-auto">
-            <ListPagination
-                bind:currentPage
-                {totalPages}
-                {handlePageChange}
-                bind:pageSize
-                {handlePageSizeChange}
-            >
-                <div class="list__container">
-                    {#each userListResponse?.users as user (user)}
-                        <UserListEntry {user} />
-                    {/each}
-                </div>
-            </ListPagination>
+        <div class="list__container">
+            {#each userListResponse?.users as user (user)}
+                <UserListEntry {user} />
+            {/each}
         </div>
     {/if}
-</div>
+</ListPagination>
