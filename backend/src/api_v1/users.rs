@@ -620,7 +620,7 @@ async fn reset_password(
     entry.remove();
 
     // All other sessions of the account are invalidated if password is changed.
-    delete_all_sessions_user(&db, user_id).await?;
+    Claims::delete_all_sessions(&db, &user_id).await?;
 
     Ok(Json(PasswordResetResponse::Success))
 }
