@@ -183,7 +183,7 @@
                 {@html iconRedo}
             </button>
             {#if userAllowedToAuthorizeCo}
-                <CoAuthor treeId={tree.history.treeId} />
+                <CoAuthor treeId={tree.history.treeId} bind:coAuthors={tree.linkedData.coAuthors} />
             {/if}
             <a
                 class="rounded-sm bg-emerald-500 p-1 *:inline"

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO classroom_tokens (token) VALUES ($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b281e2e46a36ad931bec7cdb10803b68a47b14e4d4d122b2ade54255ed20a5e4"
+}

@@ -11,15 +11,14 @@ pub mod cards_library;
 pub mod classrooms;
 pub mod feedback;
 pub mod images;
+pub mod lessons;
 pub mod session;
 pub mod trees;
 pub mod users;
 
-use crate::errors::ApiError;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::Request;
-use axum_extra::extract::CookieJar;
 use governor::clock::QuantaInstant;
 use governor::middleware::NoOpMiddleware;
 use std::net::SocketAddr;
@@ -32,12 +31,15 @@ use tower_governor::key_extractor::KeyExtractor;
 
 use crate::ArcState;
 use crate::api_v1::cards_library::cards_library;
+use crate::api_v1::lessons::lessons;
 use crate::api_v1::{
     admin::admin, cards::cards, classrooms::classrooms, feedback::feedback, images::images,
     trees::trees, users::users,
 };
 use auth::auth;
 use axum::Router;
+use chrono::{DateTime, Utc};
+use rand::distr::{Alphanumeric, SampleString};
 
 #[derive(Clone)]
 pub struct IpKeyExtractor;
@@ -77,6 +79,7 @@ pub fn v1_api(state: ArcState) -> Router<ArcState> {
         .nest("/classrooms", classrooms())
         .nest("/feedback", feedback())
         .nest("/images", images())
+        .nest("/lessons", lessons())
         .nest("/library", cards_library())
         .nest("/trees", trees())
         .nest("/users", users())
@@ -99,17 +102,18 @@ pub fn rate_limit_layer(
     GovernorLayer::new(config)
 }
 
-/// Get the value of the session cookie from the [`CookieJar`]
-///
-/// # Arguments
-/// `jar` - The [`CookieJar`] returned from a request.
+/// Helper function that creates a token.
 ///
 /// # Returns
-/// The value of a session cookie as a [`String`] if successful, or [`MissingAuthentication`](ApiError::MissingAuthentication) if not.
-pub fn extract_token(jar: &CookieJar) -> Result<String, ApiError> {
-    Ok(jar
-        .get("session")
-        .ok_or(ApiError::MissingAuthentication)?
-        .value()
-        .to_string())
+///
+/// Returns a [`String`] containing the token.
+///
+/// Returns a [`DateTime<Utc>`] containing the expiration time.
+pub fn create_token(session_duration: i64) -> (String, DateTime<Utc>) {
+    let token = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
+    let expires_at = Utc::now() + chrono::Duration::seconds(session_duration);
+    (token, expires_at)
 }

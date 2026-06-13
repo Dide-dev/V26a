@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE languages SET name = $1 WHERE code = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "94a76e4b4f9f4fd93b0bbd14183464a02e4a300c0914611ba08b4c8bd91f4985"
+}

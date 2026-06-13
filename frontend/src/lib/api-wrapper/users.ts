@@ -4,6 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
+import type { ClassroomListResponse } from './classrooms';
 import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 import type { Option } from './types';
 
@@ -210,4 +212,13 @@ export function resetPassword(
     passwordResetData: PasswordResetData
 ): Promise<PassWordResetSuccess | PassWordResetInvalidCode> {
     return apiCallPutUser('/reset-password-requests', passwordResetData);
+}
+
+/** Gets all the classrooms of a user from the database */
+export function getAllOwnedClassrooms(
+    userId: UserId,
+    pageOptions: PaginationOptions
+): Promise<ClassroomListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetUser(`/${userId}/classrooms?${params}`);
 }
