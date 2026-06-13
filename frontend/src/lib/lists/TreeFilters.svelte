@@ -24,6 +24,7 @@
     import type { Option } from '$lib/api-wrapper/types';
     import { tryParseISBN } from '$lib/treeMetadata';
     import { getUserInfo } from '$lib/api-wrapper/users';
+    import { SvelteSet } from 'svelte/reactivity';
 
     let {
         filterOptions = $bindable(),
@@ -51,35 +52,63 @@
 
     let languages = $state(null as Language[] | null);
 
-    let allSubjects = $state(null as Record<string, Subject[]> | null);
+    let subjectsRecord = $state(null as Record<string, Subject[]> | null);
     /**
-     * Subjects, organized in an array that can be easily traversed.
+     * Organize subjects by language, with any duplicates between languages separated.
      *
-     * Sorted by descending number of subjects.
+     * Language groups are ordered by descending number of subjects, after removing duplicates.
      */
-    let allSubjectsArray = $derived(
-        Object.entries(allSubjects!)
-            .map(([key, value]) => {
-                return {
-                    type: 'language',
-                    language: key,
-                    subjects: value
-                } as LanguageSubjects;
-            })
-            .sort((a, b) => b.subjects.length - a.subjects.length)
-    );
+    let allSubjects: AllSubjects = $derived.by(() => {
+        // Convert into an array.
+        let subjectsByLanguage = Object.entries(subjectsRecord!).map(([key, value]) => {
+            return {
+                type: 'language',
+                language: key,
+                subjects: value
+            } as LanguageSubjects;
+        });
+
+        // Find duplicate subject names.
+        let foundSubjects: SvelteSet<string> = new SvelteSet();
+        let dupSubjectNames: SvelteSet<string> = new SvelteSet();
+        for (const langSubjects of subjectsByLanguage) {
+            for (const subject of langSubjects.subjects.map((s) => s.data.name)) {
+                if (foundSubjects.has(subject)) {
+                    dupSubjectNames.add(subject);
+                } else {
+                    foundSubjects.add(subject);
+                }
+            }
+        }
+
+        // Filter out any found duplicates from the language-separated subject arrays.
+        subjectsByLanguage.forEach((ls) => {
+            ls.subjects = ls.subjects.filter((s) => !dupSubjectNames.has(s.data.name));
+        });
+
+        // Filter out empty language-separated subject arrays and sort by descending number of subjects.
+        subjectsByLanguage = subjectsByLanguage
+            .filter((ls) => ls.subjects.length > 0)
+            .sort((a, b) => b.subjects.length - a.subjects.length);
+
+        return {
+            type: 'all',
+            duplicateSubjects: dupSubjectNames,
+            subjects: subjectsByLanguage
+        };
+    });
+    /**
+     * Current options for subjects to select, based on selected language.
+     */
     let subjectOptions: Subjects = $derived(
-        allSubjects === null
+        subjectsRecord === null
             ? { type: 'empty' }
             : filterOptions.languageCode === null
-              ? {
-                    type: 'all',
-                    subjects: allSubjectsArray
-                }
+              ? allSubjects
               : {
                     type: 'language',
                     language: filterOptions.languageCode,
-                    subjects: allSubjects[filterOptions.languageCode]
+                    subjects: subjectsRecord[filterOptions.languageCode]
                 }
     );
 
@@ -217,7 +246,7 @@
 
     onMount(async () => {
         languages = await getAllLanguages();
-        allSubjects = await getAllSubjects();
+        subjectsRecord = await getAllSubjects();
     });
 </script>
 
@@ -341,6 +370,15 @@
     {#if subjectOptions.type === 'language'}
         {@render languageSubjectFilters(subjectOptions)}
     {:else if subjectOptions.type === 'all'}
+        {#each subjectOptions.duplicateSubjects as subjectName, i (subjectName)}
+            {@render subjectRadioButton({
+                id: -i,
+                data: {
+                    name: subjectName,
+                    languageCode: ''
+                }
+            })}
+        {/each}
         <Accordion flush multiple>
             {#each subjectOptions.subjects as languageSubjects (languageSubjects)}
                 <AccordionItem classes={{ button: 'cursor-pointer page__subsubheading p-0.5' }}>
