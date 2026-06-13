@@ -7,7 +7,6 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import type { FilterOptions } from '$lib/api-wrapper/trees';
-    import { getLocale } from '$lib/paraglide/runtime';
     import TreeList from './TreeList.svelte';
 
     let filterOptions: FilterOptions = $state({
@@ -15,7 +14,7 @@
         searchTerms: null,
         book: [],
         tag: [],
-        languageCode: getLocale(),
+        languageCode: null,
         subject: null,
         createdAfter: null,
         createdBefore: null,

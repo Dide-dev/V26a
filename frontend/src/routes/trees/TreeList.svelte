@@ -18,10 +18,12 @@
 
     let {
         filterOptions,
-        titleText
+        titleText,
+        onlyPrivate = false
     }: {
         filterOptions: FilterOptions;
         titleText: string;
+        onlyPrivate?: boolean;
     } = $props();
 
     let treeListResponse = $state(null as null | TreeListResponse);
@@ -99,6 +101,6 @@
         </div>
     {/if}
     {#snippet filterFields()}
-        <TreeFilters bind:filterOptions {handleFilterUpdate} />
+        <TreeFilters bind:filterOptions {handleFilterUpdate} {onlyPrivate} />
     {/snippet}
 </ListPagination>

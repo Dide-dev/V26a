@@ -27,10 +27,12 @@
 
     let {
         filterOptions = $bindable(),
-        handleFilterUpdate
+        handleFilterUpdate,
+        onlyPrivate = false
     }: {
         filterOptions: FilterOptions;
         handleFilterUpdate: () => void;
+        onlyPrivate?: boolean;
     } = $props();
 
     let userInfo = getUserInfo();
@@ -222,7 +224,7 @@
 {@render searchBar()}
 
 <Accordion flush multiple>
-    <AccordionItem open classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                 <p class="ml-1 text-left">{m.language()}</p>
@@ -249,14 +251,16 @@
         {/snippet}
         {@render dateFilters()}
     </AccordionItem>
-    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
-        {#snippet header()}
-            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                <p class="ml-1 text-left">{m.owner()}</p>
-            </AnimatedUnderline>
-        {/snippet}
-        {@render ownerFilters()}
-    </AccordionItem>
+    {#if !onlyPrivate}
+        <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+            {#snippet header()}
+                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                    <p class="ml-1 text-left">{m.owner()}</p>
+                </AnimatedUnderline>
+            {/snippet}
+            {@render ownerFilters()}
+        </AccordionItem>
+    {/if}
     <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
@@ -265,14 +269,16 @@
         {/snippet}
         {@render bookFilters()}
     </AccordionItem>
-    <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
-        {#snippet header()}
-            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                <p class="ml-1 text-left">{m.searchOptions()}</p>
-            </AnimatedUnderline>
-        {/snippet}
-        {@render optionCheckboxes()}
-    </AccordionItem>
+    {#if !onlyPrivate}
+        <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+            {#snippet header()}
+                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                    <p class="ml-1 text-left">{m.searchOptions()}</p>
+                </AnimatedUnderline>
+            {/snippet}
+            {@render optionCheckboxes()}
+        </AccordionItem>
+    {/if}
 </Accordion>
 
 {#snippet searchBar()}
@@ -487,7 +493,7 @@
                 bind:checked={filterOptions.showOwnPrivate}
                 onchange={handleFilterUpdate}
             />
-            <label for="show-own-private">{m.showOwnPrivate()}</label>
+            <label for="show-own-private" class="text-wrap">{m.showOwnPrivate()}</label>
         </div>
         {#if userInfo?.accountType === 'admin'}
             <div class="flex gap-2">
@@ -498,7 +504,7 @@
                     bind:checked={filterOptions.showPrivate}
                     onchange={handleFilterUpdate}
                 />
-                <label for="show-all-private">{m.showAllPrivate()}</label>
+                <label for="show-all-private" class="text-wrap">{m.showAllPrivate()}</label>
             </div>
         {/if}
     </div>
