@@ -381,7 +381,12 @@
         {/each}
         <Accordion flush multiple>
             {#each subjectOptions.subjects as languageSubjects (languageSubjects)}
-                <AccordionItem classes={{ button: 'cursor-pointer page__subsubheading p-0.5' }}>
+                <AccordionItem
+                    open={languageSubjects.subjects
+                        .map((s) => s.data.name)
+                        .includes(filterOptions.subject ?? '')}
+                    classes={{ button: 'cursor-pointer page__subsubheading p-0.5' }}
+                >
                     {#snippet header()}
                         <AnimatedUnderline>
                             <p class="ml-1 text-left">
