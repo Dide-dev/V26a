@@ -131,7 +131,10 @@
                     ]}
                 >
                     <h3 class="page__subheading">{m.filters()}</h3>
-                    <form class="completed flex w-full flex-col gap-2" onsubmit={handleSubmit}>
+                    <form
+                        class="completed filters flex w-full flex-col gap-2"
+                        onsubmit={handleSubmit}
+                    >
                         {@render filterFields!()}
                     </form>
                 </div>
@@ -180,6 +183,12 @@
 
             @media (width < 48rem) {
                 grid-template-columns: auto;
+            }
+        }
+
+        .filters {
+            :global(label) {
+                text-wrap: nowrap;
             }
         }
     }
