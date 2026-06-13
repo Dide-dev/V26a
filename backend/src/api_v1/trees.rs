@@ -59,10 +59,7 @@ pub fn trees() -> Router<ArcState> {
             "/{tree_id}/duplicate",
             post(duplicate_tree).layer(rate_limit_layer(5, 10)),
         )
-        .route(
-            "/{tree_id}/structure",
-            put(update_tree_structure).layer(rate_limit_layer(25, 50)),
-        )
+        .route("/{tree_id}/structure", put(update_tree_structure))
         .route(
             "/{tree_id}/cards",
             post(add_new_card).layer(rate_limit_layer(25, 50)),
@@ -76,7 +73,7 @@ pub fn trees() -> Router<ArcState> {
             "/{tree_id}/edit-lock",
             // This endpoint requires to be wrapped in an [`axum::routing::any`],
             // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
-            axum::routing::any(edit_lock::acquire_edit_lock),
+            axum::routing::any(edit_lock::acquire_edit_lock).layer(rate_limit_layer(10, 20)),
         )
 }
 
