@@ -504,12 +504,14 @@ impl FromStr for AccountType {
 
 #[cfg(test)]
 mod tests {
-    use crate::db_structs::users::{Clean, PendingRegisterData, RegisterData};
+    use crate::db_structs::users::{
+        Clean, PasswordResetRequestData, PendingRegisterData, RegisterData,
+    };
     use chrono::Utc;
     use std::collections::HashMap;
 
     #[tokio::test]
-    async fn test_remove_expired() {
+    async fn test_remove_expired_registrations() {
         let mut pending_accounts = HashMap::<String, PendingRegisterData>::new();
         let register_data = RegisterData::test_values();
 
@@ -532,6 +534,31 @@ mod tests {
 
         assert!(!pending_accounts.contains_key("a"));
         assert!(pending_accounts.contains_key("b"));
+    }
+
+    #[tokio::test]
+    async fn test_remove_expired_password_resets() {
+        let mut pending_resets = HashMap::<String, PasswordResetRequestData>::new();
+
+        pending_resets.insert(
+            "a".to_owned(),
+            PasswordResetRequestData {
+                user_id: 0,
+                expires: 0,
+            },
+        );
+        pending_resets.insert(
+            "b".to_owned(),
+            PasswordResetRequestData {
+                user_id: 0,
+                expires: Utc::now().timestamp() + 60,
+            },
+        );
+
+        pending_resets.remove_expired();
+
+        assert!(!pending_resets.contains_key("a"));
+        assert!(pending_resets.contains_key("b"));
     }
 
     #[test]
