@@ -214,6 +214,14 @@
     }
 
     function handleOwnerUpdate() {
+        const pattern = '[a-zA-Z0-9._\\-]*';
+        errors.malformedUsername = false;
+
+        if (localOptions.ownerName?.match(pattern)![0] !== localOptions.ownerName) {
+            errors.malformedUsername = true;
+            return;
+        }
+
         if (localOptions.ownerName === '') localOptions.ownerName = null;
         filterOptions.ownerName = localOptions.ownerName;
 
@@ -493,7 +501,7 @@
 {#snippet ownerFilters()}
     <div class="mx-1">
         <input
-            class="input__text w-full"
+            class={[errors.malformedUsername && 'error', 'input__text w-full']}
             type="text"
             name="username"
             bind:value={localOptions.ownerName}
@@ -506,6 +514,9 @@
                 }
             }}
         />
+        {#if errors.malformedUsername}
+            <p class="text__error">{m.allowedRegex({ field: m.names() })}</p>
+        {/if}
     </div>
 {/snippet}
 
