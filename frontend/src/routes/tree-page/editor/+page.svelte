@@ -19,14 +19,14 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            await goto(appLink('/all-trees'));
+            await goto(appLink('/trees'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            await goto(appLink('/all-trees'));
+            await goto(appLink('/trees'));
             return;
         }
     });

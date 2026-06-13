@@ -69,6 +69,7 @@ impl Config {
             s.parse()
                 .expect("Failed to parse environment variable BCRYPT_COST")
         });
+
         let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
@@ -77,6 +78,13 @@ impl Config {
             .unwrap_or("900".to_owned())
             .parse()
             .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
+
+        let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
+        let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
+            .unwrap_or("10".to_string())
+            .parse::<usize>()
+            .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
+            * 1_048_576; // Mebibytes to bytes
 
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
             .unwrap_or("300".to_string())
@@ -87,13 +95,6 @@ impl Config {
             .unwrap_or("500".to_string())
             .parse::<u32>()
             .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
-
-        let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
-        let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
-            .unwrap_or("10".to_string())
-            .parse::<usize>()
-            .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
-            * 1_048_576; // Mebibytes to bytes
 
         let smtp_server =
             env::var("SMTP_SERVER").expect("Environment variable SMTP_SERVER must be set");

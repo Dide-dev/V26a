@@ -3,20 +3,20 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::api_v1::{extract_token, rate_limit_layer};
+
+use crate::api_v1::rate_limit_layer;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
-use crate::db::session::{delete_all_sessions_except, delete_all_sessions_user};
 use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
     update_password, update_user, user_id_exists,
 };
 use crate::db_structs::classrooms::ClassroomListResponse;
 use crate::db_structs::pagination::OptionalPaginationOptions;
-use crate::db_structs::session::{Claims, InfoCookieData};
+use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
-    PublicUserData, RegisterData, UserData, UserGetData,
+    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt,
+    PendingRegisterData, PublicUserData, RegisterData, UserData, UserGetData,
 };
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -29,15 +29,14 @@ use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
-use axum_extra::extract::Query;
-use axum_extra::extract::{CookieJar, cookie::Cookie};
+use axum_extra::extract::{CookieJar, Query, cookie::Cookie};
 use chrono::Utc;
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
 use lettre::{Address, Message};
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgExecutor, PgPool};
+use sqlx::{PgExecutor, PgPool, query};
 use time::Duration;
 use utoipa::ToSchema;
 
@@ -54,7 +53,7 @@ pub fn users() -> Router<ArcState> {
                 .delete(delete_user_data),
         )
         .route("/me/password", put(change_password))
-        .route("/me/classrooms", get(get_all_owned_classrooms))
+        .route("/{user_id}/classrooms", get(get_all_owned_classrooms))
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
@@ -122,7 +121,7 @@ async fn add_new_user(
         // Remove pending accounts in case they have not been pruned yet.
         pending_accounts.remove_expired();
 
-        if check_email_used(&db, &pending_accounts, &user_data.email).await? {
+        if check_email_used(&db, &pending_accounts, &user_data.email, None).await? {
             return Ok(Json(UserResponse::EmailAlreadyUsed));
         }
 
@@ -328,7 +327,7 @@ async fn get_public_user_data(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
-    mut jar: CookieJar,
+    jar: CookieJar,
     claims: Claims,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
@@ -355,14 +354,22 @@ async fn update_user_data(
         account_type: claims.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
-    let time = Duration::seconds(claims.exp - Utc::now().timestamp());
+
+    let expires_at = query!(
+        "SELECT expires_at FROM sessions WHERE token = $1",
+        Claims::extract_token(&jar)?
+    )
+    .fetch_one(&db)
+    .await?
+    .expires_at;
+
     let user_cookie = Cookie::build(("user_info", new_user_info))
         .path("/")
         .secure(true)
-        .max_age(time)
+        .max_age(Duration::seconds((expires_at - Utc::now()).num_seconds()))
         .http_only(false);
     // `add` automatically replaces the cookie values, `remove` sets the cookie to an empty value and the maxAge to 0.
-    jar = jar.add(user_cookie);
+    let jar = jar.add(user_cookie);
 
     Ok((
         jar,
@@ -436,10 +443,10 @@ async fn change_password(
     )
     .await?;
 
-    let token = extract_token(&jar)?;
+    let token = Claims::extract_token(&jar)?;
 
     // All other sessions of the account are invalidated if password is changed.
-    delete_all_sessions_except(&db, claims.sub, &token).await?;
+    Claims::delete_all_sessions_except(&db, &token, &claims.sub).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
@@ -489,7 +496,7 @@ async fn delete_user_data(
     delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
 
     // Invalidate all the sessions based on userid.
-    delete_all_sessions_user(&mut *transaction, claims.sub).await?;
+    Claims::delete_all_sessions(&mut *transaction, &claims.sub).await?;
 
     transaction.commit().await?;
 
@@ -505,11 +512,14 @@ async fn delete_user_data(
     context_path = "/api/v1/users",
     responses(
         (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
+        (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
     ),
     params(
         ("session" = Claims, Cookie),
+        ("user_id" = i32, Path),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
@@ -520,10 +530,14 @@ async fn delete_user_data(
 ///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
+/// `user_id` - User from whom to get the classrooms.
+///
 /// # Returns
 /// All the user's classrooms and the number of classrooms as [`ClassroomListResponse`].
 ///
 /// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
@@ -531,18 +545,36 @@ async fn delete_user_data(
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
 /// invalid or corrupted.
 ///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
+/// the classrooms of a user.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_all_owned_classrooms(
     claims: Claims,
+    Path(user_id): Path<i32>,
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,
 ) -> Result<Json<ClassroomListResponse>, ApiError> {
     let page = page.to_some_with_default(1, 50, 1000, 100)?;
 
     let mut transaction = db.begin().await?;
-    let classroom_count = get_classroom_count(&mut *transaction, claims.sub).await?;
 
-    let classrooms = get_all_classrooms(&mut *transaction, claims.sub, &page).await?;
+    if !user_id_exists(&mut *transaction, user_id).await? {
+        return Err(ApiError::MissingUser(user_id));
+    }
+    if claims.account_type != AccountType::Admin && user_id != claims.sub {
+        return Err(ApiError::NoPermission);
+    }
+
+    let classroom_count = get_classroom_count(&mut *transaction, user_id).await?;
+    if classroom_count == 0 {
+        return Ok(Json(ClassroomListResponse {
+            total_classrooms: 0,
+            classrooms: Vec::new(),
+        }));
+    }
+
+    let classrooms = get_all_classrooms(&mut *transaction, user_id, &page).await?;
     transaction.commit().await?;
     let list = ClassroomListResponse {
         total_classrooms: i32::try_from(classroom_count)
@@ -603,6 +635,8 @@ pub async fn check_username_used(
 ///
 /// `check_email` - The e-mail, for which it should be checked if it can be used or not.
 ///
+/// `allowed_user_id` - An optional user id, who should be ignored if they have the username being checked.
+///
 /// # Returns
 /// A [`bool`], which is true if the e-mail has already been taken, or false if it has not.
 ///
@@ -612,8 +646,15 @@ pub async fn check_email_used(
     db: impl PgExecutor<'_>,
     pending_accounts: &HashMap<String, PendingRegisterData>,
     check_email: &str,
+    allowed_user_id: Option<i32>,
 ) -> Result<bool, ApiError> {
-    let used_by_other = get_user_by_email(db, check_email).await?.is_some();
+    let found_user_id = get_user_by_email(db, check_email).await?;
+    let used_by_other = found_user_id.is_some_and(|id| match allowed_user_id {
+        // Did not specify an allowed user id, so the email is a duplicate.
+        None => true,
+        // If there is an allowed user, the email has been used if the allowed user is not the found user.
+        Some(other_id) => id != other_id,
+    });
     let used_by_pending = pending_accounts
         .values()
         .any(|r| r.register_data.email.to_lowercase() == check_email.to_lowercase());

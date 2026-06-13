@@ -4,22 +4,23 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+use crate::api_v1::trees::verify_tree_permissions;
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::users::AccountType;
 use crate::{
     db_structs::trees::{
-        Language, Subject, TreeAddData, TreeData, TreeFilters, TreeGeneratedData, TreeLinkedData,
-        TreeMetadata, TreeStructure,
+        Language, Subject, SubjectData, TreeAddData, TreeData, TreeFilters, TreeGeneratedData,
+        TreeLinkedData, TreeMetadata, TreeStructure,
     },
     errors::ApiError,
 };
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
+use sqlx::{Acquire, PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_as};
 use std::collections::{HashMap, HashSet};
 
-/// Check whether the given subject exists.
+/// Check whether a subject with the given id exists.
 ///
 /// # Arguments
 /// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
@@ -31,12 +32,39 @@ use std::collections::{HashMap, HashSet};
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
+pub async fn subject_id_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, ApiError> {
     query!("SELECT EXISTS (SELECT 1 FROM subjects WHERE id = $1)", id)
         .fetch_one(db)
         .await?
         .exists
         .ok_or(ApiError::DatabaseException)
+}
+
+/// Check whether the given subject exists.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `subject_data` - The data of the subject whose existence to check.
+///
+/// # Returns
+/// A `bool` indicating whether the given subject exists.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn subject_exists(
+    db: impl PgExecutor<'_>,
+    subject_data: &SubjectData,
+) -> Result<bool, ApiError> {
+    query!(
+        "SELECT EXISTS (SELECT 1 FROM subjects WHERE language_code = $1 AND name = $2)",
+        subject_data.language_code,
+        subject_data.name
+    )
+    .fetch_one(db)
+    .await?
+    .exists
+    .ok_or(ApiError::DatabaseException)
 }
 
 /// Retrieve the list of all subjects from the database.
@@ -53,16 +81,78 @@ pub async fn subject_exists(db: impl PgExecutor<'_>, id: i32) -> Result<bool, Ap
 pub async fn get_subjects(
     db: impl PgExecutor<'_>,
 ) -> Result<HashMap<String, Vec<Subject>>, ApiError> {
-    let results = query_as!(Subject, "SELECT * FROM subjects")
-        .fetch_all(db)
-        .await?;
+    let results = query!("SELECT * FROM subjects").fetch_all(db).await?;
     let mut map: HashMap<String, Vec<Subject>> = HashMap::new();
-    for subject in results {
-        map.entry(subject.language_code.clone())
+    for record in results {
+        let subject = Subject {
+            id: record.id,
+            data: SubjectData {
+                language_code: record.language_code,
+                name: record.name,
+            },
+        };
+        map.entry(subject.data.language_code.clone())
             .and_modify(|vec| vec.push(subject.clone()))
             .or_insert(vec![subject]);
     }
     Ok(map)
+}
+
+/// Add a subject to the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `subject_data` - the data of the subject to add to the database.
+///
+/// # Returns
+/// The id of the new subject.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_subject(
+    db: impl PgExecutor<'_>,
+    subject_data: &SubjectData,
+) -> Result<i32, ApiError> {
+    let id = query!(
+        "INSERT INTO subjects (language_code, name) VALUES ($1, $2) RETURNING id",
+        subject_data.language_code,
+        subject_data.name
+    )
+    .fetch_one(db)
+    .await?
+    .id;
+    Ok(id)
+}
+
+/// Updates a subject in the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - the id of the subject to update.
+///
+/// `subject_data` - the new data of the subject.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_subject(
+    db: impl PgExecutor<'_>,
+    id: i32,
+    subject_data: &SubjectData,
+) -> Result<(), ApiError> {
+    query!(
+        "UPDATE subjects SET language_code = $1, name = $2 WHERE id = $3",
+        subject_data.language_code,
+        subject_data.name,
+        id,
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 /// Check whether the given language exists.
@@ -107,6 +197,54 @@ pub async fn get_languages(db: impl PgExecutor<'_>) -> Result<Vec<Language>, Api
         .await?;
 
     Ok(results)
+}
+
+/// Add a language to the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `language` - the language to add to the database.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_language(db: impl PgExecutor<'_>, language: &Language) -> Result<(), ApiError> {
+    query!(
+        "INSERT INTO languages (code, name) VALUES ($1, $2)",
+        language.code,
+        language.name
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+/// Updates a language in the database.
+///
+/// # Arguments
+/// `db` - either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `code` - the code of the language to update.
+///
+/// `name` - the new name of the language.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_language(
+    db: impl PgExecutor<'_>,
+    code: &str,
+    name: &str,
+) -> Result<(), ApiError> {
+    query!("UPDATE languages SET name = $1 WHERE code = $2", name, code,)
+        .execute(db)
+        .await?;
+    Ok(())
 }
 
 /// Parse an ISBN of either 10 or 13 digits, and return it as integer in the 13-digit
@@ -443,7 +581,7 @@ pub async fn db_get_tree_all_data(
 ) -> Result<Option<(TreeMetadata, TreeStructure)>, ApiError> {
     let field = query!(
         r#"SELECT
-            trees.*,
+            trees.id, owner_id, trees.created_at, last_modified, published, times_visited, last_visited, trees.title, description, book_chapter, book_exercise, assignment_text, structure, trees.language_code, subject_id, book_isbn,
             users.name AS owner_name,
             subjects.name AS "subject_name?",
             languages.name AS language_name,
@@ -713,6 +851,7 @@ fn apply_tree_filters<'a>(
 ) -> Result<(), ApiError> {
     let TreeFilters {
         owner_name,
+        search_terms,
         book,
         tag,
         language_code,
@@ -731,6 +870,7 @@ fn apply_tree_filters<'a>(
     // function as it would create an empty WHERE clause.
     let has_conditions = !(*show_private && is_admin)
         || owner_name.is_some()
+        || search_terms.as_ref().is_some_and(|t| !t.trim().is_empty())
         || (*editable && option_user_id.is_some())
         || !book.is_empty()
         || !tag.is_empty()
@@ -767,6 +907,7 @@ fn apply_tree_filters<'a>(
         separated.push_unseparated(")");
     }
     apply_tree_filters_owner_name(&mut separated, owner_name.as_ref());
+    apply_tree_filters_search_terms(&mut separated, search_terms.as_ref());
     apply_tree_filters_editable(&mut separated, *editable, option_user_id);
     apply_tree_filters_books(&mut separated, book)?;
     apply_tree_filters_tags(&mut separated, tag);
@@ -799,6 +940,31 @@ fn apply_tree_filters_owner_name<'args>(
             .push("(users.name = ")
             .push_bind_unseparated(owner_name)
             .push_unseparated(")");
+    }
+}
+
+/// Adds to a Postgres [`QueryBuilder`] the filters for matching search terms.
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `search_terms` - A string of space separated search terms.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_search_terms<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    search_terms: Option<&'args String>,
+) {
+    if let Some(search_terms) = search_terms {
+        let trimmed = search_terms.trim();
+
+        if !trimmed.is_empty() {
+            separated
+                .push("(trees.search_vector @@ websearch_to_tsquery('dutch',")
+                .push_bind_unseparated(trimmed)
+                .push_unseparated("))");
+        }
     }
 }
 
@@ -1097,18 +1263,212 @@ pub async fn get_queried_list(
     Ok(trees)
 }
 
+/// Verify if the user is allowed to access the tree. The user is allowed to do so if the tree is made public or the user is an admin, owner or coauthor.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree.
+///
+/// `claims` - The session cookie of the user, as an [`Option`]. The cookie is only necessary for attempting verification of private trees.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingTree`](ApiError::MissingTree) if the requested tree does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not permitted to access the tree.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn verify_tree_accessible_by_user(
+    db: &mut PgConnection,
+    tree_id: i32,
+    claims: Option<&Claims>,
+) -> Result<(), ApiError> {
+    let mut transaction = db.begin().await?;
+
+    let tree = query!("SELECT published FROM trees WHERE id=$1", tree_id)
+        .fetch_optional(&mut *transaction)
+        .await?;
+
+    let Some(tree) = tree else {
+        return Err(ApiError::MissingTree(tree_id));
+    };
+
+    if tree.published {
+        return Ok(());
+    }
+
+    let Some(claims) = claims else {
+        return Err(ApiError::MissingAuthentication);
+    };
+
+    verify_tree_permissions(&mut transaction, tree_id, claims).await?;
+
+    transaction.commit().await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 #[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
     use super::*;
     use crate::db::test::{
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
-        initialize_tree_with_data,
+        initialize_tree_with_data, initialize_user,
     };
     use crate::db_structs::trees::{Node, RootNode};
+    use crate::db_structs::users::RegisterData;
     use crate::get_connection_unwrap;
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn test_add_subject(db: PgPool) {
+        let subject_data = SubjectData {
+            language_code: "nl".to_string(),
+            name: "Not a real subject".to_string(),
+        };
+
+        let exists = query!(
+            "SELECT EXISTS(SELECT * FROM subjects WHERE language_code = $1 AND name = $2)",
+            subject_data.language_code,
+            subject_data.name
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap()
+        .unwrap()
+        .exists
+        .unwrap();
+        assert!(!exists);
+
+        add_subject(get_connection_unwrap!(db), &subject_data)
+            .await
+            .unwrap();
+
+        let exists = query!(
+            "SELECT EXISTS(SELECT * FROM subjects WHERE language_code = $1 AND name = $2)",
+            subject_data.language_code,
+            subject_data.name
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap()
+        .unwrap()
+        .exists
+        .unwrap();
+        assert!(exists);
+    }
+
+    #[sqlx::test]
+    async fn test_update_subject(db: PgPool) {
+        let old_subject_data = SubjectData {
+            language_code: "en".to_string(),
+            name: "Not a real subject".to_string(),
+        };
+        let new_subject_data = SubjectData {
+            language_code: "nl".to_string(),
+            name: "Niet een echt vak".to_string(),
+        };
+
+        let id = query!(
+            "INSERT INTO subjects (language_code, name) VALUES ($1, $2) RETURNING id",
+            old_subject_data.language_code,
+            old_subject_data.name
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap()
+        .id;
+
+        update_subject(get_connection_unwrap!(db), id, &new_subject_data)
+            .await
+            .unwrap();
+
+        let queried_data = query_as!(
+            SubjectData,
+            "SELECT language_code, name FROM subjects WHERE id = $1",
+            id
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!(queried_data, new_subject_data);
+    }
+
+    #[sqlx::test]
+    async fn test_add_language(db: PgPool) {
+        let language = Language {
+            code: "fc".to_string(),
+            name: "Fake language".to_string(),
+        };
+
+        let queried_language = query_as!(
+            Language,
+            "SELECT * FROM languages WHERE code = $1",
+            language.code
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+        assert!(queried_language.is_none());
+
+        add_language(get_connection_unwrap!(db), &language)
+            .await
+            .unwrap();
+
+        let queried_language = query_as!(
+            Language,
+            "SELECT * FROM languages WHERE code = $1",
+            language.code
+        )
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+        assert_eq!(queried_language, Some(language));
+    }
+
+    #[sqlx::test]
+    async fn test_update_language(db: PgPool) {
+        let old_language = Language {
+            code: "fc".to_string(),
+            name: "Fake language".to_string(),
+        };
+        let new_language = Language {
+            code: "fc".to_string(),
+            name: "Neptaal".to_string(),
+        };
+
+        query!(
+            "INSERT INTO languages (code, name) VALUES ($1, $2)",
+            old_language.code,
+            old_language.name
+        )
+        .execute(&db)
+        .await
+        .unwrap();
+
+        update_language(
+            get_connection_unwrap!(db),
+            &new_language.code,
+            &new_language.name,
+        )
+        .await
+        .unwrap();
+
+        let queried_language = query_as!(
+            Language,
+            "SELECT * FROM languages WHERE code = $1",
+            old_language.code
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!(queried_language, new_language);
+    }
 
     #[test]
     fn test_parse_isbn() {
@@ -1155,7 +1515,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
+        let claims = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             tags: vec!["tag1".to_string()],
@@ -1167,7 +1527,7 @@ mod tests {
             tree_structure: TreeStructure { root_nodes: vec![] },
         };
 
-        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, user_id)
+        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, claims.sub)
             .await
             .unwrap();
 
@@ -1177,7 +1537,7 @@ mod tests {
             .unwrap()
             .owner_id;
 
-        assert_eq!(found_owner_id, user_id);
+        assert_eq!(found_owner_id, claims.sub);
 
         let record = query!(
             "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
@@ -1246,7 +1606,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
-        let (user_id, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
         let tree_data = TreeData {
@@ -1263,7 +1623,7 @@ mod tests {
             tree_data,
             tree_structure,
         };
-        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, user_id)
+        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, claims.sub)
             .await
             .unwrap();
 
@@ -1297,7 +1657,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_db_get_tree_all_data(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
+        let claims = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             published: true,
@@ -1311,9 +1671,13 @@ mod tests {
             }],
         };
 
-        let tree_id =
-            initialize_tree_with_data(get_connection_unwrap!(db), user_id, &tree_data, &structure)
-                .await;
+        let tree_id = initialize_tree_with_data(
+            get_connection_unwrap!(db),
+            claims.sub,
+            &tree_data,
+            &structure,
+        )
+        .await;
 
         let (found_tree_metadata, found_tree_structure) =
             db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
@@ -1323,16 +1687,16 @@ mod tests {
 
         assert_eq!(tree_data, found_tree_metadata.data);
         assert_eq!(tree_id, found_tree_metadata.gen_data.id);
-        assert_eq!(user_id, found_tree_metadata.gen_data.owner_id);
+        assert_eq!(claims.sub, found_tree_metadata.gen_data.owner_id);
         assert_eq!(structure, found_tree_structure);
     }
 
     #[sqlx::test]
     async fn test_get_tree_owner(db: PgPool) {
-        let (user_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
-        assert_eq!(found_owner_id, Some(user_id));
+        assert_eq!(found_owner_id, Some(claims.sub));
     }
 
     #[sqlx::test]
@@ -1414,13 +1778,13 @@ mod tests {
         );
         let admin_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Admin,
         };
 
         let mut all_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let all_filters = TreeFilters {
             owner_name: Some("67".to_owned()),
+            search_terms: Some("Aap".to_owned()),
             book: vec!["0-451-52493-4".to_owned()],
             tag: vec!["funky".to_owned()],
             language_code: Some("nl".to_owned()),
@@ -1434,7 +1798,7 @@ mod tests {
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
-            "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))) AND (users.name = $3) AND (book_isbn = ANY($4)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $5) AND (subjects.name = $6) AND (trees.created_at >= $7) AND (trees.created_at <= $8)"
+            "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))) AND (users.name = $3) AND (trees.search_vector @@ websearch_to_tsquery('dutch',$4)) AND (book_isbn = ANY($5)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $6) AND (subjects.name = $7) AND (trees.created_at >= $8) AND (trees.created_at <= $9)"
         );
 
         let mut partial_filters_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
@@ -1454,7 +1818,6 @@ mod tests {
     fn test_apply_tree_filters_own_unpublished_trees() {
         let user_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Author,
         };
 
@@ -1514,12 +1877,10 @@ mod tests {
     fn test_apply_tree_filters_unpublished_trees() {
         let user_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Author,
         };
         let admin_claims = Claims {
             sub: 123,
-            exp: 0,
             account_type: AccountType::Admin,
         };
 
@@ -1588,12 +1949,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_queried_count(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
-        let claims = Claims {
-            sub: user_id,
-            exp: 0,
-            account_type: AccountType::Author,
-        };
+        let claims = initialize_basic_user(&db).await;
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -1619,7 +1975,7 @@ mod tests {
             0
         );
 
-        initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
+        initialize_empty_tree(get_connection_unwrap!(db), claims.sub).await;
         assert_eq!(
             get_queried_count(&db, &empty_filters, None).await.unwrap(),
             0
@@ -1639,7 +1995,7 @@ mod tests {
         );
 
         for _ in 0..100 {
-            initialize_empty_tree(get_connection_unwrap!(db), user_id).await;
+            initialize_empty_tree(get_connection_unwrap!(db), claims.sub).await;
         }
         assert_eq!(
             get_queried_count(&db, &show_private_filters, Some(&claims))
@@ -1654,7 +2010,7 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &public_tree,
             &basic_structure,
         )
@@ -1681,7 +2037,7 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &book_tree,
             &basic_structure,
         )
@@ -1695,12 +2051,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_queried_list(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
-        let claims = Claims {
-            sub: user_id,
-            exp: 0,
-            account_type: AccountType::Author,
-        };
+        let claims = initialize_basic_user(&db).await;
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -1728,14 +2079,14 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &private_tree,
             &basic_structure,
         )
         .await;
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &public_tree,
             &basic_structure,
         )
@@ -1839,7 +2190,7 @@ mod tests {
         };
         let book_tree_id = initialize_tree_with_data(
             get_connection_unwrap!(db),
-            user_id,
+            claims.sub,
             &book_tree,
             &basic_structure,
         )
@@ -1923,5 +2274,60 @@ mod tests {
         let result = add_co_author(&db, tree_id, co_author_id).await;
 
         assert!(result.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_tree_is_accessible(db: PgPool) {
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: claims.sub + 1,
+            account_type: AccountType::Admin,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
+        assert!(result.is_ok());
+
+        let claims = Claims {
+            sub: claims.sub + 2,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
+        assert!(result.is_err());
+
+        let register_data = RegisterData::test_values();
+        let coauthor_claims = initialize_user(get_connection_unwrap!(db), &register_data).await;
+        add_co_author(&db, tree_id, coauthor_claims.sub)
+            .await
+            .unwrap();
+
+        let claims = Claims {
+            sub: coauthor_claims.sub,
+            account_type: AccountType::Author,
+        };
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+                .await;
+        assert!(result.is_ok());
+
+        query!("UPDATE trees SET published = true WHERE id = $1 ", tree_id)
+            .execute(&db)
+            .await
+            .unwrap();
+
+        let result =
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, None).await;
+        assert!(result.is_ok());
     }
 }

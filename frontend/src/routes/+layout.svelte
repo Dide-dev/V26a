@@ -53,18 +53,18 @@
         if (userInfo === null) {
             result.push(
                 new NavLink({
-                    defaultHref: '/all-trees',
+                    defaultHref: '/trees',
                     text: m.allTrees()
                 })
             );
         } else {
             result.push(
                 new NavLink({
-                    defaultHref: '/all-trees',
+                    defaultHref: '/trees',
                     text: m.trees(),
                     children: [
                         {
-                            href: '/all-trees',
+                            href: '/trees',
                             text: m.allTrees()
                         },
                         {
@@ -85,6 +85,10 @@
                         {
                             href: '/classrooms/add',
                             text: m.classroomAdd()
+                        },
+                        {
+                            href: '/classrooms/list',
+                            text: m.classroomList()
                         }
                     ]
                 })
