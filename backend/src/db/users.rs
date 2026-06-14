@@ -6,8 +6,8 @@
 
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::users::{
-    AccountType, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData, UserData,
-    UserGeneralData, UserGetData, UserLanguage,
+    AccountType, AdminGetUserData, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData,
+    UserData, UserGeneralData, UserGetData, UserLanguage,
 };
 use crate::errors::ApiError;
 use bcrypt::hash;
@@ -55,6 +55,30 @@ pub async fn add_user(
     .id;
 
     Ok(user_id)
+}
+
+/// Update the last login to 'now', for the given user id.
+/// If the given user id does not exist, no error will be returned and no rows will be updated.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `id` - The id of the user.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn user_update_last_login(db: impl PgExecutor<'_>, id: i32) -> Result<(), ApiError> {
+    query!(
+        "UPDATE users SET last_login=CURRENT_TIMESTAMP WHERE id=$1",
+        id,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
 }
 
 /// Query the private data for the given user id in the given database.
@@ -143,7 +167,7 @@ pub async fn get_user_public_data(
 /// `id` - The id of the user.
 ///
 /// # Returns
-/// A [`AdminUpdateData`] object containing the user's data, minus their password.
+/// A [`AdminGetUserData`] object containing the user's data, minus their password.
 ///
 /// # Errors
 /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
@@ -152,23 +176,27 @@ pub async fn get_user_public_data(
 pub async fn get_user_all_data(
     db: impl PgExecutor<'_>,
     id: i32,
-) -> Result<AdminUpdateData, ApiError> {
+) -> Result<AdminGetUserData, ApiError> {
     let record = query!(
-        "SELECT email, name, enabled, nickname, about_me, account_type FROM users WHERE id = $1",
+        "SELECT email, name, enabled, nickname, about_me, account_type, created_at, last_login FROM users WHERE id = $1",
         id,
     )
     .fetch_one(db)
     .await?;
 
-    Ok(AdminUpdateData {
-        email: record.email,
-        data: UserGeneralData {
-            name: record.name,
-            nickname: record.nickname,
-            about_me: record.about_me,
+    Ok(AdminGetUserData {
+        created_at: record.created_at,
+        last_login: record.last_login,
+        updateable_data: AdminUpdateData {
+            email: record.email,
+            data: UserGeneralData {
+                name: record.name,
+                nickname: record.nickname,
+                about_me: record.about_me,
+            },
+            enabled: record.enabled,
+            account_type: AccountType::from_str(record.account_type.as_str())?,
         },
-        enabled: record.enabled,
-        account_type: AccountType::from_str(record.account_type.as_str())?,
     })
 }
 
@@ -306,7 +334,7 @@ pub async fn delete_user(
         r#"
         UPDATE users
         SET enabled = false,
-            email = 'deleted',
+            email = CONCAT('deleted email_', id),
             name = CONCAT('deleted user_', id),
             nickname = '',
             about_me = '',
@@ -473,9 +501,9 @@ mod tests {
             },
         };
 
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
 
-        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", claims.sub)
             .fetch_one(&db)
             .await
             .unwrap();
@@ -523,11 +551,11 @@ mod tests {
         let found_user_id = get_user_by_email(&db, &email).await.unwrap();
         assert!(found_user_id.is_none());
 
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
 
         // Assert user does exist after adding to the database.
         let found_user_id = get_user_by_email(&db, &email).await.unwrap();
-        assert_eq!(found_user_id, Some(user_id));
+        assert_eq!(found_user_id, Some(claims.sub));
     }
 
     #[sqlx::test]
@@ -555,13 +583,15 @@ mod tests {
             account_type: AccountType::Admin,
         };
 
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
 
-        admin_update_user(&db, user_id, &update_data).await.unwrap();
+        admin_update_user(&db, claims.sub, &update_data)
+            .await
+            .unwrap();
 
         let found_user_id = get_user_by_name(&db, &update_data.data.name).await.unwrap();
         // Checks whether the users name changed from "Not John Smith" to "John Smith" by checking of the id's are the same.
-        assert_eq!(found_user_id, Some(user_id));
+        assert_eq!(found_user_id, Some(claims.sub));
     }
 
     #[sqlx::test]
@@ -584,11 +614,11 @@ mod tests {
         let found_user_id = get_user_by_name(&db, &name).await.unwrap();
         assert!(found_user_id.is_none());
 
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
 
         // Assert user does exist after adding to the database.
         let found_user_id = get_user_by_name(&db, &name).await.unwrap();
-        assert_eq!(found_user_id, Some(user_id));
+        assert_eq!(found_user_id, Some(claims.sub));
     }
 
     #[sqlx::test]
@@ -608,10 +638,10 @@ mod tests {
                 language: UserLanguage::Nl,
             },
         };
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
 
         // Assert user does exist after adding to the database.
-        let does_user_exist = user_id_exists(&db, user_id).await.unwrap();
+        let does_user_exist = user_id_exists(&db, claims.sub).await.unwrap();
         assert!(does_user_exist);
     }
 
@@ -629,8 +659,8 @@ mod tests {
             },
         };
 
-        let user_id = initialize_user(&db, &register_data).await;
-        let user_data = get_user(&db, user_id).await.unwrap();
+        let claims = initialize_user(&db, &register_data).await;
+        let user_data = get_user(&db, claims.sub).await.unwrap();
 
         let expected_user_data = UserGetData {
             email: register_data.email,
@@ -660,8 +690,8 @@ mod tests {
             },
         };
 
-        let user_id = initialize_user(&db, &register_data).await;
-        let user_data = get_user_all_data(&db, user_id).await.unwrap();
+        let claims = initialize_user(&db, &register_data).await;
+        let user_data = get_user_all_data(&db, claims.sub).await.unwrap();
 
         let expected_user_data = AdminUpdateData {
             email: register_data.email,
@@ -674,7 +704,7 @@ mod tests {
             account_type: AccountType::Author,
         };
 
-        assert_eq!(user_data, expected_user_data);
+        assert_eq!(user_data.updateable_data, expected_user_data);
     }
 
     #[sqlx::test]
@@ -761,7 +791,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_update_user(db: PgPool) {
-        let user_id = initialize_basic_user(&db).await;
+        let claims = initialize_basic_user(&db).await;
 
         // Test not updating the account type and the enabled flag
         let new_user_data = UserData {
@@ -771,8 +801,8 @@ mod tests {
             email_visible: false,
             language: UserLanguage::Nl,
         };
-        update_user(&db, user_id, &new_user_data).await.unwrap();
-        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+        update_user(&db, claims.sub, &new_user_data).await.unwrap();
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", claims.sub)
             .fetch_one(&db)
             .await
             .unwrap();
@@ -793,8 +823,8 @@ mod tests {
             email_visible: true,
             language: UserLanguage::En,
         };
-        update_user(&db, user_id, &new_user_data).await.unwrap();
-        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+        update_user(&db, claims.sub, &new_user_data).await.unwrap();
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", claims.sub)
             .fetch_one(&db)
             .await
             .unwrap();
@@ -855,15 +885,15 @@ mod tests {
             },
         };
 
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
         let new_password = "P@ssword";
         let cost = 4;
 
-        update_password(&db, user_id, new_password, cost)
+        update_password(&db, claims.sub, new_password, cost)
             .await
             .unwrap();
 
-        let password_in_db = get_user_credentials_by_id(&db, user_id)
+        let password_in_db = get_user_credentials_by_id(&db, claims.sub)
             .await
             .unwrap()
             .unwrap()
@@ -878,11 +908,11 @@ mod tests {
         let new_password = "P@ssword!!!!";
         let cost = 10;
 
-        update_password(&db, user_id, new_password, cost)
+        update_password(&db, claims.sub, new_password, cost)
             .await
             .unwrap();
 
-        let password_in_db = get_user_credentials_by_id(&db, user_id)
+        let password_in_db = get_user_credentials_by_id(&db, claims.sub)
             .await
             .unwrap()
             .unwrap()
@@ -909,13 +939,13 @@ mod tests {
             },
         };
 
-        let user_id = initialize_user(&db, &register_data).await;
+        let claims = initialize_user(&db, &register_data).await;
 
-        delete_user(&mut db.acquire().await.unwrap(), user_id, true)
+        delete_user(&mut db.acquire().await.unwrap(), claims.sub, true)
             .await
             .unwrap();
 
-        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", user_id)
+        let all_found_user_data = query!("SELECT * FROM users WHERE id = $1", claims.sub)
             .fetch_one(&db)
             .await
             .unwrap();
@@ -933,10 +963,10 @@ mod tests {
         };
 
         let expected_user_data = RegisterData {
-            email: ("deleted").to_string(),
+            email: format!("deleted email_{0}", claims.sub),
             password: String::new(),
             data: UserData {
-                name: format!("deleted user_{user_id}"),
+                name: format!("deleted user_{0}", claims.sub),
                 nickname: String::new(),
                 about_me: String::new(),
                 email_visible: false,

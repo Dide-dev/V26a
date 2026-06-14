@@ -15,12 +15,12 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
-use crate::db::{
-    feedback::{get_all_feedback, get_feedback_count},
-    session::delete_all_sessions_user,
-};
+use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::db_structs::{
-    Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
+    Validated,
+    feedback::FeedbackListResponse,
+    session::Claims,
+    users::{AdminGetUserData, AdminUpdateData},
 };
 
 use crate::api_v1::users::{check_email_used, check_username_used};
@@ -177,14 +177,14 @@ async fn update_user_data(
         return Ok(Json(UserResponse::UsernameAlreadyUsed));
     }
 
-    if check_email_used(&db, &pending_accounts, &new_data.email).await? {
+    if check_email_used(&db, &pending_accounts, &new_data.email, Some(user_id)).await? {
         return Ok(Json(UserResponse::EmailAlreadyUsed));
     }
 
     admin_update_user(&mut *transaction, user_id, &new_data).await?;
 
     if !new_data.enabled {
-        delete_all_sessions_user(&mut *transaction, user_id).await?;
+        Claims::delete_all_sessions(&mut *transaction, &user_id).await?;
     }
 
     transaction.commit().await?;
@@ -241,7 +241,7 @@ async fn change_password(
     .await?;
 
     // All sessions of the account are invalidated if password is changed.
-    delete_all_sessions_user(&db, user_id).await?;
+    Claims::delete_all_sessions(&db, &user_id).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
@@ -251,7 +251,7 @@ async fn change_password(
     path = "/users/{user_id}",
     context_path = "/api/v1/admin",
     responses(
-        (status = 200, description = "Successfully retrieved data.", body = AdminUpdateData),
+        (status = 200, description = "Successfully retrieved data.", body = AdminGetUserData),
         (status = 400, description = "User with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -268,7 +268,7 @@ async fn change_password(
 /// `user_id` - The user from whom we want to get the data.
 ///
 /// # Returns
-/// The data of a user as [`AdminUpdateData`].
+/// The data of a user as [`AdminGetUserData`].
 ///
 /// # Errors
 /// Returns [`MissingUser`](ApiError::MissingUser) if the requested user does not exist in the database.
@@ -283,7 +283,7 @@ async fn change_password(
 async fn get_user_data(
     Extension(db): Extension<PgPool>,
     Path(user_id): Path<i32>,
-) -> Result<Json<AdminUpdateData>, ApiError> {
+) -> Result<Json<AdminGetUserData>, ApiError> {
     if !user_id_exists(&db, user_id).await? {
         return Err(ApiError::MissingUser(user_id));
     }

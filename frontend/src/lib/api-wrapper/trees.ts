@@ -14,7 +14,7 @@ import {
     apiCallEmptyDelete
 } from './index';
 import type { Option } from './types';
-import type { UserId } from './users';
+import type { UserId, Username } from './users';
 import type { PaginationOptions } from '$lib/pagination';
 
 const prefix = 'trees';
@@ -97,9 +97,10 @@ export type TreeGeneratedData = {
 };
 
 export type TreeLinkedData = {
-    ownerName: Option<string>;
+    ownerName: Option<Username>;
     subjectName: Option<string>;
-    coAuthors: UserId[];
+    languageName: string;
+    coAuthors: Username[];
 };
 
 export type TreeMetadata = {
@@ -113,10 +114,14 @@ export type TreeAddData = {
     treeStructure: TreeStructure;
 };
 
-export type Subject = {
-    id: number;
+export type SubjectData = {
     languageCode: string;
     name: string;
+};
+
+export type Subject = {
+    id: number;
+    data: SubjectData;
 };
 
 export type Language = {
@@ -148,7 +153,10 @@ export type TreeListResponse = {
 };
 
 export type FilterOptions = {
+    searchTerms: Option<string>;
     ownerId: Option<number>;
+    // TODO: the rest of this struct is not exactly the same as on the backend.
+    // This should be fixed in the PR that updates the filters on the frontend.
     book: string[];
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
@@ -257,7 +265,7 @@ export function duplicateTree(treeId: TreeId): Promise<TreeId> {
 }
 
 /** Add user as co-author to a tree. */
-export function addCoAuthor(treeId: TreeId, username: string): Promise<CoAuthorizeResponse> {
+export function addCoAuthor(treeId: TreeId, username: Username): Promise<CoAuthorizeResponse> {
     return apiCallPostTree(`/${treeId}/co-authors/${username}`, null);
 }
 
@@ -271,9 +279,29 @@ export function getAllLanguages(): Promise<Language[]> {
     return apiCallGetTree('/languages');
 }
 
+/** Add a new language. */
+export function addLanguage(language: Language): Promise<void> {
+    return apiCallPostTree('/languages', language);
+}
+
+/** Update an existing language. */
+export function updateLanguage(code: string, newName: string): Promise<void> {
+    return apiCallPutTree(`/languages/${code}`, newName);
+}
+
 /** Get the list of all subjects. */
 export function getAllSubjects(): Promise<Record<string, Subject[]>> {
     return apiCallGetTree('/subjects');
+}
+
+/** Add a new subject. */
+export function addSubject(subject: Subject): Promise<void> {
+    return apiCallPostTree('/subjects', subject);
+}
+
+/** Update an existing subject. */
+export function updateSubject(id: number, newData: SubjectData): Promise<void> {
+    return apiCallPutTree(`/subjects/${id}`, newData);
 }
 
 /** The minimum input lengths of the tree metadata fields. */

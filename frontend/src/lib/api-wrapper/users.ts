@@ -4,6 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
+import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
+import type { ClassroomListResponse } from './classrooms';
 import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 import type { Option } from './types';
 
@@ -27,6 +29,8 @@ function apiCallGetUser(path: string) {
 
 export type UserId = number;
 export type AccountType = 'author' | 'admin';
+/** Unique username. */
+export type Username = string;
 
 /** The data a user can modify, except email or password
  *
@@ -36,7 +40,7 @@ export type AccountType = 'author' | 'admin';
  * database.
  */
 export type UserData = {
-    name: string;
+    name: Username;
     nickname: string;
     aboutMe: string;
     emailVisible: boolean;
@@ -50,7 +54,7 @@ export type UserData = {
  * database.
  */
 export type UserGeneralData = {
-    name: string;
+    name: Username;
     nickname: string;
     aboutMe: string;
 };
@@ -109,7 +113,7 @@ export type PublicUserData = {
 
 /** The data in the cookie */
 export type UserInfo = {
-    name: string;
+    name: Username;
     nickname: string;
     /** This corresponds to userid of the current login. */
     sub: UserId;
@@ -176,4 +180,13 @@ export function changePassword(
     changePasswordData: ChangePasswordData
 ): Promise<ChangePasswordResponse> {
     return apiCallPutUser('/me/password', changePasswordData);
+}
+
+/** Gets all the classrooms of a user from the database */
+export function getAllOwnedClassrooms(
+    userId: UserId,
+    pageOptions: PaginationOptions
+): Promise<ClassroomListResponse> {
+    const params: string = getPaginationParams(pageOptions);
+    return apiCallGetUser(`/${userId}/classrooms?${params}`);
 }

@@ -266,7 +266,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_cards_library_add(db: PgPool) {
-        let (owner_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let title = "title".to_owned();
@@ -275,7 +275,7 @@ mod tests {
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            owner_id,
+            claims.sub,
             &title,
             &tags,
             &card_text,
@@ -291,7 +291,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(found_card_data.owner_id, owner_id);
+        assert_eq!(found_card_data.owner_id, claims.sub);
         assert_eq!(found_card_data.title, title);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
@@ -361,14 +361,14 @@ mod tests {
         );
 
         // Add card to library
-        let (owner_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let _ = cards_library_add(
             get_connection_unwrap!(db),
-            owner_id,
+            claims.sub,
             &String::new(),
             &[],
             &card_text,
@@ -394,17 +394,22 @@ mod tests {
         assert_eq!(empty_list, vec![]);
 
         // Add card to library
-        let (owner_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let owner_name = get_user_all_data(&db, owner_id).await.unwrap().data.name;
+        let owner_name = get_user_all_data(&db, claims.sub)
+            .await
+            .unwrap()
+            .updateable_data
+            .data
+            .name;
         let title = "title".to_owned();
         let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            owner_id,
+            claims.sub,
             &title,
             &tags,
             &card_text,
