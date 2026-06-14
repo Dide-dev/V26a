@@ -6,11 +6,8 @@
 
 #![cfg(test)]
 
-use crate::api_v1::classrooms::verify_classroom_permissions;
-use crate::db_structs::classrooms::{
-    ClassroomData, ClassroomGeneratedData, ClassroomListResponse, ClassroomLoginResponse,
-    ClassroomUserLoginData, LessonAddData,
-};
+use crate::api_v1::classrooms::teachers::verify_classroom_permissions;
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse, ClassroomLoginResponse, ClassroomUserLoginData, LessonAddData};
 use crate::db_structs::session::{AllClassroomClaims, Claims};
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
@@ -24,7 +21,7 @@ use sqlx::PgPool;
 async fn test_new_classroom(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -49,7 +46,7 @@ async fn test_new_classroom(db: PgPool) {
 async fn test_new_classroom_forbidden(db: PgPool) {
     let server = setup(db).server;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -62,7 +59,7 @@ async fn test_new_classroom_forbidden(db: PgPool) {
 async fn test_classroom_login_same_classroom(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -149,7 +146,7 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
 
     // ----- First classroom ----- //
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom1".to_owned(),
         description: String::new(),
     };
@@ -179,7 +176,7 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
     // ----- Create a number more classrooms ----- //
 
     for i in 2..5 {
-        let classroom_add_data = ClassroomData {
+        let classroom_add_data = ClassroomAddData {
             name: format!("Classroom{i}"),
             description: String::new(),
         };
@@ -217,7 +214,7 @@ async fn test_get_classrooms(db: PgPool) {
     let server = test_state.server;
     login(&server, account1.email).await;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };

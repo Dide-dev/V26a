@@ -29,6 +29,9 @@ impl ClassroomClaims {
     /// Returns a [`MissingAuthentication`](ApiError::MissingAuthentication) if no token was found.
     ///
     /// Returns an [`InvalidSession`](ApiError::InvalidSession) if the session has expired.
+    /// 
+    /// Returns an [`ClassroomIdRetrievalError`](ApiError::ClassroomIdRetrievalError) if the 
+    /// classroom id could not be retrieved from the api uri.
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
@@ -140,7 +143,7 @@ impl ClassroomClaims {
 }
 
 /// If the api call path contains `classrooms/{id}`, returns `id`.
-/// Otherwise, returns an `ApiError`.
+/// Otherwise, returns an [`ClassroomIdRetrievalError`](ApiError::ClassroomIdRetrievalError).
 fn get_classroom_id_from_uri(uri: &str) -> Result<i32, ApiError> {
     let api_uri_part = "classrooms/";
     // Find the classrooms string in the api call path

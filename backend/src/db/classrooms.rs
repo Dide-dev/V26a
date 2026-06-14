@@ -3,14 +3,11 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::classrooms::{
-    ClassroomData, ClassroomGeneratedData, ClassroomMetaData, LessonAddData, LessonData,
-    LessonMetaData,
-};
+
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomMetaData, LessonAddData, LessonMetaData, LessonWithTrees};
 use crate::db_structs::pagination::PaginationOptions;
 use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
-use chrono::{DateTime, Utc};
 use rand::prelude::*;
 use sqlx::postgres::PgRow;
 use sqlx::{
@@ -74,21 +71,20 @@ pub async fn generate_random_code(db: &mut PgConnection) -> Result<String, ApiEr
 /// May return a [`DatabaseException`](ApiError::DatabaseException).
 pub async fn add_classroom(
     db: impl PgExecutor<'_>,
-    classroom_add_data: &ClassroomData,
+    classroom_add_data: &ClassroomAddData,
     owner_id: i32,
     join_code: &str,
-) -> Result<(i32, DateTime<Utc>), ApiError> {
-    let record = query!(
-        "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+) -> Result<i32, ApiError> {
+    Ok(query!(
+        "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
         owner_id,
         classroom_add_data.name,
         classroom_add_data.description,
         join_code
     )
     .fetch_one(db)
-    .await?;
-
-    Ok((record.id, record.created_at))
+    .await?
+    .id)
 }
 
 /// Validates the join code for a classroom.
@@ -233,7 +229,7 @@ pub async fn get_all_classrooms(
     let limit = i64::from(page.get_size());
     let offset = i64::from((page.get_page() - 1) * page.get_size());
     let records = query!(
-        "SELECT name, description, id, join_code, created_at, owner_id FROM classrooms
+        "SELECT name, description, id, created_at, owner_id FROM classrooms
          WHERE owner_id = $3
          LIMIT $1 OFFSET $2",
         limit,
@@ -243,23 +239,14 @@ pub async fn get_all_classrooms(
     .fetch_all(db)
     .await?;
 
-    if records.is_empty() {
-        return Err(ApiError::InvalidPage);
-    }
-
     let classrooms = records
         .into_iter()
         .map(|r| ClassroomMetaData {
-            data: ClassroomData {
-                name: r.name,
-                description: r.description,
-            },
-            gen_data: ClassroomGeneratedData {
-                id: r.id,
-                join_code: r.join_code,
-                created_at: r.created_at,
-                owner_id: r.owner_id,
-            },
+            id: r.id,
+            name: r.name,
+            description: r.description,
+            created_at: r.created_at,
+            owner_id: r.owner_id,
         })
         .collect::<Vec<ClassroomMetaData>>();
 
@@ -288,29 +275,25 @@ pub async fn get_classroom_count(db: impl PgExecutor<'_>, id: i32) -> Result<i64
     Ok(classroom_count)
 }
 
-pub async fn get_classroom_from_code(
+pub async fn get_classroom_metadata_from_id(
     db: impl PgExecutor<'_>,
-    code: String,
-) -> Result<Option<ClassroomMetaData>, ApiError> {
-    let classroom = query!("SELECT * FROM classrooms WHERE join_code=$1", code,)
+    id: i32,
+) -> Result<ClassroomMetaData, ApiError> {
+    let classroom = query!("SELECT name, description, id, created_at, owner_id FROM classrooms WHERE id = $1", id,)
         .fetch_optional(db)
         .await?;
+
     let Some(classroom) = classroom else {
-        return Ok(None); // Classroom doesn't exist, to throw an error or not?
+        return Err(ApiError::MissingClassroom(id))
     };
-    let data = ClassroomMetaData {
-        data: ClassroomData {
-            name: classroom.name,
-            description: classroom.description,
-        },
-        gen_data: ClassroomGeneratedData {
-            id: classroom.id,
-            owner_id: classroom.owner_id,
-            join_code: classroom.join_code,
-            created_at: classroom.created_at,
-        },
-    };
-    Ok(Some(data))
+
+    Ok(ClassroomMetaData {
+        id: classroom.id,
+        name: classroom.name,
+        description: classroom.description,
+        owner_id: classroom.owner_id,
+        created_at: classroom.created_at,
+    })
 }
 
 /// Get the id of the owner of a classroom.
@@ -325,7 +308,7 @@ pub async fn get_classroom_from_code(
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-pub async fn get_classroom_owner(
+pub async fn get_classroom_owner_from_id(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
 ) -> Result<Option<i32>, ApiError> {
@@ -338,6 +321,19 @@ pub async fn get_classroom_owner(
     .map(|r| r.owner_id);
 
     Ok(owner)
+}
+
+pub async fn get_classroom_join_code_from_id(
+    db: impl PgExecutor<'_>,
+    classroom_id: i32,
+) -> Result<String, ApiError> {
+    Ok(query!(
+        "SELECT join_code FROM classrooms WHERE id = $1",
+        classroom_id,
+    )
+    .fetch_one(db)
+    .await?
+    .join_code)
 }
 
 /// Adds a lesson to the database.
@@ -467,33 +463,33 @@ pub async fn add_existing_tree_to_lesson(
 pub async fn get_lessons_with_tree_ids_from_classroom(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
-) -> Result<Vec<LessonMetaData>, ApiError> {
+) -> Result<Vec<LessonWithTrees>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("");
     query
         .push(
             "SELECT l.id as lesson_id,
-        l.name as lesson_name,
-        l.description as lesson_description,
-        l.published as lesson_published,
-        l.created_at as lesson_created_at
-        , t.*
-        FROM lessons l
-        JOIN lesson_trees lt ON l.id = lt.lesson_id
-        JOIN trees t ON lt.tree_id = t.id
-        WHERE classroom_id = ",
+            l.name as lesson_name,
+            l.description as lesson_description,
+            l.published as lesson_published,
+            l.created_at as lesson_created_at
+            , t.*
+            FROM lessons l
+            JOIN lesson_trees lt ON l.id = lt.lesson_id
+            JOIN trees t ON lt.tree_id = t.id
+            WHERE classroom_id = ",
         )
         .push(classroom_id);
 
     let rows: Vec<PgRow> = query.build().fetch_all(db).await?;
-    let mut lessons = HashMap::<i32, LessonMetaData>::new();
+    let mut lessons = HashMap::<i32, LessonWithTrees>::new();
     for row in rows {
         let lesson_id = row.try_get("lesson_id")?;
         let tree = TreeMetadata::from_pg_row(&row)?;
-        let data = LessonData::from_pg_row(&row)?;
+        let metadata = LessonMetaData::from_pg_row(&row)?;
         lessons
             .entry(lesson_id)
-            .or_insert_with(|| LessonMetaData {
-                data,
+            .or_insert_with(|| LessonWithTrees {
+                metadata,
                 trees: Vec::new(),
             })
             .trees
@@ -505,13 +501,9 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
 
 #[cfg(test)]
 mod tests {
-    use crate::db::classrooms::{
-        add_classroom, add_existing_tree_to_lesson, add_lesson, add_new_user_to_classroom,
-        generate_random_code, get_all_classrooms, get_classroom_count, get_classroom_owner,
-        get_name_by_number, validate_join_code,
-    };
+    use crate::db::classrooms::{add_classroom, add_existing_tree_to_lesson, add_lesson, add_new_user_to_classroom, generate_random_code, get_all_classrooms, get_classroom_count, get_classroom_join_code_from_id, get_classroom_owner_from_id, get_name_by_number, validate_join_code};
     use crate::db::test::{initialize_classroom, initialize_db, initialize_lesson};
-    use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
+    use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::db_structs::pagination::PaginationOptions;
     use crate::get_connection_unwrap;
     use sqlx::{PgPool, query};
@@ -520,7 +512,7 @@ mod tests {
     async fn test_add_classroom(db: PgPool) {
         let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
-        let classroom_add_data = ClassroomData {
+        let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
             description: "This is a test classroom".to_owned(),
         };
@@ -529,7 +521,7 @@ mod tests {
             .await
             .unwrap();
 
-        let (id, _) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
@@ -538,7 +530,7 @@ mod tests {
             .await
             .unwrap();
 
-        let found_classroom_add_data = ClassroomData {
+        let found_classroom_add_data = ClassroomAddData {
             name: found_classroom_data.name,
             description: found_classroom_data.description,
         };
@@ -555,12 +547,12 @@ mod tests {
 
         assert!(validate_join_code(&db, join_code).await.unwrap().is_none());
 
-        let classroom_add_data = ClassroomData {
+        let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
             description: "This is a test classroom".to_owned(),
         };
 
-        let (id, _) = add_classroom(&db, &classroom_add_data, claims.sub, join_code)
+        let id = add_classroom(&db, &classroom_add_data, claims.sub, join_code)
             .await
             .unwrap();
 
@@ -574,7 +566,7 @@ mod tests {
     async fn test_add_new_user_to_classroom(db: PgPool) {
         let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
-        let classroom_add_data = ClassroomData {
+        let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
             description: "This is a test classroom".to_owned(),
         };
@@ -583,7 +575,7 @@ mod tests {
             .await
             .unwrap();
 
-        let (id, _) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
@@ -604,7 +596,7 @@ mod tests {
     async fn test_get_all_classrooms(db: PgPool) {
         let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
 
-        let classroom_add_data = ClassroomData {
+        let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
             description: "This is a test classroom".to_owned(),
         };
@@ -613,7 +605,7 @@ mod tests {
             .await
             .unwrap();
 
-        let (classroom_id, _) = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let classroom_id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
             .await
             .unwrap();
 
@@ -622,15 +614,16 @@ mod tests {
         let classrooms = get_all_classrooms(&db, claims.sub, &pagination_options)
             .await
             .unwrap();
+        let found_join_code = get_classroom_join_code_from_id(&db, classrooms[0].id).await.unwrap();
 
-        assert_eq!(classroom_id, classrooms[0].gen_data.id);
-        assert_eq!(join_code, classrooms[0].gen_data.join_code);
-        assert_eq!(classroom_add_data.name, classrooms[0].data.name);
+        assert_eq!(classroom_id, classrooms[0].id);
+        assert_eq!(join_code, found_join_code);
+        assert_eq!(classroom_add_data.name, classrooms[0].name);
         assert_eq!(
             classroom_add_data.description,
-            classrooms[0].data.description
+            classrooms[0].description
         );
-        assert_eq!(claims.sub, classrooms[0].gen_data.owner_id);
+        assert_eq!(claims.sub, classrooms[0].owner_id);
     }
 
     #[sqlx::test]
@@ -648,7 +641,7 @@ mod tests {
         let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
         let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
 
-        let found_owner_id = get_classroom_owner(get_connection_unwrap!(db), classroom_id)
+        let found_owner_id = get_classroom_owner_from_id(&db, classroom_id)
             .await
             .unwrap();
         assert_eq!(found_owner_id, Some(claims.sub));

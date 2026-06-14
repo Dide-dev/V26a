@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::classrooms::verify_classroom_permissions;
+use crate::api_v1::classrooms::teachers::verify_classroom_permissions;
 use crate::db::classrooms::{add_existing_tree_to_lesson, get_classroom_from_lesson};
 use crate::db::trees::verify_tree_accessible_by_user;
 use crate::db_structs::session::Claims;

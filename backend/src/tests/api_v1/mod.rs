@@ -21,7 +21,6 @@ use crate::ArcState;
 use crate::api_v1::users::{UserResponse, VerificationCode};
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
 use crate::db_structs::mail::StubMailer;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
@@ -34,6 +33,7 @@ use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use std::sync::Arc;
 use tempfile::tempdir;
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 
 /// A struct for testing, containing the [`TestServer`] and [`ArcState`].
 pub struct TestState {
@@ -289,7 +289,7 @@ async fn create_tree(test_server: &TestServer) -> i32 {
 /// # Returns
 /// An i32 representing the classroom's id.
 async fn create_classroom(test_server: &TestServer) -> i32 {
-    let classroom_data = ClassroomData {
+    let classroom_data = ClassroomAddData {
         name: "Classroom".to_string(),
         description: "Classroom description".to_string(),
     };
