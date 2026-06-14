@@ -13,13 +13,18 @@
     </p>
     <h1 class="page__heading">Contact details:</h1>
     <p>
-        <a href="https://www.uu.nl/en/research/freudenthal-institute"
-            >https://www.uu.nl/en/research/freudenthal-institute</a
+        <a
+            href="https://www.uu.nl/en/research/freudenthal-institute"
+            class="text__link"
+            target="_blank"
+            rel="external">https://www.uu.nl/en/research/freudenthal-institute</a
         >
     </p>
     <p>Princetonplein 5</p>
     <p>3584 CC UTRECHT</p>
-    <p class="pb-1.5"><a href="tel:0302531179">030 - 253 11 79</a></p>
+    <a href="tel:0302531179" class="text__link pb-1.5" target="_blank" rel="external"
+        >030 - 253 11 79</a
+    >
     <h1 class="page__heading pb-2">Personal data that we process</h1>
     <p class="pb-1.5">
         Freudenthal Institute processes your personal data because you use our services and/or
@@ -50,9 +55,14 @@
         Where personal data relating to minors is processed, this is done solely for the purpose of
         providing and operating the service within an educational context. If a parent, carer or
         educational institution believes that a minor's personal data has been processed incorrectly
-        or unlawfully, please contact us at <a href="mailto:fi@uu.nl">fi@uu.nl</a>. We will
-        investigate such a request and, if the processing proves to be unlawful or the data is no
-        longer necessary, take appropriate measures, including the deletion of the data in question.
+        or unlawfully, please contact us at <a
+            href="mailto:fi@uu.nl"
+            class="text__link"
+            target="_blank"
+            rel="external">fi@uu.nl</a
+        >. We will investigate such a request and, if the processing proves to be unlawful or the
+        data is no longer necessary, take appropriate measures, including the deletion of the data
+        in question.
     </p>
     <h1 class="page__heading pb-2">
         Freudenthal Institute processes your personal data for the following purposes:
@@ -63,7 +73,8 @@
         <li>To be able to email you if this is necessary to provide our services;</li>
         <li>
             To be able to email you if you wish, after you have provided feedback via the <a
-                href="\feedback">feedback</a
+                href="\feedback"
+                class="text__link">feedback</a
             > page;
         </li>
         <li>To enable other users to email you, if you give your consent.</li>
@@ -116,7 +127,7 @@
         If you wish to exercise your right to object, and/or your right to restrict the processing
         of your personal data, and/or your right to data portability, or if you have any other
         questions or comments regarding data processing, please send a specific request to
-        <a href="mailto:fi@uu.nl">fi@uu.nl</a>.
+        <a href="mailto:fi@uu.nl" class="text__link" target="_blank" rel="external">fi@uu.nl</a>.
     </p>
     <p class="pb-1.5">
         To ensure that the request for access has been made by you, we may ask for additional
@@ -129,7 +140,9 @@
         can do so via the
         <a
             href="https://autoriteitpersoonsgegevens.nl/en/submitting-a-tip-off-or-a-complaint-to-the-ap"
-            >Dutch Data Protection Authority's reporting form</a
+            class="text__link"
+            target="_blank"
+            rel="external">Dutch Data Protection Authority's reporting form</a
         >.
     </p>
     <h1 class="page__heading pb-2">How we protect personal data</h1>
@@ -137,7 +150,12 @@
         Freudenthal Institute takes the protection of your data seriously and takes appropriate
         measures to prevent misuse, loss, unauthorised access, unauthorised disclosure and
         unauthorised alteration. If you feel that your data is not properly secured or there are
-        indications of misuse, please contact us via <a href="mailto:fi@uu.nl">fi@uu.nl</a>
-        or via the contact details in the <a href="\colophon">colophon</a>.
+        indications of misuse, please contact us via <a
+            href="mailto:fi@uu.nl"
+            class="text__link"
+            target="_blank"
+            rel="external">fi@uu.nl</a
+        >
+        or via the contact details in the <a href="\colophon" class="text__link">colophon</a>.
     </p>
 </div>

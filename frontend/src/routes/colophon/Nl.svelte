@@ -22,8 +22,15 @@
             <p>
                 <b>Rogier Bos</b><br />Freudenthal Instituut<br /><a
                     href="https://www.uu.nl/medewerkers/RDBos"
-                    target="_blank">website</a
-                ><br /><a href="mailto:r.d.bos@uu.nl">r.d.bos@uu.nl</a>
+                    class="text__link"
+                    target="_blank"
+                    rel="external">website</a
+                ><br /><a
+                    href="mailto:r.d.bos@uu.nl"
+                    class="text__link"
+                    target="_blank"
+                    rel="external">r.d.bos@uu.nl</a
+                >
             </p>
         </div>
 
@@ -32,7 +39,10 @@
             <p>
                 <b>Theo van den Boogaart</b><br />Archimedes Instituut, leerstoel Wiskundige en
                 analytische vaardigheden van professionals<br /><a
-                    href="mailto:theo.vandenbogaart@hu.nl">theo.vandenbogaart@hu.nl</a
+                    href="mailto:theo.vandenbogaart@hu.nl"
+                    class="text__link"
+                    target="_blank"
+                    rel="external">theo.vandenbogaart@hu.nl</a
                 >
             </p>
         </div>
@@ -54,14 +64,19 @@
         <p>Milo van der Tier</p>
     </div>
     <p class="pb-2">
-        onder begeleiding van <a href="https://www.uu.nl/medewerkers/RTRadulescu" target="_blank"
-            >Roxana Radulescu</a
+        onder begeleiding van <a
+            href="https://www.uu.nl/medewerkers/RTRadulescu"
+            class="text__link"
+            target="_blank"
+            rel="external">Roxana Radulescu</a
         >.
     </p>
     <p>
         Meer informatie over het Software Project vak is te vinden op <a
             href="https://softwareprojecten.sites.uu.nl/"
-            target="_blank">https://softwareprojecten.sites.uu.nl</a
+            class="text__link"
+            target="_blank"
+            rel="external">https://softwareprojecten.sites.uu.nl</a
         >.
     </p>
     <p class="pt-5">© Copyright Universiteit Utrecht (Departement Informatica)</p>

@@ -13,13 +13,18 @@
     </p>
     <h1 class="page__heading">Contactgegevens:</h1>
     <p>
-        <a href="https://www.uu.nl/onderzoek/freudenthal-instituut"
-            >https://www.uu.nl/onderzoek/freudenthal-instituut</a
+        <a
+            href="https://www.uu.nl/onderzoek/freudenthal-instituut"
+            class="text__link"
+            target="_blank"
+            rel="external">https://www.uu.nl/onderzoek/freudenthal-instituut</a
         >
     </p>
     <p>Princetonplein 5</p>
     <p>3584 CC UTRECHT</p>
-    <p class="pb-1.5"><a href="tel:0302531179">030 - 253 11 79</a></p>
+    <a href="tel:0302531179" class="text__link pb-1.5" target="_blank" rel="external"
+        >030 - 253 11 79</a
+    >
     <h1 class="page__heading pb-2">Persoonsgegevens die wij verwerken</h1>
     <p class="pb-1.5">
         Freudenthal Instituut verwerkt uw persoonsgegevens doordat u gebruik maakt van onze diensten
@@ -55,7 +60,10 @@
         het aanbieden en functioneren van de dienst binnen de onderwijscontext. Indien een ouder,
         verzorger, of onderwijsinstelling van mening is dat onjuist of onrechtmatig persoonsgegevens
         van een minderjarige zijn verwerkt, neem dan contact met ons op via <a
-            href="mailto:fi@uu.nl">fi@uu.nl</a
+            href="mailto:fi@uu.nl"
+            class="text__link"
+            target="_blank"
+            rel="external">fi@uu.nl</a
         >. Wij zullen een dergelijk verzoek onderzoeken en, indien de verwerking onrechtmatig blijkt
         of de gegevens niet langer noodzakelijk zijn, passende maatregelen nemen, waaronder
         verwijdering van de betreffende gegevens.
@@ -71,7 +79,8 @@
         </li>
         <li>
             U te kunnen e-mailen indien u dit wenst na het geven van feedback via de <a
-                href="\feedback">feedback</a
+                href="\feedback"
+                class="text__link">feedback</a
             > pagina;
         </li>
         <li>
@@ -112,7 +121,7 @@
         klein tekstbestand dat bij het eerste bezoek aan deze website wordt opgeslagen op uw
         computer, tablet of smartphone. De cookies die wij gebruiken zijn noodzakelijk voor de
         technische werking van de website en uw gebruiksgemak. Ze zorgen ervoor dat de website naar
-        behoren werkt. Zo zorgen de cookies in onze dienst ervoor dat u kun inloggen en dat
+        behoren werkt. Zo zorgen de cookies in onze dienst ervoor dat u kunt inloggen en dat
         onthouden wordt welke taal u de voorkeur geeft op de website. U kunt zich afmelden voor
         cookies door uw internetbrowser zo in te stellen dat deze geen cookies meer opslaat.
         Daarnaast kunt u ook alle informatie die eerder is opgeslagen via de instellingen van uw
@@ -133,7 +142,7 @@
         Wilt u gebruik maken van uw recht op bezwaar, en/of recht op beperking van de verwerking van
         uw persoonsgegevens, en/of recht op gegevensoverdraagbaarheid of heeft u andere
         vragen/opmerkingen over de gegevensverwerking, stuur dan een gespecificeerd verzoek naar
-        <a href="mailto:fi@uu.nl">fi@uu.nl</a>.
+        <a href="mailto:fi@uu.nl" class="text__link" target="_blank" rel="external">fi@uu.nl</a>.
     </p>
     <p class="pb-1.5">
         Om er zeker van te zijn dat het verzoek tot inzage door u is gedaan, kunnen wij aanvullende
@@ -146,7 +155,9 @@
 
         <a
             href=" https://autoriteitpersoonsgegevens.nl/nl/contact-met-de-autoriteit-persoonsgegevens/tip-ons"
-            >tipformulier van de Autoriteit Persoonsgegevens</a
+            class="text__link"
+            target="_blank"
+            rel="external">tipformulier van de Autoriteit Persoonsgegevens</a
         >.
     </p>
     <h1 class="page__heading pb-2">Hoe wij persoonsgegevens beveiligen</h1>
@@ -155,8 +166,11 @@
         maatregelen om misbruik, verlies, onbevoegde toegang, ongewenste openbaarmaking en
         ongeoorloofde wijziging tegen te gaan. Als u de indruk heeft dat uw gegevens niet goed
         beveiligd zijn of er aanwijzingen zijn van misbruik, neem dan contact op met ons via <a
-            href="mailto:fi@uu.nl">fi@uu.nl</a
+            href="mailto:fi@uu.nl"
+            class="text__link"
+            target="_blank"
+            rel="external">fi@uu.nl</a
         >
-        of via de contactgegevens in de <a href="\colophon">colofon</a>.
+        of via de contactgegevens in de <a href="\colophon" class="text__link">colofon</a>.
     </p>
 </div>

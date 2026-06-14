@@ -21,8 +21,15 @@
             <p>
                 <b>Rogier Bos</b><br />Freudenthal Institute<br /><a
                     href="https://www.uu.nl/staff/RDBos"
-                    target="_blank">website</a
-                ><br /><a href="mailto:r.d.bos@uu.nl">r.d.bos@uu.nl</a>
+                    class="text__link"
+                    target="_blank"
+                    rel="external">website</a
+                ><br /><a
+                    href="mailto:r.d.bos@uu.nl"
+                    class="text__link"
+                    target="_blank"
+                    rel="external">r.d.bos@uu.nl</a
+                >
             </p>
         </div>
 
@@ -34,8 +41,11 @@
             />
             <p>
                 <b>Theo van den Boogaart</b><br />Archimedes Institute, lectorate Mathematical and
-                analytical skills of professionals<br /><a href="mailto:theo.vandenbogaart@hu.nl"
-                    >theo.vandenbogaart@hu.nl</a
+                analytical skills of professionals<br /><a
+                    href="mailto:theo.vandenbogaart@hu.nl"
+                    class="text__link"
+                    target="_blank"
+                    rel="external">theo.vandenbogaart@hu.nl</a
                 >
             </p>
         </div>
@@ -57,14 +67,19 @@
         <p>Milo van der Tier</p>
     </div>
     <p class="pb-2">
-        with the guidance of <a href="https://www.uu.nl/staff/RTRadulescu" target="_blank"
-            >Roxana Radulescu</a
+        with the guidance of <a
+            href="https://www.uu.nl/staff/RTRadulescu"
+            class="text__link"
+            target="_blank"
+            rel="external">Roxana Radulescu</a
         >.
     </p>
     <p>
         Further information about the Software Project course can be found on <a
             href="https://softwareprojecten.sites.uu.nl/"
-            target="_blank">https://softwareprojecten.sites.uu.nl</a
+            class="text__link"
+            target="_blank"
+            rel="external">https://softwareprojecten.sites.uu.nl</a
         >.
     </p>
     <p class="pt-5">

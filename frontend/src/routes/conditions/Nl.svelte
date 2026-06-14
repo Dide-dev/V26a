@@ -99,7 +99,9 @@
     <p class="pb-1.5">
         De volledige licentievoorwaarden zijn beschikbaar via <a
             href="https://creativecommons.org/licenses/by-sa/4.0/deed.en"
-            >de website van Creative Commons</a
+            class="text__link"
+            target="_blank"
+            rel="external">de website van Creative Commons</a
         >.
     </p>
 
@@ -170,8 +172,9 @@
     <h1 class="page__heading">Artikel 11 - Privacy</h1>
     <p class="pb-1.5">Bij het gebruik van de Dienst kunnen persoonsgegevens worden verwerkt.</p>
     <p class="pb-1.5">
-        De verwerking van persoonsgegevens vindt plaats overeenkomstig het <a href="\privacy"
-            >privacybeleid</a
+        De verwerking van persoonsgegevens vindt plaats overeenkomstig het <a
+            href="\privacy"
+            class="text__link">privacybeleid</a
         >.
     </p>
 

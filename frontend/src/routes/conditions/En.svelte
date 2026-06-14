@@ -94,7 +94,9 @@
     <p class="pb-1.5">
         The full licence terms are available via <a
             href="https://creativecommons.org/licenses/by-sa/4.0/deed.en"
-            >the Creative Commons website</a
+            class="text__link"
+            target="_blank"
+            rel="external">the Creative Commons website</a
         >.
     </p>
 
@@ -166,8 +168,9 @@
     <h1 class="page__heading">Article 11 - Privacy</h1>
     <p class="pb-1.5">Personal data may be processed when using the Service.</p>
     <p class="pb-1.5">
-        The processing of personal data takes place in accordance with the <a href="\privacy"
-            >privacy policy</a
+        The processing of personal data takes place in accordance with the <a
+            href="\privacy"
+            class="text__link">privacy policy</a
         >.
     </p>
 
