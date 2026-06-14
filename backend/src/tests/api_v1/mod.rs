@@ -21,6 +21,7 @@ use crate::ArcState;
 use crate::api_v1::users::{UserResponse, VerificationCode};
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 use crate::db_structs::mail::StubMailer;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
@@ -33,7 +34,6 @@ use serde::de::DeserializeOwned;
 use sqlx::{PgExecutor, PgPool, query};
 use std::sync::Arc;
 use tempfile::tempdir;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 
 /// A struct for testing, containing the [`TestServer`] and [`ArcState`].
 pub struct TestState {

@@ -8,12 +8,13 @@ pub mod admin;
 pub mod auth;
 pub mod cards;
 pub mod cards_library;
+pub mod classrooms;
 pub mod feedback;
 pub mod images;
+pub mod lessons;
 pub mod session;
 pub mod trees;
 pub mod users;
-pub mod classrooms;
 
 use axum::body::Body;
 use axum::extract::ConnectInfo;
@@ -30,11 +31,12 @@ use tower_governor::key_extractor::KeyExtractor;
 
 use crate::ArcState;
 use crate::api_v1::{
-    admin::admin, auth::auth, cards::cards, cards_library::cards_library, feedback::feedback,
-    images::images, classrooms::classrooms, classrooms::lessons::lessons, trees::trees, users::users,
+    admin::admin, auth::auth, cards::cards, cards_library::cards_library, classrooms::classrooms,
+    feedback::feedback, images::images, trees::trees, users::users,
 };
 use axum::Router;
 use chrono::{DateTime, Utc};
+use lessons::lessons;
 use rand::distr::{Alphanumeric, SampleString};
 
 #[derive(Clone)]

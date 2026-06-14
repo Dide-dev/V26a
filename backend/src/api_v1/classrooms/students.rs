@@ -4,20 +4,28 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use axum::{Extension, Json};
-use axum::extract::{Path, State};
-use axum_extra::extract::cookie::Cookie;
-use axum_extra::extract::CookieJar;
-use chrono::Utc;
-use sqlx::PgPool;
-use time::Duration;
 use crate::api_v1::create_token;
-use crate::db::classrooms::{add_new_user_to_classroom, get_classroom_metadata_from_id, get_lessons_with_tree_ids_from_classroom, get_name_by_number, validate_join_code};
-use crate::db_structs::classrooms::{ClassroomLoginResponse, ClassroomUserLoginData, ClassroomStudentDashboardData};
+use crate::db::classrooms::{
+    add_new_user_to_classroom, get_all_classrooms_from_ids, get_classroom_count_from_ids,
+    get_classroom_metadata_from_id, get_lessons_with_tree_ids_from_classroom, get_name_by_number,
+    validate_join_code,
+};
+use crate::db_structs::classrooms::{
+    ClassroomListResponse, ClassroomLoginResponse, ClassroomStudentDashboardData,
+    ClassroomUserLoginData,
+};
+use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::{AllClassroomClaims, ClaimsType, ClassroomClaims};
 use crate::errors::ApiError;
 use crate::get_connection;
 use crate::state::ArcState;
+use axum::extract::{Path, State};
+use axum::{Extension, Json};
+use axum_extra::extract::cookie::Cookie;
+use axum_extra::extract::{CookieJar, Query};
+use chrono::Utc;
+use sqlx::PgPool;
+use time::Duration;
 
 #[utoipa::path(
     post,
@@ -94,7 +102,7 @@ pub(super) async fn classroom_login(
                 classroom_id,
                 classroom_login_data.username.trim(),
             )
-                .await?,
+            .await?,
             classroom_login_data.username.trim().to_owned(),
         ),
     };
@@ -117,7 +125,7 @@ pub(super) async fn classroom_login(
         new_classroom_claims.clone(),
         session_duration,
     )
-        .await?;
+    .await?;
 
     // Create the user info
     let user_info = serde_json::to_string(&all_classroom_claims)?;
@@ -168,7 +176,7 @@ async fn get_classroom_claims_create_session(
             expires_at,
             &(classroom_claims.id, classroom_claims.num),
         )
-            .await?;
+        .await?;
 
         all_classroom_claims
             .claims
@@ -189,15 +197,88 @@ async fn get_classroom_claims_create_session(
             expires_at,
             &all_classroom_claims.claims,
         )
-            .await?;
+        .await?;
 
         Ok((all_classroom_claims, token))
     }
 }
 
 #[utoipa::path(
+    get,
+    path = "/list-student",
+    context_path = "/api/v1/classrooms",
+    responses(
+        (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
+        (status = 401, description = ApiError::MissingAuthentication.to_string()),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = AllClassroomClaims, Cookie),
+        ("page" = OptionalPaginationOptions, Query),
+    )
+)]
+/// Get the list of all classrooms a student has access to.
+///
+/// # Arguments
+/// `all_classroom_claims` - The session cookie of the user.
+///
+/// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
+///
+/// # Returns
+/// All the user's classrooms and the number of classrooms as [`ClassroomListResponse`].
+///
+/// # Errors
+/// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
+///
+/// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
+/// invalid or corrupted.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
+/// the classrooms of a user.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub(super) async fn get_all_classrooms_as_student(
+    all_classroom_claims: AllClassroomClaims,
+    Extension(db): Extension<PgPool>,
+    Query(page): Query<OptionalPaginationOptions>,
+) -> Result<Json<ClassroomListResponse>, ApiError> {
+    let page = page.to_some_with_default(1, 50, 1000, 100)?;
+
+    let mut transaction = db.begin().await?;
+
+    let ids = all_classroom_claims
+        .claims
+        .into_iter()
+        .map(|c| c.id)
+        .collect();
+
+    let classroom_count = get_classroom_count_from_ids(&mut *transaction, &ids).await?;
+    if classroom_count == 0 {
+        return Ok(Json(ClassroomListResponse {
+            total_classrooms: 0,
+            classrooms: Vec::new(),
+        }));
+    }
+
+    let classrooms = get_all_classrooms_from_ids(&mut *transaction, &ids, &page).await?;
+    transaction.commit().await?;
+    let list = ClassroomListResponse {
+        total_classrooms: i32::try_from(classroom_count)
+            .map_err(|_| ApiError::DatabaseMemoryCap)?,
+        classrooms,
+    };
+
+    Ok(Json(list))
+}
+
+#[utoipa::path(
     post,
-    path = "/{classroom_id}/student-dash",
+    path = "/{classroom_id}/dashboard-student",
     context_path = "/api/v1/classrooms",
     responses(
         (status = 200, description = "Successfully retrieved classroom data", body = ClassroomStudentDashboardData),
@@ -236,10 +317,8 @@ pub(super) async fn get_student_dashboard(
     Path(classroom_id): Path<i32>,
 ) -> Result<Json<ClassroomStudentDashboardData>, ApiError> {
     let metadata = get_classroom_metadata_from_id(&db, classroom_id).await?;
-    let lessons = get_lessons_with_tree_ids_from_classroom(&db, classroom_id).await?;
+    let lessons =
+        get_lessons_with_tree_ids_from_classroom(get_connection!(db), classroom_id, None).await?;
 
-    Ok(Json(ClassroomStudentDashboardData {
-        metadata,
-        lessons,
-    }))
+    Ok(Json(ClassroomStudentDashboardData { metadata, lessons }))
 }
