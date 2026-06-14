@@ -4,7 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { updateCard, addCardToLibrary, type CardData, type CardId } from '$lib/api-wrapper/cards';
+import { updateCard, type CardData, type CardId } from '$lib/api-wrapper/cards';
+import {addCardToLibrary} from '$lib/api-wrapper/cards_library';
 import {
     addCard,
     type TreeStructure,

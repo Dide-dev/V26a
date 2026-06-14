@@ -96,6 +96,7 @@
     "registeredOn": "Geregistreerd op",
     "lastLogin": "Laatste login",
     "confirmChanges": "Bevestig wijzigingen",
+    "confirmUpload": "Bevestig upload",
     "duplicateTree": "Dupliceer boom",
     "editTree": "Bewerk boom",
     "editUser": "Bewerk gebruiker",
@@ -148,6 +149,7 @@
     "exampleName": "Jan_Janssen",
     "exampleNickname": "Jantje Deeg",
     "exampleTitle": "Heuristiekboom van {name}",
+    "exampleTitleCard": "Kaart van {name}",
     "exampleDescription": "Mijn eerste boom!",
     "exampleTags": "bewijs, meetkunde, 3e-klas",
     "exampleBookName": "Algebra",
@@ -202,5 +204,7 @@
     "deleteOwnedTrees": "Verwijder al mijn bomen",
     "deleteAccount": "Verwijder account",
     "deleteAccountConfirmation": "Weet je zeker dat je je account wilt verwijderen?",
-    "logout": "Log uit"
+    "logout": "Log uit",
+    "uploadThisCard": "Upload deze kaart",
+     "cardUploadedSuccessfully": "Upload was succesvol"
 }

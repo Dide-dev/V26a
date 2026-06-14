@@ -96,6 +96,7 @@
     "registeredOn": "Registered on",
     "lastLogin": "Last login",
     "confirmChanges": "Confirm changes",
+    "confirmUpload": "Confirm upload",
     "duplicateTree": "Duplicate tree",
     "editTree": "Edit tree",
     "editUser": "Edit user",
@@ -150,6 +151,7 @@
     "exampleName": "John_Smith",
     "exampleNickname": "Johnny Doe",
     "exampleTitle": "{name}'s heuristic tree",
+    "exampleTitleCard": "{name}'s card",
     "exampleDescription": "My first tree!",
     "exampleTags": "proof, geometry, 9th-grade",
     "exampleBookName": "Algebra",
@@ -204,5 +206,7 @@
     "deleteOwnedTrees": "Delete all my trees",
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
-    "logout": "Logout"
+    "logout": "Logout",
+    "uploadThisCard": "Upload this card",
+    "cardUploadedSuccessfully": "Upload was successfull"
 }
