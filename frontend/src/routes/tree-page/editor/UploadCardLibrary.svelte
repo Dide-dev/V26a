@@ -82,7 +82,10 @@
 {#if visible}
     <Popup>
         {#if uploaded}
-            <div class="mb-3 flex w-64 flex-col items-center text-center" data-testid="card-upload-success">
+            <div
+                class="mb-3 flex w-64 flex-col items-center text-center"
+                data-testid="card-upload-success"
+            >
                 <p class="text-black">{m.cardUploadedSuccessfully()}</p>
                 <button type="submit" onclick={closeEdit}>{m.close()}</button>
             </div>
@@ -100,7 +103,9 @@
                             class={[!titleChanged && 'inactive', 'input__text', 'w-full']}
                             type="text"
                             bind:value={titleInput}
-                            placeholder={m.examplePlaceholderRequired({ value: m.exampleTitleCard({ name: '' }) })}
+                            placeholder={m.examplePlaceholderRequired({
+                                value: m.exampleTitleCard({ name: '' })
+                            })}
                             oninput={() => {
                                 titleChanged = true;
                             }}
@@ -136,9 +141,8 @@
                     {/if}
                 </div>
                 <div>
-                    <button
-                        type="submit"
-                        data-testid="confirm-button-upload">{m.confirmUpload()}
+                    <button type="submit" data-testid="confirm-button-upload"
+                        >{m.confirmUpload()}
                     </button>
                 </div>
                 <button type="reset" class="cursor-pointer" onclick={closeEdit}>{m.close()}</button>

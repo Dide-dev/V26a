@@ -11,7 +11,12 @@
     import iconUpload from '$lib/assets/icons/upload.svg?raw';
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './SubtreeEditor.svelte';
-    import { doDeleteCard, doAddCardToLibrary, followIndexNode, type TreeHistory } from './history.svelte';
+    import {
+        doDeleteCard,
+        doAddCardToLibrary,
+        followIndexNode,
+        type TreeHistory
+    } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
     import UploadCardMenu from './UploadCardLibrary.svelte';
 
@@ -27,8 +32,6 @@
         dragState: null | DragState;
         sidebar: null | SideBar;
     } = $props();
-
-
 
     async function removeButtonClick() {
         sidebar = null;
@@ -65,10 +68,9 @@
         uploadMenuVisible = true;
     }
 
-        async function handleUploadConfirm(title: string, tags: string[]) {
+    async function handleUploadConfirm(title: string, tags: string[]) {
         await doAddCardToLibrary(history, cardId, title, tags);
     }
-
 </script>
 
 <div class="absolute -top-6 left-2 h-7 border border-fuchsia-600 bg-fuchsia-300">
@@ -94,7 +96,4 @@
     </button>
 </div>
 
-<UploadCardMenu
-    bind:visible={uploadMenuVisible}
-    onConfirm={handleUploadConfirm}
-/>
+<UploadCardMenu bind:visible={uploadMenuVisible} onConfirm={handleUploadConfirm} />

@@ -5,7 +5,7 @@
 */
 
 import { updateCard, type CardData, type CardId } from '$lib/api-wrapper/cards';
-import {addCardToLibrary} from '$lib/api-wrapper/cards_library';
+import { addCardToLibrary } from '$lib/api-wrapper/cards_library';
 import {
     addCard,
     type TreeStructure,
@@ -153,7 +153,12 @@ export async function doDeleteCard(history: TreeHistory, index: number[]) {
 }
 
 // Upload card to library.
-export async function doAddCardToLibrary(history: TreeHistory, cardId: CardId, title: string, tags: string[]) {
+export async function doAddCardToLibrary(
+    history: TreeHistory,
+    cardId: CardId,
+    title: string,
+    tags: string[]
+) {
     const card = history.currentCards[cardId];
     if (!card) {
         throw new Error(`Card ${cardId} does not exist`);
