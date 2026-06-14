@@ -46,9 +46,9 @@
     let userInfo = getUserInfo();
 
     let localOptions = $state({
-        searchQuery: null as Option<string>,
-        book: [] as string[],
-        ownerName: null as Option<string>
+        searchQuery: filterOptions.searchTerms,
+        book: filterOptions.book,
+        ownerName: filterOptions.ownerName
     });
     let newBook = $state('');
 
@@ -218,12 +218,13 @@
         const pattern = '[a-zA-Z0-9._\\-]*';
         errors.malformedUsername = false;
 
-        if (localOptions.ownerName?.match(pattern)![0] !== localOptions.ownerName) {
+        if (localOptions.ownerName === null) {
+            filterOptions.ownerName = localOptions.ownerName = null;
+        } else if (localOptions.ownerName?.match(pattern)![0] !== localOptions.ownerName) {
             errors.malformedUsername = true;
             return;
         }
 
-        if (localOptions.ownerName === '') localOptions.ownerName = null;
         filterOptions.ownerName = localOptions.ownerName;
 
         handleFilterUpdate();
