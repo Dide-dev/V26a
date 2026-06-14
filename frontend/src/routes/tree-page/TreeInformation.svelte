@@ -9,6 +9,8 @@
     Display a tree's information.
 
     ## Params
+    - `tree: TreeMetadata` - The data of the tree.
+    - `titleSnippet: Snippet` - Title snippet to display at the top.
 -->
 <script lang="ts">
     import { type TreeMetadata } from '$lib/api-wrapper/trees';
@@ -51,7 +53,7 @@
         <span class="-mt-2 italic *:*:inline">
             {m.madeBy()}:
             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 4)">
-                <a href={appLink(`/trees?owner=${tree.genData.ownerId}`)} class="text-black"
+                <a href={appLink(`/trees?owner=${tree.linkedData.ownerName}`)} class="text-black"
                     >{tree.linkedData.ownerName}</a
                 >
             </AnimatedUnderline>
@@ -93,7 +95,7 @@
         <div class="mr-4 flex w-1/3 flex-col text-right">
             {#if tree.data.bookIsbn ?? '' !== ''}
                 <a
-                    href={appLink(`/trees?isbn=${tree.data.bookIsbn}`)}
+                    href={appLink(`/trees?book=${tree.data.bookIsbn}`)}
                     class="mt-text-minor flex w-fit self-end *:*:flex-col"
                 >
                     <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
@@ -122,7 +124,7 @@
 
 {#snippet tagBlob(tag: string)}
     <a
-        href={appLink(`/trees?tags=${tag}`)}
+        href={appLink(`/trees?tag=${tag}`)}
         class={[
             'mr-1.5 rounded-4xl border border-neutral-400 bg-neutral-200 p-[0.25rem_0.5rem] italic',
             'transition-all duration-200',
