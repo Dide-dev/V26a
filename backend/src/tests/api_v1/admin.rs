@@ -16,7 +16,7 @@ use crate::{
     get_connection_unwrap,
     tests::api_v1::{login, register, register_admin, setup},
 };
-use sqlx::PgPool;
+use sqlx::{PgPool, query_scalar};
 
 #[sqlx::test]
 async fn test_get_all_users_non_admin(db: PgPool) {
@@ -252,7 +252,7 @@ async fn test_disable_user(db: PgPool) {
         account_type: AccountType::Author,
     };
 
-    // Create an user that has 2 sessions active.
+    // Create a user that has 2 sessions active.
     let user_account = RegisterData::test_values();
     let other_user_id = register(&test_state, &user_account).await;
 
@@ -265,7 +265,7 @@ async fn test_disable_user(db: PgPool) {
     login(&server, user_account.email.clone()).await;
 
     // Checks two sessions exist before disable.
-    let sessions = sqlx::query_scalar!(
+    let sessions = query_scalar!(
         "SELECT COUNT(*) FROM sessions WHERE user_id = $1",
         other_user_id
     )
@@ -283,7 +283,7 @@ async fn test_disable_user(db: PgPool) {
     response.assert_status_ok();
 
     // Check that all sessions are invalidated after disable.
-    let sessions = sqlx::query_scalar!(
+    let sessions = query_scalar!(
         "SELECT COUNT(*) FROM sessions WHERE user_id = $1",
         other_user_id
     )
@@ -330,7 +330,7 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
     login(&server, user_account.email.clone()).await;
 
     // Check two sessions exist.
-    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+    let sessions = query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
         .fetch_one(&db)
         .await
         .unwrap();
@@ -349,7 +349,7 @@ async fn test_admin_password_change_invalidates_all_sessions(db: PgPool) {
         .assert_status_ok();
 
     // Verify all sessions are invalidated. The amount of sessions is 0 if alle sessions are invalidated.
-    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+    let sessions = query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
         .fetch_one(&db)
         .await
         .unwrap();

@@ -4,6 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 use crate::db_structs::Validated;
+use crate::db_structs::session::ClassroomClaims;
 use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
 use crate::limits::{
@@ -114,6 +115,23 @@ impl Validated for LessonAddData {
         }
         Ok(())
     }
+}
+
+/// The data that is sent by the user to log in to a classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomUserLoginData {
+    pub join_code: String,
+    pub username: String,
+}
+
+/// The data that is sent to the user after successfully logging in to a classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(tag = "type", rename_all_fields = "camelCase")]
+pub enum ClassroomLoginResponse {
+    Success(ClassroomClaims),
+    JoinCodeIncorrect { join_code: String },
+    MissingUser { user_number: i32 },
 }
 
 /// All data on lessons, except the order number and classroom id.

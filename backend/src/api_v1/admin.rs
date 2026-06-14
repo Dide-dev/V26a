@@ -15,15 +15,12 @@ use axum::{
 use axum_extra::extract::Query;
 use sqlx::PgPool;
 
+use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::db_structs::{
-    Validated, feedback::FeedbackListResponse, session::Claims, users::AdminUpdateData,
-};
-use crate::{
-    db::{
-        feedback::{get_all_feedback, get_feedback_count},
-        session::delete_all_sessions_user,
-    },
-    db_structs::users::AdminGetUserData,
+    Validated,
+    feedback::FeedbackListResponse,
+    session::Claims,
+    users::{AdminGetUserData, AdminUpdateData},
 };
 
 use crate::api_v1::users::{check_email_used, check_username_used};
@@ -187,7 +184,7 @@ async fn update_user_data(
     admin_update_user(&mut *transaction, user_id, &new_data).await?;
 
     if !new_data.enabled {
-        delete_all_sessions_user(&mut *transaction, user_id).await?;
+        Claims::delete_all_sessions(&mut *transaction, &user_id).await?;
     }
 
     transaction.commit().await?;
@@ -244,7 +241,7 @@ async fn change_password(
     .await?;
 
     // All sessions of the account are invalidated if password is changed.
-    delete_all_sessions_user(&db, user_id).await?;
+    Claims::delete_all_sessions(&db, &user_id).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }

@@ -4,8 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet } from '$lib/api-wrapper/index';
-import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
+import { apiCallPost } from '$lib/api-wrapper/index';
 import type { UserId } from './users';
 import type { LessonId } from '$lib/api-wrapper/lessons';
 import type { Option } from '$lib/api-wrapper/types';
@@ -14,10 +13,6 @@ const prefix = 'classrooms';
 
 function apiCallPostClassroom(path: string, body: unknown) {
     return apiCallPost(prefix + path, body);
-}
-
-function apiCallGetClassroom(path: string) {
-    return apiCallGet(prefix + path);
 }
 
 export type ClassroomId = number;
@@ -50,18 +45,34 @@ export type LessonAddData = {
     published: Option<boolean>;
 };
 
+export type ClassroomUserLoginData = {
+    joinCode: string;
+    username: string;
+};
+
+export type ClassroomLoginResponse =
+    | ClassroomLoginResponseSuccess
+    | ClassroomLoginResponseJoinCodeIncorrect
+    | ClassroomLoginResponseMissingUser;
+export type ClassroomLoginResponseSuccess = {
+    type: 'Success';
+    id: ClassroomId;
+    num: number;
+    name: string;
+};
+export type ClassroomLoginResponseJoinCodeIncorrect = {
+    type: 'JoinCodeIncorrect';
+    joinCode: string;
+};
+
+export type ClassroomLoginResponseMissingUser = {
+    type: 'MissingUser';
+    userNumber: number;
+};
+
 /** Add a classroom to the database */
 export function addClassroom(classroomAddData: ClassroomData): Promise<ClassroomGeneratedData> {
     return apiCallPostClassroom('', classroomAddData);
-}
-
-/** Gets all the classrooms of a user from the database */
-export function getAllOwnedClassrooms(
-    userId: UserId,
-    pageOptions: PaginationOptions
-): Promise<ClassroomListResponse> {
-    const params: string = getPaginationParams(pageOptions);
-    return apiCallGetClassroom(`/users/${userId}/classrooms?${params}`);
 }
 
 /** Add a lesson to a classroom in the database */
@@ -70,4 +81,11 @@ export function addLesson(
     classroomId: ClassroomId
 ): Promise<LessonId> {
     return apiCallPostClassroom(`/${classroomId}/lessons`, lessonAddData);
+}
+
+/** Log in to a classroom, creates a new user or logs in an existing user */
+export function classroomLogin(
+    classroomUserLoginData: ClassroomUserLoginData
+): Promise<ClassroomLoginResponse> {
+    return apiCallPostClassroom('login', classroomUserLoginData);
 }

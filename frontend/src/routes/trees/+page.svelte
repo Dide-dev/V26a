@@ -24,6 +24,7 @@
     let totalPages = $derived(calcTotalPages(treeListResponse?.totalTrees ?? 0, pageSize));
 
     let filterOptions: FilterOptions = $state({
+        searchTerms: null,
         ownerId: null,
         book: [],
         createdAfter: null,
@@ -41,6 +42,10 @@
     });
 
     async function loadTrees() {
+        if (filterOptions.searchTerms !== null && filterOptions.searchTerms.trim().length === 0) {
+            filterOptions.searchTerms = null;
+        }
+
         treeListResponse = await getFilteredList(paginationOptions, filterOptions);
     }
 
@@ -106,6 +111,10 @@
                     type="number"
                     bind:value={filterOptions.ownerId}
                 />
+            </label>
+            <label class="m-1">
+                {m.searchTerms()}
+                <input class="rounded-md border-2" bind:value={filterOptions.searchTerms} />
             </label>
             <button type="submit">{m.applyFilters()}</button>
         </form>
