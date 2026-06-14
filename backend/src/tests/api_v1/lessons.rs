@@ -99,7 +99,6 @@ async fn test_verify_lesson_permissions(db: PgPool) {
 
     let claims = Claims {
         sub: user_id,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 
@@ -108,7 +107,6 @@ async fn test_verify_lesson_permissions(db: PgPool) {
 
     let claims = Claims {
         sub: user_id + 1,
-        exp: i64::MAX,
         account_type: AccountType::Admin,
     };
 
@@ -117,7 +115,6 @@ async fn test_verify_lesson_permissions(db: PgPool) {
 
     let claims = Claims {
         sub: user_id + 2,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 
