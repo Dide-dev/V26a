@@ -59,7 +59,9 @@
     let highlight = $derived((dragState == null && isHovered) || dragState?.type === 'dragging');
 
     // Clicking for adding cards
-    async function onclick() {
+    async function onclick(e: Event) {
+        e.stopPropagation();
+
         if (dragState !== null) {
             return;
         }
@@ -69,6 +71,7 @@
             editingVersion = sidebar.editingVersion;
         }
         sidebar = {
+            card: true,
             type: 'NewCard',
             location: location,
             editingVersion

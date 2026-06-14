@@ -54,8 +54,11 @@
     });
     let card = $derived(history.currentCards[cardId]);
 
-    function editClick() {
+    function editClick(e: Event) {
+        e.stopPropagation();
+
         sidebar = {
+            card: true,
             type: 'EditCard',
             location,
             editingVersion: $state.snapshot(card)

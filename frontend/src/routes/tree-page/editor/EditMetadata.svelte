@@ -21,13 +21,19 @@
     import Editor from '$lib/rich-text/Editor.svelte';
     import { tryParseISBN, tryParseTags } from '$lib/treeMetadata';
     import { m } from '$lib/paraglide/messages';
-    import Popup from '$lib/Popup.svelte';
+    import type { ManageSideBar } from './Sidebar.svelte';
 
     let {
         treeId,
         prevTreeData = $bindable(),
-        treeLinkedData
-    }: { treeId: TreeId; prevTreeData: TreeData; treeLinkedData: TreeLinkedData } = $props();
+        treeLinkedData,
+        sidebar = $bindable()
+    }: {
+        treeId: TreeId;
+        prevTreeData: TreeData;
+        treeLinkedData: TreeLinkedData;
+        sidebar: ManageSideBar | null;
+    } = $props();
 
     let visible = $state(false);
     let languages: Language[] | null = $state(null);
@@ -140,6 +146,8 @@
         prevTreeData = { ...newData, bookIsbn: newData.bookIsbn === null ? '' : newData.bookIsbn };
         treeData = { ...prevTreeData };
         resetInputStates();
+
+        sidebar = null;
     }
 
     // Restores treeData to its original value.
@@ -148,10 +156,7 @@
         treeData = { ...prevTreeData };
         visible = false;
         resetInputStates();
-    }
-
-    function onEditMetadataButtonClick() {
-        visible = true;
+        sidebar = null;
     }
 
     function onkeydown(event: KeyboardEvent) {
@@ -168,10 +173,6 @@
     }
 </script>
 
-<button class="cursor-pointer rounded-sm bg-emerald-500 p-1" onclick={onEditMetadataButtonClick}>
-    {m.editMetadata()}
-</button>
-
 <!--
     We bind this event to the body instead of the window,
     so that this one fires before the onkeydown in the +page.svelte,
@@ -179,278 +180,264 @@
 -->
 <svelte:body {onkeydown} />
 
-{#if visible}
-    <Popup>
-        <form
-            data-testid="metadata-popup"
-            onsubmit={saveData}
-            class={[formChanged && 'completed', 'w-160']}
-        >
-            <div class="flex flex-row gap-3 *:w-1/2">
-                <div>
-                    <div>
-                        <label for="title">{m.title()} *</label>
-                        <div class="input__container">
-                            <input
-                                id="title"
-                                class={[!inputsChanged.titleChanged && 'inactive', 'input__text']}
-                                type="text"
-                                bind:value={treeData.title}
-                                placeholder={m.examplePlaceholderRequired({
-                                    value: m.exampleTitle({ name: treeLinkedData.ownerName ?? '' })
-                                })}
-                                oninput={() => {
-                                    inputsChanged.titleChanged = true;
-                                }}
-                                minlength={minInputLengths.title}
-                                maxlength={maxInputLengths.title}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label for="tags">{m.tags()}</label>
-                        <div class="input__container">
-                            <input
-                                id="tags"
-                                class={[
-                                    !inputsChanged.tagsChanged && 'inactive',
-                                    tagsInputError !== '' && 'error',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={tagsInput}
-                                placeholder={m.examplePlaceholder({ value: m.exampleTags() })}
-                                oninput={() => {
-                                    inputsChanged.tagsChanged = true;
-                                }}
-                            />
-                        </div>
-                        {#if tagsInputError !== ''}
-                            <p class="text__error" data-testid="tags-input-error">
-                                {tagsInputError}
-                            </p>
-                        {/if}
-                    </div>
-                    <div>
-                        <label for="description">{m.description()}</label>
-                        <textarea
-                            id="description"
-                            class={[
-                                !inputsChanged.descriptionChanged && 'inactive',
-                                'input__long_text',
-                                'w-full'
-                            ]}
-                            bind:value={treeData.description}
-                            placeholder={m.examplePlaceholder({ value: m.exampleDescription() })}
-                            oninput={() => {
-                                inputsChanged.descriptionChanged = true;
-                            }}
-                            minlength={minInputLengths.description}
-                            maxlength={maxInputLengths.description}
-                        ></textarea>
-                    </div>
-                    <div class="*:max-h-text-area">
-                        <label for="assignment">{m.assignment()}</label>
-                        <Editor
-                            maxLength={maxInputLengths.assignmentText}
-                            bind:valueText={treeData.assignmentText}
-                        />
-                    </div>
-                    <div>
-                        <label for="language">{m.language()} *</label>
-                        <select
-                            id="language"
-                            class="input__select block"
-                            bind:value={treeData.languageCode}
-                            oninput={() => {
-                                inputsChanged.languageChanged = true;
-                            }}
-                        >
-                            {#each languages as value (value)}
-                                <option value={value.code} class={['input__select_option']}>
-                                    {value.name}
-                                </option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="subject">{m.subject()}</label>
-                        <select
-                            id="subject"
-                            class="input__select block"
-                            bind:value={treeData.subjectId}
-                            oninput={() => {
-                                inputsChanged.subjectChanged = true;
-                            }}
-                        >
-                            <option value={null} selected class={['input__select_option']}
-                                >{m.none()}</option
-                            >
-                            {#each subjects === null ? [] : subjects[treeData.languageCode] as value (value)}
-                                <option value={value.id} class={['input__select_option']}>
-                                    {value.data.name}
-                                </option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="checkbox__container">
-                        <input
-                            id="published"
-                            class="input__checkbox"
-                            type="checkbox"
-                            bind:checked={treeData.published}
-                            oninput={() => {
-                                inputsChanged.publishedChanged = true;
-                            }}
-                        />
-                        <label for="published">{m.published()}</label>
-                    </div>
-                </div>
-                <div>
-                    <div>
-                        <label for="isbn">{m.isbn()}</label>
-                        <div class="input__container">
-                            <input
-                                id="isbn"
-                                class={[
-                                    !inputsChanged.bookIsbnChanged && 'inactive',
-                                    isbnInvalid && 'error',
-                                    'input__text'
-                                ]}
-                                type="text"
-                                bind:value={treeData.bookIsbn}
-                                placeholder={m.examplePlaceholder({ value: m.exampleBookISBN() })}
-                                oninput={() => {
-                                    inputsChanged.bookIsbnChanged = true;
-                                }}
-                                minlength={minInputLengths.bookIsbn}
-                                maxlength={maxInputLengths.bookIsbn}
-                            />
-                        </div>
-                        {#if isbnInvalid}
-                            <p class="text__error">{m.invalidISBN()}</p>
-                        {/if}
-                    </div>
-                    {#if treeData.bookIsbn ?? '' !== ''}
-                        <div>
-                            <label for="bookName">{m.bookName()}</label>
-                            <div class="input__container">
-                                <input
-                                    id="bookName"
-                                    class={[
-                                        !inputsChanged.bookNameChanged && 'inactive',
-                                        'input__text'
-                                    ]}
-                                    type="text"
-                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
-                                    bind:value={treeData.bookName}
-                                    placeholder={m.examplePlaceholder({
-                                        value: m.exampleBookName()
-                                    })}
-                                    oninput={() => {
-                                        inputsChanged.bookNameChanged = true;
-                                    }}
-                                    minlength={minInputLengths.bookName}
-                                    maxlength={maxInputLengths.bookName}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label for="author">{m.author()}</label>
-                            <div class="input__container">
-                                <input
-                                    id="author"
-                                    class={[
-                                        !inputsChanged.bookAuthorChanged && 'inactive',
-                                        'input__text'
-                                    ]}
-                                    type="text"
-                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
-                                    bind:value={treeData.bookAuthor}
-                                    placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
-                                    oninput={() => {
-                                        inputsChanged.bookAuthorChanged = true;
-                                    }}
-                                    minlength={minInputLengths.bookAuthor}
-                                    maxlength={maxInputLengths.bookAuthor}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label for="edition">{m.edition()}</label>
-                            <div class="input__container">
-                                <input
-                                    id="edition"
-                                    class={[
-                                        !inputsChanged.bookEditionChanged && 'inactive',
-                                        'input__text'
-                                    ]}
-                                    type="text"
-                                    disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
-                                    bind:value={treeData.bookEdition}
-                                    placeholder={m.examplePlaceholder({
-                                        value: m.exampleBookEdition()
-                                    })}
-                                    oninput={() => {
-                                        inputsChanged.bookEditionChanged = true;
-                                    }}
-                                    minlength={minInputLengths.bookEdition}
-                                    maxlength={maxInputLengths.bookEdition}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label for="chapter">{m.chapter()}</label>
-                            <div class="input__container">
-                                <input
-                                    id="chapter"
-                                    class={[
-                                        !inputsChanged.bookChapterChanged && 'inactive',
-                                        'input__text'
-                                    ]}
-                                    type="text"
-                                    bind:value={treeData.bookChapter}
-                                    placeholder={m.examplePlaceholder({
-                                        value: m.exampleBookChapter()
-                                    })}
-                                    oninput={() => {
-                                        inputsChanged.bookChapterChanged = true;
-                                    }}
-                                    minlength={minInputLengths.bookChapter}
-                                    maxlength={maxInputLengths.bookChapter}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label for="exercise">{m.exercise()}</label>
-                            <div class="input__container">
-                                <input
-                                    id="exercise"
-                                    class={[
-                                        !inputsChanged.bookExerciseChanged && 'inactive',
-                                        'input__text'
-                                    ]}
-                                    type="text"
-                                    bind:value={treeData.bookExercise}
-                                    placeholder={m.examplePlaceholder({
-                                        value: m.exampleExercise()
-                                    })}
-                                    oninput={() => {
-                                        inputsChanged.bookExerciseChanged = true;
-                                    }}
-                                    minlength={minInputLengths.bookExercise}
-                                    maxlength={maxInputLengths.bookExercise}
-                                />
-                            </div>
-                        </div>
-                    {/if}
+<form
+    data-testid="metadata-popup"
+    onsubmit={saveData}
+    class={[formChanged && 'completed', 'w-full']}
+>
+    <div class="flex flex-col">
+        <div>
+            <h2 class="page__heading">{m.editMetadata()}</h2>
+        </div>
+        <div>
+            <label for="title">{m.title()} *</label>
+            <div class="input__container">
+                <input
+                    id="title"
+                    class={[!inputsChanged.titleChanged && 'inactive', 'input__text']}
+                    type="text"
+                    bind:value={treeData.title}
+                    placeholder={m.examplePlaceholderRequired({
+                        value: m.exampleTitle({ name: treeLinkedData.ownerName ?? '' })
+                    })}
+                    oninput={() => {
+                        inputsChanged.titleChanged = true;
+                    }}
+                    minlength={minInputLengths.title}
+                    maxlength={maxInputLengths.title}
+                    required
+                />
+            </div>
+        </div>
+        <div>
+            <label for="tags">{m.tags()}</label>
+            <div class="input__container">
+                <input
+                    id="tags"
+                    class={[
+                        !inputsChanged.tagsChanged && 'inactive',
+                        tagsInputError !== '' && 'error',
+                        'input__text'
+                    ]}
+                    type="text"
+                    bind:value={tagsInput}
+                    placeholder={m.examplePlaceholder({ value: m.exampleTags() })}
+                    oninput={() => {
+                        inputsChanged.tagsChanged = true;
+                    }}
+                />
+            </div>
+            {#if tagsInputError !== ''}
+                <p class="text__error" data-testid="tags-input-error">
+                    {tagsInputError}
+                </p>
+            {/if}
+        </div>
+        <div>
+            <label for="description">{m.description()}</label>
+            <textarea
+                id="description"
+                class={[
+                    !inputsChanged.descriptionChanged && 'inactive',
+                    'input__long_text',
+                    'w-full'
+                ]}
+                bind:value={treeData.description}
+                placeholder={m.examplePlaceholder({ value: m.exampleDescription() })}
+                oninput={() => {
+                    inputsChanged.descriptionChanged = true;
+                }}
+                minlength={minInputLengths.description}
+                maxlength={maxInputLengths.description}
+            ></textarea>
+        </div>
+        <div class="*:max-h-text-area">
+            <label for="assignment">{m.assignment()}</label>
+            <Editor
+                maxLength={maxInputLengths.assignmentText}
+                bind:valueText={treeData.assignmentText}
+            />
+        </div>
+        <div>
+            <label for="language">{m.language()} *</label>
+            <select
+                id="language"
+                class="input__select block"
+                bind:value={treeData.languageCode}
+                oninput={() => {
+                    inputsChanged.languageChanged = true;
+                }}
+            >
+                {#each languages as value (value)}
+                    <option value={value.code} class={['input__select_option']}>
+                        {value.name}
+                    </option>
+                {/each}
+            </select>
+        </div>
+        <div>
+            <label for="subject">{m.subject()}</label>
+            <select
+                id="subject"
+                class="input__select block"
+                bind:value={treeData.subjectId}
+                oninput={() => {
+                    inputsChanged.subjectChanged = true;
+                }}
+            >
+                <option value={null} selected class={['input__select_option']}>{m.none()}</option>
+                {#each subjects === null ? [] : subjects[treeData.languageCode] as value (value)}
+                    <option value={value.id} class={['input__select_option']}>
+                        {value.data.name}
+                    </option>
+                {/each}
+            </select>
+        </div>
+        <div class="checkbox__container">
+            <input
+                id="published"
+                class="input__checkbox"
+                type="checkbox"
+                bind:checked={treeData.published}
+                oninput={() => {
+                    inputsChanged.publishedChanged = true;
+                }}
+            />
+            <label for="published">{m.published()}</label>
+        </div>
+        <div>
+            <label for="isbn">{m.isbn()}</label>
+            <div class="input__container">
+                <input
+                    id="isbn"
+                    class={[
+                        !inputsChanged.bookIsbnChanged && 'inactive',
+                        isbnInvalid && 'error',
+                        'input__text'
+                    ]}
+                    type="text"
+                    bind:value={treeData.bookIsbn}
+                    placeholder={m.examplePlaceholder({ value: m.exampleBookISBN() })}
+                    oninput={() => {
+                        inputsChanged.bookIsbnChanged = true;
+                    }}
+                    minlength={minInputLengths.bookIsbn}
+                    maxlength={maxInputLengths.bookIsbn}
+                />
+            </div>
+            {#if isbnInvalid}
+                <p class="text__error">{m.invalidISBN()}</p>
+            {/if}
+        </div>
+        {#if treeData.bookIsbn ?? '' !== ''}
+            <div>
+                <label for="bookName">{m.bookName()}</label>
+                <div class="input__container">
+                    <input
+                        id="bookName"
+                        class={[!inputsChanged.bookNameChanged && 'inactive', 'input__text']}
+                        type="text"
+                        disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                        bind:value={treeData.bookName}
+                        placeholder={m.examplePlaceholder({
+                            value: m.exampleBookName()
+                        })}
+                        oninput={() => {
+                            inputsChanged.bookNameChanged = true;
+                        }}
+                        minlength={minInputLengths.bookName}
+                        maxlength={maxInputLengths.bookName}
+                    />
                 </div>
             </div>
-            <div class="mb-0 flex flex-row gap-1 *:w-1/2">
-                <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
-                <button type="reset" onclick={cancelEdit}>{m.cancel()}</button>
+            <div>
+                <label for="author">{m.author()}</label>
+                <div class="input__container">
+                    <input
+                        id="author"
+                        class={[!inputsChanged.bookAuthorChanged && 'inactive', 'input__text']}
+                        type="text"
+                        disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                        bind:value={treeData.bookAuthor}
+                        placeholder={m.examplePlaceholder({ value: m.exampleAuthor() })}
+                        oninput={() => {
+                            inputsChanged.bookAuthorChanged = true;
+                        }}
+                        minlength={minInputLengths.bookAuthor}
+                        maxlength={maxInputLengths.bookAuthor}
+                    />
+                </div>
             </div>
-        </form>
-    </Popup>
-{/if}
+            <div>
+                <label for="edition">{m.edition()}</label>
+                <div class="input__container">
+                    <input
+                        id="edition"
+                        class={[!inputsChanged.bookEditionChanged && 'inactive', 'input__text']}
+                        type="text"
+                        disabled={treeData.bookIsbn === prevTreeData.bookIsbn || null}
+                        bind:value={treeData.bookEdition}
+                        placeholder={m.examplePlaceholder({
+                            value: m.exampleBookEdition()
+                        })}
+                        oninput={() => {
+                            inputsChanged.bookEditionChanged = true;
+                        }}
+                        minlength={minInputLengths.bookEdition}
+                        maxlength={maxInputLengths.bookEdition}
+                    />
+                </div>
+            </div>
+            <div>
+                <label for="chapter">{m.chapter()}</label>
+                <div class="input__container">
+                    <input
+                        id="chapter"
+                        class={[!inputsChanged.bookChapterChanged && 'inactive', 'input__text']}
+                        type="text"
+                        bind:value={treeData.bookChapter}
+                        placeholder={m.examplePlaceholder({
+                            value: m.exampleBookChapter()
+                        })}
+                        oninput={() => {
+                            inputsChanged.bookChapterChanged = true;
+                        }}
+                        minlength={minInputLengths.bookChapter}
+                        maxlength={maxInputLengths.bookChapter}
+                    />
+                </div>
+            </div>
+            <div>
+                <label for="exercise">{m.exercise()}</label>
+                <div class="input__container">
+                    <input
+                        id="exercise"
+                        class={[!inputsChanged.bookExerciseChanged && 'inactive', 'input__text']}
+                        type="text"
+                        bind:value={treeData.bookExercise}
+                        placeholder={m.examplePlaceholder({
+                            value: m.exampleExercise()
+                        })}
+                        oninput={() => {
+                            inputsChanged.bookExerciseChanged = true;
+                        }}
+                        minlength={minInputLengths.bookExercise}
+                        maxlength={maxInputLengths.bookExercise}
+                    />
+                </div>
+            </div>
+        {/if}
+    </div>
+    <div class="mb-0 flex flex-row gap-1 *:w-1/2">
+        <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
+        <button type="reset" onclick={cancelEdit}>{m.cancel()}</button>
+    </div>
+</form>
+
+<style>
+    form {
+        .inactive:not(.input__long_text) {
+            background-color: var(--color-neutral-100);
+        }
+    }
+</style>

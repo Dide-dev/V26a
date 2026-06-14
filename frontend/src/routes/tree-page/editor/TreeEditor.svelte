@@ -9,8 +9,6 @@
  -->
 
 <script lang="ts">
-    import iconUndo from '$lib/assets/icons/undo.svg?raw';
-    import iconRedo from '$lib/assets/icons/redo.svg?raw';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
     import { getTreeWithCards, type TreeId, type TreeMetadata } from '$lib/api-wrapper/trees';
@@ -24,20 +22,30 @@
         canUndo,
         canRedo
     } from './history.svelte';
-    import EditMetadata from './EditMetadata.svelte';
     import type { SideBar } from './Sidebar.svelte';
     import SidebarComponent from './Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
     import { branchColors, duplicateThisTree } from '$lib/treePage';
-    import CoAuthor from './CoAuthor.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
     import TreeInformation from '../TreeInformation.svelte';
-    import { ArrowUpRightFromSquareOutline, FileCloneOutline } from 'flowbite-svelte-icons';
+    import {
+        ArrowUpRightFromSquareOutline,
+        FileCloneOutline,
+        RedoOutline,
+        UndoOutline
+    } from 'flowbite-svelte-icons';
+    import { Tween } from 'svelte/motion';
+    import { cubicOut } from 'svelte/easing';
 
     let { id }: { id: TreeId } = $props();
 
     let userInfo = $state(getUserInfo());
-    let userAllowedToAuthorizeCo = $state(false);
+    let hasOwnerPermissions = $state(false);
+
+    let sideBarFraction = new Tween(300, {
+        duration: 400,
+        easing: cubicOut
+    });
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -84,6 +92,11 @@
         return () => clearInterval(intervalId);
     });
 
+    $effect(() => {
+        if (tree?.sidebar !== null) sideBarFraction.target = 600;
+        else sideBarFraction.target = 300;
+    });
+
     let tree: {
         metadata: TreeMetadata;
         history: TreeHistory;
@@ -108,7 +121,7 @@
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {
-            userAllowedToAuthorizeCo = true;
+            hasOwnerPermissions = true;
         }
     });
 
@@ -137,84 +150,84 @@
     }
 </script>
 
-<div class="flex h-full w-full flex-col items-start">
-    {#if tree === null}
-        <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
-    {:else}
-        <TreeInformation tree={tree.metadata}>
-            {#snippet titleSnippet()}
-                <div class="flex gap-1">
-                    <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
-                    <div class="flex flex-col justify-center">
-                        <a
-                            href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
-                            aria-label="view"
-                            class="page__title mt-3"
-                            title={m.viewTree()}
-                        >
-                            <ArrowUpRightFromSquareOutline class="h-7 w-7 shrink-0" />
-                        </a>
+{#if tree === null}
+    <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
+{:else}
+    <div
+        class="grid h-full w-full"
+        style={`grid-template-columns: 1fr ${sideBarFraction.current}px;`}
+    >
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+            class="overflow-x-auto"
+            onclick={() => {
+                tree!.sidebar = null;
+            }}
+        >
+            <TreeInformation tree={tree.metadata}>
+                {#snippet titleSnippet()}
+                    <div class="flex gap-1">
+                        <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
+                        <div class="flex flex-col justify-center">
+                            <a
+                                href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
+                                aria-label="view"
+                                class="page__title mt-3"
+                                title={m.viewTree()}
+                            >
+                                <ArrowUpRightFromSquareOutline class="h-7 w-7 shrink-0" />
+                            </a>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <button
+                                onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
+                                aria-label="duplicate"
+                                class="page__title mt-3 cursor-pointer"
+                                title={m.duplicateTree()}
+                            >
+                                <FileCloneOutline class="h-7 w-7 shrink-0" />
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex flex-col justify-center">
-                        <button
-                            onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
-                            aria-label="duplicate"
-                            class="page__title mt-3 cursor-pointer"
-                            title={m.duplicateTree()}
-                        >
-                            <FileCloneOutline class="h-7 w-7 shrink-0" />
-                        </button>
-                    </div>
-                </div>
-            {/snippet}
-        </TreeInformation>
+                {/snippet}
+            </TreeInformation>
 
-        <div class="m-2 flex gap-2">
-            <EditMetadata
-                treeId={tree.history.treeId}
-                bind:prevTreeData={tree.metadata.data}
-                treeLinkedData={tree.metadata.linkedData}
-            />
-            <button
-                class={[
-                    'rounded-sm bg-emerald-500 p-1',
-                    canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
-                    !canUndo(tree.history) && 'stroke-gray-500'
-                ]}
-                onclick={undoButtonClick}
-                title={m.undo()}
-            >
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html iconUndo}
-            </button>
-            <button
-                class={[
-                    'rounded-sm bg-emerald-500 p-1',
-                    canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
-                    !canRedo(tree.history) && 'stroke-gray-500'
-                ]}
-                onclick={redoButtonClick}
-                title={m.redo()}
-            >
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html iconRedo}
-            </button>
-            {#if userAllowedToAuthorizeCo}
-                <CoAuthor treeId={tree.history.treeId} bind:coAuthors={tree.linkedData.coAuthors} />
-            {/if}
-        </div>
+            <div class="m-2 flex gap-2">
+                <button
+                    class={[
+                        'ml-1 flex cursor-pointer items-center justify-center rounded-md border-2 p-1',
+                        'border-gray-500 transition-colors duration-200 ease-in-out',
+                        canUndo(tree.history) && 'cursor-pointer bg-white hover:bg-neutral-200',
+                        !canUndo(tree.history) && 'bg-neutral-300'
+                    ]}
+                    onclick={undoButtonClick}
+                    title={m.undo()}
+                >
+                    <UndoOutline
+                        class={[!canUndo(tree.history) && 'text-neutral-700', 'h-6 w-6 shrink-0']}
+                    />
+                </button>
+                <button
+                    class={[
+                        'ml-1 flex cursor-pointer items-center justify-center rounded-md border-2 p-1',
+                        'border-gray-500 transition-colors duration-200 ease-in-out',
+                        canRedo(tree.history) && 'cursor-pointer bg-white hover:bg-neutral-200',
+                        !canRedo(tree.history) && 'bg-neutral-300'
+                    ]}
+                    onclick={redoButtonClick}
+                    title={m.redo()}
+                >
+                    <RedoOutline
+                        class={[!canRedo(tree.history) && 'text-neutral-700', 'h-6 w-6 shrink-0']}
+                    />
+                </button>
+            </div>
 
-        <div class="relative w-full">
             <!--
                 The padding on the bottom is to make the scrollbar not intersect with some buttons.
             -->
-            <div
-                bind:this={scrollArea}
-                class="m-1 flex overflow-x-auto pb-7"
-                style:min-height={tree.sidebar === null
-                    ? ''
-                    : `${tree.sidebarElement!.htmlHeight}px`}
-            >
+            <div bind:this={scrollArea} class="m-1 flex overflow-x-auto pb-7">
                 <div class="flex grow flex-col">
                     {#each tree.history.currentStructure.rootNodes as root, location (root)}
                         <SubtreeEditor
@@ -227,19 +240,19 @@
                     {/each}
                     <RootNodeAddButton history={tree.history} enabled={dragState === null} />
                 </div>
-                <div
-                    class="shrink-0"
-                    style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
-                ></div>
             </div>
-            <SidebarComponent
-                bind:this={tree.sidebarElement}
-                bind:sidebar={tree.sidebar}
-                history={tree.history}
-            />
         </div>
-    {/if}
-</div>
+        <SidebarComponent
+            bind:this={tree.sidebarElement}
+            bind:sidebar={tree.sidebar}
+            history={tree.history}
+            {hasOwnerPermissions}
+            treeId={tree.history.treeId}
+            bind:prevTreeData={tree.metadata.data}
+            treeLinkedData={tree.metadata.linkedData}
+        />
+    </div>
+{/if}
 
 <!--
     We need to listen on the entire body to detect if drag & drop did not find target.
@@ -267,3 +280,10 @@
         }
     </style>
 {/if}
+
+<style>
+    :global(nav),
+    :global(footer) {
+        margin: 0;
+    }
+</style>

@@ -10,97 +10,58 @@
 <script lang="ts">
     import { type CardData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
-    import Editor from '$lib/rich-text/Editor.svelte';
-    import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
-    import SimpleTextEditArea from './SimpleTextEditArea.svelte';
+    import { type TreeHistory } from './history.svelte.ts';
+    import {
+        CellAttributesOutline,
+        ShareNodesOutline,
+        UserSettingsOutline
+    } from 'flowbite-svelte-icons';
+    import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
+    import EditMetadata from './EditMetadata.svelte';
+    import EditCard from './EditCard.svelte';
+    import type { TreeData, TreeLinkedData } from '$lib/api-wrapper/trees';
+    import CoAuthor from './CoAuthor.svelte';
+    import Share from './Share.svelte';
     import CardsLibrary from './CardsLibrary.svelte';
 
     let {
         sidebar = $bindable(),
-        history
+        history,
+        hasOwnerPermissions = true,
+        treeId,
+        prevTreeData = $bindable(),
+        treeLinkedData
     }: {
         sidebar: SideBar | null;
         history: TreeHistory;
+        hasOwnerPermissions?: boolean;
+        treeId: number;
+        prevTreeData: TreeData;
+        treeLinkedData: TreeLinkedData;
     } = $props();
 
-    export type SideBar = {
+    export type SideBar = CardEditSideBar | ManageSideBar;
+
+    export type CardEditSideBar = {
+        card: true;
         type: 'NewCard' | 'EditCard';
         location: number[];
         editingVersion: CardData;
         errorMessage?: string;
     };
 
-    const maxInputLengths = {
-        frontMaxLength: 250,
-        backMaxLength: 5000
+    export type ManageSideBar = {
+        card: false;
+        type: 'EditMetadata' | 'ManageCoAuthors' | 'Share';
     };
-
-    let isVisualEditor = $state(true);
-
-    let isLibrary = $state(false);
-
-    async function finishEdit() {
-        let node = followIndexNode(history.currentStructure, sidebar!.location);
-        await doEditCard(history, node.cardId, sidebar!.editingVersion);
-        sidebar = null;
-    }
-
-    async function finishAdd() {
-        await doAddCard(history, sidebar!.location, sidebar!.editingVersion);
-        sidebar = null;
-    }
-
-    function confirmClick() {
-        if (sidebar === null) {
-            return;
-        }
-
-        if (sidebar.editingVersion.back.length === 0) {
-            sidebar.errorMessage = m.backTextRequired();
-            return;
-        }
-
-        if (sidebar.editingVersion.front.length > maxInputLengths.frontMaxLength) {
-            sidebar.errorMessage = m.frontTextCharacterLimit({
-                limit: maxInputLengths.frontMaxLength
-            });
-            return;
-        }
-        if (sidebar.editingVersion.back.length > maxInputLengths.backMaxLength) {
-            sidebar.errorMessage = m.backTextCharacterLimit({
-                limit: maxInputLengths.backMaxLength
-            });
-            return;
-        }
-        sidebar.errorMessage = '';
-
-        if (sidebar.type === 'NewCard') {
-            finishAdd();
-        } else {
-            finishEdit();
-        }
-    }
-
-    // Prevent any ctrl+z or the like in the sidebar from undo-ing actions in the tree.
-    function onkeydown(event: KeyboardEvent) {
-        event.stopPropagation();
-
-        if (event.ctrlKey && event.key == 'Enter') {
-            confirmClick();
-        }
-    }
-
-    export const htmlWidth: number = 600;
-    export const htmlHeight: number = 650;
 </script>
 
-{#if sidebar !== null}
-    <div style="width: {htmlWidth}px;" class="pointer-events-none absolute -top-12 right-0 h-full">
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+    class="h-full overflow-x-hidden overflow-y-auto rounded-bl-2xl bg-neutral-100 p-2 pb-4 shadow-[-5px_0px_20px_0px_rgba(0_0_0/0.2)]"
+>
+    {#if sidebar === null}
         <div
-            style="height: {htmlHeight}px;"
-            class="pointer-events-auto sticky top-0 z-30 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
-            {onkeydown}
+            class="flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
         >
             <div class="m-1 flex gap-2 rounded">
                 <button
@@ -120,62 +81,58 @@
                     <h1>{m.cardLibrary()}</h1>
                 </button>
             </div>
-
-            {#if isLibrary}
-                <CardsLibrary {sidebar} />
-            {:else}
-                <p>{m.front()}</p>
-                <SimpleTextEditArea
-                    maxLength={maxInputLengths.frontMaxLength}
-                    height={2}
-                    bind:valueText={sidebar.editingVersion.front}
-                />
-                <div class="h-5"></div>
-                <p>{m.back()}</p>
-                <div class="m-1 flex gap-2 rounded bg-white p-1">
-                    <button
-                        class="cursor-pointer rounded p-1"
-                        class:bg-green-500={isVisualEditor}
-                        onclick={() => (isVisualEditor = true)}
-                    >
-                        {m.visualEditor()}
-                    </button>
-                    <button
-                        class="cursor-pointer rounded p-1"
-                        class:bg-green-500={!isVisualEditor}
-                        onclick={() => (isVisualEditor = false)}
-                    >
-                        {m.codeEditor()}
-                    </button>
-                </div>
-                {#if isVisualEditor}
-                    <Editor
-                        maxLength={maxInputLengths.backMaxLength}
-                        bind:valueText={sidebar.editingVersion.back}
-                    />
-                {:else}
-                    <SimpleTextEditArea
-                        maxLength={maxInputLengths.backMaxLength}
-                        height="full"
-                        bind:valueText={sidebar.editingVersion.back}
-                    />
-                {/if}
-                <div class="h-5"></div>
-                {#if sidebar.errorMessage}
-                    <p class="text-red-600">{sidebar.errorMessage}</p>
-                {/if}
-            {/if}
-            <div class="flex gap-2">
+            <button
+                type="button"
+                onclick={() => {
+                    sidebar = {
+                        card: false,
+                        type: 'EditMetadata'
+                    };
+                }}
+            >
+                <CellAttributesOutline class="page__heading h-7 w-7 shrink-0" />
+                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                    <span class="page__heading">{m.editMetadata()}</span>
+                </AnimatedUnderline>
+            </button>
+            {#if hasOwnerPermissions}
                 <button
-                    class="cursor-pointer rounded bg-red-300 p-1"
-                    onclick={() => (sidebar = null)}
+                    type="button"
+                    onclick={() => {
+                        sidebar = {
+                            card: false,
+                            type: 'ManageCoAuthors'
+                        };
+                    }}
                 >
-                    {m.cancel()}
+                    <UserSettingsOutline class="page__heading h-7 w-7 shrink-0" />
+                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                        <span class="page__heading">{m.coAuthors()}</span>
+                    </AnimatedUnderline>
                 </button>
-                <button class="cursor-pointer rounded bg-green-300 p-1" onclick={confirmClick}>
-                    {m.save()}
-                </button>
-            </div>
+            {/if}
+            <button
+                type="button"
+                onclick={() => {
+                    sidebar = {
+                        card: false,
+                        type: 'Share'
+                    };
+                }}
+            >
+                <ShareNodesOutline class="page__heading h-7 w-7 shrink-0" />
+                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                    <span class="page__heading">{m.share()}</span>
+                </AnimatedUnderline>
+            </button>
         </div>
-    </div>
-{/if}
+    {:else if sidebar.type === 'EditMetadata'}
+        <EditMetadata {treeId} bind:prevTreeData {treeLinkedData} bind:sidebar />
+    {:else if sidebar.type === 'ManageCoAuthors'}
+        <CoAuthor {treeId} coAuthors={treeLinkedData.coAuthors} bind:sidebar />
+    {:else if sidebar.type === 'Share'}
+        <Share bind:sidebar />
+    {:else if sidebar.card}
+        <EditCard bind:sidebar {history} />
+    {/if}
+</div>

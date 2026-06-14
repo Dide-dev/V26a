@@ -12,21 +12,27 @@
 
 <script lang="ts">
     let {
+        id,
         maxLength,
         height,
-        valueText = $bindable()
+        valueText = $bindable(),
+        placeholder = 'Enter text...'
     }: {
+        id: string;
         maxLength: number;
         height: number | 'full';
         valueText: string;
+        placeholder?: string;
     } = $props();
 </script>
 
 <textarea
-    class="w-full resize-none border"
+    {id}
+    class="input__long_text"
     class:h-full={height === 'full'}
     rows={height !== 'full' ? height : null}
     maxlength={maxLength}
     bind:value={valueText}
+    {placeholder}
 ></textarea>
 <p class="text-xs">{valueText.length}/{maxLength}</p>
