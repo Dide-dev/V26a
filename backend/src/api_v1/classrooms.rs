@@ -34,7 +34,8 @@ pub fn classrooms() -> Router<ArcState> {
     Router::new()
         .route("/", post(add_new_classroom))
         .route("/{classroom_id}/lessons", post(add_new_lesson))
-        .route("/{join_code}", get(get_classroom_content))
+        .route("/{classroom_id}/student-dash", get(get_student_dashboard))
+        .route("/{classroom_id}/teacher-dash", get(get_teacher_dashboard))
         .route("/login", post(classroom_login))
 }
 
