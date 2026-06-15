@@ -1967,8 +1967,8 @@ mod tests {
             ..Default::default()
         };
 
-        apply_tree_filters(&mut query1, &lower_case_tags, None).unwrap();
-        apply_tree_filters(&mut query2, &upper_case_tags, None).unwrap();
+        tree_list_query_tag_cte(&mut query1, &lower_case_tags.tag);
+        tree_list_query_tag_cte(&mut query2, &upper_case_tags.tag);
 
         assert_eq!(query1.sql(), query2.sql());
     }

@@ -371,8 +371,8 @@ mod tests {
             ..Default::default()
         };
 
-        apply_card_filters(&mut query1, &lower_case_tags);
-        apply_card_filters(&mut query2, &upper_case_tags);
+        list_query_tag_cte(&mut query1, &lower_case_tags.tags);
+        list_query_tag_cte(&mut query2, &upper_case_tags.tags);
 
         assert_eq!(query1.sql(), query2.sql());
     }
