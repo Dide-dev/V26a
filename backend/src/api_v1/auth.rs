@@ -55,7 +55,7 @@ pub struct LoginResponse {
 /// `login_request` - The credentials provided to log in, as [`LoginRequestBody`].
 ///
 /// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
+/// A [`LoginResponse`] which flags whether the combination of email and password is correct, and if the user is enabled.
 /// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
