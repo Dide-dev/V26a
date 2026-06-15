@@ -599,6 +599,7 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
         };
 
         let filter = TreeFilters {
+            show_own_private: true,
             lesson_id: Some(lesson_metadata.id),
             ..Default::default()
         };
