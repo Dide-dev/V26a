@@ -4,6 +4,10 @@
     Information and Computing Sciences)
 -->
 
+<script lang="ts">
+    import { appLink } from '$lib';
+</script>
+
 <div>
     <h1 class="page__title pb-1">Terms and conditions</h1>
     <p class="pb-2 italic *:*:inline">Last updated: June 9th, 2026</p>
@@ -169,7 +173,7 @@
     <p class="pb-1.5">Personal data may be processed when using the Service.</p>
     <p class="pb-1.5">
         The processing of personal data takes place in accordance with the <a
-            href="\privacy"
+            href={appLink('/privacy')}
             class="text__link">privacy policy</a
         >.
     </p>

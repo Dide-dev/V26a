@@ -4,6 +4,10 @@
     Information and Computing Sciences)
 -->
 
+<script lang="ts">
+    import { appLink } from '$lib';
+</script>
+
 <div>
     <h1 class="page__title pb-1">Privacy policy</h1>
     <p class="pb-2 italic *:*:inline">Last updated: June 8th, 2026</p>
@@ -73,7 +77,7 @@
         <li>To be able to email you if this is necessary to provide our services;</li>
         <li>
             To be able to email you if you wish, after you have provided feedback via the <a
-                href="\feedback"
+                href={appLink('/feedback')}
                 class="text__link">feedback</a
             > page;
         </li>
@@ -156,6 +160,7 @@
             target="_blank"
             rel="external">fi@uu.nl</a
         >
-        or via the contact details in the <a href="\colophon" class="text__link">colophon</a>.
+        or via the contact details in the
+        <a href={appLink('/colophon')} class="text__link">colophon</a>.
     </p>
 </div>

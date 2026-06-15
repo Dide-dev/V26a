@@ -4,6 +4,10 @@
     Information and Computing Sciences)
 -->
 
+<script lang="ts">
+    import { appLink } from '$lib';
+</script>
+
 <div>
     <h1 class="page__title pb-1">Voorwaarden</h1>
     <p class="pb-2 italic *:*:inline">Laatst geupdatet: 9 juni 2026</p>
@@ -173,7 +177,7 @@
     <p class="pb-1.5">Bij het gebruik van de Dienst kunnen persoonsgegevens worden verwerkt.</p>
     <p class="pb-1.5">
         De verwerking van persoonsgegevens vindt plaats overeenkomstig het <a
-            href="\privacy"
+            href={appLink('/privacy')}
             class="text__link">privacybeleid</a
         >.
     </p>
