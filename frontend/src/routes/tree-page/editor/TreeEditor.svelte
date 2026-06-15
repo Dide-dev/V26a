@@ -42,7 +42,13 @@
     let userInfo = $state(getUserInfo());
     let hasOwnerPermissions = $state(false);
 
-    let sideBarFraction = new Tween(300, {
+    const sideBarWidths = {
+        minimized: 76,
+        hovered: 300,
+        maximized: 600
+    };
+
+    let sideBarWidth = new Tween(sideBarWidths.minimized, {
         duration: 400,
         easing: cubicOut
     });
@@ -93,14 +99,25 @@
     });
 
     $effect(() => {
-        if (tree?.sidebar !== null) sideBarFraction.target = 600;
-        else sideBarFraction.target = 300;
+        switch (tree?.sidebar.kind) {
+            case 'Menu':
+                if (tree.sidebar.type === 'FullMenu') {
+                    sideBarWidth.target = sideBarWidths.hovered;
+                } else {
+                    sideBarWidth.target = sideBarWidths.minimized;
+                }
+                break;
+            default:
+                sideBarWidth.target = sideBarWidths.maximized;
+        }
+
+        console.log(window.scrollY);
     });
 
     let tree: {
         metadata: TreeMetadata;
         history: TreeHistory;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
         sidebarElement: null | SidebarComponent;
     } | null = $state(null);
 
@@ -113,7 +130,10 @@
                 fetchedTree.structure,
                 fetchedTree.cards
             ),
-            sidebar: null,
+            sidebar: {
+                kind: 'Menu',
+                type: 'IconsOnly'
+            },
             sidebarElement: null
         };
 
@@ -126,11 +146,9 @@
     });
 
     function undoButtonClick() {
-        tree!.sidebar = null;
         undo(tree!.history);
     }
     function redoButtonClick() {
-        tree!.sidebar = null;
         redo(tree!.history);
     }
     // The undo & redo keyboard shortcuts.
@@ -153,16 +171,16 @@
 {#if tree === null}
     <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
 {:else}
-    <div
-        class="grid h-full w-full"
-        style={`grid-template-columns: 1fr ${sideBarFraction.current}px;`}
-    >
+    <div class="grid h-full w-full" style={`grid-template-columns: 1fr ${sideBarWidth.current}px;`}>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             class="overflow-x-auto"
             onclick={() => {
-                tree!.sidebar = null;
+                tree!.sidebar = {
+                    kind: 'Menu',
+                    type: 'IconsOnly'
+                };
             }}
         >
             <TreeInformation tree={tree.metadata}>
@@ -250,6 +268,16 @@
             treeId={tree.history.treeId}
             bind:prevTreeData={tree.metadata.data}
             treeLinkedData={tree.metadata.linkedData}
+            onmouseenter={() => {
+                if (tree!.sidebar.kind === 'Menu') {
+                    tree!.sidebar.type = 'FullMenu';
+                }
+            }}
+            onmouseleave={() => {
+                if (tree!.sidebar.kind === 'Menu') {
+                    tree!.sidebar.type = 'IconsOnly';
+                }
+            }}
         />
     </div>
 {/if}

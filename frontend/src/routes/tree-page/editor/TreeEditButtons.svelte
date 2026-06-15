@@ -30,11 +30,14 @@
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
     } = $props();
 
     async function removeButtonClick() {
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
         await doDeleteCard(history, location);
     }
 
@@ -45,7 +48,10 @@
             mouseX: event.clientX,
             mouseY: event.clientY
         };
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
     }
 
     let cardId = $derived.by(() => {
@@ -58,7 +64,7 @@
         e.stopPropagation();
 
         sidebar = {
-            card: true,
+            kind: 'CardEditor',
             type: 'EditCard',
             location,
             editingVersion: $state.snapshot(card)

@@ -33,7 +33,7 @@
         location: number[];
         fakeNode?: boolean;
         dragState: DragState;
-        sidebar: SideBar | null;
+        sidebar: SideBar;
         color: BranchColor;
     } = $props();
 
@@ -48,8 +48,8 @@
         // but the fake node itself should still have it set to true.
         location[location.length - 1] === 0 &&
             (fakeNode ||
-                sidebar?.type !== 'NewCard' ||
-                JSON.stringify(location) !== JSON.stringify(sidebar?.location))
+                sidebar.type !== 'NewCard' ||
+                JSON.stringify(location) !== JSON.stringify(sidebar.location))
     );
     let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
 
@@ -63,7 +63,7 @@
         let iterator = node.children.keys().map((index) => ({ index, isFake: false }));
         let list: Child[] = [...iterator];
         if (
-            sidebar?.type === 'NewCard' &&
+            sidebar.type === 'NewCard' &&
             JSON.stringify(sidebar.location.slice(0, -1)) == JSON.stringify(location)
         ) {
             let lastIndex = sidebar.location[sidebar.location.length - 1];
@@ -168,10 +168,10 @@
         <div class="flex flex-col" bind:clientHeight={heightOfOwnCard}>
             <div class="shrink-0">
                 <CardViewer
-                    card={fakeNode ||
-                    (sidebar?.type == 'EditCard' &&
-                        JSON.stringify(sidebar.location) === JSON.stringify(location))
-                        ? sidebar!.editingVersion
+                    card={sidebar.kind === 'CardEditor' && (fakeNode ||
+                    (sidebar.type === 'EditCard' &&
+                        JSON.stringify(sidebar.location) === JSON.stringify(location)))
+                        ? sidebar.editingVersion
                         : history.currentCards[node!.cardId]}
                 />
             </div>

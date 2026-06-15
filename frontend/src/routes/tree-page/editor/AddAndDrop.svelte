@@ -28,7 +28,7 @@
         location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
     } = $props();
 
     export type Layout = LayoutRight | LayoutUnder | LayoutOver;
@@ -66,12 +66,12 @@
             return;
         }
         let editingVersion: CardData = { front: '', back: '' };
-        if (sidebar?.type === 'NewCard') {
+        if (sidebar.type === 'NewCard') {
             // Don't forget what the user typed if the user clicks a different add card.
             editingVersion = sidebar.editingVersion;
         }
         sidebar = {
-            card: true,
+            kind: 'CardEditor',
             type: 'NewCard',
             location: location,
             editingVersion

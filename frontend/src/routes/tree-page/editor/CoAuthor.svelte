@@ -21,7 +21,7 @@
     } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
     import iconTrash from '$lib/assets/icons/trash.svg?raw';
-    import type { ManageSideBar } from './Sidebar.svelte';
+    import type { ManageSideBar, MenuSideBar } from './Sidebar.svelte';
 
     let {
         treeId,
@@ -30,14 +30,17 @@
     }: {
         treeId: TreeId;
         coAuthors: string[];
-        sidebar: ManageSideBar | null;
+        sidebar: ManageSideBar | MenuSideBar;
     } = $props();
 
     function closeEdit(event: Event) {
         event.preventDefault();
         coAuthorName = '';
         apiResponse = null;
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
     }
 
     function onkeydown(event: KeyboardEvent) {

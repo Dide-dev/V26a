@@ -7,7 +7,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte';
-    import type { CardEditSideBar } from './Sidebar.svelte';
+    import type { CardEditSideBar, MenuSideBar } from './Sidebar.svelte';
     import SimpleTextEditArea from './SimpleTextEditArea.svelte';
     import Editor from '$lib/rich-text/Editor.svelte';
 
@@ -15,23 +15,22 @@
         sidebar = $bindable(),
         history
     }: {
-        sidebar: CardEditSideBar | null;
+        sidebar: CardEditSideBar | MenuSideBar;
         history: TreeHistory;
     } = $props();
 
     let isVisualEditor = $state(true);
 
     let cardChanged = $derived.by(() => {
-        if (!sidebar!.card) return false;
+        if (sidebar.kind !== 'CardEditor') return false;
 
-        if (sidebar!.editingVersion.back.length === 0) return false;
+        if (sidebar.editingVersion.back.length === 0) return false;
 
-        if (sidebar?.type === 'NewCard') return true;
+        if (sidebar.type === 'NewCard') return true;
 
-        let node = followIndexNode(history.currentStructure, sidebar!.location);
-        let frontChanged =
-            history.currentCards[node.cardId].front !== sidebar!.editingVersion.front;
-        let backChanged = history.currentCards[node.cardId].back !== sidebar!.editingVersion.back;
+        let node = followIndexNode(history.currentStructure, sidebar.location);
+        let frontChanged = history.currentCards[node.cardId].front !== sidebar.editingVersion.front;
+        let backChanged = history.currentCards[node.cardId].back !== sidebar.editingVersion.back;
 
         return frontChanged || backChanged;
     });
@@ -42,24 +41,30 @@
     };
 
     async function finishEdit() {
-        if (!sidebar!.card) return;
+        if (sidebar.kind !== 'CardEditor') return;
 
-        let node = followIndexNode(history.currentStructure, sidebar!.location);
-        await doEditCard(history, node.cardId, sidebar!.editingVersion);
-        sidebar = null;
+        let node = followIndexNode(history.currentStructure, sidebar.location);
+        await doEditCard(history, node.cardId, sidebar.editingVersion);
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
     }
 
     async function finishAdd() {
-        if (!sidebar!.card) return;
+        if (sidebar.kind !== 'CardEditor') return;
 
-        await doAddCard(history, sidebar!.location, sidebar!.editingVersion);
-        sidebar = null;
+        await doAddCard(history, sidebar.location, sidebar.editingVersion);
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
     }
 
     function confirmClick(e: Event) {
         e.preventDefault();
 
-        if (sidebar === null || !cardChanged || !sidebar.card) {
+        if (!cardChanged || sidebar.kind !== 'CardEditor') {
             return;
         }
 
@@ -91,7 +96,7 @@
 
     // Prevent any ctrl+z or the like in the sidebar from undo-ing actions in the tree.
     function onkeydown(event: KeyboardEvent) {
-        event.stopPropagation();
+        if (event.key !== 'Escape') event.stopPropagation();
 
         if (event.ctrlKey && event.key == 'Enter') {
             confirmClick(event);
@@ -99,69 +104,81 @@
     }
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<form class={[cardChanged && 'completed', 'pointer-events-auto flex w-full flex-col']} {onkeydown}>
-    <h2 class="page__heading">{m.editThisCard()}</h2>
+{#if sidebar.kind === 'CardEditor'}
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <form
+        class={[cardChanged && 'completed', 'pointer-events-auto flex w-full flex-col']}
+        {onkeydown}
+    >
+        <h2 class="page__heading">{m.editThisCard()}</h2>
 
-    <div>
-        <label for="front-text">{m.front()}</label>
-        <SimpleTextEditArea
-            id="front-text"
-            maxLength={maxInputLengths.frontMaxLength}
-            height={2}
-            bind:valueText={sidebar!.editingVersion.front}
-            placeholder={m.enterFrontText()}
-        />
-    </div>
-    <div class="flex gap-2">
-        <label for="editor-toggle">{m.back()}</label>
-        <div id="editor-toggle" class="grid grid-cols-2 rounded-md bg-white">
+        <div>
+            <label for="front-text">{m.front()}</label>
+            <SimpleTextEditArea
+                id="front-text"
+                maxLength={maxInputLengths.frontMaxLength}
+                height={2}
+                bind:valueText={sidebar.editingVersion.front}
+                placeholder={m.enterFrontText()}
+            />
+        </div>
+        <div class="flex gap-2">
+            <label for="editor-toggle">{m.back()}</label>
+            <div id="editor-toggle" class="grid grid-cols-2 rounded-md bg-white">
+                <button
+                    type="button"
+                    class={[
+                        isVisualEditor && 'cursor-not-allowed bg-tree-300 font-semibold',
+                        !isVisualEditor && 'cursor-pointer',
+                        'rounded-md p-1 transition-all duration-200 ease-in-out'
+                    ]}
+                    onclick={() => (isVisualEditor = true)}
+                >
+                    {m.visualEditor()}
+                </button>
+                <button
+                    type="button"
+                    class={[
+                        isVisualEditor && 'cursor-pointer',
+                        !isVisualEditor && 'cursor-not-allowed bg-tree-300 font-semibold',
+                        'rounded-md p-1 transition-all duration-200 ease-in-out'
+                    ]}
+                    onclick={() => (isVisualEditor = false)}
+                >
+                    {m.codeEditor()}
+                </button>
+            </div>
+        </div>
+        {#if isVisualEditor}
+            <Editor
+                maxLength={maxInputLengths.backMaxLength}
+                bind:valueText={sidebar.editingVersion.back}
+            />
+        {:else}
+            <SimpleTextEditArea
+                id="back-text"
+                maxLength={maxInputLengths.backMaxLength}
+                height="full"
+                bind:valueText={sidebar.editingVersion.back}
+            />
+        {/if}
+        {#if sidebar.errorMessage}
+            <p class="text-red-600">{sidebar.errorMessage}</p>
+        {/if}
+        <div class="grid grid-cols-2 gap-2">
             <button
-                type="button"
-                class={[
-                    isVisualEditor && 'cursor-not-allowed bg-tree-300 font-semibold',
-                    !isVisualEditor && 'cursor-pointer',
-                    'rounded-md p-1 transition-all duration-200 ease-in-out'
-                ]}
-                onclick={() => (isVisualEditor = true)}
+                type="reset"
+                onclick={() =>
+                    (sidebar = {
+                        kind: 'Menu',
+                        type: 'IconsOnly'
+                    })}
             >
-                {m.visualEditor()}
+                {m.cancel()}
             </button>
-            <button
-                type="button"
-                class={[
-                    isVisualEditor && 'cursor-pointer',
-                    !isVisualEditor && 'cursor-not-allowed bg-tree-300 font-semibold',
-                    'rounded-md p-1 transition-all duration-200 ease-in-out'
-                ]}
-                onclick={() => (isVisualEditor = false)}
-            >
-                {m.codeEditor()}
+            <button type="submit" onclick={confirmClick}>
+                {m.save()}
             </button>
         </div>
-    </div>
-    {#if isVisualEditor}
-        <Editor
-            maxLength={maxInputLengths.backMaxLength}
-            bind:valueText={sidebar!.editingVersion.back}
-        />
-    {:else}
-        <SimpleTextEditArea
-            id="back-text"
-            maxLength={maxInputLengths.backMaxLength}
-            height="full"
-            bind:valueText={sidebar!.editingVersion.back}
-        />
-    {/if}
-    {#if sidebar!.errorMessage}
-        <p class="text-red-600">{sidebar!.errorMessage}</p>
-    {/if}
-    <div class="grid grid-cols-2 gap-2">
-        <button type="reset" onclick={() => (sidebar = null)}>
-            {m.cancel()}
-        </button>
-        <button type="submit" onclick={confirmClick}>
-            {m.save()}
-        </button>
-    </div>
-</form>
+    </form>
+{/if}

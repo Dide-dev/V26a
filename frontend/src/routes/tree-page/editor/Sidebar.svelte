@@ -23,6 +23,7 @@
     import CoAuthor from './CoAuthor.svelte';
     import Share from './Share.svelte';
     import CardsLibrary from './CardsLibrary.svelte';
+    import type { EventHandler } from 'svelte/elements';
 
     let {
         sidebar = $bindable(),
@@ -30,20 +31,29 @@
         hasOwnerPermissions = true,
         treeId,
         prevTreeData = $bindable(),
-        treeLinkedData
+        treeLinkedData,
+        onmouseenter,
+        onmouseleave
     }: {
-        sidebar: SideBar | null;
+        sidebar: SideBar;
         history: TreeHistory;
         hasOwnerPermissions?: boolean;
         treeId: number;
         prevTreeData: TreeData;
         treeLinkedData: TreeLinkedData;
+        onmouseenter: EventHandler;
+        onmouseleave: EventHandler;
     } = $props();
 
-    export type SideBar = CardEditSideBar | ManageSideBar;
+    export type SideBar = MenuSideBar | CardEditSideBar | ManageSideBar;
+
+    export type MenuSideBar = {
+        kind: 'Menu';
+        type: 'IconsOnly' | 'FullMenu';
+    };
 
     export type CardEditSideBar = {
-        card: true;
+        kind: 'CardEditor';
         type: 'NewCard' | 'EditCard';
         location: number[];
         editingVersion: CardData;
@@ -51,88 +61,135 @@
     };
 
     export type ManageSideBar = {
-        card: false;
+        kind: 'Manager';
         type: 'EditMetadata' | 'ManageCoAuthors' | 'Share';
     };
+    /** Most recently recorded scroll position on window. */
+    let lastScrollPosition = $state(0);
+    /** Margin between nav-bar and the top of the screen in pixels. When 0, nav-bar is fully visible. */
+    let topScrollMargin = $state(0);
+    /** Height of a single row in the nav-bar in pixels. */
+    const navRowHeight = 40;
+    /** Default scroll distance in browser in pixels.*/
+    const defaultScrollDistance = 100;
+    /** Maximum margin between nav-bar and the top of the screen in pixels. */
+    const maxScrollMargin = navRowHeight + defaultScrollDistance;
+
+    let offset = $state(window.scrollY);
 </script>
 
+<svelte:window
+    onscroll={() => {
+        // We calculate the margin of the nav-bar, to account for it in the sidebar.
+        topScrollMargin = Math.min(
+            0,
+            Math.max(-maxScrollMargin, topScrollMargin + lastScrollPosition - window.scrollY)
+        );
+        lastScrollPosition = window.scrollY;
+
+        offset = Math.max(topScrollMargin, -navRowHeight) + navRowHeight;
+    }}
+    onkeydown={(e) => {
+        if (e.key === 'Escape') {
+            sidebar = {
+                kind: 'Menu',
+                type: 'IconsOnly',
+            }
+        }
+    }}
+/>
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-    class="h-full overflow-x-hidden overflow-y-auto rounded-bl-2xl bg-neutral-100 p-2 pb-4 shadow-[-5px_0px_20px_0px_rgba(0_0_0/0.2)]"
+    class={[
+        sidebar.kind !== 'Menu' && 'pl-4',
+        'relative flex h-full rounded-bl-2xl bg-neutral-100 px-2 pb-4 shadow-[-5px_0px_20px_0px_rgba(0_0_0/0.2)]'
+    ]}
+    {onmouseenter}
+    {onmouseleave}
 >
-    {#if sidebar === null}
-        <div
-            class="flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
-        >
-            <div class="m-1 flex gap-2 rounded">
-                <button
-                    class="cursor-pointer rounded p-1"
-                    class:bg-green-500={!isLibrary}
-                    onclick={() => (isLibrary = false)}
-                >
-                    <h1>{m.editThisCard()}</h1>
-                </button>
-                <button
-                    class="cursor-pointer rounded p-1"
-                    class:bg-green-500={isLibrary}
-                    onclick={async () => {
-                        isLibrary = true;
-                    }}
-                >
-                    <h1>{m.cardLibrary()}</h1>
-                </button>
-            </div>
-            <button
-                type="button"
-                onclick={() => {
-                    sidebar = {
-                        card: false,
-                        type: 'EditMetadata'
-                    };
-                }}
+    <div class={['sticky h-fit w-full']} style="top: {offset}px">
+        {#if sidebar.kind === 'Menu'}
+            <div
+                class="flex flex-col mt-2 gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
             >
-                <CellAttributesOutline class="page__heading h-7 w-7 shrink-0" />
-                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
-                    <span class="page__heading">{m.editMetadata()}</span>
-                </AnimatedUnderline>
-            </button>
-            {#if hasOwnerPermissions}
                 <button
                     type="button"
+                    class="overflow-hidden"
                     onclick={() => {
                         sidebar = {
-                            card: false,
-                            type: 'ManageCoAuthors'
+                            kind: 'Manager',
+                            type: 'EditMetadata'
                         };
                     }}
                 >
-                    <UserSettingsOutline class="page__heading h-7 w-7 shrink-0" />
-                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
-                        <span class="page__heading">{m.coAuthors()}</span>
-                    </AnimatedUnderline>
+                    <CellAttributesOutline
+                        class={[
+                            sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                            'page__heading h-7 w-7 shrink-0'
+                        ]}
+                    />
+                    {#if sidebar.type === 'FullMenu'}
+                        <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                            <span class="page__heading text-nowrap">{m.editMetadata()}</span>
+                        </AnimatedUnderline>
+                    {/if}
                 </button>
-            {/if}
-            <button
-                type="button"
-                onclick={() => {
-                    sidebar = {
-                        card: false,
-                        type: 'Share'
-                    };
-                }}
-            >
-                <ShareNodesOutline class="page__heading h-7 w-7 shrink-0" />
-                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
-                    <span class="page__heading">{m.share()}</span>
-                </AnimatedUnderline>
-            </button>
-        </div>
-    {:else if sidebar.type === 'EditMetadata'}
-        <EditMetadata {treeId} bind:prevTreeData {treeLinkedData} bind:sidebar />
-    {:else if sidebar.type === 'ManageCoAuthors'}
-        <CoAuthor {treeId} coAuthors={treeLinkedData.coAuthors} bind:sidebar />
-    {:else if sidebar.type === 'Share'}
-        <Share bind:sidebar />
-    {:else if sidebar.card}
-        <EditCard bind:sidebar {history} />
-    {/if}
+                {#if hasOwnerPermissions}
+                    <button
+                        type="button"
+                        class="overflow-hidden"
+                        onclick={() => {
+                            sidebar = {
+                                kind: 'Manager',
+                                type: 'ManageCoAuthors'
+                            };
+                        }}
+                    >
+                        <UserSettingsOutline
+                            class={[
+                                sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                                'page__heading h-7 w-7 shrink-0'
+                            ]}
+                        />
+                        {#if sidebar.type === 'FullMenu'}
+                            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                                <span class="page__heading text-nowrap">{m.coAuthors()}</span>
+                            </AnimatedUnderline>
+                        {/if}
+                    </button>
+                {/if}
+                <button
+                    type="button"
+                    class="overflow-hidden"
+                    onclick={() => {
+                        sidebar = {
+                            kind: 'Manager',
+                            type: 'Share'
+                        };
+                    }}
+                >
+                    <ShareNodesOutline
+                        class={[
+                            sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                            'page__heading h-7 w-7 shrink-0'
+                        ]}
+                    />
+                    {#if sidebar.type === 'FullMenu'}
+                        <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                            <span class="page__heading text-nowrap">{m.share()}</span>
+                        </AnimatedUnderline>
+                    {/if}
+                </button>
+            </div>
+        {:else if sidebar.type === 'EditMetadata'}
+            <EditMetadata {treeId} bind:prevTreeData {treeLinkedData} bind:sidebar />
+        {:else if sidebar.type === 'ManageCoAuthors'}
+            <CoAuthor {treeId} coAuthors={treeLinkedData.coAuthors} bind:sidebar />
+        {:else if sidebar.type === 'Share'}
+            <Share {treeId} bind:prevTreeData bind:sidebar />
+        {:else if sidebar.kind === 'CardEditor'}
+            <EditCard bind:sidebar {history} />
+        {/if}
+    </div>
 </div>
