@@ -34,6 +34,8 @@ pub fn auth() -> Router<ArcState> {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginResponse {
     pub succeeded: bool,
+    #[serde(default)]
+    pub disabled: bool,
 }
 
 #[utoipa::path(
@@ -68,14 +70,18 @@ async fn login(
     login_request.validate_inputs()?;
 
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((jar, Json(LoginResponse { succeeded: false, disabled: false })));
     };
+
+    if !credentials.enabled {
+        return Ok((jar, Json(LoginResponse { succeeded: false, disabled: true })));
+    }
 
     let password_valid = bcrypt::verify(login_request.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((jar, Json(LoginResponse { succeeded: false, disabled: false })));
     }
 
     let user_data = get_user(&db, credentials.user_id).await?;
@@ -126,7 +132,7 @@ async fn login(
 
     Ok((
         jar.add(cookie).add(user_info_cookie),
-        Json(LoginResponse { succeeded: true }),
+        Json(LoginResponse { succeeded: true, disabled: false }),
     ))
 }
 
