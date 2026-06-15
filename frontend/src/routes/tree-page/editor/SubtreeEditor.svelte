@@ -168,9 +168,10 @@
         <div class="flex flex-col" bind:clientHeight={heightOfOwnCard}>
             <div class="shrink-0">
                 <CardViewer
-                    card={sidebar.kind === 'CardEditor' && (fakeNode ||
-                    (sidebar.type === 'EditCard' &&
-                        JSON.stringify(sidebar.location) === JSON.stringify(location)))
+                    card={sidebar.kind === 'CardEditor' &&
+                    (fakeNode ||
+                        (sidebar.type === 'EditCard' &&
+                            JSON.stringify(sidebar.location) === JSON.stringify(location)))
                         ? sidebar.editingVersion
                         : history.currentCards[node!.cardId]}
                 />

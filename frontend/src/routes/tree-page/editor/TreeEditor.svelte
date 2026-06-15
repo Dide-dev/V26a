@@ -30,17 +30,24 @@
     import TreeInformation from '../TreeInformation.svelte';
     import {
         ArrowUpRightFromSquareOutline,
+        CheckOutline,
         FileCloneOutline,
+        LinkOutline,
+        LockSolid,
         RedoOutline,
         UndoOutline
     } from 'flowbite-svelte-icons';
     import { Tween } from 'svelte/motion';
     import { cubicOut } from 'svelte/easing';
+    import { page } from '$app/state';
+    import Notices, { type Notice } from '$lib/Notices.svelte';
 
     let { id }: { id: TreeId } = $props();
 
     let userInfo = $state(getUserInfo());
     let hasOwnerPermissions = $state(false);
+
+    let notices: Notice[] = $state([]);
 
     const sideBarWidths = {
         minimized: 76,
@@ -166,6 +173,22 @@
             event.stopPropagation();
         }
     }
+
+    /** Copy link to tree viewer page to user's clipboard. */
+    function copyLink(event: Event) {
+        event.preventDefault();
+
+        navigator.clipboard.writeText(
+            `${page.url.protocol}//${page.url.hostname}/tree-page/viewer?id=${tree?.metadata.genData.id}`
+        );
+
+        notices.push({
+            text: m.linkCopied(),
+            icon: checkIcon,
+            textColor: 'var(--color-tree-610)',
+            backgroundColor: 'var(--color-tree-100)'
+        });
+    }
 </script>
 
 {#if tree === null}
@@ -186,27 +209,48 @@
             <TreeInformation tree={tree.metadata}>
                 {#snippet titleSnippet()}
                     <div class="flex gap-1">
-                        <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
-                        <div class="flex flex-col justify-center">
-                            <a
-                                href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
-                                aria-label="view"
-                                class="page__title mt-3"
-                                title={m.viewTree()}
-                            >
-                                <ArrowUpRightFromSquareOutline class="h-7 w-7 shrink-0" />
-                            </a>
-                        </div>
-                        <div class="flex flex-col justify-center">
+                        <h1
+                            class={[
+                                !tree?.metadata.data.published && 'text-neutral-500 italic',
+                                'page__title mt-0'
+                            ]}
+                            title={tree?.metadata.data.published ? '' : m.unpublishedTree()}
+                        >
+                            {tree?.metadata.data.title}
+                        </h1>
+                        {#if tree?.metadata.data.published}
                             <button
-                                onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
-                                aria-label="duplicate"
-                                class="page__title mt-3 cursor-pointer"
-                                title={m.duplicateTree()}
+                                onclick={copyLink}
+                                aria-label="copy link"
+                                class="page__title mt-3 flex cursor-pointer items-center"
+                                title={m.copyLink()}
                             >
-                                <FileCloneOutline class="h-7 w-7 shrink-0" />
+                                <LinkOutline class="h-7 w-7 shrink-0" />
                             </button>
-                        </div>
+                        {:else}
+                            <div
+                                class="page__title mt-3 flex items-center"
+                                title={m.unpublishedTree()}
+                            >
+                                <LockSolid class="h-7 w-7 shrink-0" />
+                            </div>
+                        {/if}
+                        <a
+                            href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
+                            aria-label="view"
+                            class="page__title mt-3 flex items-center"
+                            title={m.viewTree()}
+                        >
+                            <ArrowUpRightFromSquareOutline class="h-7 w-7 shrink-0" />
+                        </a>
+                        <button
+                            onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
+                            aria-label="duplicate"
+                            class="page__title mt-3 flex cursor-pointer items-center"
+                            title={m.duplicateTree()}
+                        >
+                            <FileCloneOutline class="h-7 w-7 shrink-0" />
+                        </button>
                     </div>
                 {/snippet}
             </TreeInformation>
@@ -267,6 +311,7 @@
             {hasOwnerPermissions}
             treeId={tree.history.treeId}
             bind:prevTreeData={tree.metadata.data}
+            bind:notices
             treeLinkedData={tree.metadata.linkedData}
             onmouseenter={() => {
                 if (tree!.sidebar.kind === 'Menu') {
@@ -280,6 +325,8 @@
             }}
         />
     </div>
+
+    <Notices bind:notices maxNumberOfNotices={1} />
 {/if}
 
 <!--
@@ -309,7 +356,12 @@
     </style>
 {/if}
 
+{#snippet checkIcon()}
+    <CheckOutline class="h-5 w-5 shrink-0" />
+{/snippet}
+
 <style>
+    /* Remove any margins around the main element, such that the sidebar can grow the full height. */
     :global(nav),
     :global(footer) {
         margin: 0;

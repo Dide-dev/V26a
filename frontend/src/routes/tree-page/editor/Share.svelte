@@ -6,23 +6,23 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages';
-    import { Alert } from 'flowbite-svelte';
     import { CheckOutline } from 'flowbite-svelte-icons';
     import type { ManageSideBar, MenuSideBar } from './Sidebar.svelte';
     import { type TreeData, updateTreeMetaData } from '$lib/api-wrapper/trees';
     import { page } from '$app/state';
+    import type { Notice } from '$lib/Notices.svelte';
 
     let {
         sidebar = $bindable(),
         treeId,
-        prevTreeData = $bindable()
+        prevTreeData = $bindable(),
+        notices = $bindable()
     }: {
         treeId: number;
         sidebar: ManageSideBar | MenuSideBar;
         prevTreeData: TreeData;
+        notices: Notice[];
     } = $props();
-
-    let notices: string[] = $state([]);
 
     function onkeydown(event: KeyboardEvent) {
         // When ctrl+z is pressed, we only want that event to be handled in the relevant textbox,
@@ -51,11 +51,12 @@
             `${page.url.protocol}//${page.url.hostname}/tree-page/viewer?id=${treeId}`
         );
 
-        if (notices.length < 5) notices.push(m.linkCopied());
-    }
-
-    function dismissNotice(index: number) {
-        notices.splice(index, 1);
+        notices.push({
+            text: m.linkCopied(),
+            icon: checkIcon,
+            textColor: 'var(--color-tree-610)',
+            backgroundColor: 'var(--color-tree-100)'
+        });
     }
 </script>
 
@@ -83,17 +84,6 @@
     {/if}
 </form>
 
-<div class="fixed right-2 bottom-2 z-50 flex flex-col gap-1">
-    {#each notices as notice, i (i)}
-        <Alert
-            dismissable
-            onclick={() => dismissNotice(i)}
-            class="rounded-md border bg-tree-100 text-tree-610"
-        >
-            {#snippet icon()}
-                <CheckOutline class="h-5 w-5 shrink-0" />
-            {/snippet}
-            <p>{notice}</p>
-        </Alert>
-    {/each}
-</div>
+{#snippet checkIcon()}
+    <CheckOutline class="h-5 w-5 shrink-0" />
+{/snippet}

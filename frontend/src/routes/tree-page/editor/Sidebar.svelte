@@ -24,6 +24,7 @@
     import Share from './Share.svelte';
     import CardsLibrary from './CardsLibrary.svelte';
     import type { EventHandler } from 'svelte/elements';
+    import type { Notice } from '$lib/Notices.svelte';
 
     let {
         sidebar = $bindable(),
@@ -31,6 +32,7 @@
         hasOwnerPermissions = true,
         treeId,
         prevTreeData = $bindable(),
+        notices = $bindable(),
         treeLinkedData,
         onmouseenter,
         onmouseleave
@@ -40,6 +42,7 @@
         hasOwnerPermissions?: boolean;
         treeId: number;
         prevTreeData: TreeData;
+        notices: Notice[];
         treeLinkedData: TreeLinkedData;
         onmouseenter: EventHandler;
         onmouseleave: EventHandler;
@@ -93,8 +96,8 @@
         if (e.key === 'Escape') {
             sidebar = {
                 kind: 'Menu',
-                type: 'IconsOnly',
-            }
+                type: 'IconsOnly'
+            };
         }
     }}
 />
@@ -111,7 +114,7 @@
     <div class={['sticky h-fit w-full']} style="top: {offset}px">
         {#if sidebar.kind === 'Menu'}
             <div
-                class="flex flex-col mt-2 gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
+                class="mt-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
             >
                 <button
                     type="button"
@@ -187,7 +190,7 @@
         {:else if sidebar.type === 'ManageCoAuthors'}
             <CoAuthor {treeId} coAuthors={treeLinkedData.coAuthors} bind:sidebar />
         {:else if sidebar.type === 'Share'}
-            <Share {treeId} bind:prevTreeData bind:sidebar />
+            <Share {treeId} bind:prevTreeData bind:sidebar bind:notices />
         {:else if sidebar.kind === 'CardEditor'}
             <EditCard bind:sidebar {history} />
         {/if}
