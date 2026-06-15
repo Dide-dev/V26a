@@ -187,7 +187,7 @@
 <svelte:body {onkeydown} />
 
 <form
-    data-testid="metadata-popup"
+    data-testid="metadata-menu"
     onsubmit={saveData}
     class={[formChanged && 'completed', 'flex h-fit w-full flex-col overflow-hidden']}
 >

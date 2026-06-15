@@ -125,6 +125,7 @@
                             type: 'EditMetadata'
                         };
                     }}
+                    data-testid="metadata-button"
                 >
                     <CellAttributesOutline
                         class={[
