@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO classroom_sessions (token, classroom_id, id_within_classroom, expires_at)\n             VALUES ($1, $2, $3, $4)\n             ON CONFLICT (token, classroom_id)\n             DO UPDATE SET expires_at = excluded.expires_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4",
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a9314be1e73950a86555de44018e7581d19aad3db6cd11864f8abe14b25e07b3"
+}

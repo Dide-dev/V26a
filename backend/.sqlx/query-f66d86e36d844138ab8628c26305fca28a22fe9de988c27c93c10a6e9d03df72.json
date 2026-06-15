@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.classroom_id, s.id_within_classroom, u.name\n             FROM classroom_tokens t\n             JOIN classroom_sessions s ON t.token = s.token\n             JOIN classroom_users u ON u.classroom_id = s.classroom_id AND u.id_within_classroom = s.id_within_classroom\n             WHERE t.token = $1 AND s.expires_at > NOW()",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classroom_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "id_within_classroom",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f66d86e36d844138ab8628c26305fca28a22fe9de988c27c93c10a6e9d03df72"
+}

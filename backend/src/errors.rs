@@ -35,6 +35,8 @@ pub enum ApiError {
     InvalidIsbn,
     /// An error to return when the user requests a page that doesn't exist.
     InvalidPage,
+    /// An error to return when the user attempts to add a language that already exists.
+    LanguageExists(String),
     /// An error to return when the user requests a page number that exceeds the defined maximum.
     MaxPageNumberExceeded(i32),
     /// An error to return when the user requests a page size that exceeds the defined maximum.
@@ -62,14 +64,16 @@ pub enum ApiError {
     NoImageBodyProvidedException,
     /// An error to return when a tree is added with a default structure containing cards.
     NonEmptyStructure,
+    /// An error to return when the user attempts to add a subject that already exists.
+    SubjectExists(String),
+    /// An error to return when the classroom id could not be retrieved from the api uri.
+    ClassroomIdRetrievalError,
 
     //-------------------//
     // 401: UNAUTHORIZED //
     //-------------------//
-    /// An error to be returned by `Axum` when a user tries to access a protected endpoint with
-    /// an expired session.
-    ExpiredSession,
-    /// An error to be returned by `Axum` when a user provides a session that can not be decoded.
+    /// An error to be returned by `Axum` when a user provides a session that cannot be retrieved
+    /// from the database. It may have expired.
     InvalidSession,
     /// An error to be returned by `Axum` when a protected endpoint is accessed without providing
     /// a session.
@@ -160,6 +164,7 @@ impl From<lettre::error::Error> for ApiError {
 // Define how errors should be converted to messages.
 #[allow(clippy::too_many_lines)]
 impl Display for ApiError {
+    #[allow(clippy::too_many_lines)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             //------------------//
@@ -192,6 +197,9 @@ impl Display for ApiError {
             }
             ApiError::InvalidPage => {
                 write!(f, "This page does not exist.")
+            }
+            ApiError::LanguageExists(language) => {
+                write!(f, "Language \"{language}\" already exists.")
             }
             ApiError::MaxPageNumberExceeded(max_page) => {
                 write!(f, "You may not request a page higher than {max_page}.")
@@ -227,12 +235,20 @@ impl Display for ApiError {
                 f,
                 "The tree structure contains cards, make sure to initialize a tree without cards."
             ),
+            ApiError::SubjectExists(subject) => {
+                write!(f, "Subject \"{subject}\" already exists.")
+            }
+            ApiError::ClassroomIdRetrievalError => write!(
+                f,
+                "The classroom id could not be retrieved from the API uri"
+            ),
 
             //-------------------//
             // 401: UNAUTHORIZED //
             //-------------------//
-            ApiError::ExpiredSession => write!(f, "Your session has expired, please log in again."),
-            ApiError::InvalidSession => write!(f, "Invalid authorisation."),
+            ApiError::InvalidSession => {
+                write!(f, "Invalid authorisation. Your session may have expired.")
+            }
             ApiError::MissingAuthentication => write!(f, "You need to be logged in to do this."),
 
             //----------------//
@@ -303,6 +319,7 @@ impl ApiError {
             | ApiError::InvalidImageType
             | ApiError::InvalidIsbn
             | ApiError::InvalidPage
+            | ApiError::LanguageExists(_)
             | ApiError::MaxPageNumberExceeded(_)
             | ApiError::MaxPageSizeExceeded(_)
             | ApiError::MismatchedStructure
@@ -315,11 +332,11 @@ impl ApiError {
             | ApiError::MissingUser(_)
             | ApiError::MissingUsername(_)
             | ApiError::NoImageBodyProvidedException
-            | ApiError::NonEmptyStructure => StatusCode::BAD_REQUEST,
+            | ApiError::NonEmptyStructure
+            | ApiError::SubjectExists(_)
+            | ApiError::ClassroomIdRetrievalError => StatusCode::BAD_REQUEST,
 
-            ApiError::ExpiredSession
-            | ApiError::InvalidSession
-            | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
+            ApiError::InvalidSession | ApiError::MissingAuthentication => StatusCode::UNAUTHORIZED,
 
             ApiError::NoPermission => StatusCode::FORBIDDEN,
 

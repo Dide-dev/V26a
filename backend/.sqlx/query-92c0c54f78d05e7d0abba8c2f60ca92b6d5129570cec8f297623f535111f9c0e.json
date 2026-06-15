@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            trees.*,\n            users.name AS owner_name,\n            subjects.name AS \"subject_name?\",\n            languages.name AS language_name,\n            COALESCE(books.title, '') AS book_name,\n            COALESCE(books.author, '') AS book_author,\n            COALESCE(books.edition, '') AS book_edition,\n            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags,\n            ARRAY(SELECT\n                (SELECT name FROM users as co_users WHERE co_users.id = co_authors.user_id)\n                FROM co_authors WHERE tree_id = trees.id\n            ) AS co_authors        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        LEFT JOIN languages ON trees.language_code = languages.code\n        WHERE trees.id = $1",
+  "query": "SELECT\n            trees.id, owner_id, trees.created_at, last_modified, published, times_visited, last_visited, trees.title, description, book_chapter, book_exercise, assignment_text, structure, trees.language_code, subject_id, book_isbn,\n            users.name AS owner_name,\n            subjects.name AS \"subject_name?\",\n            languages.name AS language_name,\n            COALESCE(books.title, '') AS book_name,\n            COALESCE(books.author, '') AS book_author,\n            COALESCE(books.edition, '') AS book_edition,\n            ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = tags.id WHERE tree_id = trees.id) AS tags,\n            ARRAY(SELECT\n                (SELECT name FROM users as co_users WHERE co_users.id = co_authors.user_id)\n                FROM co_authors WHERE tree_id = trees.id\n            ) AS co_authors        FROM trees\n        LEFT JOIN books ON trees.book_isbn = books.isbn\n        LEFT JOIN users ON users.id = trees.owner_id\n        LEFT JOIN subjects ON subjects.id = trees.subject_id\n        LEFT JOIN languages ON trees.language_code = languages.code\n        WHERE trees.id = $1",
   "describe": {
     "columns": [
       {
@@ -156,5 +156,5 @@
       null
     ]
   },
-  "hash": "aa7b58dc46e15c0cb148ff3b8feff2f1acc62508d65586403c78c658388edc31"
+  "hash": "92c0c54f78d05e7d0abba8c2f60ca92b6d5129570cec8f297623f535111f9c0e"
 }
