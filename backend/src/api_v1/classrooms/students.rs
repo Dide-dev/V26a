@@ -277,7 +277,7 @@ pub(super) async fn get_all_classrooms_as_student(
 }
 
 #[utoipa::path(
-    post,
+    get,
     path = "/{classroom_id}/dashboard-student",
     context_path = "/api/v1/classrooms",
     responses(

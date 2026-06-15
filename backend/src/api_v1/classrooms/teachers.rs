@@ -135,7 +135,7 @@ pub(super) async fn get_all_classrooms_as_teacher(
 }
 
 #[utoipa::path(
-    post,
+    get,
     path = "/{classroom_id}/dashboard-teacher",
     context_path = "/api/v1/classrooms",
     responses(
@@ -175,7 +175,8 @@ pub(super) async fn get_teacher_dashboard(
 
     let metadata = get_classroom_metadata_from_id(&db, classroom_id).await?;
     let lessons =
-        get_lessons_with_tree_ids_from_classroom(get_connection!(db), classroom_id, Some(&claims)).await?;
+        get_lessons_with_tree_ids_from_classroom(get_connection!(db), classroom_id, Some(&claims))
+            .await?;
     let join_code = get_classroom_join_code_from_id(&db, classroom_id).await?;
 
     Ok(Json(ClassroomTeacherDashboardData {

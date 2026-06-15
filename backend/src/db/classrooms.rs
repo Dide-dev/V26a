@@ -9,11 +9,11 @@ use crate::db_structs::classrooms::{
     ClassroomAddData, ClassroomMetaData, LessonAddData, LessonMetaData, LessonWithTrees,
 };
 use crate::db_structs::pagination::PaginationOptions;
+use crate::db_structs::session::Claims;
 use crate::db_structs::trees::TreeFilters;
 use crate::errors::ApiError;
 use rand::prelude::*;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
-use crate::db_structs::session::Claims;
 
 /// In a loop, generates a random join code consisting of 6 characters and checks if it already exists.
 ///
@@ -557,8 +557,8 @@ pub async fn add_existing_tree_to_lesson(
 ///
 /// `classroom_id` - The classroom id to get the data for.
 ///
-/// `with_unpublished_lessons` - Whether or not unpublished lessons should be included
-/// (true for teachers, false for students).
+/// `claims` - An option to indicate whether or not unpublished lessons should be included
+/// (for teachers, add [`Some(Claims)`](Claims); for students, add [`None`]).
 ///
 /// # Returns
 /// Returns a [`Vec<LessonWithTrees>`](LessonWithTrees) that contains the lesson metadata and the
