@@ -78,7 +78,13 @@
     }
 </script>
 
-<div class={['flex max-h-full w-7/8 max-w-3xl flex-col']}>
+<div
+    class={[
+        filterFields !== null && 'max-w-4xl',
+        filterFields === null && 'max-w-3xl',
+        'flex max-h-full w-7/8 flex-col'
+    ]}
+>
     <div class="list-grid" style={`--filter-col-width: ${filterFraction.current}fr`}>
         <div></div>
         <div>
@@ -180,7 +186,7 @@
             gap: var(--spacing-padding-small);
 
             @media (min-width: 48rem) {
-                grid-template-columns: var(--filter-col-width) 1.2fr;
+                grid-template-columns: var(--filter-col-width) 1.8fr;
             }
 
             @media (width < 48rem) {
