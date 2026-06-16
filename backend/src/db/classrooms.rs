@@ -604,7 +604,9 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
             ..Default::default()
         };
 
-        let lesson_trees = get_queried_list(&mut *db, &page, &filter, claims).await?;
+        let lesson_trees = get_queried_list(&mut *db, &page, &filter, claims)
+            .await
+            .unwrap_or(Vec::new());
 
         all_lessons.push(LessonWithTrees {
             metadata: lesson_metadata,
@@ -891,6 +893,25 @@ mod tests {
         .tree_id;
 
         assert_eq!(found_tree_id_in_lesson, tree_id);
+    }
+
+    #[sqlx::test]
+    async fn test_get_lessons_without_tree_ids_from_classroom_teacher(db: PgPool) {
+        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_id).await;
+
+        let lesson = get_lessons_with_tree_ids_from_classroom(
+            get_connection_unwrap!(db),
+            classroom_id,
+            Some(&claims),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(lesson.len(), 1);
+        assert_eq!(lesson[0].metadata.id, lesson_id);
+        assert_eq!(lesson[0].trees.len(), 0);
     }
 
     #[sqlx::test]
