@@ -4,6 +4,15 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
+<!--
+    @component
+    Render a pop-up menu allowing the user to upload cards to the card library, to be used on the edit-tree page.
+
+    ## Params
+    - `title`  - The title of the card that the user wants for his/her selected card in the edit-tree page.
+    - `tags`   - A list of tags that contains tags that the user wants to add to his selected card in the edit-tree page.
+-->
+
 <script lang="ts">
     import { minInputLengths, maxInputLengths } from '$lib/api-wrapper/trees';
     import { tryParseTags } from '$lib/treeMetadata';
