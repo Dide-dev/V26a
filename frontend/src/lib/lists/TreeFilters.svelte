@@ -238,7 +238,6 @@
      * @param i - The index of the book input that was updated.
      */
     function handleBookUpdate(i: number) {
-        let hadError = errors.bookInvalidIsbns[i];
         errors.bookInvalidIsbns[i] = false;
         let isbn = tryParseISBN(localOptions.book[i]);
         if (isbn === null) {
@@ -283,6 +282,11 @@
         languages = await getAllLanguages();
         subjectsRecord = await getAllSubjects();
         localOptions.book = [...filterOptions.book];
+        localOptions.ownerName = filterOptions.ownerName;
+        localOptions.searchQuery =
+            (filterOptions.searchTerms ?? '') +
+            (filterOptions.searchTerms !== null && filterOptions.tag.length > 0 ? ' ' : '') +
+            filterOptions.tag.map((t) => `#${t}`).join(' ');
     });
 </script>
 
