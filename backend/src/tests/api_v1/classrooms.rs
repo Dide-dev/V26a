@@ -210,12 +210,7 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classrooms_teacher(db: PgPool) {
-    let test_state = setup(db);
-
-    let account1 = RegisterData::test_values();
-    register(&test_state, &account1).await;
-    let server = test_state.server;
-    login(&server, account1.email).await;
+    let server = setup_login(db).await;
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
@@ -243,12 +238,7 @@ async fn test_get_classrooms_teacher_unauthorized(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classrooms_student(db: PgPool) {
-    let test_state = setup(db);
-
-    let account1 = RegisterData::test_values();
-    register(&test_state, &account1).await;
-    let server = test_state.server;
-    login(&server, account1.email).await;
+    let server = setup_login(db).await;
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
@@ -288,12 +278,7 @@ async fn test_get_classrooms_student_unauthorized(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classroom_dashboard_teacher(db: PgPool) {
-    let test_state = setup(db);
-
-    let account1 = RegisterData::test_values();
-    register(&test_state, &account1).await;
-    let server = test_state.server;
-    login(&server, account1.email).await;
+    let server = setup_login(db).await;
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
@@ -322,12 +307,7 @@ async fn test_get_classroom_dashboard_teacher_unauthorized(db: PgPool) {
 
 #[sqlx::test]
 async fn test_get_classroom_dashboard_student(db: PgPool) {
-    let test_state = setup(db);
-
-    let account1 = RegisterData::test_values();
-    register(&test_state, &account1).await;
-    let server = test_state.server;
-    login(&server, account1.email).await;
+    let server = setup_login(db).await;
 
     let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
