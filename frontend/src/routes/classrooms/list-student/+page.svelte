@@ -6,14 +6,11 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { type ClassroomListResponse } from '$lib/api-wrapper/classrooms';
-    import { getAllOwnedClassrooms } from '$lib/api-wrapper/users';
+    import {type ClassroomListResponse, getAllClassroomUserInfos} from '$lib/api-wrapper/classrooms';
+    import { getAllClassroomsStudent } from '$lib/api-wrapper/users';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import { getUserInfo } from '$lib/api-wrapper/users';
-    import { redirectLogin } from '$lib/api-wrapper';
-    import { page } from '$app/state';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for classroom deletion is not possible.
@@ -31,16 +28,14 @@
     });
 
     async function loadClassrooms() {
-        let userInfo = getUserInfo();
+        let userInfo = getAllClassroomUserInfos();
 
         let paginationOptions: PaginationOptions = {
             page: thisPage,
             size: pageSizeNumber
         };
         if (userInfo !== null) {
-            classroomListResponse = await getAllOwnedClassrooms(userInfo.sub, paginationOptions);
-        } else {
-            await redirectLogin(page.url);
+            classroomListResponse = await getAllClassroomsStudent(paginationOptions);
         }
     }
 
@@ -102,7 +97,6 @@
                 <tr>
                     <th class="text-left">{m.classroom()}</th>
                     <th class="text-left">{m.description()}</th>
-                    <th class="text-left">{m.code()}</th>
                 </tr>
             </thead>
             <tbody>
@@ -111,16 +105,13 @@
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
                                 href={appLink(
-                                    `/classrooms/teacher-dashboard?id=${classroom.genData.id}`
+                                    `/classrooms/student-dashboard?id=${classroom.genData.id}`
                                 )}
                                 target="_blank">{classroom.data.name}</a
                             >
                         </td>
                         <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
                             >{classroom.data.description}</td
-                        >
-                        <td class="max-w-96 pr-4 pl-4 align-text-top wrap-anywhere"
-                            >{classroom.genData.joinCode}</td
                         >
                     </tr>
                 {/each}

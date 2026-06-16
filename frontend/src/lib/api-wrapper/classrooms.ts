@@ -64,10 +64,20 @@ export type ClassroomLoginResponseJoinCodeIncorrect = {
     type: 'JoinCodeIncorrect';
     joinCode: string;
 };
-
 export type ClassroomLoginResponseMissingUser = {
     type: 'MissingUser';
     userNumber: number;
+};
+
+export type ClassroomUserInfo = {
+    id: ClassroomId;
+    num: number;
+    name: string;
+}
+
+/** The data in the classroom cookie */
+export type AllClassroomUserInfos = {
+    claims: ClassroomUserInfo[];
 };
 
 /** Add a classroom to the database */
@@ -87,5 +97,38 @@ export function addLesson(
 export function classroomLogin(
     classroomUserLoginData: ClassroomUserLoginData
 ): Promise<ClassroomLoginResponse> {
-    return apiCallPostClassroom('login', classroomUserLoginData);
+    return apiCallPostClassroom('/login', classroomUserLoginData);
+}
+
+/** Gets all information from the classroom_user_infos cookie */
+export function getAllClassroomUserInfos(): AllClassroomUserInfos | null {
+    if (typeof document === 'undefined') return null;
+    const cookie = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('classroom_user_infos='));
+    if (!cookie) return null;
+    try {
+        return JSON.parse(decodeURIComponent(cookie.split('=')[1]));
+    } catch {
+        return null;
+    }
+}
+
+/** Gets information for one classroom from the classroom_user_infos cookie */
+export function getClassroomUserInfo(classroomId: ClassroomId): ClassroomUserInfo | null {
+    if (typeof document === 'undefined') return null;
+    const cookie = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('classroom_user_infos='));
+    if (!cookie) return null;
+    try {
+        const allClassroomUserInfos: AllClassroomUserInfos = JSON.parse(decodeURIComponent(cookie.split('=')[1]));
+        allClassroomUserInfos.claims.forEach(classroomUserInfo => {
+            if (classroomUserInfo.id == classroomId)
+                return classroomUserInfo;
+        })
+        return null;
+    } catch {
+        return null;
+    }
 }

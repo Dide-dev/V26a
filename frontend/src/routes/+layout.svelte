@@ -89,6 +89,10 @@
                         {
                             href: '/classrooms/list',
                             text: m.classroomList()
+                        },
+                        {
+                            href: '/classrooms/join',
+                            text: m.classroomJoin()
                         }
                     ]
                 })
