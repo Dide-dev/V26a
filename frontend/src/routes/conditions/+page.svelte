@@ -12,7 +12,7 @@
     const locale = getLocale();
 </script>
 
-<div class="flex w-full justify-center *:w-md">
+<div class="flex w-full justify-center *:max-w-md *:not-md:w-7/8">
     {#if locale === 'nl'}
         <Nl />
     {:else if locale === 'en'}
