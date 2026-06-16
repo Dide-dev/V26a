@@ -82,20 +82,19 @@
 {#if visible}
     <Popup>
         {#if uploaded}
-            <div
-                class="mb-3 flex w-64 flex-col items-center text-center"
-                data-testid="card-upload-success"
-            >
-                <p class="text-black">{m.cardUploadedSuccessfully()}</p>
-                <button type="submit" onclick={closeEdit}>{m.close()}</button>
-            </div>
+            <form data-testid="card-upload-success">
+                <div>
+                    <p class="text-black">{m.cardUploadedSuccessfully()}</p>
+                    <button type="reset" onclick={closeEdit}>{m.close()}</button>
+                </div>
+            </form>
         {:else}
             <form
                 data-testid="card-upload-popup"
                 onsubmit={handleSave}
                 class={[formChanged && 'completed', 'mb-3 flex w-64 flex-col']}
             >
-                <div class="w-64">
+                <div class="w-70">
                     <label for="title">{m.title()} *</label>
                     <div class="input__container">
                         <input
@@ -104,7 +103,7 @@
                             type="text"
                             bind:value={titleInput}
                             placeholder={m.examplePlaceholderRequired({
-                                value: m.exampleTitleCard({ name: '' })
+                                value: m.exampleTitleCard()
                             })}
                             oninput={() => {
                                 titleChanged = true;
