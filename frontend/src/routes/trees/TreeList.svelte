@@ -125,6 +125,14 @@
         replaceState(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`, {});
     }
 
+    function handleDelete() {
+        if (treeListResponse?.trees.length === 1 && currentPage > 1) {
+            currentPage -= 1;
+        }
+
+        loadTrees();
+    }
+
     let entriesExpanded = $state(Array.from({ length: 10 }, () => false));
 </script>
 
@@ -146,7 +154,7 @@
     {:else}
         <div class="list__container">
             {#each treeListResponse?.trees as tree, i (tree.genData.id)}
-                <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} />
+                <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} {handleDelete} />
             {/each}
         </div>
     {/if}
