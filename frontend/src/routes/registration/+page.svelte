@@ -264,6 +264,7 @@
                             </a>
                         {/snippet}
                     </ParaglideMessage>
+                    {m.checkSpam()}
                 </p>
             </div>
 

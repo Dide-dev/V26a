@@ -192,6 +192,7 @@
     "heuristicTrees": "Heuristic trees",
     "pendingRegistrationTitle": "E-mail verification required",
     "pendingRegistrationBody": "We have sent an e-mail to {#link}{mail}{/link}. Please verify your account to log in.",
+    "checkSpam": "If you can't find the e-mail, please check your spam.",
     "verificationSuccessTitle": "Account verified",
     "verificationSuccessBody": "Your account has been successfully verified, you can now log in.",
     "verificationFailureTitle": "Verification failed",

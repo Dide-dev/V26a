@@ -72,6 +72,7 @@
                         </a>
                     {/snippet}
                 </ParaglideMessage>
+                {m.checkSpam()}
             </p>
 
             <button type="submit" class="mt-4 cursor-pointer rounded px-3 py-1" onclick={gotoLogin}
