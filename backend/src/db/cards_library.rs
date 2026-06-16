@@ -3,10 +3,10 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
 use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
+use std::collections::HashSet;
 
 /// Add a list of tags for a given library card in the database.
 ///
@@ -27,8 +27,23 @@ pub async fn add_tags(
     library_card_id: i32,
     tags: &[String],
 ) -> Result<(), ApiError> {
+    let set = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<HashSet<_>>();
+    if set.len() < tags.len() {
+        return Err(ApiError::DuplicateTags);
+    }
+
     query!(
-        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
+        "INSERT INTO tags (name)
+         SELECT tag
+         FROM UNNEST($1::VARCHAR(32)[]) AS t(tag)
+         WHERE NOT EXISTS (
+              SELECT 1
+              FROM tags
+              WHERE LOWER(tags.name) = LOWER(t.tag)
+         )",
         tags
     )
     .execute(&mut *db)
@@ -92,13 +107,6 @@ pub async fn cards_library_add(
     .await?
     .id;
 
-    // Delete the old tags and add the new ones.
-    query!(
-        "DELETE FROM library_cards_tags WHERE library_card_id = $1",
-        library_card_id
-    )
-    .execute(&mut *db)
-    .await?;
     add_tags(db, library_card_id, tags).await?;
 
     Ok(library_card_id)
@@ -277,6 +285,19 @@ mod tests {
         let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
+        let _card_lib_id = cards_library_add(
+            get_connection_unwrap!(db),
+            claims.sub,
+            &title,
+            &tags,
+            &card_text,
+        )
+        .await
+        .is_err();
+
+        // The duplicate tag throws an error.
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
+
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
             claims.sub,
@@ -304,9 +325,6 @@ mod tests {
             .fetch_all(&db)
             .await
             .unwrap();
-
-        // It should leave out the duplicate all caps tag.
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
 
         assert_eq!(
             found_tags
@@ -432,7 +450,7 @@ mod tests {
             .data
             .name;
         let title = "title".to_owned();
-        let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(

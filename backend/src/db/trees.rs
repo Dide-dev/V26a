@@ -378,8 +378,23 @@ pub async fn add_tags(
     tree_id: i32,
     tags: &[String],
 ) -> Result<(), ApiError> {
+    let set = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<HashSet<_>>();
+    if set.len() < tags.len() {
+        return Err(ApiError::DuplicateTags);
+    }
+
     query!(
-        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
+        "INSERT INTO tags (name)
+         SELECT tag
+         FROM UNNEST($1::VARCHAR(32)[]) AS t(tag)
+         WHERE NOT EXISTS (
+              SELECT 1
+              FROM tags
+              WHERE LOWER(tags.name) = LOWER(t.tag)
+         )",
         tags
     )
     .execute(&mut *db)
@@ -1647,12 +1662,17 @@ mod tests {
             assignment_text: "Updated assignment".to_string(),
             published: true,
         };
+        let _ = update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone())
+            .await
+            .is_err();
+
+        // The duplicate tag throws an error.
+        new_tree_data.tags = vec!["tag1".to_string(), "tag3".to_string()];
+
         update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone())
             .await
             .unwrap();
 
-        // Verify the data was updated and that the duplicate tag was left out
-        new_tree_data.tags = vec!["tag1".to_string(), "tag3".to_string()];
         let (found_tree_metadata, _) = db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
             .await
             .unwrap()
