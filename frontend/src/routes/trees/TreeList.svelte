@@ -19,7 +19,7 @@
     import { page } from '$app/state';
     import { getUserInfo } from '$lib/api-wrapper/users';
     import { booleanFromString } from '$lib';
-    import { goto } from '$app/navigation';
+    import { replaceState } from '$app/navigation';
 
     let {
         filterOptions,
@@ -54,8 +54,6 @@
 
     function parseParams() {
         let params: Record<string, string[]> = {};
-
-        console.log(params);
 
         for (const field in paginationOptions) {
             params[field] = page.url.searchParams.getAll(field);
@@ -96,7 +94,7 @@
         currentPage = 1;
         await loadTrees();
         // Update search parameters.
-        await goto(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`);
+        replaceState(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`, {});
     }
 
     async function loadTrees() {
@@ -116,7 +114,7 @@
         currentPage = 1;
         loadTrees();
         // Update search parameters.
-        goto(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`);
+        replaceState(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`, {});
     }
 
     function handlePageChange() {
@@ -124,7 +122,7 @@
         entriesExpanded.fill(false);
         loadTrees();
         // Update search parameters.
-        goto(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`);
+        replaceState(`?${getPaginationAndFilterParams(paginationOptions, filterOptions)}`, {});
     }
 
     let entriesExpanded = $state(Array.from({ length: 10 }, () => false));

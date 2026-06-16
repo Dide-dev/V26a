@@ -47,7 +47,7 @@
 
     let localOptions = $state({
         searchQuery: filterOptions.searchTerms,
-        book: filterOptions.book,
+        book: [...filterOptions.book],
         ownerName: filterOptions.ownerName
     });
     let newBook = $state('');
@@ -238,20 +238,19 @@
      * @param i - The index of the book input that was updated.
      */
     function handleBookUpdate(i: number) {
+        let hadError = errors.bookInvalidIsbns[i];
         errors.bookInvalidIsbns[i] = false;
         let isbn = tryParseISBN(localOptions.book[i]);
         if (isbn === null) {
             errors.bookInvalidIsbns[i] = true;
             return;
         }
-
-        localOptions.book[i] = isbn;
-        filterOptions.book[i] = localOptions.book[i];
-
-        if (localOptions.book[i] === '') {
+        if (isbn === '') {
             localOptions.book.splice(i, 1);
             filterOptions.book.splice(i, 1);
             errors.bookInvalidIsbns.splice(i, 1);
+        } else {
+            filterOptions.book[i] = isbn;
         }
 
         handleFilterUpdate();
@@ -263,18 +262,19 @@
      */
     function handleNewBook() {
         errors.newBookInvalid = false;
+
+        if (newBook === '') return;
+
         let isbn = tryParseISBN(newBook);
         if (isbn === null) {
             errors.newBookInvalid = true;
             return;
         }
 
-        if (newBook !== '') {
-            localOptions.book.push(newBook);
-            filterOptions.book.push(newBook);
-            errors.bookInvalidIsbns.push(false);
-            newBook = '';
-        }
+        localOptions.book.push(newBook);
+        filterOptions.book.push(isbn);
+        errors.bookInvalidIsbns.push(false);
+        newBook = '';
 
         handleFilterUpdate();
     }
@@ -282,6 +282,7 @@
     onMount(async () => {
         languages = await getAllLanguages();
         subjectsRecord = await getAllSubjects();
+        localOptions.book = [...filterOptions.book];
     });
 </script>
 
