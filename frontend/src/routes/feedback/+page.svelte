@@ -47,7 +47,10 @@
                 <label for="email">{m.email()}</label>
                 <div class="info">
                     <sup>🛈</sup>
-                    <div class="info__content transform-none">{m.emailFeedbackInfo()}</div>
+                    <div class="info__content transform-none">
+                        {m.emailFeedbackInfo()}
+                        {m.conformPrivacy()}
+                    </div>
                 </div>
             </div>
             <input
