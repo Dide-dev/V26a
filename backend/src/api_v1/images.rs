@@ -72,6 +72,9 @@ pub fn images() -> Router<ArcState> {
 ///
 /// May return a [`FileWriteException`](ApiError::FileWriteException) if the uploaded image cannot be written to the uploads directory.
 ///
+/// May return a [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(
     claims: Claims,

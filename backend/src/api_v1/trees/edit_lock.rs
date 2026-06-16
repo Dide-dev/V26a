@@ -65,6 +65,8 @@ use crate::{
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if no tree with `tree_id` exists.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 pub async fn acquire_edit_lock(
     ws: WebSocketUpgrade,
     claims: Claims,

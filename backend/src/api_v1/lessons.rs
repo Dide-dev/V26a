@@ -59,6 +59,9 @@ pub fn lessons() -> Router<ArcState> {
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add the tree or edit the classroom.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_tree_to_lesson(
     claims: Claims,

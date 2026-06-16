@@ -290,8 +290,6 @@ pub async fn get_classroom_count_from_owner_id(
 /// A list with the classrooms at the requested page.
 ///
 /// # Errors
-/// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
-///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_all_classrooms_from_ids(
     db: impl PgExecutor<'_>,
@@ -357,10 +355,11 @@ pub async fn get_classroom_count_from_ids(
 /// `classroom_id` - The id of the classroom of which the metadata is queried.
 ///
 /// # Returns
-/// The metadata of the classroom as a [`Some(ClassroomMetaData)`](ClassroomMetaData) if
-/// the classroom exists, or a [`None`] if it doesn't.
+/// The metadata of the classroom as a [`ClassroomMetaData`].
 ///
 /// # Errors
+/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if the classroom doesn't exist.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_classroom_metadata_from_id(
     db: impl PgExecutor<'_>,
@@ -394,36 +393,60 @@ pub async fn get_classroom_metadata_from_id(
 /// `classroom_id` - The id of the classroom of which the owner is queried.
 ///
 /// # Returns
-/// The id of the owner of the classroom as a [`Some`] if the classroom exists, or a [`None`] if it doesn't.
+/// The id of the owner of the classroom as a `i32`.
 ///
 /// # Errors
+/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if the classroom doesn't exist.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_classroom_owner_from_id(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
-) -> Result<Option<i32>, ApiError> {
+) -> Result<i32, ApiError> {
     let owner = query!(
         "SELECT owner_id FROM classrooms WHERE id = $1",
         classroom_id,
     )
     .fetch_optional(db)
-    .await?
-    .map(|r| r.owner_id);
+    .await?;
 
-    Ok(owner)
+    let Some(owner) = owner else {
+        return Err(ApiError::MissingClassroom(classroom_id));
+    };
+
+    Ok(owner.owner_id)
 }
 
+/// Get the join code of a classroom.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `classroom_id` - The id of the classroom of which the owner is queried.
+///
+/// # Returns
+/// The join code of the classroom as a `String`.
+///
+/// # Errors
+/// Returns [`MissingClassroom`](ApiError::MissingClassroom) if the classroom doesn't exist.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_classroom_join_code_from_id(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
 ) -> Result<String, ApiError> {
-    Ok(query!(
+    let join_code = query!(
         "SELECT join_code FROM classrooms WHERE id = $1",
         classroom_id,
     )
-    .fetch_one(db)
-    .await?
-    .join_code)
+    .fetch_optional(db)
+    .await?;
+
+    let Some(join_code) = join_code else {
+        return Err(ApiError::MissingClassroom(classroom_id));
+    };
+
+    Ok(join_code.join_code)
 }
 
 /// Adds a lesson to the database.
@@ -831,7 +854,7 @@ mod tests {
         let found_owner_id = get_classroom_owner_from_id(&db, classroom_id)
             .await
             .unwrap();
-        assert_eq!(found_owner_id, Some(claims.sub));
+        assert_eq!(found_owner_id, claims.sub);
     }
 
     #[sqlx::test]

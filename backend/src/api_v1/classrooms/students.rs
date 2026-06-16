@@ -208,7 +208,7 @@ async fn get_classroom_claims_create_session(
     path = "/list-student",
     context_path = "/api/v1/classrooms",
     responses(
-        (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
+        (status = 200, description = "Successfully retrieved all classrooms.", body = ClassroomListResponse),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
         (status = 500, description = "Internal server error."),
@@ -234,12 +234,6 @@ async fn get_classroom_claims_create_session(
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
-///
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
-/// invalid or corrupted.
-///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
-/// the classrooms of a user.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn get_all_classrooms_as_student(
@@ -281,7 +275,7 @@ pub(super) async fn get_all_classrooms_as_student(
     path = "/{classroom_id}/dashboard-student",
     context_path = "/api/v1/classrooms",
     responses(
-        (status = 200, description = "Successfully retrieved classroom data", body = ClassroomStudentDashboardData),
+        (status = 200, description = "Successfully retrieved classroom data.", body = ClassroomStudentDashboardData),
         (status = 400, description = "Classroom with given id cannot be found."),
         (status = 401, description = ApiError::MissingAuthentication.to_string()),
         (status = 403, description = ApiError::NoPermission.to_string()),
@@ -305,7 +299,7 @@ pub(super) async fn get_all_classrooms_as_student(
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user cannot view this classroom.
+/// Returns [`InvalidSession`](ApiError::InvalidSession) if the session cannot be retrieved.
 ///
 /// Returns [`ClassroomIdRetrievalError`](ApiError::ClassroomIdRetrievalError) if the
 /// classroom id could not be retrieved from the api uri.

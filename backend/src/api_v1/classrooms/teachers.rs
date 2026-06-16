@@ -53,6 +53,9 @@ use sqlx::{PgExecutor, PgPool};
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn add_new_classroom(
     claims: Claims,
@@ -99,11 +102,8 @@ pub(super) async fn add_new_classroom(
 ///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if the limit on the database memory disallows the classroom count.
 ///
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the classrooms data in the database is
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
 /// invalid or corrupted.
-///
-/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to get
-/// the classrooms of a user.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn get_all_classrooms_as_teacher(
@@ -163,7 +163,12 @@ pub(super) async fn get_all_classrooms_as_teacher(
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if the user isn't logged in.
 ///
+/// Returns [`InvalidSession`](ApiError::InvalidSession) if the session cannot be retrieved.
+///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user cannot view this classroom.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May also return a [`DatabaseException`](ApiError::DatabaseException).
 pub(super) async fn get_teacher_dashboard(
@@ -222,6 +227,9 @@ pub(super) async fn get_teacher_dashboard(
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add lessons to the classroom.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn add_new_lesson(
     claims: Claims,
@@ -242,6 +250,8 @@ pub(super) async fn add_new_lesson(
 /// this function would need to be updated if this were the case in the future.
 ///
 /// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
 /// `classroom_id` - The id of the classroom whose ownership needs to be verified.
 ///
 /// `claims` - The session cookie of the user, used to verify ownership.
@@ -260,9 +270,8 @@ pub async fn verify_classroom_permissions(
     classroom_id: i32,
     claims: &Claims,
 ) -> Result<(), ApiError> {
-    let owner_id = get_classroom_owner_from_id(db, classroom_id)
-        .await?
-        .ok_or(ApiError::MissingClassroom(classroom_id))?;
+    let owner_id = get_classroom_owner_from_id(db, classroom_id).await?;
+
     if claims.account_type == AccountType::Admin || claims.sub == owner_id {
         Ok(())
     } else {

@@ -321,6 +321,9 @@ async fn get_public_user_data(
 /// # Errors
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
     jar: CookieJar,
@@ -406,7 +409,7 @@ pub struct ChangePasswordResponse {
 /// A boolean whether the password change was successful, as [`ChangePasswordResponse`].
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException) or
+/// May return a [`HashException`](ApiError::HashException), [`InvalidDataFound`](ApiError::InvalidDataFound) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
     claims: Claims,
@@ -475,6 +478,9 @@ async fn change_password(
 /// Returns [`MissingAuthentication`](ApiError::MissingAuthentication) if you're not logged in.
 ///
 /// Returns [`MissingUser`](ApiError::MissingUser) if the given user id does not exist.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
