@@ -110,7 +110,7 @@ export function addClassroom(classroomAddData: ClassroomAddData): Promise<Classr
 export function classroomLogin(
     classroomUserLoginData: ClassroomUserLoginData
 ): Promise<ClassroomLoginResponse> {
-    return apiCallPostClassroom('login', classroomUserLoginData);
+    return apiCallPostClassroom('/auth', classroomUserLoginData);
 }
 
 /** Gets all the classrooms of a teacher */
@@ -118,7 +118,7 @@ export function getAllClassroomsTeacher(
     pageOptions: PaginationOptions
 ): Promise<ClassroomListResponse> {
     const params: string = getPaginationParams(pageOptions);
-    return apiCallGetClassroom(`/list-teacher?${params}`);
+    return apiCallGetClassroom(`/teacher/list?${params}`);
 }
 
 /** Gets all the classrooms of a student */
@@ -126,21 +126,21 @@ export function getAllClassroomsStudent(
     pageOptions: PaginationOptions
 ): Promise<ClassroomListResponse> {
     const params: string = getPaginationParams(pageOptions);
-    return apiCallGetClassroom(`/list-student?${params}`);
+    return apiCallGetClassroom(`/student/list?${params}`);
 }
 
 /** Gets a teacher classroom dashboard for some classroom id */
 export function getClassroomTeacherDashboard(
     classroomId: ClassroomId
 ): Promise<ClassroomTeacherDashboardData> {
-    return apiCallGetClassroom(`/${classroomId}/dashboard-teacher`);
+    return apiCallGetClassroom(`/${classroomId}/teacher/dashboard`);
 }
 
 /** Gets a student classroom dashboard for some classroom id */
 export function getClassroomStudentDashboard(
     classroomId: ClassroomId
 ): Promise<ClassroomStudentDashboardData> {
-    return apiCallGetClassroom(`/${classroomId}/dashboard-student`);
+    return apiCallGetClassroom(`/${classroomId}/student/dashboard`);
 }
 
 /** Add a lesson to a classroom in the database */
