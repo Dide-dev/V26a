@@ -19,7 +19,8 @@
     import Popup from '$lib/Popup.svelte';
     import iconAdd from '$lib/assets/icons/add.svg?raw';
 
-    let { lessonId }: { lessonId: LessonId } = $props();
+    let { lessonId, onTreeAdded }: { lessonId: LessonId; onTreeAdded: () => Promise<void> } =
+        $props();
 
     let visible = $state(false);
 
@@ -55,6 +56,7 @@
         treeId = Number(treeId);
 
         await addTreeToLesson(lessonId, treeId);
+        await onTreeAdded();
         closeAdd();
     }
 </script>

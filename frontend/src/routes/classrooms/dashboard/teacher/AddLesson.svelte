@@ -18,7 +18,10 @@
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
 
-    let { classroomId }: { classroomId: ClassroomId } = $props();
+    let {
+        classroomId,
+        onLessonAdded
+    }: { classroomId: ClassroomId; onLessonAdded: () => Promise<void> } = $props();
 
     let visible = $state(false);
 
@@ -54,6 +57,7 @@
 
     async function createLesson() {
         await addLesson(lessonAddData, classroomId);
+        await onLessonAdded();
         closeEdit();
     }
 </script>

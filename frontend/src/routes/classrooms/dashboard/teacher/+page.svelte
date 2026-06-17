@@ -12,176 +12,15 @@
     import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
     import { m } from '$lib/paraglide/messages.js';
     import { page } from '$app/state';
-    import { type TreeMetadata } from '$lib/api-wrapper/trees';
     import LessonList from '../LessonList.svelte';
     import AddLesson from './AddLesson.svelte';
-    import type { ClassroomId } from '$lib/api-wrapper/classrooms';
-
-    type ClassroomTeacherDashboardData = {
-        metaData: ClassroomMetaData;
-        lessons: LessonWithTrees[];
-        joinCode: string;
-    };
-
-    type ClassroomMetaData = {
-        id: number;
-        name: string;
-        description: string;
-        createdAt: Date;
-        ownerId: number;
-    };
-
-    type LessonWithTrees = {
-        metadata: LessonMetaData;
-        trees: TreeMetadata[];
-    };
-
-    type LessonMetaData = {
-        id: number;
-        order_number: number;
-        createdAt: Date;
-        name: string;
-        description: string;
-        published: boolean;
-    };
-
-    const classroomTeacherDashboardData: ClassroomTeacherDashboardData = {
-        metaData: {
-            id: 2,
-            name: 'Frontend Development Bootcamp',
-            description: 'Een klaslokaal voor het leren van moderne frontend-technologieën.',
-            createdAt: new Date('2025-01-15T09:00:00Z'),
-            ownerId: 1001
-        },
-        lessons: [
-            {
-                metadata: {
-                    id: 101,
-                    order_number: 1,
-                    createdAt: new Date('2025-01-20T10:00:00Z'),
-                    name: 'Introductie tot HTML',
-                    description: 'Leer de basis van HTML en documentstructuren.',
-                    published: true
-                },
-                trees: [
-                    {
-                        data: {
-                            title: 'HTML Basisstructuur',
-                            languageCode: 'nl',
-                            tags: ['html', 'introductie'],
-                            description:
-                                'Een overzicht van de basisstructuur van een HTML-document.',
-                            subjectId: 1,
-                            bookName: 'Web Development Basics',
-                            bookEdition: '3e editie',
-                            bookAuthor: 'Jan Jansen',
-                            bookIsbn: '9781234567890',
-                            bookChapter: '1',
-                            bookExercise: '1.1',
-                            assignmentText: 'Maak een eenvoudige HTML-pagina.',
-                            published: true
-                        },
-                        genData: {
-                            id: 5001,
-                            ownerId: 1001,
-                            createdAt: new Date('2025-01-20T10:30:00Z'),
-                            lastModified: new Date('2025-01-22T15:00:00Z'),
-                            timesVisited: 42,
-                            lastVisited: new Date('2025-02-01T09:15:00Z')
-                        },
-                        linkedData: {
-                            ownerName: 'Jan Jansen',
-                            subjectName: 'Web Development',
-                            languageName: 'Nederlands',
-                            coAuthors: ['Piet Pieters']
-                        }
-                    }
-                ]
-            },
-            {
-                metadata: {
-                    id: 102,
-                    order_number: 1,
-                    createdAt: new Date('2025-01-20T10:00:00Z'),
-                    name: 'Introductie tot HTML',
-                    description: 'Leer de basis van HTML en documentstructuren.',
-                    published: true
-                },
-                trees: [
-                    {
-                        data: {
-                            title: 'HTML Basisstructuur',
-                            languageCode: 'nl',
-                            tags: ['html', 'introductie'],
-                            description:
-                                'Een overzicht van de basisstructuur van een HTML-document.',
-                            subjectId: 1,
-                            bookName: 'Web Development Basics',
-                            bookEdition: '3e editie',
-                            bookAuthor: 'Jan Jansen',
-                            bookIsbn: '9781234567890',
-                            bookChapter: '1',
-                            bookExercise: '1.1',
-                            assignmentText: 'Maak een eenvoudige HTML-pagina.',
-                            published: true
-                        },
-                        genData: {
-                            id: 5001,
-                            ownerId: 1001,
-                            createdAt: new Date('2025-01-20T10:30:00Z'),
-                            lastModified: new Date('2025-01-22T15:00:00Z'),
-                            timesVisited: 42,
-                            lastVisited: new Date('2025-02-01T09:15:00Z')
-                        },
-                        linkedData: {
-                            ownerName: 'Jan Jansen',
-                            subjectName: 'Web Development',
-                            languageName: 'Nederlands',
-                            coAuthors: ['Piet Pieters']
-                        }
-                    },
-                    {
-                        data: {
-                            title: 'HTML Basisstructuur',
-                            languageCode: 'nl',
-                            tags: ['html', 'introductie'],
-                            description:
-                                'Een overzicht van de basisstructuur van een HTML-document.',
-                            subjectId: 1,
-                            bookName: 'Web Development Basics',
-                            bookEdition: '3e editie',
-                            bookAuthor: 'Jan Jansen',
-                            bookIsbn: '9781234567890',
-                            bookChapter: '1',
-                            bookExercise: '1.1',
-                            assignmentText: 'Maak een eenvoudige HTML-pagina.',
-                            published: true
-                        },
-                        genData: {
-                            id: 5001,
-                            ownerId: 1001,
-                            createdAt: new Date('2025-01-20T10:30:00Z'),
-                            lastModified: new Date('2025-01-22T15:00:00Z'),
-                            timesVisited: 42,
-                            lastVisited: new Date('2025-02-01T09:15:00Z')
-                        },
-                        linkedData: {
-                            ownerName: 'Jan Jansen',
-                            subjectName: 'Web Development',
-                            languageName: 'Nederlands',
-                            coAuthors: ['Piet Pieters']
-                        }
-                    }
-                ]
-            }
-        ],
-        joinCode: 'ABCDE1'
-    };
+    import type { ClassroomId, ClassroomTeacherDashboardData } from '$lib/api-wrapper/classrooms';
+    import { getClassroomTeacherDashboard } from '$lib/api-wrapper/classrooms';
 
     let userInfo: UserInfo | null = $state(null);
     let id: ClassroomId | null = $state(null);
 
-    //let classroomTeacherDashboardData: ClassroomTeacherDashboardData | null = $state(null);
+    let classroomTeacherDashboardData: ClassroomTeacherDashboardData | null = $state(null);
 
     onMount(async () => {
         userInfo = getUserInfo();
@@ -204,11 +43,17 @@
             return;
         }
 
-        // classroomTeacherDashboardData = await getClassroomTeacherDashboard(id);
+        classroomTeacherDashboardData = await getClassroomTeacherDashboard(id);
     });
 
     async function copyCode() {
-        await navigator.clipboard.writeText(classroomTeacherDashboardData.joinCode);
+        await navigator.clipboard.writeText(classroomTeacherDashboardData!.joinCode);
+    }
+
+    async function reloadDashboard() {
+        if (id === null) return;
+
+        classroomTeacherDashboardData = await getClassroomTeacherDashboard(id);
     }
 </script>
 
@@ -217,18 +62,22 @@
         <p class="w-full text-center text-green-800">{m.loadingDashboard()}</p>
     {:else}
         <h1 class="page__title">
-            {m.classroomDashboard()}: {classroomTeacherDashboardData.metaData.name}
+            {m.classroomDashboard()}: {classroomTeacherDashboardData.metadata.name}
         </h1>
 
-        {#if classroomTeacherDashboardData.metaData.description}
+        {#if classroomTeacherDashboardData.metadata.description}
             <p class="pb-2 font-semibold wrap-anywhere text-neutral-600">
-                {classroomTeacherDashboardData.metaData.description}
+                {classroomTeacherDashboardData.metadata.description}
             </p>
         {/if}
 
         <div class="grid grid-cols-[1fr_280px] gap-4">
             <div>
-                <LessonList lessons={classroomTeacherDashboardData.lessons} isTeacher={true} />
+                <LessonList
+                    lessons={classroomTeacherDashboardData.lessons}
+                    isTeacher={true}
+                    onTreeAdded={reloadDashboard}
+                />
             </div>
 
             <aside class="space-y-4">
@@ -244,7 +93,10 @@
                         >
                     </div>
                 </div>
-                <AddLesson classroomId={classroomTeacherDashboardData.metaData.id} />
+                <AddLesson
+                    classroomId={classroomTeacherDashboardData.metadata.id}
+                    onLessonAdded={reloadDashboard}
+                />
             </aside>
         </div>
     {/if}

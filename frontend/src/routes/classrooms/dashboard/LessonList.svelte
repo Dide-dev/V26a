@@ -5,26 +5,17 @@
 -->
 
 <script lang="ts">
-    import { type TreeMetadata } from '$lib/api-wrapper/trees';
     import { Accordion, AccordionItem } from 'flowbite-svelte';
     import TreeListEntry from '$lib/lists/TreeListEntry.svelte';
     import AddTree from './AddTree.svelte';
+    import { type LessonWithTrees } from '$lib/api-wrapper/classrooms';
 
-    type LessonWithTrees = {
-        metadata: LessonMetaData;
-        trees: TreeMetadata[];
-    };
-
-    type LessonMetaData = {
-        id: number;
-        order_number: number;
-        createdAt: Date;
-        name: string;
-        description: string;
-        published: boolean;
-    };
-
-    let { lessons, isTeacher }: { lessons: LessonWithTrees[]; isTeacher: boolean } = $props();
+    let {
+        lessons,
+        isTeacher,
+        onTreeAdded
+    }: { lessons: LessonWithTrees[]; isTeacher: boolean; onTreeAdded: () => Promise<void> } =
+        $props();
 </script>
 
 <Accordion flush>
@@ -45,7 +36,7 @@
                     </div>
 
                     {#if isTeacher}
-                        <AddTree lessonId={lesson.metadata.id} />
+                        <AddTree lessonId={lesson.metadata.id} {onTreeAdded} />
                     {/if}
                 </div>
             {/snippet}

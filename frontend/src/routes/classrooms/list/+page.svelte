@@ -111,7 +111,7 @@
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
-                                href={appLink(`/classrooms/teacher-dashboard?id=${classroom.id}`)}
+                                href={appLink(`/classrooms/dashboard/teacher?id=${classroom.id}`)}
                                 target="_blank">{classroom.name}</a
                             >
                         </td>
