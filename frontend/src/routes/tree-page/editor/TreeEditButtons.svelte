@@ -8,10 +8,17 @@
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import iconTrash from '$lib/assets/icons/trash.svg?raw';
     import iconMove from '$lib/assets/icons/move.svg?raw';
+    import iconUpload from '$lib/assets/icons/upload.svg?raw';
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './SubtreeEditor.svelte';
-    import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
+    import {
+        doDeleteCard,
+        doAddCardToLibrary,
+        followIndexNode,
+        type TreeHistory
+    } from './history.svelte';
     import type { SideBar } from './Sidebar.svelte';
+    import UploadCardMenu from './UploadCardLibrary.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -54,6 +61,16 @@
             editingVersion: $state.snapshot(card)
         };
     }
+
+    let uploadMenuVisible = $state(false);
+
+    function uploadClick() {
+        uploadMenuVisible = true;
+    }
+
+    async function handleUploadConfirm(title: string, tags: string[]) {
+        await doAddCardToLibrary(history, cardId, title, tags);
+    }
 </script>
 
 <div class="absolute -top-6 left-2 h-7 border border-fuchsia-600 bg-fuchsia-300">
@@ -73,4 +90,10 @@
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html iconTrash}
     </button>
+    <button class="cursor-pointer" title={m.uploadThisCard()} onclick={uploadClick}>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconUpload}
+    </button>
 </div>
+
+<UploadCardMenu bind:visible={uploadMenuVisible} onConfirm={handleUploadConfirm} />
