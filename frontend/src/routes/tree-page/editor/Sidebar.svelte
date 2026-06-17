@@ -113,48 +113,30 @@
     {onmouseenter}
     {onmouseleave}
 >
-    <div class={['sticky h-fit w-full']} style="top: {offset}px; min-height: calc(100vh - {offset}px);}">
+    <div
+        class={['sticky h-fit w-full']}
+        style="top: {offset}px; min-height: calc(100vh - {offset}px);}"
+    >
         {#if sidebar.kind === 'Menu'}
-            <div class="flex flex-col justify-between h-full" style="min-height: calc(100vh - {offset}px);">
-
             <div
-                class="my-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
+                class="flex h-full flex-col justify-between"
+                style="min-height: calc(100vh - {offset}px);"
             >
-                <button
-                    type="button"
-                    class="overflow-hidden"
-                    onclick={() => {
-                        sidebar = {
-                            kind: 'Manager',
-                            type: 'EditMetadata'
-                        };
-                    }}
-                    data-testid="metadata-button"
+                <div
+                    class="my-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
                 >
-                    <CellAttributesOutline
-                        class={[
-                            sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
-                            'page__heading h-7 w-7 shrink-0'
-                        ]}
-                    />
-                    {#if sidebar.type === 'FullMenu'}
-                        <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
-                            <span class="page__heading text-nowrap">{m.editMetadata()}</span>
-                        </AnimatedUnderline>
-                    {/if}
-                </button>
-                {#if hasOwnerPermissions}
                     <button
                         type="button"
                         class="overflow-hidden"
                         onclick={() => {
                             sidebar = {
                                 kind: 'Manager',
-                                type: 'ManageCoAuthors'
+                                type: 'EditMetadata'
                             };
                         }}
+                        data-testid="metadata-button"
                     >
-                        <UserSettingsOutline
+                        <CellAttributesOutline
                             class={[
                                 sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
                                 'page__heading h-7 w-7 shrink-0'
@@ -162,57 +144,84 @@
                         />
                         {#if sidebar.type === 'FullMenu'}
                             <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
-                                <span class="page__heading text-nowrap">{m.coAuthors()}</span>
+                                <span class="page__heading text-nowrap">{m.editMetadata()}</span>
                             </AnimatedUnderline>
                         {/if}
                     </button>
-                {/if}
-                <button
-                    type="button"
-                    class="overflow-hidden"
-                    onclick={() => {
-                        sidebar = {
-                            kind: 'Manager',
-                            type: 'Share'
-                        };
-                    }}
-                >
-                    <ShareNodesOutline
-                        class={[
-                            sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
-                            'page__heading h-7 w-7 shrink-0'
-                        ]}
-                    />
-                    {#if sidebar.type === 'FullMenu'}
-                        <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
-                            <span class="page__heading text-nowrap">{m.share()}</span>
-                        </AnimatedUnderline>
+                    {#if hasOwnerPermissions}
+                        <button
+                            type="button"
+                            class="overflow-hidden"
+                            onclick={() => {
+                                sidebar = {
+                                    kind: 'Manager',
+                                    type: 'ManageCoAuthors'
+                                };
+                            }}
+                        >
+                            <UserSettingsOutline
+                                class={[
+                                    sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                                    'page__heading h-7 w-7 shrink-0'
+                                ]}
+                            />
+                            {#if sidebar.type === 'FullMenu'}
+                                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                                    <span class="page__heading text-nowrap">{m.coAuthors()}</span>
+                                </AnimatedUnderline>
+                            {/if}
+                        </button>
                     {/if}
-                </button>
-            </div>
+                    <button
+                        type="button"
+                        class="overflow-hidden"
+                        onclick={() => {
+                            sidebar = {
+                                kind: 'Manager',
+                                type: 'Share'
+                            };
+                        }}
+                    >
+                        <ShareNodesOutline
+                            class={[
+                                sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                                'page__heading h-7 w-7 shrink-0'
+                            ]}
+                        />
+                        {#if sidebar.type === 'FullMenu'}
+                            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)">
+                                <span class="page__heading text-nowrap">{m.share()}</span>
+                            </AnimatedUnderline>
+                        {/if}
+                    </button>
+                </div>
                 <div
                     class="my-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
-
                 >
                     <button
                         type="button"
                         class="overflow-hidden"
                         onclick={() => {
-                        sidebar = {
-                            kind: 'Manager',
-                            type: 'Delete'
-                        };
-                    }}
+                            sidebar = {
+                                kind: 'Manager',
+                                type: 'Delete'
+                            };
+                        }}
                     >
                         <TrashBinSolid
                             class={[
-                            sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
-                            'page__heading h-7 w-7 shrink-0 text-red-700'
-                        ]}
+                                sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                                'page__heading h-7 w-7 shrink-0 text-red-700'
+                            ]}
                         />
                         {#if sidebar.type === 'FullMenu'}
-                            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)" --color-underline="var(--color-red-700)">
-                                <span class="page__heading text-nowrap text-red-700">{m.deleteTree()}</span>
+                            <AnimatedUnderline
+                                --weight-underline="calc(var(--spacing) / 1.5)"
+                                --color-underline="var(--color-red-700)"
+                            >
+                                <span class="page__heading text-nowrap text-red-700"
+                                    >{m.deleteTree()}</span
+                                >
                             </AnimatedUnderline>
                         {/if}
                     </button>
@@ -224,7 +233,7 @@
             <CoAuthor {treeId} coAuthors={treeLinkedData.coAuthors} bind:sidebar />
         {:else if sidebar.type === 'Share'}
             <Share {treeId} bind:prevTreeData bind:sidebar bind:notices />
-            {:else if sidebar.type === 'Delete'}
+        {:else if sidebar.type === 'Delete'}
             <DeleteTree {treeId} title={prevTreeData.title} bind:sidebar />
         {:else if sidebar.kind === 'CardEditor'}
             <EditCard bind:sidebar {history} />
