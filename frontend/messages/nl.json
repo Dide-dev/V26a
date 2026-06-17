@@ -214,7 +214,7 @@
     "logout": "Log uit",
     "forgotPassword": "Wachtwoord vergeten?",
     "resetPassword": "Wachtwoord opnieuw instellen",
-    "resetPasswordInstructions": "Indien je jouw wachtwoord bent vergeten, kan je het hier opnieuw instellen door het e-mail adres van je account in te vullen. Wij zullen je een e-mail sturen met verdere instructies.",
+    "resetPasswordInstructions": "Indien je jouw wachtwoord bent vergeten, kan je het hier opnieuw instellen door het e-mailadres van je account in te vullen. Wij zullen je een e-mail sturen met verdere instructies.",
     "send": "Verzenden",
     "resetPasswordRequestSent": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}. Volg de instructies in de mail om je wachtwoord opnieuw in te stellen.",
     "setNewPassword": "Stel een nieuw wachtwoord in",
