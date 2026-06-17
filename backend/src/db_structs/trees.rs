@@ -546,6 +546,8 @@ pub struct TreeFilters {
     pub show_private: bool,
     #[serde(default)]
     pub editable: bool,
+
+    pub lesson_id: Option<i32>,
 }
 
 #[cfg(test)]

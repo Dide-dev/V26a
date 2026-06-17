@@ -58,6 +58,9 @@ pub fn cards() -> Router<ArcState> {
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree the card belongs to.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_existing_card(
     claims: Claims,

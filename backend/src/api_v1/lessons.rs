@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::classrooms::verify_classroom_permissions;
+use crate::api_v1::classrooms::teachers::verify_classroom_permissions;
 use crate::db::classrooms::{add_existing_tree_to_lesson, get_classroom_from_lesson};
 use crate::db::trees::verify_tree_accessible_by_user;
 use crate::db_structs::session::Claims;
@@ -58,6 +58,9 @@ pub fn lessons() -> Router<ArcState> {
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree which should be added to the lesson does not exist.
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have the permission to add the tree or edit the classroom.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_tree_to_lesson(
