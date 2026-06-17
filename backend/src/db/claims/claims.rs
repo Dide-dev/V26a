@@ -62,6 +62,8 @@ impl Claims {
     /// Returns [`Ok(None)`](None) if the token could not be found or has expired.
     ///
     /// # Errors
+    /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if some data in the database is invalid or corrupted.
+    ///
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
     pub async fn get_session(
         db: impl PgExecutor<'_>,
