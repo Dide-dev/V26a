@@ -58,7 +58,8 @@ pub struct LoginResponse {
 /// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException),
+/// [`TokenCreationException`](ApiError::TokenCreationException), [`InvalidDataFound`](ApiError::InvalidDataFound),
 /// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,

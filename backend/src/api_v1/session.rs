@@ -29,6 +29,9 @@ impl FromRequestParts<ArcState> for Claims {
     ///
     /// Returns [`InvalidSession`](ApiError::InvalidSession) if the user's session can not be
     /// retrieved from the database. It may have expired.
+    ///
+    /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+    /// invalid or corrupted.
     async fn from_request_parts(
         parts: &mut Parts,
         _state: &ArcState,
@@ -57,6 +60,7 @@ impl FromRequestParts<ArcState> for Option<Claims> {
     /// - The user does not have a session cookie
     /// - The cookies can not be extracted from the request
     /// - The user's session has expired
+    /// - The user's data in the database is invalid or corrupted
     async fn from_request_parts(
         parts: &mut Parts,
         state: &ArcState,

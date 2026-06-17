@@ -6,8 +6,10 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import { type ClassroomListResponse } from '$lib/api-wrapper/classrooms';
-    import { getAllOwnedClassrooms } from '$lib/api-wrapper/users';
+    import {
+        type ClassroomListResponse,
+        getAllClassroomsTeacher
+    } from '$lib/api-wrapper/classrooms';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
@@ -38,7 +40,7 @@
             size: pageSizeNumber
         };
         if (userInfo !== null) {
-            classroomListResponse = await getAllOwnedClassrooms(userInfo.sub, paginationOptions);
+            classroomListResponse = await getAllClassroomsTeacher(paginationOptions);
         } else {
             await redirectLogin(page.url);
         }
@@ -102,25 +104,19 @@
                 <tr>
                     <th class="text-left">{m.classroom()}</th>
                     <th class="text-left">{m.description()}</th>
-                    <th class="text-left">{m.code()}</th>
                 </tr>
             </thead>
             <tbody>
-                {#each classroomListResponse.classrooms as classroom (classroom.genData.id)}
+                {#each classroomListResponse.classrooms as classroom (classroom.id)}
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
-                                href={appLink(
-                                    `/classrooms/teacher-dashboard?id=${classroom.genData.id}`
-                                )}
-                                target="_blank">{classroom.data.name}</a
+                                href={appLink(`/classrooms/teacher-dashboard?id=${classroom.id}`)}
+                                target="_blank">{classroom.name}</a
                             >
                         </td>
                         <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
-                            >{classroom.data.description}</td
-                        >
-                        <td class="max-w-96 pr-4 pl-4 align-text-top wrap-anywhere"
-                            >{classroom.genData.joinCode}</td
+                            >{classroom.description}</td
                         >
                     </tr>
                 {/each}

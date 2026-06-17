@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use utoipa::ToSchema;
 
-/// The claims specify the user, expiration time and account type of the request's sender.
+/// The claims specify the user and account type of the request's sender.
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Claims {
@@ -31,8 +31,8 @@ pub struct InfoCookieData {
     pub account_type: AccountType,
 }
 
-/// The classroom claims contained in a JWT (JSON Web Token).
-/// Specifies the user number, user name and the expiration time.
+/// The classroom claims for one classroom.
+/// Specifies the user number and user name.
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomClaims {
@@ -44,9 +44,11 @@ pub struct ClassroomClaims {
     pub name: String,
 }
 
+/// The classroom claims for all classrooms the user has logged in to.
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AllClassroomClaims {
+    /// The collection of `ClassroomClaims` for a user.
     pub claims: Vec<ClassroomClaims>,
 }
 
