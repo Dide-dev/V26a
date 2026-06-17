@@ -96,6 +96,7 @@
     "registeredOn": "Geregistreerd op",
     "lastLogin": "Laatste login",
     "confirmChanges": "Bevestig wijzigingen",
+    "confirmUpload": "Bevestig upload",
     "duplicateTree": "Dupliceer boom",
     "editTree": "Bewerk boom",
     "editUser": "Bewerk gebruiker",
@@ -150,6 +151,7 @@
     "exampleName": "Jan_Janssen",
     "exampleNickname": "Jantje Deeg",
     "exampleTitle": "Heuristiekboom van {name}",
+    "exampleTitleCard": "Stelling van Pythagoras",
     "exampleDescription": "Mijn eerste boom!",
     "exampleTags": "bewijs, meetkunde, 3e-klas",
     "exampleBookName": "Algebra",
@@ -221,5 +223,7 @@
     "resetPasswordSuccessTitle": "Wachtwoord veranderd",
     "resetPasswordSuccessBody": "Je wachtwoord is veranderd, je kan deze nu gebruiken om in te loggen.",
     "resetPasswordFailureTitle": "Wachtwoord reset mislukt",
-    "resetPasswordFailureBody": "Het is niet gelukt om jouw wachtwoord opnieuw in te stellen. Je reset link is mogelijk al verlopen of gebruikt. Probeer alsjeblieft in te loggen of nogmaals een reset link op te vragen."
+    "resetPasswordFailureBody": "Het is niet gelukt om jouw wachtwoord opnieuw in te stellen. Je reset link is mogelijk al verlopen of gebruikt. Probeer alsjeblieft in te loggen of nogmaals een reset link op te vragen.",
+    "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
+    "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
 }

@@ -96,6 +96,7 @@
     "registeredOn": "Registered on",
     "lastLogin": "Last login",
     "confirmChanges": "Confirm changes",
+    "confirmUpload": "Confirm upload",
     "duplicateTree": "Duplicate tree",
     "editTree": "Edit tree",
     "editUser": "Edit user",
@@ -152,6 +153,7 @@
     "exampleName": "John_Smith",
     "exampleNickname": "Johnny Doe",
     "exampleTitle": "{name}'s heuristic tree",
+    "exampleTitleCard": "Pythagorean Theorem",
     "exampleDescription": "My first tree!",
     "exampleTags": "proof, geometry, 9th-grade",
     "exampleBookName": "Algebra",
@@ -223,5 +225,7 @@
     "resetPasswordSuccessTitle": "Password changed",
     "resetPasswordSuccessBody": "Your password has been changed, you can now use it to log in.",
     "resetPasswordFailureTitle": "Password reset failed",
-    "resetPasswordFailureBody": "Your password could not be reset. Your reset link might have already been used or expired. Please try logging in or requesting another password reset."
+    "resetPasswordFailureBody": "Your password could not be reset. Your reset link might have already been used or expired. Please try logging in or requesting another password reset.",
+    "uploadThisCard": "Upload this card to the cards library",
+    "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library"
 }
