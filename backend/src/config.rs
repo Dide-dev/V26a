@@ -8,6 +8,7 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::db_structs::mail::{Mailer, SmtpMailer};
+use crate::ratelimits::RatelimitOptions;
 use bcrypt::DEFAULT_COST;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env;
@@ -38,9 +39,7 @@ pub struct Config {
 
     pub mailer: Arc<dyn Mailer>,
 
-    /// Ratelimiter config (minute)
-    pub rate_limit_per_minute: u64,
-    pub rate_limit_burst_size: u32,
+    pub global_ratelimit: RatelimitOptions,
 }
 
 impl Config {
@@ -103,6 +102,11 @@ impl Config {
             AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(smtp_server).build();
         let mailer = Arc::new(SmtpMailer { transport });
 
+        let global_ratelimit = RatelimitOptions {
+            refresh_rate: rate_limit_per_minute,
+            burst_size: rate_limit_burst_size,
+        };
+
         Self {
             listening_ip,
             listening_port,
@@ -116,8 +120,7 @@ impl Config {
             upload_dir,
             max_upload_size,
             mailer,
-            rate_limit_per_minute,
-            rate_limit_burst_size,
+            global_ratelimit,
         }
     }
 }

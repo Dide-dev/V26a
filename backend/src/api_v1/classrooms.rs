@@ -5,7 +5,6 @@
 */
 
 use crate::api_v1::create_token;
-use crate::api_v1::rate_limit_layer;
 use crate::db::classrooms::{
     add_classroom, add_lesson, add_new_user_to_classroom, generate_random_code,
     get_classroom_owner, get_name_by_number, validate_join_code,
@@ -18,6 +17,9 @@ use crate::db_structs::classrooms::{
 use crate::db_structs::session::{AllClassroomClaims, Claims, ClaimsType, ClassroomClaims};
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
+use crate::ratelimits::{
+    ADD_LESSON_RATELIMIT, CLASSROOM_LOGIN_RATELIMIT, CREATE_CLASSROOM_RATELIMIT,
+};
 use crate::{ArcState, get_connection};
 use axum::extract::{Path, State};
 use axum::routing::post;
@@ -31,14 +33,17 @@ use time::Duration;
 /// Creates an `Axum` [`Router`] for the classrooms category.
 pub fn classrooms() -> Router<ArcState> {
     Router::new()
-        .route("/", post(add_new_classroom).layer(rate_limit_layer(10, 10)))
+        .route(
+            "/",
+            post(add_new_classroom).layer(CREATE_CLASSROOM_RATELIMIT.to_layer()),
+        )
         .route(
             "/{classroom_id}/lessons",
-            post(add_new_lesson).layer(rate_limit_layer(10, 10)),
+            post(add_new_lesson).layer(ADD_LESSON_RATELIMIT.to_layer()),
         )
         .route(
             "/login",
-            post(classroom_login).layer(rate_limit_layer(50, 100)),
+            post(classroom_login).layer(CLASSROOM_LOGIN_RATELIMIT.to_layer()),
         )
 }
 

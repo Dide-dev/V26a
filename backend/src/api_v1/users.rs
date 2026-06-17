@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::rate_limit_layer;
+use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db::auth::get_user_credentials_by_id;
 use crate::db::classrooms::{get_all_classrooms, get_classroom_count};
 use crate::db::users::{
@@ -18,14 +18,11 @@ use crate::db_structs::users::{
     AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt,
     PendingRegisterData, PublicUserData, RegisterData, UserData, UserGetData,
 };
-use crate::errors::ApiError;
-use crate::{ArcState, get_connection};
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-
-use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
+use crate::errors::ApiError;
 use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
+use crate::ratelimits::{ADD_USER_RATELIMIT, VERIFY_USER_RATELIMIT};
+use crate::{ArcState, get_connection};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
 use axum::{Extension, Json, Router};
@@ -37,14 +34,19 @@ use lettre::{Address, Message};
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgExecutor, PgPool, query};
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use time::Duration;
 use utoipa::ToSchema;
 
 /// Creates an `Axum` [`Router`] for the user category.
 pub fn users() -> Router<ArcState> {
     Router::new()
-        .route("/", post(add_new_user).layer(rate_limit_layer(2, 5)))
-        .route("/verification", post(verify).layer(rate_limit_layer(2, 5)))
+        .route("/", post(add_new_user).layer(ADD_USER_RATELIMIT.to_layer()))
+        .route(
+            "/verification",
+            post(verify).layer(VERIFY_USER_RATELIMIT.to_layer()),
+        )
         .route("/{user_id}/public", get(get_public_user_data))
         .route(
             "/me",
