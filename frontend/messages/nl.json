@@ -84,7 +84,7 @@
     "backTextRequired": "Achterkant kaart is verplicht!",
     "frontTextCharacterLimit": "Tekst op voorkant mag niet meer dan {limit} karakters bevatten",
     "backTextCharacterLimit": "Tekst op achterkant mag niet meer dan {limit} karakters bevatten",
-    "deleteTreeConfirmation": "Weet je zeker dat je de boom {title} wilt verwijderen?",
+    "deleteTreeConfirmation": "Weet je zeker dat je de boom '{title}' wilt verwijderen? Deze actie kan niet ongedaan gemaakt worden.",
     "login": "Log in",
     "globalCounter": "Globale Teller",
     "apiTesting": "Api Testen",

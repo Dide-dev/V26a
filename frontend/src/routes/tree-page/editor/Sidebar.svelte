@@ -14,6 +14,7 @@
     import {
         CellAttributesOutline,
         ShareNodesOutline,
+        TrashBinSolid,
         UserSettingsOutline
     } from 'flowbite-svelte-icons';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
@@ -25,6 +26,7 @@
     import CardsLibrary from './CardsLibrary.svelte';
     import type { EventHandler } from 'svelte/elements';
     import type { Notice } from '$lib/Notices.svelte';
+    import DeleteTree from './DeleteTree.svelte';
 
     let {
         sidebar = $bindable(),
@@ -65,7 +67,7 @@
 
     export type ManageSideBar = {
         kind: 'Manager';
-        type: 'EditMetadata' | 'ManageCoAuthors' | 'Share';
+        type: 'EditMetadata' | 'ManageCoAuthors' | 'Share' | 'Delete';
     };
     /** Most recently recorded scroll position on window. */
     let lastScrollPosition = $state(0);
@@ -78,7 +80,7 @@
     /** Maximum margin between nav-bar and the top of the screen in pixels. */
     const maxScrollMargin = navRowHeight + defaultScrollDistance;
 
-    let offset = $state(window.scrollY);
+    let offset = $state(40);
 </script>
 
 <svelte:window
@@ -111,10 +113,12 @@
     {onmouseenter}
     {onmouseleave}
 >
-    <div class={['sticky h-fit w-full']} style="top: {offset}px">
+    <div class={['sticky h-fit w-full']} style="top: {offset}px; min-height: calc(100vh - {offset}px);}">
         {#if sidebar.kind === 'Menu'}
+            <div class="flex flex-col justify-between h-full" style="min-height: calc(100vh - {offset}px);">
+
             <div
-                class="mt-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
+                class="my-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
             >
                 <button
                     type="button"
@@ -186,12 +190,42 @@
                     {/if}
                 </button>
             </div>
+                <div
+                    class="my-2 flex flex-col gap-1 *:ml-2 *:flex *:cursor-pointer *:flex-row *:items-center *:gap-2 *:rounded-md *:pb-2 *:pl-2 *:hover:bg-neutral-200"
+
+                >
+                    <button
+                        type="button"
+                        class="overflow-hidden"
+                        onclick={() => {
+                        sidebar = {
+                            kind: 'Manager',
+                            type: 'Delete'
+                        };
+                    }}
+                    >
+                        <TrashBinSolid
+                            class={[
+                            sidebar.type === 'IconsOnly' && 'mt-3 mb-1',
+                            'page__heading h-7 w-7 shrink-0 text-red-700'
+                        ]}
+                        />
+                        {#if sidebar.type === 'FullMenu'}
+                            <AnimatedUnderline --weight-underline="calc(var(--spacing) / 1.5)" --color-underline="var(--color-red-700)">
+                                <span class="page__heading text-nowrap text-red-700">{m.deleteTree()}</span>
+                            </AnimatedUnderline>
+                        {/if}
+                    </button>
+                </div>
+            </div>
         {:else if sidebar.type === 'EditMetadata'}
             <EditMetadata {treeId} bind:prevTreeData {treeLinkedData} bind:sidebar />
         {:else if sidebar.type === 'ManageCoAuthors'}
             <CoAuthor {treeId} coAuthors={treeLinkedData.coAuthors} bind:sidebar />
         {:else if sidebar.type === 'Share'}
             <Share {treeId} bind:prevTreeData bind:sidebar bind:notices />
+            {:else if sidebar.type === 'Delete'}
+            <DeleteTree {treeId} title={prevTreeData.title} bind:sidebar />
         {:else if sidebar.kind === 'CardEditor'}
             <EditCard bind:sidebar {history} />
         {/if}
