@@ -80,7 +80,7 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     };
 
     let response = server
-        .post("/classrooms/login")
+        .post("/classrooms/auth")
         .json(&classroom_login_data)
         .await;
 
@@ -112,7 +112,7 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     };
 
     let response = server
-        .post("/classrooms/login")
+        .post("/classrooms/auth")
         .json(&classroom_login_data2)
         .await;
 
@@ -131,7 +131,7 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     };
 
     let response = server
-        .post("/classrooms/login")
+        .post("/classrooms/auth")
         .json(&classroom_login_data)
         .await;
 
@@ -165,7 +165,7 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
     };
 
     let response = server
-        .post("/classrooms/login")
+        .post("/classrooms/auth")
         .json(&classroom_login_data)
         .await;
 
@@ -195,7 +195,7 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
         };
 
         let response = server
-            .post("/classrooms/login")
+            .post("/classrooms/auth")
             .json(&classroom_login_data)
             .await;
 
@@ -220,7 +220,7 @@ async fn test_get_classrooms_teacher(db: PgPool) {
     let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
-    let response2 = server.get("/classrooms/list-teacher").await;
+    let response2 = server.get("/classrooms/teacher/list").await;
     response2.assert_status_ok();
 
     let classroom_list: ClassroomListResponse = response2.json();
@@ -232,7 +232,7 @@ async fn test_get_classrooms_teacher(db: PgPool) {
 async fn test_get_classrooms_teacher_unauthorized(db: PgPool) {
     let server = setup(db).server;
 
-    let response = server.get("/classrooms/list-teacher").await;
+    let response = server.get("/classrooms/teacher/list").await;
     response.assert_status_unauthorized();
 }
 
@@ -254,13 +254,10 @@ async fn test_get_classrooms_student(db: PgPool) {
         username: "Gelicenseerd radiozendamateur".to_owned(),
     };
 
-    let response2 = server
-        .post("/classrooms/login")
-        .json(&classroom_login)
-        .await;
+    let response2 = server.post("/classrooms/auth").json(&classroom_login).await;
     response2.assert_status_ok();
 
-    let response3 = server.get("/classrooms/list-student").await;
+    let response3 = server.get("/classrooms/student/list").await;
     response3.assert_status_ok();
 
     let classroom_list: ClassroomListResponse = response3.json();
@@ -272,7 +269,7 @@ async fn test_get_classrooms_student(db: PgPool) {
 async fn test_get_classrooms_student_unauthorized(db: PgPool) {
     let server = setup(db).server;
 
-    let response = server.get("/classrooms/list-student").await;
+    let response = server.get("/classrooms/student/list").await;
     response.assert_status_unauthorized();
 }
 
@@ -290,7 +287,7 @@ async fn test_get_classroom_dashboard_teacher(db: PgPool) {
 
     let response = server
         .get(&format!(
-            "/classrooms/{0}/dashboard-teacher",
+            "/classrooms/{0}/teacher/dashboard",
             classroom_generated_data.id
         ))
         .await;
@@ -301,7 +298,7 @@ async fn test_get_classroom_dashboard_teacher(db: PgPool) {
 async fn test_get_classroom_dashboard_teacher_unauthorized(db: PgPool) {
     let server = setup(db).server;
 
-    let response = server.get("/classrooms/0/dashboard-teacher").await;
+    let response = server.get("/classrooms/0/teacher/dashboard").await;
     response.assert_status_unauthorized();
 }
 
@@ -322,15 +319,12 @@ async fn test_get_classroom_dashboard_student(db: PgPool) {
         username: "Gelicenseerd radiozendamateur".to_owned(),
     };
 
-    let response = server
-        .post("/classrooms/login")
-        .json(&classroom_login)
-        .await;
+    let response = server.post("/classrooms/auth").json(&classroom_login).await;
     response.assert_status_ok();
 
     let response = server
         .get(&format!(
-            "/classrooms/{0}/dashboard-student",
+            "/classrooms/{0}/student/dashboard",
             classroom_generated_data.id
         ))
         .await;
@@ -341,7 +335,7 @@ async fn test_get_classroom_dashboard_student(db: PgPool) {
 async fn test_get_classroom_dashboard_student_unauthorized(db: PgPool) {
     let server = setup(db).server;
 
-    let response = server.get("/classrooms/0/dashboard-student").await;
+    let response = server.get("/classrooms/0/student/dashboard").await;
     response.assert_status_unauthorized();
 }
 

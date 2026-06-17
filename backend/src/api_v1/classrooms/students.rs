@@ -29,7 +29,7 @@ use time::Duration;
 
 #[utoipa::path(
     post,
-    path = "/login",
+    path = "/auth",
     context_path = "/api/v1/classrooms",
     request_body = ClassroomUserLoginData,
     responses(
@@ -205,7 +205,7 @@ async fn get_classroom_claims_create_session(
 
 #[utoipa::path(
     get,
-    path = "/list-student",
+    path = "/student/list",
     context_path = "/api/v1/classrooms",
     responses(
         (status = 200, description = "Successfully retrieved all classrooms.", body = ClassroomListResponse),
@@ -272,7 +272,7 @@ pub(super) async fn get_all_classrooms_as_student(
 
 #[utoipa::path(
     get,
-    path = "/{classroom_id}/dashboard-student",
+    path = "/{classroom_id}/student/dashboard",
     context_path = "/api/v1/classrooms",
     responses(
         (status = 200, description = "Successfully retrieved classroom data.", body = ClassroomStudentDashboardData),

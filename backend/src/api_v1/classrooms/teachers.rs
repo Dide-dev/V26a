@@ -72,7 +72,7 @@ pub(super) async fn add_new_classroom(
 
 #[utoipa::path(
     get,
-    path = "/list-teacher",
+    path = "/teacher/list",
     context_path = "/api/v1/classrooms",
     responses(
         (status = 200, description = "Successfully retrieved all classrooms", body = ClassroomListResponse),
@@ -136,7 +136,7 @@ pub(super) async fn get_all_classrooms_as_teacher(
 
 #[utoipa::path(
     get,
-    path = "/{classroom_id}/dashboard-teacher",
+    path = "/{classroom_id}/teacher/dashboard",
     context_path = "/api/v1/classrooms",
     responses(
         (status = 200, description = "Successfully retrieved classroom data", body = ClassroomTeacherDashboardData),
