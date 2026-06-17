@@ -861,6 +861,7 @@ fn apply_tree_filters<'a>(
         show_own_private,
         show_private,
         editable,
+        lesson_id,
     } = filters;
 
     let is_admin = claims.is_some_and(|c| c.account_type == AccountType::Admin);
@@ -877,7 +878,8 @@ fn apply_tree_filters<'a>(
         || language_code.is_some()
         || subject.is_some()
         || created_after.is_some()
-        || created_before.is_some();
+        || created_before.is_some()
+        || lesson_id.is_some();
 
     if !has_conditions {
         return Ok(());
@@ -918,6 +920,7 @@ fn apply_tree_filters<'a>(
         created_after.as_ref(),
         created_before.as_ref(),
     );
+    apply_tree_filters_lesson_id(&mut separated, lesson_id.as_ref());
 
     Ok(())
 }
@@ -1130,12 +1133,34 @@ fn apply_tree_filters_created_time<'args>(
     }
 }
 
+/// Adds the filters related to the lesson id to a Postgres [`QueryBuilder`].
+///
+/// # Arguments
+/// `separated` - The query to be mutated in-place, as a [`Separated`] created from a [`QueryBuilder`].
+///
+/// `lesson_id` - A filter specifying to which lesson the tree should belong.
+///
+/// # Returns
+/// Nothing.
+fn apply_tree_filters_lesson_id<'args>(
+    separated: &mut Separated<'_, 'args, Postgres, &str>,
+    lesson_id: Option<&'args i32>,
+) {
+    if let Some(lesson_id) = lesson_id {
+        separated
+            .push("(lesson_trees.lesson_id = ")
+            .push_bind_unseparated(lesson_id)
+            .push_unseparated(")");
+    }
+}
+
 const TREE_LIST_QUERY_JOINS: &str = r"
     FROM trees
     LEFT JOIN books ON books.isbn = trees.book_isbn
     LEFT JOIN users ON users.id = trees.owner_id
     LEFT JOIN subjects ON subjects.id = trees.subject_id
     LEFT JOIN languages ON languages.code = trees.language_code
+    LEFT JOIN lesson_trees ON lesson_trees.tree_id = trees.id
 ";
 
 fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
@@ -1794,6 +1819,7 @@ mod tests {
             show_own_private: true,
             show_private: false,
             editable: false,
+            lesson_id: None,
         };
         apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
         assert_eq!(

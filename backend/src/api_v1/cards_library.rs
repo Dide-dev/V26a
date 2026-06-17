@@ -64,6 +64,9 @@ pub fn cards_library() -> Router<ArcState> {
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to
 /// add this card to the card library.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_card_to_library(
     claims: Claims,
@@ -119,6 +122,9 @@ async fn add_card_to_library(
 /// A list with the cards satisfying the filters.
 ///
 /// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_cards_from_library(
     _claims: Claims,
