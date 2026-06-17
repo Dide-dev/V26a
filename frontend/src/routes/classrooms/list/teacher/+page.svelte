@@ -6,10 +6,16 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import {type ClassroomListResponse, getAllClassroomUserInfos, getAllClassroomsStudent} from '$lib/api-wrapper/classrooms';
+    import {
+        type ClassroomListResponse,
+        getAllClassroomsTeacher
+    } from '$lib/api-wrapper/classrooms';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
+    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { redirectLogin } from '$lib/api-wrapper';
+    import { page } from '$app/state';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for classroom deletion is not possible.
@@ -27,14 +33,16 @@
     });
 
     async function loadClassrooms() {
-        let userInfo = getAllClassroomUserInfos();
+        let userInfo = getUserInfo();
 
         let paginationOptions: PaginationOptions = {
             page: thisPage,
             size: pageSizeNumber
         };
         if (userInfo !== null) {
-            classroomListResponse = await getAllClassroomsStudent(paginationOptions);
+            classroomListResponse = await getAllClassroomsTeacher(paginationOptions);
+        } else {
+            await redirectLogin(page.url);
         }
     }
 
@@ -96,6 +104,7 @@
                 <tr>
                     <th class="text-left">{m.classroom()}</th>
                     <th class="text-left">{m.description()}</th>
+                    <th class="text-left">{m.createdAt()}</th>
                 </tr>
             </thead>
             <tbody>
@@ -103,14 +112,15 @@
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
-                                href={appLink(
-                                    `/classrooms/student-dashboard?id=${classroom.id}`
-                                )}
+                                href={appLink(`/classrooms/dashboard/teacher?id=${classroom.id}`)}
                                 target="_blank">{classroom.name}</a
                             >
                         </td>
                         <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
                             >{classroom.description}</td
+                        >
+                        <td class="max-w-96 pr-4 wrap-anywhere"
+                            >{new Date(classroom.createdAt).toLocaleDateString('nl-NL')}</td
                         >
                     </tr>
                 {/each}

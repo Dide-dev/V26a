@@ -8,14 +8,14 @@
     import { m } from '$lib/paraglide/messages.js';
     import {
         type ClassroomListResponse,
-        getAllClassroomsTeacher
+        getAllClassroomUserInfos,
+        getAllClassroomsStudent,
+        type ClassroomId,
+        type AllClassroomUserInfos
     } from '$lib/api-wrapper/classrooms';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import { getUserInfo } from '$lib/api-wrapper/users';
-    import { redirectLogin } from '$lib/api-wrapper';
-    import { page } from '$app/state';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for classroom deletion is not possible.
@@ -28,22 +28,35 @@
     let pageSizeNumber = $derived(Number(pageSizeString));
     let thisPage = $state(1);
 
+    let allClassroomUserInfos: AllClassroomUserInfos | null;
+
     onMount(async () => {
         await loadClassrooms();
     });
 
     async function loadClassrooms() {
-        let userInfo = getUserInfo();
+        allClassroomUserInfos = getAllClassroomUserInfos();
 
         let paginationOptions: PaginationOptions = {
             page: thisPage,
             size: pageSizeNumber
         };
-        if (userInfo !== null) {
-            classroomListResponse = await getAllClassroomsTeacher(paginationOptions);
-        } else {
-            await redirectLogin(page.url);
+        if (allClassroomUserInfos !== null) {
+            classroomListResponse = await getAllClassroomsStudent(paginationOptions);
         }
+    }
+
+    function getNumber(classroomId: ClassroomId): number | string {
+        // Will never happen unless user manually deletes his cookie
+        if (allClassroomUserInfos === null) return '';
+
+        let classroomUserInfo = allClassroomUserInfos.claims.find(
+            (classroom) => classroom.id === classroomId
+        );
+        // Will never happen unless user manually changes his cookie
+        if (classroomUserInfo === undefined) return '';
+
+        return classroomUserInfo.num;
     }
 
     let prevPageExists = $derived(thisPage > 1);
@@ -94,7 +107,7 @@
     <div class="text-center">
         <p class="flex justify-center text-2xl">{m.noClassroomsFound()}</p>
         <button class="m-2 rounded-sm bg-emerald-500 p-1"
-            ><a href={appLink('/classrooms/add')}>{m.classroomAdd()}</a></button
+            ><a href={appLink('/classrooms/join')}>{m.classroomJoin()}</a></button
         >
     </div>
 {:else}
@@ -104,6 +117,7 @@
                 <tr>
                     <th class="text-left">{m.classroom()}</th>
                     <th class="text-left">{m.description()}</th>
+                    <th class="text-left">{m.usernumber()}</th>
                 </tr>
             </thead>
             <tbody>
@@ -111,13 +125,14 @@
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
-                                href={appLink(`/classrooms/teacher-dashboard?id=${classroom.id}`)}
+                                href={appLink(`/classrooms/dashboard/student?id=${classroom.id}`)}
                                 target="_blank">{classroom.name}</a
                             >
                         </td>
                         <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
                             >{classroom.description}</td
                         >
+                        <td class="max-w-96 pr-4 wrap-anywhere">{getNumber(classroom.id)}</td>
                     </tr>
                 {/each}
             </tbody>

@@ -49,7 +49,7 @@
         event.preventDefault();
         let classroomGenData: ClassroomGeneratedData = await addClassroom(classroomData);
 
-        await goto(appLink(`/classrooms/teacher-dashboard?id=${classroomGenData.id}`));
+        await goto(appLink(`/classrooms/dashboard/teacher?id=${classroomGenData.id}`));
     }
 </script>
 

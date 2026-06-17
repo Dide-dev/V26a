@@ -58,4 +58,4 @@ export type NavLinkProps = {
  * - `'th'` - Thin width.
  * - `'xt'` - Extra thin width.
  */
-export type NavWidthProp = 'md' | 'th' | 'xt';
+export type NavWidthProp = 'bg' | 'md' | 'th' | 'xt';

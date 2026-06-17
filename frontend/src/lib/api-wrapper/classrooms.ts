@@ -74,7 +74,7 @@ export type ClassroomUserInfo = {
     id: ClassroomId;
     num: number;
     name: string;
-}
+};
 
 /** The data in the classroom cookie */
 export type AllClassroomUserInfos = {
@@ -184,11 +184,12 @@ export function getClassroomUserInfo(classroomId: ClassroomId): ClassroomUserInf
         .find((row) => row.startsWith('classroom_user_infos='));
     if (!cookie) return null;
     try {
-        const allClassroomUserInfos: AllClassroomUserInfos = JSON.parse(decodeURIComponent(cookie.split('=')[1]));
-        allClassroomUserInfos.claims.forEach(classroomUserInfo => {
-            if (classroomUserInfo.id == classroomId)
-                return classroomUserInfo;
-        })
+        const allClassroomUserInfos: AllClassroomUserInfos = JSON.parse(
+            decodeURIComponent(cookie.split('=')[1])
+        );
+        allClassroomUserInfos.claims.forEach((classroomUserInfo) => {
+            if (classroomUserInfo.id == classroomId) return classroomUserInfo;
+        });
         return null;
     } catch {
         return null;
