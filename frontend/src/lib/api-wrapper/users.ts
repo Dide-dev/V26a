@@ -4,8 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
-import type { ClassroomListResponse } from './classrooms';
 import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 import type { Option } from './types';
 

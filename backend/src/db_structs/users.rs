@@ -464,6 +464,9 @@ impl Display for UserLanguage {
 impl FromStr for UserLanguage {
     type Err = ApiError;
 
+    /// Parses a string s to return a value of type [`UserLanguage`].
+    /// If parsing succeeds, returns [`Ok(UserLanguage)`](UserLanguage),
+    /// otherwise when the string is ill-formatted returns an [`Err(InvalidDataFound)`](ApiError::InvalidDataFound).
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
             "nl" => Ok(UserLanguage::Nl),
@@ -493,6 +496,9 @@ impl Display for AccountType {
 impl FromStr for AccountType {
     type Err = ApiError;
 
+    /// Parses a string s to return a value of type [`AccountType`].
+    /// If parsing succeeds, returns [`Ok(AccountType)`](AccountType),
+    /// otherwise when the string is ill-formatted returns an [`Err(InvalidDataFound)`](ApiError::InvalidDataFound).
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
             "admin" => Ok(AccountType::Admin),
