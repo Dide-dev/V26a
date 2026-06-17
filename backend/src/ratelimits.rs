@@ -88,8 +88,8 @@ pub const ADD_LESSON_RATELIMIT: RatelimitOptions = RatelimitOptions {
     burst_size: 10,
 };
 pub const CLASSROOM_LOGIN_RATELIMIT: RatelimitOptions = RatelimitOptions {
-    refresh_rate: 50,
-    burst_size: 100,
+    refresh_rate: 100,
+    burst_size: 200,
 };
 
 // --- Feedback ---
@@ -122,8 +122,8 @@ pub const ADD_CARD_RATELIMIT: RatelimitOptions = RatelimitOptions {
     burst_size: 50,
 };
 pub const GET_EDIT_LOCK_RATELIMIT: RatelimitOptions = RatelimitOptions {
-    refresh_rate: 10,
-    burst_size: 20,
+    refresh_rate: 15,
+    burst_size: 30,
 };
 
 // --- Users ---
