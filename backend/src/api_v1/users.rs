@@ -12,7 +12,7 @@ use crate::db::users::{
 };
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::db_structs::users::{
-    AccountType, DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetRequestBody,
+    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetRequestBody,
     PasswordResetRequestData, PendingRegisterData, PublicUserData, RegisterData, RemoveExpired,
     RequestPasswordResetRequestBody, UserData, UserGetData,
 };
@@ -59,7 +59,6 @@ pub fn users() -> Router<ArcState> {
                 .put(reset_password)
                 .layer(rate_limit_layer(3, 5)),
         )
-        .route("/{user_id}/classrooms", get(get_all_owned_classrooms))
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
