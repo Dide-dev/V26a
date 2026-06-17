@@ -27,6 +27,7 @@ use crate::limits::TREE_TITLE_MAX_LENGTH;
 use crate::messages::Message;
 use crate::ratelimits::{
     ADD_CARD_RATELIMIT, ADD_TREE_RATELIMIT, DUPLICATE_TREE_RATELIMIT, GET_EDIT_LOCK_RATELIMIT,
+    GET_TREE_LIST_RATELIMIT,
 };
 use crate::{ArcState, db, get_connection};
 
@@ -44,7 +45,7 @@ pub mod edit_lock;
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
-        .route("/", get(get_list))
+        .route("/", get(get_list).layer(GET_TREE_LIST_RATELIMIT.to_layer()))
         .route("/", post(add_new_tree).layer(ADD_TREE_RATELIMIT.to_layer()))
         .route("/languages", get(get_all_languages).post(add_new_language))
         .route("/languages/{code}", put(update_language))
