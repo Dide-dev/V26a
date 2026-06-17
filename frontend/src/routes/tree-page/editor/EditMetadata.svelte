@@ -35,7 +35,6 @@
         sidebar: ManageSideBar | MenuSideBar;
     } = $props();
 
-    let visible = $state(false);
     let languages: Language[] | null = $state(null);
     let subjects: Record<string, Subject[]> | null = $state(null);
 
@@ -142,7 +141,6 @@
         newData.tags = result;
 
         await updateTreeMetaData(treeId, newData);
-        visible = false;
         prevTreeData = { ...newData, bookIsbn: newData.bookIsbn === null ? '' : newData.bookIsbn };
         treeData = { ...prevTreeData };
         resetInputStates();
@@ -157,7 +155,6 @@
     function cancelEdit(e: MouseEvent) {
         e.preventDefault();
         treeData = { ...prevTreeData };
-        visible = false;
         resetInputStates();
         sidebar = {
             kind: 'Menu',
@@ -166,11 +163,9 @@
     }
 
     function onkeydown(event: KeyboardEvent) {
-        if (!visible) return;
-
         // When ctrl+z is pressed, we only want that event to be handled in the relevant textbox,
         // do not let it propagate to the undo/redo buttons of the tree editor page.
-        event.stopPropagation();
+        if (event.ctrlKey) event.stopPropagation();
 
         // The form submit keyboard shortcut
         if (event.ctrlKey && event.key == 'Enter') {

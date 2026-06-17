@@ -96,7 +96,7 @@
 
     // Prevent any ctrl+z or the like in the sidebar from undo-ing actions in the tree.
     function onkeydown(event: KeyboardEvent) {
-        if (event.key !== 'Escape') event.stopPropagation();
+        if (event.ctrlKey) event.stopPropagation();
 
         if (event.ctrlKey && event.key == 'Enter') {
             confirmClick(event);
@@ -104,12 +104,10 @@
     }
 </script>
 
+<svelte:body {onkeydown} />
+
 {#if sidebar.kind === 'CardEditor'}
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <form
-        class={[cardChanged && 'completed', 'pointer-events-auto flex w-full flex-col']}
-        {onkeydown}
-    >
+    <form class={[cardChanged && 'completed', 'pointer-events-auto flex w-full flex-col']}>
         <h2 class="page__heading">{m.editThisCard()}</h2>
 
         <div>

@@ -46,7 +46,7 @@
     function onkeydown(event: KeyboardEvent) {
         // When ctrl+z is pressed, we only want that event to be handled in the relevant textbox,
         // do not let it propagate to the undo/redo buttons of the tree editor page.
-        event.stopPropagation();
+        if (event.ctrlKey) event.stopPropagation();
 
         // The form submit keyboard shortcut
         if (event.ctrlKey && event.key == 'Enter') {
