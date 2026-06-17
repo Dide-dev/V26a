@@ -17,20 +17,20 @@ pub fn classrooms() -> Router<ArcState> {
         .route("/", post(teachers::add_new_classroom))
         .route("/{classroom_id}/lessons", post(teachers::add_new_lesson))
         .route(
-            "/{classroom_id}/dashboard-student",
+            "/{classroom_id}/student/dashboard",
             get(students::get_student_dashboard),
         )
         .route(
-            "/{classroom_id}/dashboard-teacher",
+            "/{classroom_id}/teacher/dashboard",
             get(teachers::get_teacher_dashboard),
         )
-        .route("/login", post(students::classroom_login))
+        .route("/auth", post(students::classroom_login))
         .route(
-            "/list-student",
+            "/student/list",
             get(students::get_all_classrooms_as_student),
         )
         .route(
-            "/list-teacher",
+            "/teacher/list",
             get(teachers::get_all_classrooms_as_teacher),
         )
 }
