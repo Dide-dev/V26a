@@ -108,9 +108,10 @@ export const homePageCards = {
                             '<ul>' +
                             '<li>Door op een van de gestippelde kaders met een plusje ' +
                             'te klikken voeg je een nieuwe kaart toe.</li>' +
-                            '<li>In het zijmenu dat opent bij het toevoegen van een kaart ' +
-                            'kan de tekst op de voor- en achterkant worden bewerkt. ' +
-                            'De voortekst wordt getoond voordat de kaart is geopend, ' +
+                            '<li>In het zijmenu opent bij het toevoegen van een kaart het menu ' +
+                            'waarop de tekst op de voor- en achterkant kan worden bewerkt. ' +
+                            'Tijdens het gebruiken van de boom, wordt ' +
+                            'de voortekst getoond voordat de kaart is geopend, ' +
                             'en de achterkant, die dus de heuristiek bevat, daarna.</li>' +
                             '<li>Dit zijmenu om de inhoud van een kaart te wijzigen ' +
                             'kan later weer worden geopend door te klikken op het potloodje ' +
@@ -125,7 +126,7 @@ export const homePageCards = {
                             'op de pijltjes bovenaan de pagina, of door gebruik te maken van ' +
                             'de sneltoetsen <i>Ctrl + Z</i> en <i>Ctrl + Y</i>.</li>' +
                             '</ul>',
-                        `Door op '${m.editMetadata()}' te klikken bovenaan de pagina, ` +
+                        `Door op '${m.editMetadata()}' te klikken in het zijmenu, ` +
                             'kun je ook nog de titel, beschrijving en andere informatie ' +
                             'van de boom aanpassen.'
                     ]
@@ -152,12 +153,10 @@ export const homePageCards = {
                     heading: 'Hoe publiceer ik mijn heuristiekboom?',
                     content: [
                         'Het publiceren van de boom kan vanaf de <i>tree editor</i>-pagina. ' +
-                            `Klik daar op '${m.editMetadata()}' en vink het veld ` +
-                            `'${m.published()}' aan, om de boom te publiceren.`,
-                        'Om te controleren of een boom gepubliceerd is, kun je op de ' +
-                            `<a href=${appLink('/my-trees')} class="text__link">` +
-                            'mijn bomen</a>-pagina kijken, onder de kolom ' +
-                            `'${m.published()}'.`
+                            `Klik daar op '${m.share()}' in het zijmenu en klik op de knop ` +
+                            `'${m.publish()}', om de boom te publiceren.`,
+                        'Nadat de boom is gepubliceerd, kun je hier ook de link naar ' +
+                            'de boom kopiëren.'
                     ]
                 },
                 {
@@ -296,12 +295,12 @@ export const homePageCards = {
                             '<ul>' +
                             '<li>By clicking on one of the dashed boxes containing a plus, ' +
                             'you can add a new card to the tree.</li>' +
-                            '<li>In the sidebar, which opens upon adding a new card, ' +
+                            '<li>Upon adding a new card, a menu opens in the sidebar opens where ' +
                             'the texts on the front and back of the card can be edited. ' +
-                            'The front-text is shown before the card has been opened, ' +
+                            'When using the tree, the front-text is shown before the card has been opened, ' +
                             'and the back-text, containing the actual heuristic, afterward.</li>' +
-                            '<li>This sidebar can be reopened later, by clicking on the ' +
-                            'little pencil at the top-left of a card.</li>' +
+                            '<li>This menu in the sidebar can be reopened later, by clicking on the ' +
+                            'little pencil at the top-left of a card, to edit its contents.</li>' +
                             '<li>A card can be deleted by clicking on the little bin ' +
                             'at the top-left of the card.</li>' +
                             '<li>A card can be moved, together with all its <i>children</i>, ' +
@@ -313,7 +312,7 @@ export const homePageCards = {
                             'or by using the keyboard shortcuts ' +
                             '<i>Ctrl + Z</i> and <i>Ctrl + Y</i>.</li>' +
                             '</ul>',
-                        `By clicking on '${m.editMetadata()}' at the top of the page, ` +
+                        `By clicking on '${m.editMetadata()}' in the sidebar, ` +
                             'you can also edit the title, description and other information ' +
                             'of your tree.'
                     ]
@@ -340,11 +339,10 @@ export const homePageCards = {
                     heading: 'How do I publish my heuristic tree?',
                     content: [
                         'On the tree editor-page, you can easily publish your tree. ' +
-                            `Click on '${m.editMetadata()}' and check the field ` +
-                            `'${m.published()}', to publish the tree.`,
-                        'To verify whether a tree of yours is published, you can check on the ' +
-                            `<a href=${appLink('/my-trees')} class="text__link">` +
-                            `my trees</a>-page, under the column '${m.published()}'.`
+                            `Click on '${m.share()}' in the sidebar and click on ` +
+                            `the '${m.publish()}'-button, to publish the tree.`,
+                        'After your tree has been published, you can also copy the link to ' +
+                            'your tree, from this menu.'
                     ]
                 },
                 {
