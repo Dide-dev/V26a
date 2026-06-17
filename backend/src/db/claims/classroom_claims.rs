@@ -210,6 +210,7 @@ mod tests {
         let uri = "33/all/hail/Lorax/1/";
         let result = get_classroom_id_from_uri(uri);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 33);
     }
 
     #[test]

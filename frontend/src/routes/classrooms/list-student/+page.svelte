@@ -6,8 +6,7 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
-    import {type ClassroomListResponse, getAllClassroomUserInfos} from '$lib/api-wrapper/classrooms';
-    import { getAllClassroomsStudent } from '$lib/api-wrapper/users';
+    import {type ClassroomListResponse, getAllClassroomUserInfos, getAllClassroomsStudent} from '$lib/api-wrapper/classrooms';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
@@ -100,18 +99,18 @@
                 </tr>
             </thead>
             <tbody>
-                {#each classroomListResponse.classrooms as classroom (classroom.genData.id)}
+                {#each classroomListResponse.classrooms as classroom (classroom.id)}
                     <tr>
                         <td class="max-w-96 pr-4 wrap-anywhere hover:text-blue-800 hover:underline">
                             <a
                                 href={appLink(
-                                    `/classrooms/student-dashboard?id=${classroom.genData.id}`
+                                    `/classrooms/student-dashboard?id=${classroom.id}`
                                 )}
-                                target="_blank">{classroom.data.name}</a
+                                target="_blank">{classroom.name}</a
                             >
                         </td>
                         <td class="max-w-125 pr-4 pl-4 align-text-top wrap-anywhere"
-                            >{classroom.data.description}</td
+                            >{classroom.description}</td
                         >
                     </tr>
                 {/each}

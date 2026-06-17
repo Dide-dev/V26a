@@ -38,7 +38,7 @@
         switch (classroomLoginResponse.type) {
             case 'Success':
                 await goto(
-                    appLink(`/classrooms/student-dashboard?id=${classroomLoginResponse.id}`)
+                    appLink(`/classrooms/dashboard/student?id=${classroomLoginResponse.id}`)
                 );
                 break;
             case 'JoinCodeIncorrect':
