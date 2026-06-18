@@ -106,8 +106,8 @@ pub const ADD_IMAGE_RATELIMIT: RatelimitOptions = RatelimitOptions {
 
 // --- Trees ---
 pub const GET_TREE_LIST_RATELIMIT: RatelimitOptions = RatelimitOptions {
-    refresh_rate: 50,
-    burst_size: 100,
+    refresh_rate: 150,
+    burst_size: 250,
 };
 pub const ADD_TREE_RATELIMIT: RatelimitOptions = RatelimitOptions {
     refresh_rate: 10,
