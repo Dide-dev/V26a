@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d0e0e4ba7b16e369b30590bd9bd7b714a514944a108101e2443623501d9f999"
+}

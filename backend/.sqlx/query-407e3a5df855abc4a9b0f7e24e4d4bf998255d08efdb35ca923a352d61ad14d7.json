@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "407e3a5df855abc4a9b0f7e24e4d4bf998255d08efdb35ca923a352d61ad14d7"
+}
