@@ -12,9 +12,9 @@ use crate::db::users::{
 };
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetRequestBody,
-    PasswordResetRequestData, PendingRegisterData, PublicUserData, RegisterData, RemoveExpired,
-    RequestPasswordResetRequestBody, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetBody, PasswordResetRequestData,
+    PendingRegisterData, PublicUserData, RegisterData, RemoveExpired, RequestPasswordResetBody,
+    UserData, UserGetData,
 };
 use crate::errors::ApiError;
 use crate::{ArcState, get_connection};
@@ -24,7 +24,8 @@ use std::collections::hash_map::Entry;
 use crate::api_v1::users::UserResponse::InvalidVerification;
 use crate::db_structs::{Validated, parse_email};
 use crate::messages::Message::{
-    EmailVerificationBody, EmailVerificationSubject, PasswordResetBody, PasswordResetSubject,
+    EmailVerificationBody, EmailVerificationSubject, PasswordResetMailBody,
+    PasswordResetMailSubject,
 };
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
@@ -466,7 +467,7 @@ async fn change_password(
     post,
     path = "/reset-password-requests",
     context_path = "/api/v1/users",
-    request_body = RequestPasswordResetRequestBody,
+    request_body = RequestPasswordResetBody,
     responses(
         (status = 200, description = "Password change request fulfilled."),
         (status = 400, description = ApiError::EmailParseError.to_string()),
@@ -478,7 +479,7 @@ async fn change_password(
 ///
 /// # Arguments
 /// `password_change_request` - The struct containing the e-mail address to which a change password
-/// e-mail should be sent as [`RequestPasswordResetRequestBody`].
+/// e-mail should be sent as [`RequestPasswordResetBody`].
 ///
 /// # Errors
 /// May return a [`DatabaseException`](ApiError::DatabaseException),
@@ -488,7 +489,7 @@ async fn change_password(
 async fn request_password_reset(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
-    Json(password_reset_request): Json<RequestPasswordResetRequestBody>,
+    Json(password_reset_request): Json<RequestPasswordResetBody>,
 ) -> Result<(), ApiError> {
     password_reset_request.validate_inputs()?;
     let email = password_reset_request.email;
@@ -536,9 +537,9 @@ async fn request_password_reset(
         ))
         .to(Mailbox::new(Some(display_name.clone()), parsed_email))
         .header(ContentType::TEXT_PLAIN)
-        .subject(PasswordResetSubject.localized(&language))
+        .subject(PasswordResetMailSubject.localized(&language))
         .body(
-            PasswordResetBody {
+            PasswordResetMailBody {
                 display_name,
                 password_reset_link,
                 duration_seconds: state.config.reset_password_timer,
@@ -565,7 +566,7 @@ pub enum PasswordResetResponse {
     put,
     path = "/reset-password-requests",
     context_path = "/api/v1/users",
-    request_body = PasswordResetRequestBody,
+    request_body = PasswordResetBody,
     responses(
         (status = 200, description = "Password changing attempt has been finalized.", body = PasswordResetResponse, content_type = "application/json"),
         (status = 500, description = "Internal server error.")
@@ -575,7 +576,7 @@ pub enum PasswordResetResponse {
 ///
 /// # Arguments
 /// `password_reset_body` - The struct containing the password-reset code and the new password,
-/// as [`PasswordResetRequestBody`].
+/// as [`PasswordResetMailBody`].
 ///
 /// # Returns
 /// [`Success`](PasswordResetResponse::Success) if successful,
@@ -593,7 +594,7 @@ pub enum PasswordResetResponse {
 async fn reset_password(
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
-    Json(password_reset_body): Json<PasswordResetRequestBody>,
+    Json(password_reset_body): Json<PasswordResetBody>,
 ) -> Result<Json<PasswordResetResponse>, ApiError> {
     password_reset_body.validate_inputs()?;
     let new_password = password_reset_body.new_password;

@@ -13,8 +13,8 @@ use crate::api_v1::users::{
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    PasswordChangeRequestBody, PasswordResetRequestBody, RegisterData,
-    RequestPasswordResetRequestBody, UserData, UserGetData, UserLanguage,
+    PasswordChangeRequestBody, PasswordResetBody, RegisterData, RequestPasswordResetBody, UserData,
+    UserGetData, UserLanguage,
 };
 use crate::tests::api_v1::{TestState, login, register, setup, setup_config, try_verify};
 use sqlx::{PgPool, query_scalar};
@@ -387,7 +387,7 @@ async fn test_password_reset(db: PgPool) {
     let response = test_state
         .server
         .post("/users/reset-password-requests")
-        .json(&RequestPasswordResetRequestBody {
+        .json(&RequestPasswordResetBody {
             email: register_data.email.clone(),
         })
         .await;
@@ -407,7 +407,7 @@ async fn test_password_reset(db: PgPool) {
     let new_password = "NewP4sswordThatIWon'tForget!".to_owned();
     let response = server
         .put("/users/reset-password-requests")
-        .json(&PasswordResetRequestBody {
+        .json(&PasswordResetBody {
             code: reset_code,
             new_password: new_password.clone(),
         })
@@ -442,7 +442,7 @@ async fn test_invalid_password_reset_code(db: PgPool) {
     let response = test_state
         .server
         .post("/users/reset-password-requests")
-        .json(&RequestPasswordResetRequestBody {
+        .json(&RequestPasswordResetBody {
             email: register_data.email,
         })
         .await;
@@ -453,7 +453,7 @@ async fn test_invalid_password_reset_code(db: PgPool) {
     let response = test_state
         .server
         .put("/users/reset-password-requests")
-        .json(&PasswordResetRequestBody {
+        .json(&PasswordResetBody {
             code: "1".to_string(),
             new_password: register_data.password,
         })
@@ -482,7 +482,7 @@ async fn test_password_reset_unpruned(db: PgPool) {
     let response = test_state
         .server
         .post("/users/reset-password-requests")
-        .json(&RequestPasswordResetRequestBody {
+        .json(&RequestPasswordResetBody {
             email: register_data.email,
         })
         .await;
@@ -501,7 +501,7 @@ async fn test_password_reset_unpruned(db: PgPool) {
     let response = test_state
         .server
         .put("/users/reset-password-requests")
-        .json(&PasswordResetRequestBody {
+        .json(&PasswordResetBody {
             code: reset_code,
             new_password: register_data.password,
         })

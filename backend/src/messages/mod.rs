@@ -27,7 +27,7 @@ pub enum Message {
         base_url: String,
     },
     /// The subject of an e-mail sent to reset a user's password.
-    PasswordResetSubject,
+    PasswordResetMailSubject,
     /// The body of an e-mail sent to reset a user's password.
     ///
     /// # Parameters
@@ -36,7 +36,7 @@ pub enum Message {
     /// `password_reset_link` - The link that the receiver can use to reset their password.
     ///
     /// `base_url` - The base URL of the website, to show in the footer.
-    PasswordResetBody {
+    PasswordResetMailBody {
         display_name: String,
         password_reset_link: String,
         duration_seconds: i64,

@@ -21,8 +21,8 @@ pub fn localize_message(message: &Message) -> String {
             )
         }
         Message::CopyOf => "Copy of".to_owned(),
-        Message::PasswordResetSubject => "BOOM! Password reset".to_owned(),
-        Message::PasswordResetBody {
+        Message::PasswordResetMailSubject => "BOOM! Password reset".to_owned(),
+        Message::PasswordResetMailBody {
             display_name,
             password_reset_link,
             duration_seconds,

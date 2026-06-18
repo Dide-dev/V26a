@@ -350,11 +350,11 @@ pub struct UserListResponse {
 /// The request body for a password reset request that contains the email to which the password change link should be sent to.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestPasswordResetRequestBody {
+pub struct RequestPasswordResetBody {
     pub email: String,
 }
 
-impl Validated for RequestPasswordResetRequestBody {
+impl Validated for RequestPasswordResetBody {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     ///
@@ -369,12 +369,12 @@ impl Validated for RequestPasswordResetRequestBody {
 /// The request body for a password reset that contains the password reset code and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct PasswordResetRequestBody {
+pub struct PasswordResetBody {
     pub code: String,
     pub new_password: String,
 }
 
-impl Validated for PasswordResetRequestBody {
+impl Validated for PasswordResetBody {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     ///
