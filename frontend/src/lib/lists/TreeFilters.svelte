@@ -337,14 +337,16 @@
             {/snippet}
             {@render ownerFilters()}
         </AccordionItem>
-        <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
-            {#snippet header()}
-                <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
-                    <p class="ml-1 text-left">{m.searchOptions()}</p>
-                </AnimatedUnderline>
-            {/snippet}
-            {@render optionCheckboxes()}
-        </AccordionItem>
+        {#if userInfo !== null}
+            <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
+                {#snippet header()}
+                    <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
+                        <p class="ml-1 text-left">{m.searchOptions()}</p>
+                    </AnimatedUnderline>
+                {/snippet}
+                {@render optionCheckboxes()}
+            </AccordionItem>
+        {/if}
     {/if}
 </Accordion>
 
