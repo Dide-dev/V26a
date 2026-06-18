@@ -96,6 +96,7 @@
     "registeredOn": "Geregistreerd op",
     "lastLogin": "Laatste login",
     "confirmChanges": "Bevestig wijzigingen",
+    "confirmUpload": "Bevestig upload",
     "duplicateTree": "Dupliceer boom",
     "editTree": "Bewerk boom",
     "editUser": "Bewerk gebruiker",
@@ -153,6 +154,7 @@
     "exampleName": "Jan_Janssen",
     "exampleNickname": "Jantje Deeg",
     "exampleTitle": "Heuristiekboom van {name}",
+    "exampleTitleCard": "Stelling van Pythagoras",
     "exampleDescription": "Mijn eerste boom!",
     "exampleTags": "bewijs, meetkunde, 3e-klas",
     "exampleBookName": "Algebra",
@@ -214,5 +216,7 @@
     "deleteAccount": "Verwijder account",
     "deleteAccountConfirmation": "Weet je zeker dat je je account wilt verwijderen?",
     "logout": "Log uit",
-    "cardLibrary": "Kaartenbibliotheek"
+    "cardLibrary": "Kaartenbibliotheek",
+    "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
+    "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
 }

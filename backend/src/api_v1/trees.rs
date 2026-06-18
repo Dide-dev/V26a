@@ -107,6 +107,9 @@ pub fn trees() -> Router<ArcState> {
 /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
 /// [`TreeAddData`] contains cards.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
     claims: Claims,
@@ -165,6 +168,9 @@ async fn add_new_tree(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to remove
 /// the given tree.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_tree(
     claims: Claims,
@@ -219,6 +225,9 @@ async fn remove_tree(
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards in the
 /// `Cards` table link to `tree_id`.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or a [`SerdeException`](ApiError::SerdeException) instead.
 async fn update_tree_structure(
     claims: Claims,
@@ -271,6 +280,9 @@ async fn update_tree_structure(
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree for the given `tree_id` referenced in `card_data`.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_card(
@@ -337,6 +349,9 @@ async fn add_new_card(
 ///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found
 /// which link to `tree_id`.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`SerdeException`](ApiError::SerdeException)
 /// or [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -442,6 +457,9 @@ async fn update_structure_if_valid(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree for the given `tree_id`.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_tree_data(
     claims: Claims,
@@ -506,6 +524,9 @@ async fn update_tree_data(
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published
 /// and the user is not its owner, or an admin.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
@@ -607,6 +628,9 @@ pub async fn verify_tree_permissions(
 ///
 /// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or
 /// [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) instead.
 pub async fn get_list(
@@ -687,6 +711,9 @@ pub enum AuthorizeCoAuthorResponse {
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree to which the user is added as co-author does not exist.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn authorize_co_author(
     claims: Claims,
@@ -755,6 +782,9 @@ async fn authorize_co_author(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to remove a co-author from the tree.
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree from which the user is removed as co-author does not exist.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn deauthorize_co_author(
@@ -836,6 +866,9 @@ pub async fn get_all_languages(
 ///
 /// Returns [`LanguageExists`](ApiError::LanguageExists) if the language already exists.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_new_language(
     claims: Claims,
@@ -889,6 +922,9 @@ pub async fn add_new_language(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
 ///
 /// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the given language code does not exist.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_language(
@@ -970,6 +1006,9 @@ pub async fn get_all_subjects(
 /// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the new subject contains a non-existent
 /// language code.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_new_subject(
     claims: Claims,
@@ -1029,6 +1068,9 @@ pub async fn add_new_subject(
 ///
 /// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the new subject data contains a non-existent
 /// language code.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_subject(
@@ -1091,6 +1133,9 @@ pub async fn update_subject(
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to duplicate the tree
 /// for the given `tree_id`.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn duplicate_tree(
