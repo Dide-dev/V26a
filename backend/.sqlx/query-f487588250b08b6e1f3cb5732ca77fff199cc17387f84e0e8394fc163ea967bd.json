@@ -1,17 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+  "query": "INSERT INTO classrooms (owner_id, name, description, join_code) VALUES ($1, $2, $3, $4) RETURNING id",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "id",
         "type_info": "Int4"
-      },
-      {
-        "ordinal": 1,
-        "name": "created_at",
-        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -23,9 +18,8 @@
       ]
     },
     "nullable": [
-      false,
       false
     ]
   },
-  "hash": "1101b246f019ad011e8f5dc5c81b5e7a1f05a4e6aaa7f94c2cfc7d744b78b4f5"
+  "hash": "f487588250b08b6e1f3cb5732ca77fff199cc17387f84e0e8394fc163ea967bd"
 }

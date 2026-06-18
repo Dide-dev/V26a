@@ -36,9 +36,7 @@ test('No submission without classroom name', async () => {
 test('Submission with full classroom data', async () => {
     (addClassroom as MockedFunction<typeof addClassroom>).mockResolvedValue({
         id: 1,
-        joinCode: 'Join12',
-        createdAt: new Date(),
-        ownerId: 1
+        joinCode: 'Join12'
     });
     const user = userEvent.setup();
     render(page);

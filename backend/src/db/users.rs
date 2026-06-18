@@ -92,7 +92,8 @@ pub async fn user_update_last_login(db: impl PgExecutor<'_>, id: i32) -> Result<
 /// A [`UserGetData`] object containing the user's data, minus their password.
 ///
 /// # Errors
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, ApiError> {
@@ -128,7 +129,8 @@ pub async fn get_user(db: impl PgExecutor<'_>, id: i32) -> Result<UserGetData, A
 /// Or if no user by that id exists, returns [`None`].
 ///
 /// # Errors
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_public_data(
@@ -170,7 +172,8 @@ pub async fn get_user_public_data(
 /// A [`AdminGetUserData`] object containing the user's data, minus their password.
 ///
 /// # Errors
-/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is invalid or corrupted.
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_all_data(

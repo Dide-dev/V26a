@@ -30,15 +30,13 @@ use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::key_extractor::KeyExtractor;
 
 use crate::ArcState;
-use crate::api_v1::cards_library::cards_library;
-use crate::api_v1::lessons::lessons;
 use crate::api_v1::{
-    admin::admin, cards::cards, classrooms::classrooms, feedback::feedback, images::images,
-    trees::trees, users::users,
+    admin::admin, auth::auth, cards::cards, cards_library::cards_library, classrooms::classrooms,
+    feedback::feedback, images::images, trees::trees, users::users,
 };
-use auth::auth;
 use axum::Router;
 use chrono::{DateTime, Utc};
+use lessons::lessons;
 use rand::distr::{Alphanumeric, SampleString};
 
 #[derive(Clone)]
