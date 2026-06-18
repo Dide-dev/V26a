@@ -144,6 +144,7 @@
     "nextPage": "Next page",
     "ownerId": "ID of the owner",
     "searchTerms": "Search terms",
+    "exampleSearchTerms": "Pythagorean #proof #geometry",
     "searchTags": "#proof #geometry",
     "search": "Search by content and tags",
     "numberOfTrees": "Number of trees per page:",

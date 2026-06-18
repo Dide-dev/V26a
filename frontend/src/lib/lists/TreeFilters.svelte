@@ -356,7 +356,7 @@
             class="input__text"
             type="text"
             name="search"
-            placeholder={m.examplePlaceholder({ value: m.searchTerms() })}
+            placeholder={m.examplePlaceholder({ value: m.exampleSearchTerms() })}
             bind:value={localOptions.searchQuery}
             onblur={handleSearch}
             onkeydown={(e) => {

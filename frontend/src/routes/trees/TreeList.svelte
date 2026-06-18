@@ -48,8 +48,6 @@
         parseParams();
 
         loadTrees();
-
-        page.url.searchParams.set('foo', 'bar');
     });
 
     function parseParams() {
