@@ -29,13 +29,13 @@ pub struct UserData {
     pub language: UserLanguage,
 }
 
-impl Display for UserData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            get_display_name(self.name.clone(), self.nickname.clone())
-        )
+impl UserData {
+    pub fn get_display_name(&self) -> String {
+        if self.nickname.trim().is_empty() {
+            self.name.clone()
+        } else {
+            self.nickname.clone()
+        }
     }
 }
 
@@ -83,14 +83,6 @@ impl Validated for UserData {
         }
 
         Ok(())
-    }
-}
-
-fn get_display_name(name: String, nickname: String) -> String {
-    if nickname.trim().is_empty() {
-        name
-    } else {
-        nickname
     }
 }
 
@@ -511,7 +503,8 @@ impl FromStr for AccountType {
 #[cfg(test)]
 mod tests {
     use crate::db_structs::users::{
-        PasswordResetRequestData, PendingRegisterData, RegisterData, RemoveExpired,
+        PasswordResetRequestData, PendingRegisterData, RegisterData, RemoveExpired, UserData,
+        UserLanguage,
     };
     use chrono::Utc;
     use std::collections::HashMap;
@@ -570,15 +563,36 @@ mod tests {
     #[test]
     fn test_get_display_name() {
         assert_eq!(
-            super::get_display_name(String::new(), "Peter".to_owned()),
+            UserData {
+                name: String::new(),
+                nickname: "Peter".to_string(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            }
+            .get_display_name(),
             "Peter"
         );
         assert_eq!(
-            super::get_display_name("Lorax".to_owned(), " ".to_owned()),
+            UserData {
+                name: "Lorax".to_string(),
+                nickname: " ".to_string(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            }
+            .get_display_name(),
             "Lorax"
         );
         assert_eq!(
-            super::get_display_name("Lorax".to_owned(), "Santa_Claus".to_owned()),
+            UserData {
+                name: "Lorax".to_string(),
+                nickname: "Santa_Claus".to_string(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            }
+            .get_display_name(),
             "Santa_Claus"
         );
     }

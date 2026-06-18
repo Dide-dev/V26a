@@ -381,6 +381,7 @@ async fn test_password_reset(db: PgPool) {
     let user_id = register(&test_state, &register_data).await;
     let response = login(&test_state.server, register_data.email.clone())
         .await
+        .assert_status_ok()
         .json::<LoginResponse>();
     assert!(response.succeeded);
 

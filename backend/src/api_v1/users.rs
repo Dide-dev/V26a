@@ -149,7 +149,7 @@ async fn add_new_user(
         "{}/verify?code={}",
         state.config.base_url, verification_code
     );
-    let display_name = user_data.data.to_string();
+    let display_name = user_data.data.get_display_name();
     let language = user_data.data.language;
     let message = Message::builder()
         .from(Mailbox::new(
@@ -528,7 +528,7 @@ async fn request_password_reset(
         "{}/reset-password?code={}",
         state.config.base_url, password_reset_code
     );
-    let display_name = user_data.to_string();
+    let display_name = user_data.get_display_name();
     let language = user_data.language;
     let message = Message::builder()
         .from(Mailbox::new(
