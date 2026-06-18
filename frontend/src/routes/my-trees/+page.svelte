@@ -13,7 +13,7 @@
     } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
     import TreeListEntry from '$lib/lists/TreeListEntry.svelte';

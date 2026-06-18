@@ -12,16 +12,14 @@
     import { NavLink } from '$lib/navigation';
     import Footer from './Footer.svelte';
     import { FooterLink } from '$lib/footer';
-    import { getUserInfo } from '$lib/api-wrapper/users';
     import { afterNavigate } from '$app/navigation';
     import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime.js';
     import { page } from '$app/state';
     import { Tween } from 'svelte/motion';
-    import { getAllClassroomUserInfos } from '$lib/api-wrapper/classrooms';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
-    let classroomUserInfo = $state(getAllClassroomUserInfos());
     let errors: string[] = $state([]);
 
     // Retrieve userinfo after navigating to another page (refreshes nav-bar).
@@ -86,7 +84,7 @@
         // Classrooms
         let classroomsNav = new NavLink({
             defaultHref: '/classrooms/join',
-            text: m.classroom(),
+            text: m.classrooms(),
             props: { width: 'bg', localeSwitch: false }
         });
         if (userInfo !== null)
@@ -94,11 +92,10 @@
                 href: '/classrooms/list/teacher',
                 text: m.classroomListTeacher()
             });
-        if (classroomUserInfo !== null)
-            classroomsNav.children.push({
-                href: '/classrooms/list/student',
-                text: m.classroomListStudent()
-            });
+        classroomsNav.children.push({
+            href: '/classrooms/list/student',
+            text: m.classroomListStudent()
+        });
         if (userInfo !== null)
             classroomsNav.children.push({
                 href: '/classrooms/add',

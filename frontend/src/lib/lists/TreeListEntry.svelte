@@ -27,7 +27,7 @@
     import { duplicateTree, type TreeMetadata } from '$lib/api-wrapper/trees';
     import { appLink, timeFormatString } from '$lib';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
     let userInfo = $state(getUserInfo());

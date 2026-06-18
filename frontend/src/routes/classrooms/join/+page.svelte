@@ -19,6 +19,9 @@
         username: ''
     });
 
+    let joinCodeIncorrect: boolean = $state(false);
+    let missingUser: boolean = $state(false);
+
     let formCompleted: boolean = $derived(loginData.joinCode !== '' && loginData.username !== '');
 
     const minInputLengths = {
@@ -37,13 +40,19 @@
 
         switch (classroomLoginResponse.type) {
             case 'Success':
+                joinCodeIncorrect = false;
+                missingUser = false;
                 await goto(
                     appLink(`/classrooms/dashboard/student?id=${classroomLoginResponse.id}`)
                 );
                 break;
             case 'JoinCodeIncorrect':
+                missingUser = false;
+                joinCodeIncorrect = true;
                 break;
             case 'MissingUser':
+                joinCodeIncorrect = false;
+                missingUser = true;
                 break;
         }
     }
@@ -85,8 +94,14 @@
                 placeholder={m.examplePlaceholderRequired({ value: 'Lorax' })}
                 minlength={minInputLengths.username}
                 maxlength={maxInputLengths.username}
+                required
             />
         </div>
-        <button type="submit" data-testid="add-button">{m.classroomJoin()}</button>
+        <button type="submit" data-testid="join-button">{m.classroomJoin()}</button>
+        {#if joinCodeIncorrect}
+            <p class="text__error">{m.classroomJoinCodeIncorrect()}</p>
+        {:else if missingUser}
+            <p class="text__error">{m.classroomMissingUser()}</p>
+        {/if}
     </form>
 </div>

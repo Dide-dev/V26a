@@ -75,7 +75,7 @@
     --spacing-padding-minor: calc(var(--spacing) * 1);
 
     /* Spacing nav bar */
-    --spacing-nav-bg: calc(var(--spacing) * 58);
+    --spacing-nav-bg: calc(var(--spacing) * 50);
     --spacing-nav-md: calc(var(--spacing) * 40);
     --spacing-nav-th: calc(var(--spacing) * 28);
     --spacing-nav-xt: calc(var(--spacing) * 14);

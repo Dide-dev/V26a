@@ -15,23 +15,24 @@ import { m } from '$lib/paraglide/messages.js';
 import {
     updateUser,
     getOwnUserData,
-    getUserInfo,
     changePassword,
     type UserGetData,
     type UserData,
-    type UserInfo,
     deleteMe
 } from '$lib/api-wrapper/users';
+import { getUserInfo, type UserInfo } from '$lib/api-wrapper/sessions';
 
 vi.mock('$lib/api-wrapper/users', () => {
     return {
         getOwnUserData: vi.fn(),
-        getUserInfo: vi.fn(),
         updateUser: vi.fn(),
         changePassword: vi.fn(),
         deleteMe: vi.fn()
     };
 });
+vi.mock('$lib/api-wrapper/sessions', () => ({
+    getUserInfo: vi.fn()
+}));
 afterEach(() => {
     vi.resetAllMocks();
 });

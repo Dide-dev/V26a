@@ -14,7 +14,7 @@
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { redirectLogin } from '$lib/api-wrapper';
-    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/sessions';
     import { m } from '$lib/paraglide/messages.js';
     import { page } from '$app/state';
 

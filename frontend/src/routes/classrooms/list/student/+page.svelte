@@ -8,14 +8,16 @@
     import { m } from '$lib/paraglide/messages.js';
     import {
         type ClassroomListResponse,
-        getAllClassroomUserInfos,
         getAllClassroomsStudent,
-        type ClassroomId,
-        type AllClassroomUserInfos
+        type ClassroomId
     } from '$lib/api-wrapper/classrooms';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { calcTotalPages, type PaginationOptions } from '$lib/pagination';
+    import {
+        getAllClassroomUserInfos,
+        type AllClassroomUserInfos
+    } from '$lib/api-wrapper/sessions';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for classroom deletion is not possible.
@@ -115,7 +117,7 @@
         <table class="border-separate border-spacing-2">
             <thead>
                 <tr>
-                    <th class="text-left">{m.classroom()}</th>
+                    <th class="text-left">{m.classrooms()}</th>
                     <th class="text-left">{m.description()}</th>
                     <th class="text-left">{m.usernumber()}</th>
                 </tr>
