@@ -97,6 +97,7 @@
     "registeredOn": "Registered on",
     "lastLogin": "Last login",
     "confirmChanges": "Confirm changes",
+    "confirmUpload": "Confirm upload",
     "duplicateTree": "Duplicate tree",
     "editTree": "Edit tree",
     "editUser": "Edit user",
@@ -113,6 +114,7 @@
     "enabled": "enabled",
     "userList": "User list",
     "feedbackList": "Received feedback",
+    "searchByOwner": "Search by owner name...",
     "newPassword": "New password",
     "oldPassword": "Old password",
     "changePassword": "Change password",
@@ -131,6 +133,8 @@
     "nextPage": "Next page",
     "ownerId": "ID of the owner",
     "searchTerms": "Search terms",
+    "searchTags": "#proof #geometry",
+    "search": "Search by content and tags",
     "numberOfTrees": "Number of trees per page:",
     "numberOfUsers": "Number of users per page:",
     "selectDate": "Select date",
@@ -153,6 +157,7 @@
     "exampleName": "John_Smith",
     "exampleNickname": "Johnny Doe",
     "exampleTitle": "{name}'s heuristic tree",
+    "exampleTitleCard": "Pythagorean Theorem",
     "exampleDescription": "My first tree!",
     "exampleTags": "proof, geometry, 9th-grade",
     "exampleBookName": "Algebra",
@@ -213,5 +218,8 @@
     "deleteOwnedTrees": "Delete all my trees",
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
-    "logout": "Logout"
+    "logout": "Logout",
+    "cardLibrary": "Card library",
+    "uploadThisCard": "Upload this card to the cards library",
+    "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library"
 }

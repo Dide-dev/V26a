@@ -22,6 +22,9 @@ use std::str::FromStr;
 /// Returns a struct containing the user id, password hash and account type otherwise
 ///
 /// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_credentials_by_email(
     db: impl PgExecutor<'_>,
@@ -59,6 +62,9 @@ pub async fn get_user_credentials_by_email(
 /// Returns a struct containing the user id, password hash and account type otherwise.
 ///
 /// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_credentials_by_id(
     db: impl PgExecutor<'_>,

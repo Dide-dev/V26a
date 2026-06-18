@@ -1,43 +1,41 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT name, description, id, join_code, created_at, owner_id FROM classrooms\n         WHERE owner_id = $3\n         LIMIT $1 OFFSET $2",
+  "query": "SELECT id, name, order_number, description, published, created_at\n         FROM lessons\n         WHERE classroom_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "name",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 1,
-        "name": "description",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 2,
         "name": "id",
         "type_info": "Int4"
       },
       {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "order_number",
+        "type_info": "Int4"
+      },
+      {
         "ordinal": 3,
-        "name": "join_code",
+        "name": "description",
         "type_info": "Varchar"
       },
       {
         "ordinal": 4,
-        "name": "created_at",
-        "type_info": "Timestamptz"
+        "name": "published",
+        "type_info": "Bool"
       },
       {
         "ordinal": 5,
-        "name": "owner_id",
-        "type_info": "Int4"
+        "name": "created_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8",
         "Int4"
       ]
     },
@@ -50,5 +48,5 @@
       false
     ]
   },
-  "hash": "62b09cee4a57e385fcc06b12819ab3496ae055803936018df1dbd7ea3615c93c"
+  "hash": "fff0f10dec0b1ad876e6acd38ed2815a02d9865c90e74367b3684dc70178d078"
 }
