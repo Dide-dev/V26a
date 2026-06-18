@@ -113,6 +113,7 @@
     "enabled": "enabled",
     "userList": "User list",
     "feedbackList": "Received feedback",
+    "searchByOwner": "Search by owner name...",
     "newPassword": "New password",
     "oldPassword": "Old password",
     "changePassword": "Change password",
@@ -131,6 +132,8 @@
     "nextPage": "Next page",
     "ownerId": "ID of the owner",
     "searchTerms": "Search terms",
+    "searchTags": "#proof #geometry",
+    "search": "Search by content and tags",
     "numberOfTrees": "Number of trees per page:",
     "numberOfUsers": "Number of users per page:",
     "selectDate": "Select date",
@@ -223,6 +226,7 @@
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
     "logout": "Logout",
+    "cardLibrary": "Card library",
     "uploadThisCard": "Upload this card to the cards library",
     "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library"
 }

@@ -8,11 +8,12 @@
     This sidebar is currently only used for the card editing, but could be used for more later.
  -->
 <script lang="ts">
-    import type { CardData } from '$lib/api-wrapper/cards';
+    import { type CardData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
     import Editor from '$lib/rich-text/Editor.svelte';
     import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte.ts';
     import SimpleTextEditArea from './SimpleTextEditArea.svelte';
+    import CardsLibrary from './CardsLibrary.svelte';
 
     let {
         sidebar = $bindable(),
@@ -35,6 +36,8 @@
     };
 
     let isVisualEditor = $state(true);
+
+    let isLibrary = $state(false);
 
     async function finishEdit() {
         let node = followIndexNode(history.currentStructure, sidebar!.location);
@@ -99,47 +102,68 @@
             class="pointer-events-auto sticky top-0 z-30 flex w-full flex-col bg-blue-50 p-2 shadow-[-5px_5px_5px_-5px_rgba(0_0_0/0.8)]"
             {onkeydown}
         >
-            <h1>{m.editThisCard()}</h1>
-
-            <p>{m.front()}</p>
-            <SimpleTextEditArea
-                maxLength={maxInputLengths.frontMaxLength}
-                height={2}
-                bind:valueText={sidebar.editingVersion.front}
-            />
-            <div class="h-5"></div>
-            <p>{m.back()}</p>
-            <div class="m-1 flex gap-2 rounded bg-white p-1">
+            <div class="m-1 flex gap-2 rounded">
                 <button
                     class="cursor-pointer rounded p-1"
-                    class:bg-green-500={isVisualEditor === true}
-                    onclick={() => (isVisualEditor = true)}
+                    class:bg-green-500={!isLibrary}
+                    onclick={() => (isLibrary = false)}
                 >
-                    {m.visualEditor()}
+                    <h1>{m.editThisCard()}</h1>
                 </button>
                 <button
                     class="cursor-pointer rounded p-1"
-                    class:bg-green-500={isVisualEditor === false}
-                    onclick={() => (isVisualEditor = false)}
+                    class:bg-green-500={isLibrary}
+                    onclick={async () => {
+                        isLibrary = true;
+                    }}
                 >
-                    {m.codeEditor()}
+                    <h1>{m.cardLibrary()}</h1>
                 </button>
             </div>
-            {#if isVisualEditor}
-                <Editor
-                    maxLength={maxInputLengths.backMaxLength}
-                    bind:valueText={sidebar.editingVersion.back}
-                />
+
+            {#if isLibrary}
+                <CardsLibrary {sidebar} />
             {:else}
+                <p>{m.front()}</p>
                 <SimpleTextEditArea
-                    maxLength={maxInputLengths.backMaxLength}
-                    height="full"
-                    bind:valueText={sidebar.editingVersion.back}
+                    maxLength={maxInputLengths.frontMaxLength}
+                    height={2}
+                    bind:valueText={sidebar.editingVersion.front}
                 />
-            {/if}
-            <div class="h-5"></div>
-            {#if sidebar.errorMessage}
-                <p class="text-red-600">{sidebar.errorMessage}</p>
+                <div class="h-5"></div>
+                <p>{m.back()}</p>
+                <div class="m-1 flex gap-2 rounded bg-white p-1">
+                    <button
+                        class="cursor-pointer rounded p-1"
+                        class:bg-green-500={isVisualEditor}
+                        onclick={() => (isVisualEditor = true)}
+                    >
+                        {m.visualEditor()}
+                    </button>
+                    <button
+                        class="cursor-pointer rounded p-1"
+                        class:bg-green-500={!isVisualEditor}
+                        onclick={() => (isVisualEditor = false)}
+                    >
+                        {m.codeEditor()}
+                    </button>
+                </div>
+                {#if isVisualEditor}
+                    <Editor
+                        maxLength={maxInputLengths.backMaxLength}
+                        bind:valueText={sidebar.editingVersion.back}
+                    />
+                {:else}
+                    <SimpleTextEditArea
+                        maxLength={maxInputLengths.backMaxLength}
+                        height="full"
+                        bind:valueText={sidebar.editingVersion.back}
+                    />
+                {/if}
+                <div class="h-5"></div>
+                {#if sidebar.errorMessage}
+                    <p class="text-red-600">{sidebar.errorMessage}</p>
+                {/if}
             {/if}
             <div class="flex gap-2">
                 <button
