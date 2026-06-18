@@ -113,6 +113,7 @@
     "enabled": "ingeschakeld",
     "userList": "Gebruikerslijst",
     "feedbackList": "Ingezonden feedback",
+    "searchByOwner": "Zoek op naam van eigenaar...",
     "newPassword": "Nieuw wachtwoord",
     "oldPassword": "Oud wachtwoord",
     "changePassword": "Wachtwoord wijzigen",
@@ -131,6 +132,8 @@
     "nextPage": "Volgende pagina",
     "ownerId": "ID van de eigenaar",
     "searchTerms": "Zoektermen",
+    "searchTags": "#bewijs #meetkunde",
+    "search": "Zoek op inhoud en tags",
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
@@ -224,6 +227,7 @@
     "resetPasswordSuccessBody": "Je wachtwoord is veranderd, je kan deze nu gebruiken om in te loggen.",
     "resetPasswordFailureTitle": "Wachtwoord reset mislukt",
     "resetPasswordFailureBody": "Het is niet gelukt om jouw wachtwoord opnieuw in te stellen. Je reset link is mogelijk al verlopen of gebruikt. Probeer alsjeblieft in te loggen of nogmaals een reset link op te vragen.",
+    "cardLibrary": "Kaartenbibliotheek",
     "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
     "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
 }

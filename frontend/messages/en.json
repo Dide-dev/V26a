@@ -113,6 +113,7 @@
     "enabled": "enabled",
     "userList": "User list",
     "feedbackList": "Received feedback",
+    "searchByOwner": "Search by owner name...",
     "newPassword": "New password",
     "oldPassword": "Old password",
     "changePassword": "Change password",
@@ -131,6 +132,8 @@
     "nextPage": "Next page",
     "ownerId": "ID of the owner",
     "searchTerms": "Search terms",
+    "searchTags": "#proof #geometry",
+    "search": "Search by content and tags",
     "numberOfTrees": "Number of trees per page:",
     "numberOfUsers": "Number of users per page:",
     "selectDate": "Select date",
@@ -226,6 +229,7 @@
     "resetPasswordSuccessBody": "Your password has been changed, you can now use it to log in.",
     "resetPasswordFailureTitle": "Password reset failed",
     "resetPasswordFailureBody": "Your password could not be reset. Your reset link might have already been used or expired. Please try logging in or requesting another password reset.",
+    "cardLibrary": "Card library",
     "uploadThisCard": "Upload this card to the cards library",
     "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library"
 }
