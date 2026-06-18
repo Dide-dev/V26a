@@ -24,16 +24,14 @@
         const pageId = page.url.searchParams.get('id');
 
         if (!pageId) {
-            // Change to classroom join page, but that page does not yet exist.
-            await goto(appLink('/'));
+            await goto(appLink('/classrooms/join'));
             return;
         }
 
         id = Number(pageId);
 
         if (Number.isNaN(id)) {
-            // Change to classroom join page, but that page does not yet exist.
-            await goto(appLink('/'));
+            await goto(appLink('/classrooms/join'));
             return;
         }
 
