@@ -113,6 +113,7 @@
     "enabled": "ingeschakeld",
     "userList": "Gebruikerslijst",
     "feedbackList": "Ingezonden feedback",
+    "searchByOwner": "Zoek op naam van eigenaar...",
     "newPassword": "Nieuw wachtwoord",
     "oldPassword": "Oud wachtwoord",
     "changePassword": "Wachtwoord wijzigen",
@@ -131,6 +132,8 @@
     "nextPage": "Volgende pagina",
     "ownerId": "ID van de eigenaar",
     "searchTerms": "Zoektermen",
+    "searchTags": "#bewijs #meetkunde",
+    "search": "Zoek op inhoud en tags",
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
@@ -213,6 +216,7 @@
     "deleteAccount": "Verwijder account",
     "deleteAccountConfirmation": "Weet je zeker dat je je account wilt verwijderen?",
     "logout": "Log uit",
+    "cardLibrary": "Kaartenbibliotheek",
     "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
     "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
 }
