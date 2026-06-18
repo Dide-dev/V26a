@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
+  "query": "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "1b00553112874e9e9930ee5c662a1a90853389b2f9dded80203e894e642f9e8e"
+  "hash": "5c9121ee71dae50b1a00274f1b3d1812d08809c6a6e6cc5b224ae0706ad8023f"
 }
