@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import './layout.css';
-    import favicon from '$lib/assets/favicon.svg';
+    import favicon from '$lib/assets/favicon.png';
     import { m } from '$lib/paraglide/messages.js';
     import Navigation from './Navigation.svelte';
     import { NavLink } from '$lib/navigation';
@@ -219,7 +219,7 @@
     let offset = $derived(offsets.reduce((acc, curr) => acc + curr.current, 0));
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head><link rel="icon" href={favicon} /><title>BOOM!</title></svelte:head>
 
 <Navigation {leftLinks} {rightLinks} bind:offsets />
 
