@@ -4,13 +4,14 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::api_v1::{create_token, rate_limit_layer};
+use crate::api_v1::create_token;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::users::{get_user, user_update_last_login};
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::errors::ApiError;
+use crate::ratelimits::LOGIN_RATELIMIT;
 use crate::{ArcState, get_connection};
 use axum::extract::State;
 use axum::routing::{delete, post};
@@ -24,7 +25,7 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
     Router::new()
-        .route("/", post(login).layer(rate_limit_layer(15, 30)))
+        .route("/", post(login).layer(LOGIN_RATELIMIT.to_layer()))
         .route("/", delete(logout))
 }
 
@@ -34,6 +35,8 @@ pub fn auth() -> Router<ArcState> {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginResponse {
     pub succeeded: bool,
+    #[serde(default)]
+    pub disabled: bool,
 }
 
 #[utoipa::path(
@@ -53,7 +56,7 @@ pub struct LoginResponse {
 /// `login_request` - The credentials provided to log in, as [`LoginRequestBody`].
 ///
 /// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
+/// A [`LoginResponse`] which flags whether the combination of email and password is correct, and if the user is enabled.
 /// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
@@ -69,14 +72,36 @@ async fn login(
     login_request.validate_inputs()?;
 
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: false,
+            }),
+        ));
     };
+
+    if !credentials.enabled {
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: true,
+            }),
+        ));
+    }
 
     let password_valid = bcrypt::verify(login_request.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: false,
+            }),
+        ));
     }
 
     let user_data = get_user(&db, credentials.user_id).await?;
@@ -127,7 +152,10 @@ async fn login(
 
     Ok((
         jar.add(cookie).add(user_info_cookie),
-        Json(LoginResponse { succeeded: true }),
+        Json(LoginResponse {
+            succeeded: true,
+            disabled: false,
+        }),
     ))
 }
 

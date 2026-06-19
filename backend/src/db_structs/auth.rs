@@ -45,4 +45,5 @@ pub struct UserCredentials {
     pub user_id: i32,
     pub password_hash: String,
     pub account_type: AccountType,
+    pub enabled: bool,
 }

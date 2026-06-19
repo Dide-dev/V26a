@@ -5,13 +5,10 @@
 */
 
 use crate::ArcState;
-
-use crate::api_v1::rate_limit_layer;
-
 use crate::db::images::{add_image, check_image_existence};
 use crate::db_structs::session::Claims;
-
 use crate::errors::ApiError;
+use crate::ratelimits::ADD_IMAGE_RATELIMIT;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::routing::post;
@@ -24,7 +21,10 @@ use uuid::Uuid;
 
 /// Creates an `Axum` [`Router`] for the images category.
 pub fn images() -> Router<ArcState> {
-    Router::new().route("/", post(add_new_image).layer(rate_limit_layer(10, 20)))
+    Router::new().route(
+        "/",
+        post(add_new_image).layer(ADD_IMAGE_RATELIMIT.to_layer()),
+    )
 }
 
 #[utoipa::path(

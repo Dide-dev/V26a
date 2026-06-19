@@ -378,8 +378,23 @@ pub async fn add_tags(
     tree_id: i32,
     tags: &[String],
 ) -> Result<(), ApiError> {
+    let set = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<HashSet<_>>();
+    if set.len() < tags.len() {
+        return Err(ApiError::DuplicateTags);
+    }
+
     query!(
-        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
+        "INSERT INTO tags (name)
+         SELECT tag
+         FROM UNNEST($1::VARCHAR(32)[]) AS t(tag)
+         WHERE NOT EXISTS (
+              SELECT 1
+              FROM tags
+              WHERE LOWER(tags.name) = LOWER(t.tag)
+         )",
         tags
     )
     .execute(&mut *db)
@@ -388,14 +403,14 @@ pub async fn add_tags(
     // This needs to be queried separately because the previous query doesn't insert all of the tags
     // if there are duplicates.
     let tag_ids = query!(
-        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
-        tags
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
+        &tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>()
     )
     .fetch_all(&mut *db)
     .await?;
 
     query!(
-        "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        "INSERT INTO tree_tags (tree_id, tag_id) SELECT $1 AS tree_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
         tree_id,
         &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
     )
@@ -1163,14 +1178,18 @@ const TREE_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN lesson_trees ON lesson_trees.tree_id = trees.id
 ";
 
-fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
+    let tags = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<Vec<_>>();
     query
         .push(
             r"
             WITH requested_tags AS (
                 SELECT id
                 FROM tags
-                WHERE name = ANY(",
+                WHERE LOWER(name) = ANY(",
         )
         .push_bind(tags)
         .push("))");
@@ -1653,11 +1672,11 @@ mod tests {
             .unwrap();
 
         // Update the tree data
-        let new_tree_data = TreeData {
+        let mut new_tree_data = TreeData {
             title: "Updated tree".to_string(),
             description: "Updated description".to_string(),
             language_code: "nl".to_string(),
-            tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+            tags: vec!["tag1".to_string(), "TAG1".to_string(), "tag3".to_string()],
             subject_id: Some(3),
             book_name: "Updated book".to_string(),
             book_author: "John Writer".to_string(),
@@ -1668,11 +1687,17 @@ mod tests {
             assignment_text: "Updated assignment".to_string(),
             published: true,
         };
+        let void =
+            update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone()).await;
+        assert_eq!(void, Err(ApiError::DuplicateTags));
+
+        // The duplicate tag throws an error.
+        new_tree_data.tags = vec!["tag1".to_string(), "tag3".to_string()];
+
         update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone())
             .await
             .unwrap();
 
-        // Verify the data was updated
         let (found_tree_metadata, _) = db_get_tree_all_data(get_connection_unwrap!(db), tree_id)
             .await
             .unwrap()
@@ -1971,6 +1996,27 @@ mod tests {
             hide_private_admin_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
+    }
+
+    #[sqlx::test]
+    async fn test_tags_filter_case_insensitive() {
+        let mut query1 = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let mut query2 = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+
+        let lower_case_tags = TreeFilters {
+            tag: vec!["tag1".to_owned(), "tag2".to_owned()],
+            ..Default::default()
+        };
+
+        let upper_case_tags = TreeFilters {
+            tag: vec!["TAG1".to_owned(), "TAG2".to_owned()],
+            ..Default::default()
+        };
+
+        tree_list_query_tag_cte(&mut query1, &lower_case_tags.tag);
+        tree_list_query_tag_cte(&mut query2, &upper_case_tags.tag);
+
+        assert_eq!(query1.sql(), query2.sql());
     }
 
     #[sqlx::test]
