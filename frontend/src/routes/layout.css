@@ -239,6 +239,11 @@
             background-color: var(--color-neutral-400);
             border-color: currentColor;
             transition: all 200ms ease-in-out;
+
+            &.danger {
+                border-color: var(--color-red-700);
+                background-color: var(--color-red-100);
+            }
         }
 
         &.completed button[type='submit'],
@@ -248,9 +253,18 @@
             border-color: var(--color-neutral-600);
             cursor: pointer;
 
+            &.danger {
+                border-color: var(--color-red-700);
+                background-color: var(--color-red-100);
+            }
+
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
+
+                &.danger {
+                    background-color: var(--color-red-700);
+                }
             }
         }
     }

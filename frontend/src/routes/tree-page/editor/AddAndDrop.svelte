@@ -14,7 +14,7 @@
     import type { CardData } from '$lib/api-wrapper/cards';
     import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './SubtreeEditor.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
     import { lineOffset, svgWidth } from '../lineConstants';
 
     let {
@@ -28,7 +28,7 @@
         location: number[];
         dragState: null | DragState;
         lineLayout: Layout;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
     } = $props();
 
     export type Layout = LayoutRight | LayoutUnder | LayoutOver;
@@ -59,18 +59,21 @@
     let highlight = $derived((dragState == null && isHovered) || dragState?.type === 'dragging');
 
     // Clicking for adding cards
-    async function onclick() {
+    async function onclick(e: Event) {
+        e.stopPropagation();
+
         if (dragState !== null) {
             return;
         }
         let editingVersion: CardData = { front: '', back: '' };
-        if (sidebar?.type === 'NewCard') {
+        if (sidebar.type === 'NewCard') {
             // Don't forget what the user typed if the user clicks a different add card.
             editingVersion = sidebar.editingVersion;
         }
         sidebar = {
+            kind: 'CardEditor',
             type: 'NewCard',
-            location: location,
+            location,
             editingVersion
         };
     }

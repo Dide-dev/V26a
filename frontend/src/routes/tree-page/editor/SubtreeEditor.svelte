@@ -10,7 +10,7 @@
     import AddAndDrop from './AddAndDrop.svelte';
     import CardViewer from './CardViewer.svelte';
     import { followIndex, type TreeHistory } from './history.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
     import RootNodeEditor from './RootNodeEditor.svelte';
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
@@ -33,7 +33,7 @@
         location: number[];
         fakeNode?: boolean;
         dragState: DragState;
-        sidebar: SideBar | null;
+        sidebar: SideBar;
         color: BranchColor;
     } = $props();
 
@@ -48,8 +48,8 @@
         // but the fake node itself should still have it set to true.
         location[location.length - 1] === 0 &&
             (fakeNode ||
-                sidebar?.type !== 'NewCard' ||
-                JSON.stringify(location) !== JSON.stringify(sidebar?.location))
+                sidebar.type !== 'NewCard' ||
+                JSON.stringify(location) !== JSON.stringify(sidebar.location))
     );
     let nextSiblingIndex = $derived([...location.slice(0, -1), location[location.length - 1] + 1]);
 
@@ -63,7 +63,7 @@
         let iterator = node.children.keys().map((index) => ({ index, isFake: false }));
         let list: Child[] = [...iterator];
         if (
-            sidebar?.type === 'NewCard' &&
+            sidebar.type === 'NewCard' &&
             JSON.stringify(sidebar.location.slice(0, -1)) == JSON.stringify(location)
         ) {
             let lastIndex = sidebar.location[sidebar.location.length - 1];
@@ -117,6 +117,14 @@
      * for giving to the AddAndDrop so it knows where to draw.
      */
     let heightOfOwnCard = $state(0);
+
+    /** true if this node is being edited. */
+    let isBeingEdited = $derived(
+        sidebar.kind === 'CardEditor' &&
+            (fakeNode ||
+                (sidebar.type === 'EditCard' &&
+                    JSON.stringify(sidebar.location) === JSON.stringify(location)))
+    );
 </script>
 
 <!--
@@ -168,11 +176,11 @@
         <div class="flex flex-col" bind:clientHeight={heightOfOwnCard}>
             <div class="shrink-0">
                 <CardViewer
-                    card={fakeNode ||
-                    (sidebar?.type == 'EditCard' &&
-                        JSON.stringify(sidebar.location) === JSON.stringify(location))
-                        ? sidebar!.editingVersion
+                    card={isBeingEdited && sidebar.kind === 'CardEditor'
+                        ? sidebar.editingVersion
                         : history.currentCards[node!.cardId]}
+                    {color}
+                    {isBeingEdited}
                 />
             </div>
             <AddAndDrop
