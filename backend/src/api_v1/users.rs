@@ -17,12 +17,12 @@ use crate::db_structs::users::{
     UserData, UserGetData,
 };
 use crate::db_structs::{Validated, parse_email};
+use crate::errors::ApiError;
 use crate::messages::Message::{
     EmailVerificationBody, EmailVerificationSubject, PasswordResetMailBody,
     PasswordResetMailSubject,
 };
-use crate::errors::ApiError;
-use crate::ratelimits::{ADD_USER_RATELIMIT, VERIFY_USER_RATELIMIT};
+use crate::ratelimits::{ADD_USER_RATELIMIT, RESET_PASSWORD_RATELIMIT, VERIFY_USER_RATELIMIT};
 use crate::{ArcState, get_connection};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
@@ -60,7 +60,7 @@ pub fn users() -> Router<ArcState> {
             "/reset-password-requests",
             post(request_password_reset)
                 .put(reset_password)
-                .layer(rate_limit_layer(3, 5)),
+                .layer(RESET_PASSWORD_RATELIMIT.to_layer()),
         )
 }
 

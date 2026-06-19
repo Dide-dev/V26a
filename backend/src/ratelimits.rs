@@ -135,3 +135,7 @@ pub const VERIFY_USER_RATELIMIT: RatelimitOptions = RatelimitOptions {
     refresh_rate: 2,
     burst_size: 5,
 };
+pub const RESET_PASSWORD_RATELIMIT: RatelimitOptions = RatelimitOptions {
+    refresh_rate: 2,
+    burst_size: 5,
+};
