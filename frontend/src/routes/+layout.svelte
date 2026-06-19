@@ -119,6 +119,10 @@
                             text: m.userList()
                         },
                         {
+                            href: '/metadata-management',
+                            text: 'Metadata'
+                        },
+                        {
                             href: '/admin-feedback',
                             text: 'Feedback'
                         }
