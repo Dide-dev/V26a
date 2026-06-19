@@ -14,7 +14,7 @@
 
 <script lang="ts">
     import { addTreeToLesson, type LessonId } from '$lib/api-wrapper/lessons';
-    import { type TreeId } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeId, type TreeWithCards } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
     import iconAdd from '$lib/assets/icons/add.svg?raw';
@@ -25,6 +25,9 @@
     let visible = $state(false);
 
     let treeId: TreeId | null = $state(null);
+    let firstUnpublishedNoticeGiven: boolean = $state(false);
+    let isTreePublished: boolean = $state(false);
+    let tree: TreeWithCards | null = $state(null);
 
     function addTreeButtonClick() {
         visible = true;
@@ -50,6 +53,7 @@
 
     async function submitAddTree(event: SubmitEvent) {
         event.stopPropagation();
+        event.preventDefault();
         await addTree();
     }
 
@@ -58,7 +62,16 @@
             return;
         }
 
-        treeId = Number(treeId);
+        tree = await getTreeWithCards(treeId);
+        if (!(tree === null)) {
+            isTreePublished = tree.metadata.data.published;
+        }
+
+        if (!firstUnpublishedNoticeGiven && !isTreePublished) {
+            firstUnpublishedNoticeGiven = true;
+            return;
+        }
+        firstUnpublishedNoticeGiven = false;
 
         await addTreeToLesson(lessonId, treeId);
         await onTreeAdded();
@@ -102,7 +115,18 @@
                     }}
                     required
                 />
-                <button class="mt-0.5" type="submit">{m.addTree()}</button>
+                {#if firstUnpublishedNoticeGiven}
+                    <p class="w-full pt-0.5 pb-0.5 text-sm text-amber-600">
+                        {m.unpublishedTreeLesson()}
+                    </p>
+                {/if}
+                <button
+                    class="mt-0.5"
+                    type="submit"
+                    onclick={(event) => {
+                        event.stopPropagation();
+                    }}>{m.addTree()}</button
+                >
                 <button
                     class="mt-0.5"
                     type="reset"

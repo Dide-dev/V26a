@@ -216,6 +216,7 @@
     "copyCode": "Kopieer joincode",
     "addLesson": "Voeg les toe",
     "addTree": "Voeg boom toe",
+    "unpublishedTreeLesson": "Deze boom is nog niet gepubliceerd en kan alleen bekeken worden door jou en andere auteurs van de boom. Je kunt deze boom aan de les toevoegen door de 'voeg boom toe' knop nogmaals te klikken, maar wees ervan bewust dat de leerlingen deze boom niet kunnen zien, totdat je de boom publiceert via de boom-bewerk pagina. Door dit dialoog te sluiten, kun je deze actie annuleren, en wordt de boom niet toegevoegd aan de les.",
     "treeId": "Boom ID",
     "lessonName": "Naam van de les",
     "exampleLessonName": "Les 1 - de stelling van Pythagoras",

@@ -16,7 +16,9 @@
         type ClassroomStudentDashboardData,
         getClassroomStudentDashboard
     } from '$lib/api-wrapper/classrooms';
+    import { getClassroomUserInfo, type ClassroomUserInfo } from '$lib/api-wrapper/sessions';
 
+    let classroomUserInfo: ClassroomUserInfo | null = $state(null);
     let id: ClassroomId | null = $state(null);
     let classroomStudentDashboardData: ClassroomStudentDashboardData | null = $state(null);
 
@@ -35,8 +37,22 @@
             return;
         }
 
+        classroomUserInfo = getClassroomUserInfo(id);
+
+        if (classroomUserInfo === null) {
+            await redirectClassroomLogin(page.url);
+            return;
+        }
+
         classroomStudentDashboardData = await getClassroomStudentDashboard(id);
     });
+
+    async function redirectClassroomLogin(redirectToURL: URL) {
+        const encodedURI = encodeURI(
+            redirectToURL.pathname + redirectToURL.search + redirectToURL.hash
+        );
+        await goto(appLink(`/classrooms/join?redirect=${encodedURI}`));
+    }
 
     async function reloadDashboard() {
         if (id === null) return;
