@@ -141,7 +141,7 @@
         newData.tags = result;
 
         await updateTreeMetaData(treeId, newData);
-        prevTreeData = { ...newData, bookIsbn: newData.bookIsbn === null ? '' : newData.bookIsbn };
+        prevTreeData = { ...newData };
         treeData = { ...prevTreeData };
         resetInputStates();
 

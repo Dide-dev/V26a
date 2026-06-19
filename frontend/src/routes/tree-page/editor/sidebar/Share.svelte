@@ -11,6 +11,7 @@
     import { type TreeData, updateTreeMetaData } from '$lib/api-wrapper/trees';
     import { page } from '$app/state';
     import type { Notice } from '$lib/Notices.svelte';
+    import { localizeHref } from '$lib/paraglide/runtime';
 
     let {
         sidebar = $bindable(),
@@ -48,7 +49,7 @@
         event.preventDefault();
 
         navigator.clipboard.writeText(
-            `${page.url.protocol}//${page.url.hostname}/tree-page/viewer?id=${treeId}`
+            localizeHref(`${page.url.origin}/tree-page/viewer?id=${treeId}`)
         );
 
         notices.push({

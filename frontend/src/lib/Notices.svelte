@@ -6,7 +6,7 @@
 
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { Alert } from 'flowbite-svelte';
+    import { CloseOutline } from 'flowbite-svelte-icons';
 
     let {
         notices = $bindable(),
@@ -30,14 +30,22 @@
 
 <div class="fixed right-2 bottom-2 z-40 flex flex-col gap-1">
     {#each notices.slice(0, maxNumberOfNotices) as notice, i (i)}
-        <Alert
-            dismissable
-            onclick={() => dismissNotice(i)}
-            class="rounded-md border"
+        <div
+            class="rounded-md border p-4 flex flex-row gap-2"
             style="color: {notice.textColor}; background-color: {notice.backgroundColor};"
-            icon={notice.icon}
         >
+            <div class="flex items-center">
+
+            {@render notice.icon()}
+            </div>
             <p>{notice.text}</p>
-        </Alert>
+            <button
+                class="flex items-center cursor-pointer"
+            type="button"
+            onclick={() => dismissNotice(i)}
+            >
+                <CloseOutline class="shrink-0 h-5 w-5" />
+            </button>
+        </div>
     {/each}
 </div>
