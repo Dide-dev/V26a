@@ -312,7 +312,7 @@
             bind:notices
             treeLinkedData={tree.metadata.linkedData}
             onmouseenter={() => {
-                if (tree!.sidebar.kind === 'Menu') {
+                if (tree!.sidebar.kind === 'Menu' && dragState === null) {
                     tree!.sidebar.type = 'FullMenu';
                 }
             }}
