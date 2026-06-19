@@ -16,8 +16,8 @@
         type Subject
     } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
-    import LanguageListEntry from '$lib/lists/LanguageListEntry.svelte';
-    import SubjectListEntry from '$lib/lists/SubjectListEntry.svelte';
+    import LanguageListEntry from './LanguageListEntry.svelte';
+    import SubjectListEntry from './SubjectListEntry.svelte';
     import { PlusOutline } from 'flowbite-svelte-icons';
 
     let languages: Language[] | null = $state(null);
@@ -127,7 +127,7 @@
                 {/if}
                 {#each languages as language, index (languages[index].code)}
                     <LanguageListEntry
-                        onUpdate={async () => tryUpdateLanguage(languages![index])}
+                        onUpdate={async () => tryUpdateLanguage(language)}
                         bind:language={languages[index]}
                     />
                 {/each}
@@ -162,7 +162,7 @@
                 {/if}
                 {#each subjects as subject, index (subjects[index].id)}
                     <SubjectListEntry
-                        onUpdate={async () => tryUpdateSubject(subjects![index])}
+                        onUpdate={async () => tryUpdateSubject(subject)}
                         bind:subject={subjects[index]}
                     />
                 {/each}
