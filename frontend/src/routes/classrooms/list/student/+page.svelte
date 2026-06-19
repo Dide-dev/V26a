@@ -17,7 +17,7 @@
         getAllClassroomUserInfos,
         type AllClassroomUserInfos
     } from '$lib/api-wrapper/sessions';
-    import ListPagination from '$lib/lists/ListPagination.svelte';
+    import ListContainer from '$lib/lists/ListContainer.svelte';
     import ClassroomListEntry from '$lib/lists/ClassroomListEntry.svelte';
 
     // This cannot be done with the {#await ...} in svelte,
@@ -71,25 +71,27 @@
 </script>
 
 <div class="flex w-7/8 max-w-xl flex-col">
-    <h1 class="page__title">{m.joinedClassrooms()}</h1>
-    {#if classroomListResponse?.classrooms === null}
-        <p>{m.loading()}</p>
-    {:else if classroomListResponse?.classrooms.length === 0}
-        <p class="mt-4 font-semibold italic">{m.noClassroomsFound()}</p>
-        <div class="text-center">
-            <button class="m-2 rounded-sm bg-emerald-500 p-1"
-                ><a href={appLink('/classrooms/join')}>{m.joinClassroom()}</a></button
-            >
-        </div>
-    {:else}
-        <div class="flex w-full flex-col items-center justify-center overflow-auto">
-            <ListPagination
-                bind:currentPage
-                {totalPages}
-                {handlePageChange}
-                bind:pageSize
-                {handlePageSizeChange}
-            >
+    <div class="flex w-full flex-col items-center justify-center overflow-auto">
+        <ListContainer
+            bind:currentPage
+            {totalPages}
+            {handlePageChange}
+            bind:pageSize
+            {handlePageSizeChange}
+        >
+            {#snippet title()}
+                <h1 class="page__title">{m.joinedClassrooms()}</h1>
+            {/snippet}
+            {#if classroomListResponse?.classrooms === null}
+                <p>{m.loading()}</p>
+            {:else if classroomListResponse?.classrooms.length === 0}
+                <p class="mt-4 font-semibold italic">{m.noClassroomsFound()}</p>
+                <div class="text-center">
+                    <button class="m-2 rounded-sm bg-emerald-500 p-1"
+                        ><a href={appLink('/classrooms/join')}>{m.joinClassroom()}</a></button
+                    >
+                </div>
+            {:else}
                 <div class="list__container">
                     {#each classroomListResponse?.classrooms as classroom, i (classroom.id)}
                         <ClassroomListEntry
@@ -100,7 +102,7 @@
                         />
                     {/each}
                 </div>
-            </ListPagination>
-        </div>
-    {/if}
+            {/if}
+        </ListContainer>
+    </div>
 </div>
