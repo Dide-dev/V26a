@@ -248,7 +248,8 @@
     "dangerSectionNotice": "These actions cannot be undone.",
     "dangerNotice": "This action cannot be undone.",
     "logout": "Logout",
-    "cardLibrary": "Card library",
+    "cardLibrary": "Insert card from card library",
     "uploadThisCard": "Upload this card to the cards library",
+    "uploadCard": "Upload to the cards library",
     "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library"
 }

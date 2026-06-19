@@ -22,8 +22,8 @@
         canUndo,
         canRedo
     } from './history.svelte';
-    import type { SideBar } from './Sidebar.svelte';
-    import SidebarComponent from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
+    import SidebarComponent from './sidebar/Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
     import { branchColors, duplicateThisTree } from '$lib/treePage';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
@@ -52,7 +52,7 @@
     const sideBarWidths = {
         minimized: 76,
         hovered: 300,
-        maximized: 600
+        maximized: 620
     };
 
     let sideBarWidth = new Tween(sideBarWidths.minimized, {
@@ -326,7 +326,7 @@
         />
     </div>
 
-    <Notices bind:notices maxNumberOfNotices={1} />
+    <Notices bind:notices maxNumberOfNotices={3} />
 {/if}
 
 <!--

@@ -14,7 +14,7 @@
     import type { CardData } from '$lib/api-wrapper/cards';
     import { doMove, type TreeHistory } from './history.svelte';
     import type { DragState } from './SubtreeEditor.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
     import { lineOffset, svgWidth } from '../lineConstants';
 
     let {
@@ -73,7 +73,7 @@
         sidebar = {
             kind: 'CardEditor',
             type: 'NewCard',
-            location: location,
+            location,
             editingVersion
         };
     }

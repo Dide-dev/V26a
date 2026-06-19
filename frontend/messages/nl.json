@@ -154,7 +154,7 @@
     "searchTerms": "Zoektermen",
     "exampleSearchTerms": "Pythagoras #bewijs #meetkunde",
     "searchTags": "#bewijs #meetkunde",
-    "search": "Zoek op inhoud en tags",
+    "search": "Zoek op inhoud en labels",
     "selectDate": "Selecteer een datum",
     "allTrees": "Bomenlijst",
     "colophon": "Colofon",
@@ -246,7 +246,8 @@
     "dangerSectionNotice": "Deze acties kunnen niet ongedaan gemaakt worden.",
     "dangerNotice": "Deze actie kan niet ongedaan gemaakt worden.",
     "logout": "Log uit",
-    "cardLibrary": "Kaartenbibliotheek",
+    "cardLibrary": "Voeg kaart in uit kaartenbibliotheek",
     "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
+    "uploadCard": "Upload naar de kaartenbibliotheek",
     "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
 }

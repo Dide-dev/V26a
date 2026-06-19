@@ -10,7 +10,7 @@
 <script lang="ts">
     import { type CardData } from '$lib/api-wrapper/cards';
     import { m } from '$lib/paraglide/messages';
-    import { type TreeHistory } from './history.svelte.ts';
+    import { type TreeHistory } from '../history.svelte.ts';
     import {
         CellAttributesOutline,
         ShareNodesOutline,
@@ -19,14 +19,13 @@
     } from 'flowbite-svelte-icons';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import EditMetadata from './EditMetadata.svelte';
-    import EditCard from './EditCard.svelte';
     import type { TreeData, TreeLinkedData } from '$lib/api-wrapper/trees';
     import CoAuthor from './CoAuthor.svelte';
     import Share from './Share.svelte';
-    import CardsLibrary from './CardsLibrary.svelte';
     import type { EventHandler } from 'svelte/elements';
     import type { Notice } from '$lib/Notices.svelte';
     import DeleteTree from './DeleteTree.svelte';
+    import CardSidebar from './CardSidebar.svelte';
 
     let {
         sidebar = $bindable(),
@@ -50,18 +49,19 @@
         onmouseleave: EventHandler;
     } = $props();
 
-    export type SideBar = MenuSideBar | CardEditSideBar | ManageSideBar;
+    export type SideBar = MenuSideBar | CardSideBar | ManageSideBar;
 
     export type MenuSideBar = {
         kind: 'Menu';
         type: 'IconsOnly' | 'FullMenu';
     };
 
-    export type CardEditSideBar = {
+    export type CardSideBar = {
         kind: 'CardEditor';
-        type: 'NewCard' | 'EditCard';
+        type: 'NewCard' | 'EditCard' | 'UploadToLibrary';
         location: number[];
         editingVersion: CardData;
+        insertingFromLibrary?: boolean;
         errorMessage?: string;
     };
 
@@ -236,7 +236,7 @@
         {:else if sidebar.type === 'Delete'}
             <DeleteTree {treeId} title={prevTreeData.title} bind:sidebar />
         {:else if sidebar.kind === 'CardEditor'}
-            <EditCard bind:sidebar {history} />
+            <CardSidebar bind:sidebar {history} bind:notices />
         {/if}
     </div>
 </div>

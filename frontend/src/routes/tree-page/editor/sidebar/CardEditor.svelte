@@ -6,25 +6,23 @@
 
 <script lang="ts">
     import { m } from '$lib/paraglide/messages';
-    import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from './history.svelte';
-    import type { CardEditSideBar, MenuSideBar } from './Sidebar.svelte';
-    import SimpleTextEditArea from './SimpleTextEditArea.svelte';
+    import { doAddCard, doEditCard, followIndexNode, type TreeHistory } from '../history.svelte.js';
+    import type { CardSideBar, MenuSideBar } from './Sidebar.svelte';
+    import SimpleTextEditArea from '../SimpleTextEditArea.svelte';
     import Editor from '$lib/rich-text/Editor.svelte';
 
     let {
         sidebar = $bindable(),
         history
     }: {
-        sidebar: CardEditSideBar | MenuSideBar;
+        sidebar: CardSideBar | MenuSideBar;
         history: TreeHistory;
     } = $props();
 
     let isVisualEditor = $state(true);
 
     let cardChanged = $derived.by(() => {
-        if (sidebar.kind !== 'CardEditor') return false;
-
-        if (sidebar.editingVersion.back.length === 0) return false;
+        if (sidebar.kind !== 'CardEditor' || sidebar.editingVersion.back.length === 0) return false;
 
         if (sidebar.type === 'NewCard') return true;
 
@@ -102,13 +100,24 @@
             confirmClick(event);
         }
     }
+
+    function openCardLibrary() {
+        if (sidebar.kind === 'Menu') return;
+
+        sidebar.insertingFromLibrary = true;
+    }
 </script>
 
 <svelte:body {onkeydown} />
 
 {#if sidebar.kind === 'CardEditor'}
     <form class={[cardChanged && 'completed', 'pointer-events-auto flex w-full flex-col']}>
-        <h2 class="page__heading">{m.editThisCard()}</h2>
+        <div class="flex justify-start">
+            <h2 class="page__heading">{m.editThisCard()}</h2>
+            <button class="text__link w-fit" type="button" onclick={openCardLibrary}
+                >{m.cardLibrary()}</button
+            >
+        </div>
 
         <div>
             <label for="front-text">{m.front()}</label>

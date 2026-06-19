@@ -25,7 +25,7 @@
         TrashBinSolid
     } from 'flowbite-svelte-icons';
     import { m } from '$lib/paraglide/messages.js';
-    import { duplicateTree, removeTree, type TreeMetadata } from '$lib/api-wrapper/trees';
+    import { removeTree, type TreeMetadata } from '$lib/api-wrapper/trees';
     import { appLink, timeFormatString } from '$lib';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
@@ -107,7 +107,7 @@
                 {/if}
                 {#if userInfo !== null}
                     <button
-                        onclick={duplicateThisTree}
+                        onclick={() => duplicateThisTree(tree.genData.id)}
                         aria-label="duplicate"
                         title={m.duplicateTree()}
                         class="cursor-pointer"

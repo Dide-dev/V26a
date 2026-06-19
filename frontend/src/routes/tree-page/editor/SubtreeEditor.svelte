@@ -10,7 +10,7 @@
     import AddAndDrop from './AddAndDrop.svelte';
     import CardViewer from './CardViewer.svelte';
     import { followIndex, type TreeHistory } from './history.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
     import RootNodeEditor from './RootNodeEditor.svelte';
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
