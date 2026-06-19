@@ -9,7 +9,7 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { redirectLogin } from '$lib/api-wrapper';
-    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/sessions';
     import { m } from '$lib/paraglide/messages.js';
     import { page } from '$app/state';
     import LessonList from '../LessonList.svelte';

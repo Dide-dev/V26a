@@ -30,7 +30,7 @@
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import type { Option } from '$lib/api-wrapper/types';
     import { tryParseISBN } from '$lib/treeMetadata';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { SvelteSet } from 'svelte/reactivity';
 
     let {

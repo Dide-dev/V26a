@@ -17,7 +17,7 @@
     import ListContainer from '$lib/lists/ListContainer.svelte';
     import TreeFilters from '$lib/lists/TreeFilters.svelte';
     import { page } from '$app/state';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { booleanFromString } from '$lib';
     import { replaceState } from '$app/navigation';
 
