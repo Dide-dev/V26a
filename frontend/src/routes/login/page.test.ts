@@ -89,7 +89,7 @@ test('No submission when e-mail contains a invalid special character other than 
 });
 
 test('Submission with valid e-mail', async () => {
-    (login as MockedFunction<typeof login>).mockResolvedValue({ succeeded: true });
+    (login as MockedFunction<typeof login>).mockResolvedValue({ succeeded: true, disabled: false });
 
     const user = userEvent.setup();
     render(page);

@@ -31,7 +31,7 @@ pub async fn get_user_credentials_by_email(
     email: String,
 ) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
-        "SELECT id, password_hash, account_type FROM users WHERE email = $1",
+        "SELECT id, password_hash, account_type, enabled FROM users WHERE email = $1",
         email.to_lowercase()
     )
     .fetch_optional(db)
@@ -45,6 +45,7 @@ pub async fn get_user_credentials_by_email(
         user_id: credentials.id,
         password_hash: credentials.password_hash,
         account_type: AccountType::from_str(&credentials.account_type)?,
+        enabled: credentials.enabled,
     }))
 }
 
@@ -70,7 +71,7 @@ pub async fn get_user_credentials_by_id(
     id: i32,
 ) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
-        "SELECT id, password_hash, account_type FROM users WHERE id = $1",
+        "SELECT id, password_hash, account_type, enabled FROM users WHERE id = $1",
         id
     )
     .fetch_optional(db)
@@ -84,5 +85,6 @@ pub async fn get_user_credentials_by_id(
         user_id: credentials.id,
         password_hash: credentials.password_hash,
         account_type: AccountType::from_str(&credentials.account_type)?,
+        enabled: credentials.enabled,
     }))
 }

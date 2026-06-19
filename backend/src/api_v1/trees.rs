@@ -13,6 +13,8 @@ use crate::db::trees::{
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
+use crate::db_structs::Validated;
+use crate::db_structs::cards::CardData;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
@@ -22,6 +24,11 @@ use crate::db_structs::trees::{
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::limits::TREE_TITLE_MAX_LENGTH;
+use crate::messages::Message;
+use crate::ratelimits::{
+    ADD_CARD_RATELIMIT, ADD_TREE_RATELIMIT, DUPLICATE_TREE_RATELIMIT, GET_EDIT_LOCK_RATELIMIT,
+    GET_TREE_LIST_RATELIMIT,
+};
 use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
@@ -30,19 +37,16 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
-use utoipa::ToSchema;
-
-use crate::db_structs::Validated;
-use crate::db_structs::cards::CardData;
-use crate::messages::Message;
 use std::collections::HashMap;
+use utoipa::ToSchema;
 
 pub mod edit_lock;
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
-        .route("/", get(get_list).post(add_new_tree))
+        .route("/", get(get_list).layer(GET_TREE_LIST_RATELIMIT.to_layer()))
+        .route("/", post(add_new_tree).layer(ADD_TREE_RATELIMIT.to_layer()))
         .route("/languages", get(get_all_languages).post(add_new_language))
         .route("/languages/{code}", put(update_language))
         .route("/subjects", get(get_all_subjects).post(add_new_subject))
@@ -53,9 +57,15 @@ pub fn trees() -> Router<ArcState> {
                 .put(update_tree_data)
                 .delete(remove_tree),
         )
-        .route("/{tree_id}/duplicate", post(duplicate_tree))
+        .route(
+            "/{tree_id}/duplicate",
+            post(duplicate_tree).layer(DUPLICATE_TREE_RATELIMIT.to_layer()),
+        )
         .route("/{tree_id}/structure", put(update_tree_structure))
-        .route("/{tree_id}/cards", post(add_new_card))
+        .route(
+            "/{tree_id}/cards",
+            post(add_new_card).layer(ADD_CARD_RATELIMIT.to_layer()),
+        )
         .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
         .route(
             "/{tree_id}/co-authors/{username}",
@@ -65,7 +75,8 @@ pub fn trees() -> Router<ArcState> {
             "/{tree_id}/edit-lock",
             // This endpoint requires to be wrapped in an [`axum::routing::any`],
             // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
-            axum::routing::any(edit_lock::acquire_edit_lock),
+            axum::routing::any(edit_lock::acquire_edit_lock)
+                .layer(GET_EDIT_LOCK_RATELIMIT.to_layer()),
         )
 }
 
