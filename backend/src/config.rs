@@ -8,6 +8,7 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::db_structs::mail::{Mailer, SmtpMailer};
+use crate::ratelimits::RatelimitOptions;
 use bcrypt::DEFAULT_COST;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env;
@@ -40,9 +41,7 @@ pub struct Config {
 
     pub mailer: Arc<dyn Mailer>,
 
-    /// Ratelimiter config (minute)
-    pub rate_limit_per_minute: u64,
-    pub rate_limit_burst_size: u32,
+    pub global_ratelimit: RatelimitOptions,
 }
 
 impl Config {
@@ -93,12 +92,12 @@ impl Config {
             * 1_048_576; // Mebibytes to bytes
 
         let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
-            .unwrap_or("30".to_string())
+            .unwrap_or("500".to_string())
             .parse::<u64>()
             .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
 
         let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
-            .unwrap_or("40".to_string())
+            .unwrap_or("1000".to_string())
             .parse::<u32>()
             .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
 
@@ -108,6 +107,11 @@ impl Config {
         let transport =
             AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(smtp_server).build();
         let mailer = Arc::new(SmtpMailer { transport });
+
+        let global_ratelimit = RatelimitOptions {
+            refresh_rate: rate_limit_per_minute,
+            burst_size: rate_limit_burst_size,
+        };
 
         Self {
             listening_ip,
@@ -123,8 +127,7 @@ impl Config {
             upload_dir,
             max_upload_size,
             mailer,
-            rate_limit_per_minute,
-            rate_limit_burst_size,
+            global_ratelimit,
         }
     }
 }
