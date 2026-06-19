@@ -37,11 +37,13 @@
     let {
         tree,
         expanded = $bindable(),
-        handleDelete
+        handleDelete,
+        usedForClassroom
     }: {
         tree: TreeMetadata;
         expanded: boolean;
         handleDelete: () => void;
+        usedForClassroom: boolean;
     } = $props();
 
     let deleteConfirmation = $state(false);
@@ -119,15 +121,17 @@
                         <FileCloneOutline class="mb-1 h-5 w-5 shrink-0" />
                     </button>
                 {/if}
-                {#if userInfo?.sub === tree.genData.ownerId || userInfo?.accountType === 'admin'}
-                    <button
-                        onclick={askDeleteConfirmation}
-                        aria-label="delete"
-                        title={m.deleteTree()}
-                        class="cursor-pointer"
-                    >
-                        <TrashBinSolid class="mb-1 h-5 w-5 shrink-0" />
-                    </button>
+                {#if !usedForClassroom}
+                    {#if userInfo?.sub === tree.genData.ownerId || userInfo?.accountType === 'admin'}
+                        <button
+                            onclick={askDeleteConfirmation}
+                            aria-label="delete"
+                            title={m.deleteTree()}
+                            class="cursor-pointer"
+                        >
+                            <TrashBinSolid class="mb-1 h-5 w-5 shrink-0" />
+                        </button>
+                    {/if}
                 {/if}
                 <span class="flex-auto grow-100"></span>
             </span>

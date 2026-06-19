@@ -88,7 +88,7 @@
                         <code class="font-mono">{classroomTeacherDashboardData.joinCode}</code>
 
                         <button
-                            class="cursor-pointer rounded-md border-2 border-current bg-neutral-200 p-1 text-lg font-bold text-neutral-600 transition-all duration-200"
+                            class="cursor-pointer rounded-md border-2 border-neutral-600 bg-neutral-200 p-1 text-lg font-bold text-black transition-all duration-200 ease-in-out hover:bg-neutral-600 hover:text-white"
                             onclick={copyCode}>{m.copyCode()}</button
                         >
                     </div>

@@ -31,6 +31,16 @@
         published: true
     });
 
+    const minInputLengths = {
+        name: 1,
+        description: 0
+    };
+
+    const maxInputLengths = {
+        name: 32,
+        description: 128
+    };
+
     function addLessonButtonClick() {
         visible = true;
     }
@@ -63,7 +73,7 @@
 </script>
 
 <button
-    class="cursor-pointer rounded-md border-2 border-current bg-neutral-200 p-1 text-lg font-bold text-neutral-600 transition-all duration-200"
+    class="cursor-pointer rounded-md border-2 border-neutral-600 bg-neutral-200 p-1 text-lg font-bold text-black transition-all duration-200 ease-in-out hover:bg-neutral-600 hover:text-white"
     onclick={addLessonButtonClick}
 >
     {m.addLesson()}
@@ -78,12 +88,18 @@
 
 {#if visible}
     <Popup>
-        <div class="mb-3 flex w-125 flex-col" data-testid="add-lesson-popup">
-            <form>
+        <div class="mb-3 flex w-100 flex-col" data-testid="add-lesson-popup">
+            <form
+                class={[lessonAddData.name !== '' && 'completed', 'w-100']}
+                onsubmit={createLesson}
+            >
                 <label for="lessonName">{m.lessonName()} *</label>
                 <input
                     id="lessonName"
                     class="input__text"
+                    type="text"
+                    minlength={minInputLengths.name}
+                    maxlength={maxInputLengths.name}
                     bind:value={lessonAddData.name}
                     placeholder={m.examplePlaceholderRequired({ value: m.exampleLessonName() })}
                     required
@@ -93,18 +109,14 @@
                     id="lessonDescription"
                     rows="3"
                     class="input__long_text"
+                    minlength={minInputLengths.description}
+                    maxlength={maxInputLengths.description}
                     bind:value={lessonAddData.description}
                     placeholder={m.examplePlaceholder({ value: m.exampleLessonDescription() })}
                 ></textarea>
+                <button class="mt-0.5" type="submit">{m.addLesson()}</button>
+                <button class="mt-0.5" type="reset" onclick={closeEdit}>{m.close()}</button>
             </form>
         </div>
-        <button
-            class="cursor-pointer rounded-md border-2 border-current bg-neutral-200 p-1 text-lg font-bold text-neutral-600 transition-all duration-200"
-            onclick={createLesson}>{m.addLesson()}</button
-        >
-        <button
-            class="cursor-pointer rounded-md border-2 border-current bg-neutral-200 p-1 text-lg font-bold text-neutral-600 transition-all duration-200"
-            onclick={closeEdit}>{m.close()}</button
-        >
     </Popup>
 {/if}

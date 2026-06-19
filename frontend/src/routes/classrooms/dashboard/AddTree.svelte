@@ -48,6 +48,11 @@
         }
     }
 
+    async function submitAddTree(event: SubmitEvent) {
+        event.stopPropagation();
+        await addTree();
+    }
+
     async function addTree() {
         if (treeId === null) {
             return;
@@ -64,7 +69,7 @@
 <button
     title={m.addTree()}
     aria-label={m.addTree()}
-    class="cursor-pointer pr-2.5"
+    class="mr-2.5 cursor-pointer transition-all duration-200 ease-in-out hover:bg-neutral-200"
     onclick={(event) => {
         event.stopPropagation();
         addTreeButtonClick();
@@ -84,12 +89,12 @@
 {#if visible}
     <Popup>
         <div class="mb-3 flex w-64 flex-col" data-testid="add-tree-popup">
-            <form class="w-64">
+            <form class={[treeId !== null && 'completed', 'w-64']} onsubmit={submitAddTree}>
                 <label class="m-0.5" for="treeId">{m.treeId()} *</label>
                 <input
                     id="treeId"
                     type="number"
-                    class="input__text m-0.5"
+                    class="input__text"
                     bind:value={treeId}
                     placeholder={m.examplePlaceholderRequired({ value: '1' })}
                     onclick={(event) => {
@@ -97,16 +102,9 @@
                     }}
                     required
                 />
+                <button class="mt-0.5" type="submit">{m.addTree()}</button>
                 <button
-                    class="m-0.5 cursor-pointer"
-                    type="submit"
-                    onclick={(event) => {
-                        event.stopPropagation();
-                        addTree();
-                    }}>{m.addTree()}</button
-                >
-                <button
-                    class="m-0.5 cursor-pointer"
+                    class="mt-0.5"
                     type="reset"
                     onclick={(event) => {
                         event.stopPropagation();

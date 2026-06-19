@@ -16,6 +16,8 @@
         onTreeAdded
     }: { lessons: LessonWithTrees[]; isTeacher: boolean; onTreeAdded: () => Promise<void> } =
         $props();
+
+    function handleDelete() {}
 </script>
 
 <Accordion flush>
@@ -42,7 +44,7 @@
             {/snippet}
 
             {#each lesson.trees as tree (tree.genData.id)}
-                <TreeListEntry {tree} expanded={false} />
+                <TreeListEntry {tree} expanded={false} {handleDelete} usedForClassroom={true} />
             {/each}
         </AccordionItem>
     {/each}
