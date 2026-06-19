@@ -31,7 +31,7 @@
                         </span>
 
                         {#if lesson.metadata.description}
-                            <span class="text-sm text-neutral-600">
+                            <span class="text-sm text-wrap text-neutral-600">
                                 {lesson.metadata.description}
                             </span>
                         {/if}
