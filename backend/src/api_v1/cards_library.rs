@@ -7,11 +7,13 @@
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{get_card_text, get_tree_of_card};
 use crate::db::cards_library::{
-    cards_library_add, get_queried_cards_count, get_queried_cards_list,
+    cards_library_add, cards_library_delete, cards_library_get_owner, get_queried_cards_count,
+    get_queried_cards_list,
 };
 use crate::db_structs::Validated;
 use crate::db_structs::cards::{CardFilters, LibraryCardAddData, LibraryCardGetData};
 use crate::db_structs::session::Claims;
+use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::get_connection;
 use crate::state::ArcState;
@@ -25,7 +27,10 @@ use sqlx::PgPool;
 pub fn cards_library() -> Router<ArcState> {
     Router::new()
         .route("/cards", get(get_cards_from_library))
-        .route("/cards/{card_id}", post(add_card_to_library))
+        .route(
+            "/cards/{card_id}",
+            post(add_card_to_library).delete(delete_card_from_library),
+        )
 }
 
 #[utoipa::path(
@@ -52,6 +57,9 @@ pub fn cards_library() -> Router<ArcState> {
 ///
 /// `card_data` - The data used to add the card to the library, as [`LibraryCardAddData`].
 /// Existing card data will be overwritten with the new data.
+///
+/// `card_id` - The id of the card from a tree to put in the library. Note that this is different
+/// from a `library_card_id`, as that refers to the id of a card that is in the cards library.
 ///
 /// # Returns
 /// The id of the new card in the library database as [`Json<i32>`].
@@ -96,6 +104,60 @@ async fn add_card_to_library(
     .await?;
 
     Ok(Json(library_card_id))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/cards/{library_card_id}",
+    context_path = "/api/v1/library",
+    responses(
+        (status = 200, description = "Card successfully removed from library."),
+        (status = 400, description = "Card with given id does not exist."),
+        (status = 403, description = ApiError::NoPermission.to_string()),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("library_card_id" = i32, Path),
+    )
+)]
+/// Removes a card from the card library.
+/// Only works if the person calling this api endpoint is the actual owner of the library card,
+/// or is an admin.
+///
+/// # Arguments
+/// `claims` - The session cookie of the user.
+///
+/// `library_card_id` - The id of a library card to remove. Note that this is different
+/// from a `card_id`, which is the id of cards that are in a tree.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`MissingCard`](ApiError::MissingCard) if the given `library_card_id` does not exist.
+///
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to
+/// remove this card from the card library.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn delete_card_from_library(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(library_card_id): Path<i32>,
+) -> Result<(), ApiError> {
+    let Some(owner) = cards_library_get_owner(&db, library_card_id).await? else {
+        return Err(ApiError::MissingCard(library_card_id));
+    };
+
+    if claims.sub != owner && claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    cards_library_delete(&db, library_card_id).await
 }
 
 #[utoipa::path(
