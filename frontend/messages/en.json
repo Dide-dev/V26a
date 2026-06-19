@@ -245,7 +245,7 @@
     "deleteAccount": "Delete account",
     "deleteAccountConfirmation": "Are you sure you want to delete your account?",
     "danger": "Danger zone",
-    "dangerSectionNotice": "These actions cannot be undone.",
+    "dangerSectionNotice": "This action cannot be undone.",
     "dangerNotice": "This action cannot be undone.",
     "logout": "Logout",
     "cardLibrary": "Insert card from card library",

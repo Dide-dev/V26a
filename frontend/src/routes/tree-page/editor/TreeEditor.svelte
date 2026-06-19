@@ -117,8 +117,6 @@
             default:
                 sideBarWidth.target = sideBarWidths.maximized;
         }
-
-        console.log(window.scrollY);
     });
 
     let tree: {

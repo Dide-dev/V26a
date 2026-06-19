@@ -18,6 +18,7 @@
     import { onMount } from 'svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { type Option } from '$lib/api-wrapper/types';
+    import { branchColors } from '$lib/treePage.ts';
 
     let { sidebar = $bindable() }: { sidebar: CardSideBar | MenuSideBar } = $props();
 
@@ -162,7 +163,12 @@
         </div>
     </div>
     <button class="cursor-pointer" onclick={() => insertCard(libraryCard)} type="button">
-        <CardViewer card={{ front: libraryCard.front, back: libraryCard.back }} />
+        <CardViewer
+            card={{ front: libraryCard.front, back: libraryCard.back }}
+            color={sidebar.kind !== 'CardEditor'
+                ? 'tree'
+                : branchColors[sidebar.location[0] % branchColors.length]}
+        />
     </button>
 {/snippet}
 

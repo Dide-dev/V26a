@@ -295,7 +295,7 @@ export const homePageCards = {
                             '<ul>' +
                             '<li>By clicking on one of the dashed boxes containing a plus, ' +
                             'you can add a new card to the tree.</li>' +
-                            '<li>Upon adding a new card, a menu opens in the sidebar opens where ' +
+                            '<li>Upon adding a new card, a menu opens in the sidebar where ' +
                             'the texts on the front and back of the card can be edited. ' +
                             'When using the tree, the front-text is shown before the card has been opened, ' +
                             'and the back-text, containing the actual heuristic, afterward.</li>' +

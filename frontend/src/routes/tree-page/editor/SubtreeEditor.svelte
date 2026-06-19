@@ -174,6 +174,7 @@
                             JSON.stringify(sidebar.location) === JSON.stringify(location)))
                         ? sidebar.editingVersion
                         : history.currentCards[node!.cardId]}
+                    {color}
                 />
             </div>
             <AddAndDrop
