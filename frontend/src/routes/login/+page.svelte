@@ -106,7 +106,10 @@
                 <p class="text__error">{m.invalidCredentials()}</p>
             {/if}
         </div>
-        <button type="submit">{m.login()}</button>
+        <button class="mt-2" type="submit">{m.login()}</button>
         <a class="text__link mt-2 italic" href={appLink('/registration')}>{m.noAccount()}</a>
+        <a class="text__link italic" href={appLink('/forgot-password')}>
+            {m.forgotPassword()}
+        </a>
     </form>
 </div>

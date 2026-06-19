@@ -5,7 +5,7 @@
 */
 
 use crate::config::Config;
-use crate::db_structs::users::PendingRegisterData;
+use crate::db_structs::users::{PasswordResetRequestData, PendingRegisterData};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, oneshot};
@@ -45,6 +45,7 @@ pub struct State {
     pub config: Config,
     pub tree_edit_locks: Mutex<HashMap<i32, TreeEditLock>>,
     pub pending_accounts: Mutex<HashMap<String, PendingRegisterData>>,
+    pub reset_password_requests: Mutex<HashMap<String, PasswordResetRequestData>>,
 }
 
 impl ArcState {
@@ -53,6 +54,7 @@ impl ArcState {
             config,
             tree_edit_locks: Mutex::default(),
             pending_accounts: Mutex::default(),
+            reset_password_requests: Mutex::default(),
         }))
     }
 }

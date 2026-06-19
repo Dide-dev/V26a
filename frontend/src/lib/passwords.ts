@@ -32,3 +32,35 @@ export function checkSpecialCharacter(password: string): boolean {
     const regex = /[?!@#$%^&*()+=.,<>{}[\]:;"'|~`_/\\-]/;
     return regex.test(password);
 }
+
+export function genPassword(length: number): string {
+    const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
+    const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numChars = '0123456789';
+    const specialChars = '!@#$%^&*-_.';
+    const allChars = lowerChars + upperChars + numChars + specialChars;
+
+    // Start with one of each required character
+    const lowerChar = lowerChars[Math.floor(Math.random() * lowerChars.length)];
+    const upperChar = upperChars[Math.floor(Math.random() * upperChars.length)];
+    const numberChar = numChars[Math.floor(Math.random() * numChars.length)];
+    const specialChar = specialChars[Math.floor(Math.random() * specialChars.length)];
+    const password = [lowerChar, upperChar, numberChar, specialChar];
+
+    // Fill to length
+    for (let i = password.length; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * allChars.length);
+        password.push(allChars[randomIndex]);
+    }
+
+    // Shuffle
+    // https://stackoverflow.com/questions/3943772/how-do-i-shuffle-the-characters-in-a-string-in-javascript
+    for (let i = length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = password[i];
+        password[i] = password[j];
+        password[j] = tmp;
+    }
+
+    return password.join('');
+}
