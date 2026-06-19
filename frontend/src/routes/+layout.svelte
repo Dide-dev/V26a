@@ -12,11 +12,11 @@
     import { NavLink } from '$lib/navigation';
     import Footer from './Footer.svelte';
     import { FooterLink } from '$lib/footer';
-    import { getUserInfo } from '$lib/api-wrapper/users';
     import { afterNavigate } from '$app/navigation';
     import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime.js';
     import { page } from '$app/state';
     import { Tween } from 'svelte/motion';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
@@ -50,6 +50,7 @@
             })
         ];
 
+        // Trees
         if (userInfo === null) {
             result.push(
                 new NavLink({
@@ -76,41 +77,54 @@
                             text: m.createTree()
                         }
                     ]
-                }),
-                // Can be changed when additional front-end classroom functionalities are added.
+                })
+            );
+        }
+
+        // Classrooms
+        let classroomsNav = new NavLink({
+            defaultHref: '/classrooms/join',
+            text: m.classrooms(),
+            props: { width: 'lg', localeSwitch: false }
+        });
+        if (userInfo !== null)
+            classroomsNav.children.push({
+                href: '/classrooms/list/teacher',
+                text: m.myClassrooms()
+            });
+        classroomsNav.children.push({
+            href: '/classrooms/list/student',
+            text: m.joinedClassrooms()
+        });
+        if (userInfo !== null)
+            classroomsNav.children.push({
+                href: '/classrooms/add',
+                text: m.createClassroom()
+            });
+        classroomsNav.children.push({
+            href: '/classrooms/join',
+            text: m.joinClassroom()
+        });
+        result.push(classroomsNav);
+
+        // Admin
+        if (userInfo !== null && userInfo.accountType == 'admin') {
+            result.push(
                 new NavLink({
-                    defaultHref: '/classrooms/add',
-                    text: m.classroom(),
+                    defaultHref: '/user-list',
+                    text: m.admin(),
                     children: [
                         {
-                            href: '/classrooms/add',
-                            text: m.classroomAdd()
+                            href: '/user-list',
+                            text: m.userList()
                         },
                         {
-                            href: '/classrooms/list',
-                            text: m.classroomList()
+                            href: '/admin-feedback',
+                            text: 'Feedback'
                         }
                     ]
                 })
             );
-            if (userInfo.accountType == 'admin') {
-                result.push(
-                    new NavLink({
-                        defaultHref: '/user-list',
-                        text: m.admin(),
-                        children: [
-                            {
-                                href: '/user-list',
-                                text: m.userList()
-                            },
-                            {
-                                href: '/admin-feedback',
-                                text: 'Feedback'
-                            }
-                        ]
-                    })
-                );
-            }
         }
 
         return result;
