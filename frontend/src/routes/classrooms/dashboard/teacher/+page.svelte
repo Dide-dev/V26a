@@ -16,9 +16,12 @@
     import AddLesson from './AddLesson.svelte';
     import type { ClassroomId, ClassroomTeacherDashboardData } from '$lib/api-wrapper/classrooms';
     import { getClassroomTeacherDashboard } from '$lib/api-wrapper/classrooms';
+    import Notices, { type Notice } from '$lib/Notices.svelte';
+    import { CheckOutline } from 'flowbite-svelte-icons';
 
     let userInfo: UserInfo | null = $state(null);
     let id: ClassroomId | null = $state(null);
+    let notices: Notice[] = $state([]);
 
     let classroomTeacherDashboardData: ClassroomTeacherDashboardData | null = $state(null);
 
@@ -46,8 +49,17 @@
         classroomTeacherDashboardData = await getClassroomTeacherDashboard(id);
     });
 
-    async function copyCode() {
+    async function copyCode(event: Event) {
+        event.preventDefault();
+
         await navigator.clipboard.writeText(classroomTeacherDashboardData!.joinCode);
+
+        notices.push({
+            text: m.joinCodeCopied(),
+            icon: checkIcon,
+            textColor: 'var(--color-tree-610)',
+            backgroundColor: 'var(--color-tree-100)'
+        });
     }
 
     async function reloadDashboard() {
@@ -99,5 +111,10 @@
                 />
             </aside>
         </div>
+        <Notices bind:notices maxNumberOfNotices={3} />
     {/if}
 </div>
+
+{#snippet checkIcon()}
+    <CheckOutline class="h-5 w-5 shrink-0" />
+{/snippet}
