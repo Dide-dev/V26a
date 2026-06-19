@@ -15,8 +15,6 @@ pub enum ApiError {
     //------------------//
     // 400: BAD REQUEST //
     //------------------//
-    /// An error to be returned when a string of tags contains equivalent duplicate tags.
-    DuplicateTags,
     /// An error to be returned when `lettre` fails to parse an e-mail.
     EmailParseError,
     /// An error to return when a name contains characters outside the accepted standard.
@@ -172,9 +170,6 @@ impl Display for ApiError {
             //------------------//
             // 400: BAD REQUEST //
             //------------------//
-            ApiError::DuplicateTags => {
-                write!(f, "The list of tags contains lowercase duplicate tags")
-            }
             ApiError::EmailParseError => write!(f, "Could not parse email."),
             ApiError::IllegalName => write!(f, "Name contains illegal characters."),
             ApiError::IllegalPassword => write!(f, "Password does not meet all requirements."),
@@ -314,8 +309,7 @@ impl ApiError {
     /// Convert our [`ApiError`] into a [`StatusCode`] usable by `Axum`.
     fn to_status_code(&self) -> StatusCode {
         match &self {
-            ApiError::DuplicateTags
-            | ApiError::EmailParseError
+            ApiError::EmailParseError
             | ApiError::IllegalName
             | ApiError::IllegalPassword
             | ApiError::IllegalTag
