@@ -31,20 +31,19 @@
 <div class="fixed right-2 bottom-2 z-40 flex flex-col gap-1">
     {#each notices.slice(0, maxNumberOfNotices) as notice, i (i)}
         <div
-            class="rounded-md border p-4 flex flex-row gap-2"
+            class="flex flex-row gap-2 rounded-md border p-4"
             style="color: {notice.textColor}; background-color: {notice.backgroundColor};"
         >
             <div class="flex items-center">
-
-            {@render notice.icon()}
+                {@render notice.icon()}
             </div>
             <p>{notice.text}</p>
             <button
-                class="flex items-center cursor-pointer"
-            type="button"
-            onclick={() => dismissNotice(i)}
+                class="flex cursor-pointer items-center"
+                type="button"
+                onclick={() => dismissNotice(i)}
             >
-                <CloseOutline class="shrink-0 h-5 w-5" />
+                <CloseOutline class="h-5 w-5 shrink-0" />
             </button>
         </div>
     {/each}

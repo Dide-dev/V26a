@@ -11,27 +11,36 @@
 
     let {
         card,
-        color
+        color,
+        isBeingEdited
     }: {
         card: CardData;
         color: BranchColor;
+        isBeingEdited: boolean;
     } = $props();
 
     let frontColor = $derived(`var(--color-${color}-600)`);
     let backColor = $derived(`var(--color-${color}-100)`);
-    let borderColor = $derived(`var(--color-${color}-800)`);
-
+    let borderColor = $derived(
+        isBeingEdited ? 'var(--color-yellow-400)' : `var(--color-${color}-800)`
+    );
 </script>
 
 <p
     style="background-color: {frontColor}; border-color: {borderColor};}"
-    class="h-fit min-h-9 w-xl overflow-x-auto border-2 border-b-0 p-1 text-center wrap-anywhere overflow-y-hidden"
+    class={[
+        isBeingEdited && 'border-4',
+        'h-fit min-h-9 w-xl overflow-x-auto border-2 border-b-0 p-1 text-center wrap-anywhere overflow-y-hidden'
+    ]}
 >
     {card.front}
 </p>
 <p
     style="background-color: {backColor}; border-color: {borderColor};"
-    class="h-fit min-h-9 w-xl overflow-x-auto border-2 p-1 text-left wrap-anywhere overflow-y-hidden"
+    class={[
+        isBeingEdited && 'border-4',
+        'h-fit min-h-9 w-xl overflow-x-auto border-2 border-t-2 p-1 text-left wrap-anywhere overflow-y-hidden'
+    ]}
 >
     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
     {@html markdownToFinalHtml(card.back)}
