@@ -125,10 +125,10 @@
                         bind:language={newLanguage}
                     />
                 {/if}
-                {#each languages.entries() as entry (entry)}
+                {#each languages as language, index (languages[index].code)}
                     <LanguageListEntry
-                        onUpdate={async () => tryUpdateLanguage(languages![entry[0]])}
-                        bind:language={languages[entry[0]]}
+                        onUpdate={async () => tryUpdateLanguage(languages![index])}
+                        bind:language={languages[index]}
                     />
                 {/each}
             </div>
@@ -160,10 +160,10 @@
                         bind:subject={newSubject}
                     />
                 {/if}
-                {#each subjects.entries() as entry (entry)}
+                {#each subjects as subject, index (subjects[index].id)}
                     <SubjectListEntry
-                        onUpdate={async () => tryUpdateSubject(subjects![entry[0]])}
-                        bind:subject={subjects[entry[0]]}
+                        onUpdate={async () => tryUpdateSubject(subjects![index])}
+                        bind:subject={subjects[index]}
                     />
                 {/each}
             </div>
