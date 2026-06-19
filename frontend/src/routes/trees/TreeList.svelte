@@ -152,7 +152,12 @@
     {:else}
         <div class="list__container">
             {#each treeListResponse?.trees as tree, i (tree.genData.id)}
-                <TreeListEntry {tree} bind:expanded={entriesExpanded[i]} {handleDelete} />
+                <TreeListEntry
+                    {tree}
+                    bind:expanded={entriesExpanded[i]}
+                    {handleDelete}
+                    usedForClassroom={false}
+                />
             {/each}
         </div>
     {/if}
