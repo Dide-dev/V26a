@@ -415,6 +415,8 @@
                 <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
                 <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
+            <h2 class="page__heading">{m.danger()}</h2>
+            <em>{m.dangerSectionNotice()}</em>
             <div>
                 <DeleteButton />
             </div>

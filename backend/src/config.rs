@@ -32,6 +32,8 @@ pub struct Config {
     pub session_duration: i64,
     /// This duration is in _seconds_.
     pub verification_timer: i64,
+    /// This duration is in _seconds_.
+    pub reset_password_timer: i64,
 
     /// Upload images directory
     pub upload_dir: String,
@@ -77,6 +79,10 @@ impl Config {
             .unwrap_or("900".to_owned())
             .parse()
             .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
+        let reset_password_timer = env::var("RESET_PASSWORD_TIMER_SECONDS")
+            .unwrap_or("900".to_owned())
+            .parse()
+            .expect("Failed to parse environment variable RESET_PASSWORD_TIMER_SECONDS");
 
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
@@ -117,6 +123,7 @@ impl Config {
             bcrypt_cost,
             session_duration,
             verification_timer,
+            reset_password_timer,
             upload_dir,
             max_upload_size,
             mailer,

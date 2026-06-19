@@ -11,14 +11,8 @@
     import iconUpload from '$lib/assets/icons/upload.svg?raw';
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './SubtreeEditor.svelte';
-    import {
-        doDeleteCard,
-        doAddCardToLibrary,
-        followIndexNode,
-        type TreeHistory
-    } from './history.svelte';
-    import type { SideBar } from './Sidebar.svelte';
-    import UploadCardMenu from './UploadCardLibrary.svelte';
+    import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -30,11 +24,14 @@
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
     } = $props();
 
     async function removeButtonClick() {
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
         await doDeleteCard(history, location);
     }
 
@@ -45,7 +42,10 @@
             mouseX: event.clientX,
             mouseY: event.clientY
         };
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
     }
 
     let cardId = $derived.by(() => {
@@ -54,22 +54,26 @@
     });
     let card = $derived(history.currentCards[cardId]);
 
-    function editClick() {
+    function editClick(e: Event) {
+        e.stopPropagation();
+
         sidebar = {
+            kind: 'CardEditor',
             type: 'EditCard',
             location,
             editingVersion: $state.snapshot(card)
         };
     }
 
-    let uploadMenuVisible = $state(false);
+    function uploadClick(e: Event) {
+        e.stopPropagation();
 
-    function uploadClick() {
-        uploadMenuVisible = true;
-    }
-
-    async function handleUploadConfirm(title: string, tags: string[]) {
-        await doAddCardToLibrary(history, cardId, title, tags);
+        sidebar = {
+            kind: 'CardEditor',
+            type: 'UploadToLibrary',
+            location,
+            editingVersion: $state.snapshot(card)
+        };
     }
 </script>
 
@@ -95,5 +99,3 @@
         {@html iconUpload}
     </button>
 </div>
-
-<UploadCardMenu bind:visible={uploadMenuVisible} onConfirm={handleUploadConfirm} />

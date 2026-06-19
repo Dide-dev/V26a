@@ -12,13 +12,17 @@ use crate::db::users::{
 };
 use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PendingAccountsExt, PendingRegisterData,
-    PublicUserData, RegisterData, UserData, UserGetData,
+    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetBody, PasswordResetRequestData,
+    PendingRegisterData, PublicUserData, RegisterData, RemoveExpired, RequestPasswordResetBody,
+    UserData, UserGetData,
 };
 use crate::db_structs::{Validated, parse_email};
 use crate::errors::ApiError;
-use crate::messages::Message::{EmailVerificationBody, EmailVerificationSubject};
-use crate::ratelimits::{ADD_USER_RATELIMIT, VERIFY_USER_RATELIMIT};
+use crate::messages::Message::{
+    EmailVerificationBody, EmailVerificationSubject, PasswordResetMailBody,
+    PasswordResetMailSubject,
+};
+use crate::ratelimits::{ADD_USER_RATELIMIT, RESET_PASSWORD_RATELIMIT, VERIFY_USER_RATELIMIT};
 use crate::{ArcState, get_connection};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
@@ -52,6 +56,12 @@ pub fn users() -> Router<ArcState> {
                 .delete(delete_user_data),
         )
         .route("/me/password", put(change_password))
+        .route(
+            "/reset-password-requests",
+            post(request_password_reset)
+                .put(reset_password)
+                .layer(RESET_PASSWORD_RATELIMIT.to_layer()),
+        )
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
@@ -141,11 +151,7 @@ async fn add_new_user(
         "{}/verify?code={}",
         state.config.base_url, verification_code
     );
-    let display_name = if user_data.data.nickname.is_empty() {
-        user_data.data.name.clone()
-    } else {
-        user_data.data.nickname.clone()
-    };
+    let display_name = user_data.data.get_display_name();
     let language = user_data.data.language;
     let message = Message::builder()
         .from(Mailbox::new(
@@ -159,6 +165,7 @@ async fn add_new_user(
             EmailVerificationBody {
                 display_name,
                 verification_link,
+                duration_seconds: state.config.verification_timer,
                 base_url: state.config.base_url.clone(),
             }
             .localized(&language),
@@ -411,6 +418,12 @@ pub struct ChangePasswordResponse {
 /// A boolean whether the password change was successful, as [`ChangePasswordResponse`].
 ///
 /// # Errors
+/// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+///
+/// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+///
+/// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the new password does not meet the minimum security requirements.
+///
 /// May return a [`HashException`](ApiError::HashException), [`InvalidDataFound`](ApiError::InvalidDataFound) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
@@ -450,6 +463,168 @@ async fn change_password(
     Claims::delete_all_sessions_except(&db, &token, &claims.sub).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/reset-password-requests",
+    context_path = "/api/v1/users",
+    request_body = RequestPasswordResetBody,
+    responses(
+        (status = 200, description = "Password change request fulfilled."),
+        (status = 400, description = ApiError::EmailParseError.to_string()),
+        (status = 429, description = "Ratelimit exceeded."),
+        (status = 500, description = "Internal server error."),
+    )
+)]
+/// Sends a change password e-mail to the specified e-mail, if an account with that email exists.
+///
+/// # Arguments
+/// `password_change_request` - The struct containing the e-mail address to which a change password
+/// e-mail should be sent as [`RequestPasswordResetBody`].
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException),
+/// [`EmailParseError`](ApiError::EmailParseError),
+/// [`SmtpError`](ApiError::SmtpError) or
+/// [`LettreException`](ApiError::LettreException) instead.
+async fn request_password_reset(
+    Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
+    Json(password_reset_request): Json<RequestPasswordResetBody>,
+) -> Result<(), ApiError> {
+    password_reset_request.validate_inputs()?;
+    let email = password_reset_request.email;
+    let parsed_email = parse_email(&email)?;
+
+    let Some(user_id) = get_user_by_email(&db, &email).await? else {
+        // Account with e-mail doesn't exist, do nothing.
+        return Ok(());
+    };
+    let user_data = get_user(&db, user_id).await?.data;
+
+    let password_reset_code = {
+        let mut rng = rand::rng();
+        Alphanumeric.sample_string(&mut rng, 64)
+    };
+
+    {
+        let mut reset_password_requests = state.reset_password_requests.lock().await;
+
+        // Exit if a password reset has already been requested.
+        if reset_password_requests
+            .values()
+            .any(|r| r.user_id == user_id && Utc::now().timestamp() < r.expires)
+        {
+            return Ok(());
+        }
+
+        let expires = Utc::now().timestamp() + state.config.reset_password_timer;
+        let password_reset_request_data = PasswordResetRequestData { user_id, expires };
+        reset_password_requests.insert(password_reset_code.clone(), password_reset_request_data);
+
+        // Release the lock, then send an email
+    }
+
+    let password_reset_link = format!(
+        "{}/reset-password?code={}",
+        state.config.base_url, password_reset_code
+    );
+    let display_name = user_data.get_display_name();
+    let language = user_data.language;
+    let message = Message::builder()
+        .from(Mailbox::new(
+            Some("BOOM!".to_owned()),
+            format!("noreply@{}", state.config.hostname).parse()?,
+        ))
+        .to(Mailbox::new(Some(display_name.clone()), parsed_email))
+        .header(ContentType::TEXT_PLAIN)
+        .subject(PasswordResetMailSubject.localized(&language))
+        .body(
+            PasswordResetMailBody {
+                display_name,
+                password_reset_link,
+                duration_seconds: state.config.reset_password_timer,
+                base_url: state.config.base_url.clone(),
+            }
+            .localized(&language),
+        )?;
+    state.config.mailer.send(message).await?;
+
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Debug, PartialEq)]
+#[serde(tag = "type")]
+#[serde(rename_all_fields = "camelCase")]
+pub enum PasswordResetResponse {
+    /// Return body signalling the password has been successfully updated..
+    Success,
+    /// Return body signalling that the user tried to reset a password with a code that is invalid or expired.
+    InvalidCode,
+}
+
+#[utoipa::path(
+    put,
+    path = "/reset-password-requests",
+    context_path = "/api/v1/users",
+    request_body = PasswordResetBody,
+    responses(
+        (status = 200, description = "Password changing attempt has been finalized.", body = PasswordResetResponse, content_type = "application/json"),
+        (status = 500, description = "Internal server error.")
+    )
+)]
+/// Reset a user's password, with a password-reset code tied to a user and the new password.
+///
+/// # Arguments
+/// `password_reset_body` - The struct containing the password-reset code and the new password,
+/// as [`PasswordResetMailBody`].
+///
+/// # Returns
+/// [`Success`](PasswordResetResponse::Success) if successful,
+/// or [`InvalidCode`](PasswordResetResponse::InvalidCode) if the code is invalid or expired.
+///
+/// # Errors
+/// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+///
+/// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+///
+/// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the new password does not meet the minimum security requirements.
+///
+/// May return a [`HashException`](ApiError::HashException) or
+/// [`DatabaseException`](ApiError::DatabaseException) instead.
+async fn reset_password(
+    Extension(db): Extension<PgPool>,
+    State(state): State<ArcState>,
+    Json(password_reset_body): Json<PasswordResetBody>,
+) -> Result<Json<PasswordResetResponse>, ApiError> {
+    password_reset_body.validate_inputs()?;
+    let new_password = password_reset_body.new_password;
+
+    let mut reset_password_requests = state.reset_password_requests.lock().await;
+
+    let entry = match reset_password_requests.entry(password_reset_body.code) {
+        Entry::Occupied(occupied_entry) => {
+            if occupied_entry.get().expires < Utc::now().timestamp() {
+                return Ok(Json(PasswordResetResponse::InvalidCode));
+            }
+            occupied_entry
+        }
+        Entry::Vacant(_) => {
+            return Ok(Json(PasswordResetResponse::InvalidCode));
+        }
+    };
+
+    let user_id = entry.get().user_id;
+
+    update_password(&db, user_id, &new_password, state.config.bcrypt_cost).await?;
+
+    entry.remove();
+
+    // All other sessions of the account are invalidated if password is changed.
+    Claims::delete_all_sessions(&db, &user_id).await?;
+
+    Ok(Json(PasswordResetResponse::Success))
 }
 
 #[utoipa::path(

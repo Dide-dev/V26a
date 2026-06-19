@@ -10,16 +10,17 @@
         getFilteredList,
         type LibraryCardGetData
     } from '$lib/api-wrapper/cards_library';
-    import { type SideBar } from './Sidebar.svelte';
-    import CardViewer from './CardViewer.svelte';
+    import { type CardSideBar, type MenuSideBar } from './Sidebar.svelte';
+    import CardViewer from '../CardViewer.svelte';
     import { Accordion, AccordionItem, Datepicker } from 'flowbite-svelte';
     import { timeFormatString } from '$lib';
     import { m } from '$lib/paraglide/messages';
     import { onMount } from 'svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { type Option } from '$lib/api-wrapper/types';
+    import { branchColors } from '$lib/treePage';
 
-    let { sidebar = $bindable() }: { sidebar: SideBar | null } = $props();
+    let { sidebar = $bindable() }: { sidebar: CardSideBar | MenuSideBar } = $props();
 
     let cardFilterOptions: CardFilterOptions = $state({
         ownerName: null,
@@ -37,18 +38,20 @@
 
     let malformedUsername: boolean = $state(false);
 
+    let timeFormat = new Intl.DateTimeFormat(timeFormatString);
+
     async function updateLibrary() {
         libraryCards = await getFilteredList(cardFilterOptions);
     }
 
     function insertCard(libCard: LibraryCardGetData) {
-        if (sidebar === null) {
-            return;
-        }
+        if (sidebar.kind === 'Menu') return;
+
         sidebar.editingVersion = {
             front: libCard.front,
             back: libCard.back
         };
+        sidebar.insertingFromLibrary = false;
     }
 
     function handleSearch() {
@@ -111,6 +114,8 @@
     });
 </script>
 
+<h2 class="page__heading">{m.cardLibrary()}</h2>
+
 <Accordion flush multiple>
     <AccordionItem classes={{ button: 'page__subheading cursor-pointer p-1' }}>
         {#snippet header()}
@@ -138,28 +143,35 @@
     </AccordionItem>
 </Accordion>
 
-<div class="mt-1 mb-1 h-full overflow-x-hidden overflow-y-auto">
-    <table class="border-separate">
-        <tbody>
-            {#each libraryCards as libraryCard (libraryCard.cardId)}
-                <tr>
-                    <td
-                        ><b>{libraryCard.title}</b>
-                        <div class="float-right">
-                            {new Date(libraryCard.createdAt.toString()).toLocaleString()}
-                        </div></td
-                    >
-                </tr>
-                <tr>
-                    <td>Tags: {libraryCard.tags.join(', ')}</td>
-                </tr>
-                <tr class="cursor-pointer" onclick={() => insertCard(libraryCard)}>
-                    <CardViewer card={{ front: libraryCard.front, back: libraryCard.back }} />
-                </tr>
-            {/each}
-        </tbody>
-    </table>
+<div class="mt-1 mb-1 flex h-fit max-h-screen flex-col overflow-x-hidden overflow-y-auto">
+    {#each libraryCards as libraryCard (libraryCard.cardId)}
+        {@render cardEntry(libraryCard)}
+    {/each}
 </div>
+
+{#snippet cardEntry(libraryCard: LibraryCardGetData)}
+    <div class="flex w-full flex-row justify-between">
+        <div class="flex flex-col gap-0.5">
+            <strong>{libraryCard.title}</strong>
+            <em class="-mt-1">{m.madeBy()}: {libraryCard.ownerName}</em>
+        </div>
+        <div class="text-right">
+            <p class="font-semibold">
+                {timeFormat.format(new Date(libraryCard.createdAt))}
+            </p>
+            <p class="text-neutral-700">{libraryCard.tags.map((t) => `#${t}`).join(' ')}</p>
+        </div>
+    </div>
+    <button class="cursor-pointer" onclick={() => insertCard(libraryCard)} type="button">
+        <CardViewer
+            card={{ front: libraryCard.front, back: libraryCard.back }}
+            color={sidebar.kind !== 'CardEditor'
+                ? 'tree'
+                : branchColors[sidebar.location[0] % branchColors.length]}
+            isBeingEdited={false}
+        />
+    </button>
+{/snippet}
 
 {#snippet searchBar()}
     <div class="mx-1 flex flex-col gap-1">

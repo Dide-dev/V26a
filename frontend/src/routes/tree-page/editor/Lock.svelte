@@ -8,7 +8,7 @@
     This components tries to acquire an editing lock from the backend,
     to ensure no other user (or the same user on a different tab) is editing a tree at the same time.
 
-    Once the lock is aquired, the `children` will be mounted to DOM and rendered in place of this component.
+    Once the lock is acquired, the `children` will be mounted to DOM and rendered in place of this component.
  -->
 <script lang="ts">
     import type { UserId } from '$lib/api-wrapper/users';
@@ -20,7 +20,7 @@
 
     let {
         treeId,
-        /** These children will only be mounted if the lock is aquired. */
+        /** These children will only be mounted if the lock is acquired. */
         children
     }: { treeId: TreeId; children: Snippet } = $props();
 
