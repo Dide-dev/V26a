@@ -25,10 +25,11 @@
         TrashBinSolid
     } from 'flowbite-svelte-icons';
     import { m } from '$lib/paraglide/messages.js';
-    import { duplicateTree, removeTree, type TreeMetadata } from '$lib/api-wrapper/trees';
+    import { removeTree, type TreeMetadata } from '$lib/api-wrapper/trees';
     import { appLink, timeFormatString } from '$lib';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
+    import { duplicateThisTree } from '$lib/treePage';
     import Popup from '$lib/Popup.svelte';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
@@ -45,11 +46,6 @@
     } = $props();
 
     let deleteConfirmation = $state(false);
-
-    async function duplicateThisTree() {
-        let newTreeId = await duplicateTree(tree.genData.id);
-        window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
-    }
 
     function askDeleteConfirmation() {
         deleteConfirmation = true;
@@ -111,7 +107,7 @@
                 {/if}
                 {#if userInfo !== null}
                     <button
-                        onclick={duplicateThisTree}
+                        onclick={() => duplicateThisTree(tree.genData.id)}
                         aria-label="duplicate"
                         title={m.duplicateTree()}
                         class="cursor-pointer"

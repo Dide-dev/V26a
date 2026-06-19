@@ -30,28 +30,43 @@
     }
 </script>
 
-<button data-testid="delete-button" class="error danger" onclick={openPopup}>
+<button data-testid="delete-button" type="reset" class="danger" onclick={openPopup}>
     {m.deleteAccount()}
 </button>
 
 {#if popupVisible}
     <Popup>
-        <p class="text-lg font-bold">
-            {m.deleteAccountConfirmation()}
-        </p>
+        <form class="completed">
+            <h3 class="page__subheading">
+                {m.deleteAccountConfirmation()}
+            </h3>
 
-        <label class="flex items-center gap-2">
-            <input type="checkbox" data-testid="delete-checkbox" bind:checked={deleteTrees} />
-            {m.deleteOwnedTrees()}
-        </label>
+            <em>{m.dangerNotice()}</em>
 
-        <div class="flex justify-end gap-2">
-            <button type="reset" onclick={cancelDelete}>
-                {m.cancel()}
-            </button>
-            <button data-testid="delete-confirm" class="error danger" onclick={doDelete}>
-                {m.yes()}
-            </button>
-        </div>
+            <div class="flex flex-row items-center gap-2">
+                <input
+                    id="delete-trees"
+                    type="checkbox"
+                    data-testid="delete-checkbox"
+                    class="input__checkbox"
+                    bind:checked={deleteTrees}
+                />
+                <label for="delete-trees">{m.deleteOwnedTrees()}</label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1">
+                <button type="reset" onclick={cancelDelete}>
+                    {m.cancel()}
+                </button>
+                <button
+                    data-testid="delete-confirm"
+                    type="submit"
+                    class="danger"
+                    onclick={doDelete}
+                >
+                    {m.yes()}
+                </button>
+            </div>
+        </form>
     </Popup>
 {/if}
