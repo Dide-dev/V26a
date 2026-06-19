@@ -31,7 +31,7 @@
     import type { Option } from '$lib/api-wrapper/types';
     import { tryParseISBN } from '$lib/treeMetadata';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
-    import { SvelteSet } from 'svelte/reactivity';
+    import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
     let {
         filterOptions = $bindable(),
@@ -166,12 +166,12 @@
     function extractTags(query: string): Query {
         const words = query.trim().split(' ');
 
-        let tags = [];
+        let tags = new SvelteMap<string, string>();
 
         // Find any words starting with a hashtag, add them to the tag list, and remove them from the search terms.
         for (let i = 0; i < words.length; i++) {
             if (words[i][0] === '#') {
-                tags.push(words[i].slice(1));
+                tags.set(words[i].slice(1).toLowerCase(), words[i].slice(1));
                 words.splice(i, 1);
                 i--;
             }
@@ -185,7 +185,7 @@
 
         return {
             searchTerms: searchTerms,
-            tags: tags
+            tags: tags.values().toArray()
         };
     }
 

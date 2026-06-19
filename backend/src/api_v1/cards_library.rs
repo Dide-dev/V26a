@@ -90,7 +90,7 @@ async fn add_card_to_library(
         get_connection!(db),
         owner_id,
         &card_data.title,
-        &card_data.tags,
+        card_data.tags,
         &card_text,
     )
     .await?;

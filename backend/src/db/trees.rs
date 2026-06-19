@@ -376,14 +376,15 @@ pub async fn add_book(db: impl PgExecutor<'_>, tree_data: &TreeData) -> Result<b
 pub async fn add_tags(
     db: &mut PgConnection,
     tree_id: i32,
-    tags: &[String],
+    tags: Vec<String>,
 ) -> Result<(), ApiError> {
-    let set = tags
-        .iter()
-        .map(|tag| tag.to_lowercase())
-        .collect::<HashSet<_>>();
-    if set.len() < tags.len() {
-        return Err(ApiError::DuplicateTags);
+    let (mut lower_tags, mut unique_tags) = (vec![], vec![]);
+    for tag in tags {
+        let tag_lower = tag.to_lowercase();
+        if !lower_tags.contains(&tag_lower) {
+            lower_tags.push(tag_lower);
+            unique_tags.push(tag);
+        }
     }
 
     query!(
@@ -395,7 +396,7 @@ pub async fn add_tags(
               FROM tags
               WHERE LOWER(tags.name) = LOWER(t.tag)
          )",
-        tags
+        &unique_tags
     )
     .execute(&mut *db)
     .await?;
@@ -404,7 +405,7 @@ pub async fn add_tags(
     // if there are duplicates.
     let tag_ids = query!(
         "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
-        &tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>()
+        &lower_tags
     )
     .fetch_all(&mut *db)
     .await?;
@@ -440,13 +441,13 @@ pub async fn add_tags(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_tree(
     db: &mut PgConnection,
-    tree_add_data: &TreeAddData,
+    tree_add_data: TreeAddData,
     owner_id: i32,
 ) -> Result<i32, ApiError> {
     let tree_structure = serde_json::to_value(&tree_add_data.tree_structure)?;
-    let tree_data = &tree_add_data.tree_data;
+    let tree_data = tree_add_data.tree_data;
 
-    add_book(&mut *db, tree_data).await?;
+    add_book(&mut *db, &tree_data).await?;
 
     let tree_id = query!(
         "INSERT INTO trees (owner_id, published, title, description, language_code, subject_id, book_isbn, book_chapter, book_exercise, assignment_text, structure)
@@ -468,7 +469,7 @@ pub async fn add_tree(
     .await?
     .id;
 
-    add_tags(db, tree_id, &tree_data.tags).await?;
+    add_tags(db, tree_id, tree_data.tags).await?;
 
     Ok(tree_id)
 }
@@ -573,7 +574,7 @@ pub async fn update_tree_data(
     query!("DELETE FROM tree_tags WHERE tree_id = $1", tree_id)
         .execute(&mut *db)
         .await?;
-    add_tags(db, tree_id, &new_tree_data.tags).await?;
+    add_tags(db, tree_id, new_tree_data.tags).await?;
 
     Ok(())
 }
@@ -1572,7 +1573,7 @@ mod tests {
             tree_structure: TreeStructure { root_nodes: vec![] },
         };
 
-        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, claims.sub)
+        let tree_id = add_tree(get_connection_unwrap!(db), tree_add_data, claims.sub)
             .await
             .unwrap();
 
@@ -1668,16 +1669,16 @@ mod tests {
             tree_data,
             tree_structure,
         };
-        let tree_id = add_tree(get_connection_unwrap!(db), &tree_add_data, claims.sub)
+        let tree_id = add_tree(get_connection_unwrap!(db), tree_add_data, claims.sub)
             .await
             .unwrap();
 
         // Update the tree data
-        let mut new_tree_data = TreeData {
+        let new_tree_data = TreeData {
             title: "Updated tree".to_string(),
             description: "Updated description".to_string(),
             language_code: "nl".to_string(),
-            tags: vec!["tag1".to_string(), "TAG1".to_string(), "tag3".to_string()],
+            tags: vec!["tag1".to_string(), "tag3".to_string()],
             subject_id: Some(3),
             book_name: "Updated book".to_string(),
             book_author: "John Writer".to_string(),
@@ -1688,12 +1689,6 @@ mod tests {
             assignment_text: "Updated assignment".to_string(),
             published: true,
         };
-        let void =
-            update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone()).await;
-        assert_eq!(void, Err(ApiError::DuplicateTags));
-
-        // The duplicate tag throws an error.
-        new_tree_data.tags = vec!["tag1".to_string(), "tag3".to_string()];
 
         update_tree_data(get_connection_unwrap!(db), tree_id, new_tree_data.clone())
             .await

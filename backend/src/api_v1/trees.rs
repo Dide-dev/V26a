@@ -140,7 +140,7 @@ async fn add_new_tree(
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
-    let id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
+    let id = add_tree(&mut transaction, tree_add_data, claims.sub).await?;
 
     transaction.commit().await?;
 
@@ -1179,7 +1179,7 @@ pub async fn duplicate_tree(
         tree_data: new_data,
         tree_structure: structure.clone(),
     };
-    let new_tree_id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
+    let new_tree_id = add_tree(&mut transaction, tree_add_data, claims.sub).await?;
 
     let mut new_structure: Vec<RootNode> = Vec::with_capacity(structure.root_nodes.len());
     for root_node in structure.root_nodes {

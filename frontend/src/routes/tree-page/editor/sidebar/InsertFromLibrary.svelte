@@ -19,6 +19,7 @@
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { type Option } from '$lib/api-wrapper/types';
     import { branchColors } from '$lib/treePage';
+    import { SvelteMap } from 'svelte/reactivity';
 
     let { sidebar = $bindable() }: { sidebar: CardSideBar | MenuSideBar } = $props();
 
@@ -73,12 +74,12 @@
     function extractTags(query: string): string[] {
         const words = query.trim().split(' ');
 
-        let tags = [];
+        let tags = new SvelteMap<string, string>();
 
         // Find any words starting with a hashtag, add them to the tag list, and remove them from the search terms.
         for (let i = 0; i < words.length; i++) {
             if (words[i][0] === '#') {
-                tags.push(words[i].slice(1));
+                tags.set(words[i].slice(1).toLowerCase(), words[i].slice(1));
                 words.splice(i, 1);
                 i--;
             }
@@ -90,7 +91,7 @@
             searchTerms = null;
         }
 
-        return tags;
+        return tags.values().toArray();
     }
 
     function handleOwnerUpdate() {

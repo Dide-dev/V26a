@@ -6,7 +6,6 @@
 use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
-use std::collections::HashSet;
 
 /// Add a list of tags for a given library card in the database.
 ///
@@ -25,14 +24,15 @@ use std::collections::HashSet;
 pub async fn add_tags(
     db: &mut PgConnection,
     library_card_id: i32,
-    tags: &[String],
+    tags: Vec<String>,
 ) -> Result<(), ApiError> {
-    let set = tags
-        .iter()
-        .map(|tag| tag.to_lowercase())
-        .collect::<HashSet<_>>();
-    if set.len() < tags.len() {
-        return Err(ApiError::DuplicateTags);
+    let (mut lower_tags, mut unique_tags) = (vec![], vec![]);
+    for tag in tags {
+        let tag_lower = tag.to_lowercase();
+        if !lower_tags.contains(&tag_lower) {
+            lower_tags.push(tag_lower);
+            unique_tags.push(tag);
+        }
     }
 
     query!(
@@ -44,7 +44,7 @@ pub async fn add_tags(
               FROM tags
               WHERE LOWER(tags.name) = LOWER(t.tag)
          )",
-        tags
+        &unique_tags
     )
     .execute(&mut *db)
     .await?;
@@ -53,7 +53,7 @@ pub async fn add_tags(
     // if there are duplicates.
     let tag_ids = query!(
         "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
-        &tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>()
+        &lower_tags
     )
     .fetch_all(&mut *db)
     .await?;
@@ -91,7 +91,7 @@ pub async fn cards_library_add(
     db: &mut PgConnection,
     owner_id: i32,
     title: &String,
-    tags: &[String],
+    tags: Vec<String>,
     card_text: &CardData,
 ) -> Result<i32, ApiError> {
     let library_card_id = query!(
@@ -285,24 +285,11 @@ mod tests {
         let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
-        let _card_lib_id = cards_library_add(
-            get_connection_unwrap!(db),
-            claims.sub,
-            &title,
-            &tags,
-            &card_text,
-        )
-        .await
-        .is_err();
-
-        // The duplicate tag throws an error.
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
-
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
             claims.sub,
             &title,
-            &tags,
+            tags.clone(),
             &card_text,
         )
         .await
@@ -331,7 +318,7 @@ mod tests {
                 .iter()
                 .map(|record| record.name.clone())
                 .collect::<Vec<_>>(),
-            tags
+            vec!["tag1".to_owned(), "tag2".to_owned()]
         );
     }
 
@@ -416,7 +403,7 @@ mod tests {
             get_connection_unwrap!(db),
             claims.sub,
             &String::new(),
-            &[],
+            vec![],
             &card_text,
         )
         .await
@@ -457,7 +444,7 @@ mod tests {
             get_connection_unwrap!(db),
             claims.sub,
             &title,
-            &tags,
+            tags.clone(),
             &card_text,
         )
         .await
@@ -472,9 +459,6 @@ mod tests {
         .await
         .unwrap()
         .created_at;
-
-        // Remove duplicate for checking success.
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
 
         let success_outcome = vec![LibraryCardGetData {
             card_id,
