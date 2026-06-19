@@ -90,6 +90,7 @@
     "closeBranch": "Close this branch",
     "openBranch": "Re-open this branch",
     "invalidCredentials": "Email or password is invalid. Please try again.",
+    "disabledCredentials": "This account has been disabled.",
     "passwordsNotTheSame": "Passwords are not the same.",
     "profile": "Profile",
     "profileOf": "Profile of {username}",

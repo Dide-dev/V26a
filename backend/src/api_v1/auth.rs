@@ -35,6 +35,8 @@ pub fn auth() -> Router<ArcState> {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginResponse {
     pub succeeded: bool,
+    #[serde(default)]
+    pub disabled: bool,
 }
 
 #[utoipa::path(
@@ -54,7 +56,7 @@ pub struct LoginResponse {
 /// `login_request` - The credentials provided to log in, as [`LoginRequestBody`].
 ///
 /// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
+/// A [`LoginResponse`] which flags whether the combination of email and password is correct, and if the user is enabled.
 /// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
@@ -70,14 +72,36 @@ async fn login(
     login_request.validate_inputs()?;
 
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: false,
+            }),
+        ));
     };
+
+    if !credentials.enabled {
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: true,
+            }),
+        ));
+    }
 
     let password_valid = bcrypt::verify(login_request.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: false,
+            }),
+        ));
     }
 
     let user_data = get_user(&db, credentials.user_id).await?;
@@ -128,7 +152,10 @@ async fn login(
 
     Ok((
         jar.add(cookie).add(user_info_cookie),
-        Json(LoginResponse { succeeded: true }),
+        Json(LoginResponse {
+            succeeded: true,
+            disabled: false,
+        }),
     ))
 }
 

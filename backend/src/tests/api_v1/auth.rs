@@ -9,8 +9,11 @@
 use crate::api_v1::auth::LoginResponse;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::session::{Claims, InfoCookieData};
-use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
-use crate::tests::api_v1::{get_cookie_data, login, register, setup};
+use crate::db_structs::users::{
+    AccountType, AdminUpdateData, RegisterData, UserData, UserGeneralData, UserLanguage,
+};
+use crate::get_connection_unwrap;
+use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
 use sqlx::PgPool;
 
 #[sqlx::test]
@@ -42,6 +45,46 @@ async fn test_login_fail(db: PgPool) {
 
     // Checks that login fails.
     server.get("/users/me").await.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_login_disabled_user(db: PgPool) {
+    let state = setup(db.clone());
+
+    let register_data1 = RegisterData::test_values();
+    let register_data2 = RegisterData::test_values();
+    let user_id = register(&state, &register_data1).await;
+    register_admin(&state, get_connection_unwrap!(db.clone()), &register_data2).await;
+
+    let server = state.server;
+    login(&server, register_data2.email).await;
+
+    let response = server
+        .put(&format!("/admin/users/{user_id}"))
+        .json(&AdminUpdateData {
+            email: register_data1.email.clone(),
+            data: UserGeneralData {
+                name: register_data1.data.name,
+                nickname: register_data1.data.nickname,
+                about_me: register_data1.data.about_me,
+            },
+            enabled: false,
+            account_type: AccountType::Author,
+        })
+        .await;
+    response.assert_status_ok();
+
+    let response = server
+        .post("/auth")
+        .json(&LoginRequestBody {
+            email: register_data1.email,
+            password: register_data1.password,
+        })
+        .await;
+    response.assert_status_ok();
+
+    assert!(!response.json::<LoginResponse>().succeeded);
+    assert!(response.json::<LoginResponse>().disabled);
 }
 
 #[sqlx::test]

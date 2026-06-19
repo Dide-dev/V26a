@@ -90,6 +90,7 @@
     "closeBranch": "Sluit deze tak",
     "openBranch": "Heropen deze tak",
     "invalidCredentials": "De combinatie van e-mail en wachtwoord is niet correct. Probeer het opnieuw.",
+    "disabledCredentials": "Dit account is gedeactiveerd.",
     "passwordsNotTheSame": "Wachtwoorden zijn niet hetzelfde.",
     "profile": "Profiel",
     "profileOf": "Profiel van {username}",

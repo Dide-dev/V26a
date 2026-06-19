@@ -24,6 +24,7 @@ export type LoginData = {
 
 export type LoginResponse = {
     succeeded: boolean;
+    disabled: boolean;
 };
 
 /** Log in with the provided credentials */
