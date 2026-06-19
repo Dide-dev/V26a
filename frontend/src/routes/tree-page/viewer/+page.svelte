@@ -14,7 +14,7 @@
     import { appLink } from '$lib';
     import { branchColors, duplicateThisTree } from '$lib/treePage';
     import TreeInformation from '../TreeInformation.svelte';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { EditOutline, FileCloneOutline } from 'flowbite-svelte-icons';
 
     let tree: TreeWithCards | null = $state(null);

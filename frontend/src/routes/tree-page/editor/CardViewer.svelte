@@ -30,7 +30,7 @@
     style="background-color: {frontColor}; border-color: {borderColor};}"
     class={[
         isBeingEdited && 'border-4',
-        'h-fit min-h-9 w-xl overflow-x-auto border-2 border-b-0 p-1 text-center wrap-anywhere overflow-y-hidden'
+        'h-fit min-h-9 w-xl overflow-x-auto overflow-y-hidden border-2 border-b-0 p-1 text-center wrap-anywhere'
     ]}
 >
     {card.front}
@@ -39,7 +39,7 @@
     style="background-color: {backColor}; border-color: {borderColor};"
     class={[
         isBeingEdited && 'border-4',
-        'h-fit min-h-9 w-xl overflow-x-auto border-2 border-t-2 p-1 text-left wrap-anywhere overflow-y-hidden'
+        'h-fit min-h-9 w-xl overflow-x-auto overflow-y-hidden border-2 border-t-2 p-1 text-left wrap-anywhere'
     ]}
 >
     <!-- eslint-disable-next-line svelte/no-at-html-tags -->

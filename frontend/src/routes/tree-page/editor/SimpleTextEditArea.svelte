@@ -4,19 +4,22 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 -->
 
-<!--component
+<!--
+    @component
     This simple component is used for editing the front of the card,
     or for the back when in 'code editor' instead of 'visual editor'.
     For the back of the card, see '$lib/rich-text/Editor.svelte'
  -->
 
 <script lang="ts">
+    import { m } from '$lib/paraglide/messages';
+
     let {
         id,
         maxLength,
         height,
         valueText = $bindable(),
-        placeholder = 'Enter text...'
+        placeholder = m.defaultTextAreaPlaceholder()
     }: {
         id: string;
         maxLength: number;
