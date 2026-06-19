@@ -67,9 +67,9 @@ export function getClassroomUserInfo(classroomId: ClassroomId): ClassroomUserInf
         const allClassroomUserInfos: AllClassroomUserInfos = JSON.parse(
             decodeURIComponent(cookie.split('=')[1])
         );
-        allClassroomUserInfos.claims.forEach((classroomUserInfo) => {
+        for (const classroomUserInfo of allClassroomUserInfos.claims) {
             if (classroomUserInfo.id == classroomId) return classroomUserInfo;
-        });
+        }
         return null;
     } catch {
         return null;

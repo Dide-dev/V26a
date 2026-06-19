@@ -37,22 +37,15 @@
             return;
         }
 
-        classroomUserInfo = getClassroomUserInfo(id);
+        classroomUserInfo = await getClassroomUserInfo(id);
 
         if (classroomUserInfo === null) {
-            await redirectClassroomLogin(page.url);
+            await goto(appLink('/classrooms/join'));
             return;
         }
 
         classroomStudentDashboardData = await getClassroomStudentDashboard(id);
     });
-
-    async function redirectClassroomLogin(redirectToURL: URL) {
-        const encodedURI = encodeURI(
-            redirectToURL.pathname + redirectToURL.search + redirectToURL.hash
-        );
-        await goto(appLink(`/classrooms/join?redirect=${encodedURI}`));
-    }
 
     async function reloadDashboard() {
         if (id === null) return;
