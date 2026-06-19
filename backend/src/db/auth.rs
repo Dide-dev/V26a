@@ -22,13 +22,16 @@ use std::str::FromStr;
 /// Returns a struct containing the user id, password hash and account type otherwise
 ///
 /// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_credentials_by_email(
     db: impl PgExecutor<'_>,
     email: String,
 ) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
-        "SELECT id, password_hash, account_type FROM users WHERE email = $1",
+        "SELECT id, password_hash, account_type, enabled FROM users WHERE email = $1",
         email.to_lowercase()
     )
     .fetch_optional(db)
@@ -42,6 +45,7 @@ pub async fn get_user_credentials_by_email(
         user_id: credentials.id,
         password_hash: credentials.password_hash,
         account_type: AccountType::from_str(&credentials.account_type)?,
+        enabled: credentials.enabled,
     }))
 }
 
@@ -58,13 +62,16 @@ pub async fn get_user_credentials_by_email(
 /// Returns a struct containing the user id, password hash and account type otherwise.
 ///
 /// # Errors
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn get_user_credentials_by_id(
     db: impl PgExecutor<'_>,
     id: i32,
 ) -> Result<Option<UserCredentials>, ApiError> {
     let credentials = query!(
-        "SELECT id, password_hash, account_type FROM users WHERE id = $1",
+        "SELECT id, password_hash, account_type, enabled FROM users WHERE id = $1",
         id
     )
     .fetch_optional(db)
@@ -78,5 +85,6 @@ pub async fn get_user_credentials_by_id(
         user_id: credentials.id,
         password_hash: credentials.password_hash,
         account_type: AccountType::from_str(&credentials.account_type)?,
+        enabled: credentials.enabled,
     }))
 }

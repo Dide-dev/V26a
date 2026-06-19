@@ -92,7 +92,7 @@
         class={[
             inFocus && 'min-h-card-height-md w-card-width-lg',
             !inFocus && 'min-h-card-height-sm w-card-width-sm text-neutral-600',
-            'card cursor-pointer overflow-x-auto p-1 text-left wrap-anywhere transition-all motion-reduce:transition-none'
+            'card cursor-pointer overflow-x-auto overflow-y-hidden p-1 text-left wrap-anywhere transition-all motion-reduce:transition-none'
         ]}
         onclick={toggleFocus}
     >
@@ -108,7 +108,7 @@
 {#snippet openableCard(card: CardData)}
     <button
         style="--background-color: {closedColor}; --hover-color: {hoverColor}; --border-color: {borderColor}"
-        class="card min-h-card-height-md w-card-width-lg cursor-pointer overflow-x-auto p-1 text-center text-lg wrap-anywhere text-neutral-200 italic hover:text-neutral-100"
+        class="card min-h-card-height-md w-card-width-lg cursor-pointer overflow-x-auto overflow-y-hidden p-1 text-center text-lg wrap-anywhere text-neutral-200 italic hover:text-neutral-100"
         onclick={makeRevealed}
     >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->

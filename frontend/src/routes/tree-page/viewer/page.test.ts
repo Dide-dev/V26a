@@ -21,10 +21,10 @@ import type {
 } from '$lib/api-wrapper/trees';
 import type { CardData, CardId } from '$lib/api-wrapper/cards';
 import { getTreeWithCards } from '$lib/api-wrapper/trees';
-import { getUserInfo } from '$lib/api-wrapper/users';
+import { getUserInfo } from '$lib/api-wrapper/sessions';
 
 // Mock the logging check.
-vi.mock('$lib/api-wrapper/users', () => ({
+vi.mock('$lib/api-wrapper/sessions', () => ({
     getUserInfo: vi.fn()
 }));
 

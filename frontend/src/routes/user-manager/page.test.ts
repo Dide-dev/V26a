@@ -9,7 +9,7 @@ import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import PageComponent from './+page.svelte';
 import { page } from '$app/state';
-import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
+import { getUserInfo, type UserInfo } from '$lib/api-wrapper/sessions';
 import {
     type AdminUpdateData,
     getUserAllData,
@@ -19,7 +19,7 @@ import {
 } from '$lib/api-wrapper/admin';
 import { m } from '$lib/paraglide/messages.js';
 
-vi.mock('$lib/api-wrapper/users', () => {
+vi.mock('$lib/api-wrapper/sessions', () => {
     return {
         getUserInfo: vi.fn()
     };

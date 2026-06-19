@@ -3,10 +3,10 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
 use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
+use std::collections::HashSet;
 
 /// Add a list of tags for a given library card in the database.
 ///
@@ -27,8 +27,23 @@ pub async fn add_tags(
     library_card_id: i32,
     tags: &[String],
 ) -> Result<(), ApiError> {
+    let set = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<HashSet<_>>();
+    if set.len() < tags.len() {
+        return Err(ApiError::DuplicateTags);
+    }
+
     query!(
-        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
+        "INSERT INTO tags (name)
+         SELECT tag
+         FROM UNNEST($1::VARCHAR(32)[]) AS t(tag)
+         WHERE NOT EXISTS (
+              SELECT 1
+              FROM tags
+              WHERE LOWER(tags.name) = LOWER(t.tag)
+         )",
         tags
     )
     .execute(&mut *db)
@@ -37,14 +52,14 @@ pub async fn add_tags(
     // This needs to be queried separately because the previous query doesn't insert all of the tags
     // if there are duplicates.
     let tag_ids = query!(
-        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
-        tags
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
+        &tags.iter().map(|tag| tag.to_lowercase()).collect::<Vec<_>>()
     )
     .fetch_all(&mut *db)
     .await?;
 
     query!(
-        "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
         library_card_id,
         &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
     )
@@ -92,13 +107,6 @@ pub async fn cards_library_add(
     .await?
     .id;
 
-    // Delete the old tags and add the new ones.
-    query!(
-        "DELETE FROM library_cards_tags WHERE library_card_id = $1",
-        library_card_id
-    )
-    .execute(&mut *db)
-    .await?;
     add_tags(db, library_card_id, tags).await?;
 
     Ok(library_card_id)
@@ -186,14 +194,18 @@ const CARD_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN users ON users.id = library_cards.owner_id
 ";
 
-fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
+    let tags = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<Vec<_>>();
     query
         .push(
             r"
             WITH requested_tags AS (
                 SELECT id
                 FROM tags
-                WHERE name = ANY(",
+                WHERE LOWER(name) = ANY(",
         )
         .push_bind(tags)
         .push("))");
@@ -270,8 +282,21 @@ mod tests {
         let card_id = initialize_card(&db, tree_id).await;
 
         let title = "title".to_owned();
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
+
+        let _card_lib_id = cards_library_add(
+            get_connection_unwrap!(db),
+            claims.sub,
+            &title,
+            &tags,
+            &card_text,
+        )
+        .await
+        .is_err();
+
+        // The duplicate tag throws an error.
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
@@ -347,6 +372,27 @@ mod tests {
             partial_filters_query.sql(),
             "SELECT * FROM library_cards WHERE (users.name = $1) AND (library_cards.created_at >= $2)"
         );
+    }
+
+    #[sqlx::test]
+    async fn test_tags_filter_case_insensitive() {
+        let mut query1 = QueryBuilder::<Postgres>::new("SELECT * FROM cards");
+        let mut query2 = QueryBuilder::<Postgres>::new("SELECT * FROM cards");
+
+        let lower_case_tags = CardFilters {
+            tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+            ..Default::default()
+        };
+
+        let upper_case_tags = CardFilters {
+            tags: vec!["TAG1".to_owned(), "TAG2".to_owned()],
+            ..Default::default()
+        };
+
+        list_query_tag_cte(&mut query1, &lower_case_tags.tags);
+        list_query_tag_cte(&mut query2, &upper_case_tags.tags);
+
+        assert_eq!(query1.sql(), query2.sql());
     }
 
     #[sqlx::test]
@@ -426,6 +472,9 @@ mod tests {
         .await
         .unwrap()
         .created_at;
+
+        // Remove duplicate for checking success.
+        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
 
         let success_outcome = vec![LibraryCardGetData {
             card_id,

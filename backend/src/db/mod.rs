@@ -52,7 +52,7 @@ pub mod test {
     use crate::db::classrooms::{add_lesson, generate_random_code};
     use crate::db::trees::parse_isbn;
     use crate::db_structs::cards::CardData;
-    use crate::db_structs::classrooms::{ClassroomData, LessonAddData};
+    use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::db_structs::session::{Claims, ClassroomClaims};
     use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
     use crate::db_structs::users::{AccountType, RegisterData};
@@ -237,7 +237,7 @@ pub mod test {
     }
 
     pub async fn initialize_classroom(db: &mut PgConnection, owner_id: i32) -> i32 {
-        let classroom_data = ClassroomData {
+        let classroom_data = ClassroomAddData {
             name: "Classroom".to_string(),
             description: "Classroom".to_string(),
         };
@@ -247,7 +247,7 @@ pub mod test {
     pub async fn initialize_classroom_with_data(
         db: &mut PgConnection,
         owner_id: i32,
-        classroom_add_data: &ClassroomData,
+        classroom_add_data: &ClassroomAddData,
         join_code: Option<String>,
     ) -> i32 {
         let join_code = join_code.unwrap_or(generate_random_code(db).await.unwrap());

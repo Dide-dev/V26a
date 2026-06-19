@@ -21,28 +21,50 @@
         EditOutline,
         FileCloneOutline,
         LanguageOutline,
-        LockSolid
+        LockSolid,
+        TrashBinSolid
     } from 'flowbite-svelte-icons';
     import { m } from '$lib/paraglide/messages.js';
-    import { duplicateTree, type TreeMetadata } from '$lib/api-wrapper/trees';
+    import { duplicateTree, removeTree, type TreeMetadata } from '$lib/api-wrapper/trees';
     import { appLink, timeFormatString } from '$lib';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
+    import Popup from '$lib/Popup.svelte';
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
     let userInfo = $state(getUserInfo());
 
     let {
         tree,
-        expanded = $bindable()
+        expanded = $bindable(),
+        handleDelete
     }: {
         tree: TreeMetadata;
         expanded: boolean;
+        handleDelete: () => void;
     } = $props();
 
-    async function duplicateThisTree(id: number) {
-        let newTreeId = await duplicateTree(id);
-        await window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
+    let deleteConfirmation = $state(false);
+
+    async function duplicateThisTree() {
+        let newTreeId = await duplicateTree(tree.genData.id);
+        window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
+    }
+
+    function askDeleteConfirmation() {
+        deleteConfirmation = true;
+    }
+
+    function cancelDelete() {
+        deleteConfirmation = false;
+    }
+
+    async function deleteThisTree() {
+        deleteConfirmation = false;
+
+        await removeTree(tree.genData.id);
+
+        handleDelete();
     }
 </script>
 
@@ -77,7 +99,7 @@
                 >
                     <ArrowUpRightFromSquareOutline class="mb-1 h-5 w-5 shrink-0" />
                 </a>
-                {#if userInfo?.sub === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '')}
+                {#if userInfo?.sub === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '') || userInfo?.accountType === 'admin'}
                     <a
                         href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
                         aria-label="edit"
@@ -89,12 +111,22 @@
                 {/if}
                 {#if userInfo !== null}
                     <button
-                        onclick={() => duplicateThisTree(tree.genData.id)}
+                        onclick={duplicateThisTree}
                         aria-label="duplicate"
                         title={m.duplicateTree()}
                         class="cursor-pointer"
                     >
                         <FileCloneOutline class="mb-1 h-5 w-5 shrink-0" />
+                    </button>
+                {/if}
+                {#if userInfo?.sub === tree.genData.ownerId || userInfo?.accountType === 'admin'}
+                    <button
+                        onclick={askDeleteConfirmation}
+                        aria-label="delete"
+                        title={m.deleteTree()}
+                        class="cursor-pointer"
+                    >
+                        <TrashBinSolid class="mb-1 h-5 w-5 shrink-0" />
                     </button>
                 {/if}
                 <span class="flex-auto grow-100"></span>
@@ -155,3 +187,16 @@
         </div>
     </div>
 </div>
+
+{#if deleteConfirmation}
+    <Popup>
+        <form class="completed flex flex-col" onsubmit={deleteThisTree} onreset={cancelDelete}>
+            <p>{m.deleteTreeConfirmation({ title: tree.data.title })}</p>
+
+            <div class="grid grid-cols-2 gap-1">
+                <button type="reset">{m.cancel()}</button>
+                <button type="submit" class="danger">{m.confirm()}</button>
+            </div>
+        </form>
+    </Popup>
+{/if}

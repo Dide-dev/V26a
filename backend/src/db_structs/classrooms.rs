@@ -5,6 +5,7 @@
 */
 use crate::db_structs::Validated;
 use crate::db_structs::session::ClassroomClaims;
+use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
@@ -17,13 +18,15 @@ use utoipa::ToSchema;
 /// The basic data of the classroom that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassroomData {
+pub struct ClassroomAddData {
+    /// The name of the to-be classroom.
     pub name: String,
+    /// The description of the to-be classroom.
     #[serde(default)]
     pub description: String,
 }
 
-impl Validated for ClassroomData {
+impl Validated for ClassroomAddData {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
     ///
@@ -53,22 +56,30 @@ impl Validated for ClassroomData {
     }
 }
 
-/// The data that is returned to the user after creation of the classroom.
+/// The data sent back to the user after creation of the classroom
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomGeneratedData {
+    /// The id of the classroom.
     pub id: i32,
+    /// The join-code of the classroom.
     pub join_code: String,
-    pub created_at: DateTime<Utc>,
-    pub owner_id: i32,
 }
 
 /// The data that is returned to the user when requesting all data.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassroomMetaData {
-    pub data: ClassroomData,
-    pub gen_data: ClassroomGeneratedData,
+    /// The id of the classroom.
+    pub id: i32,
+    /// The name of the classroom.
+    pub name: String,
+    /// The description of the classroom.
+    pub description: String,
+    /// The timestamp of the creation of the classroom.
+    pub created_at: DateTime<Utc>,
+    /// The owner of the classroom's user id.
+    pub owner_id: i32,
 }
 
 /// The data returned when requesting a list of classrooms.
@@ -77,16 +88,61 @@ pub struct ClassroomMetaData {
 pub struct ClassroomListResponse {
     /// The total amount of classrooms that are visible in the query.
     pub total_classrooms: i32,
+    /// The collection of classroom metadata's returned to the user.
     pub classrooms: Vec<ClassroomMetaData>,
+}
+
+/// The data that is sent by the user to log in to a classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomUserLoginData {
+    /// The join-code of the classroom.
+    pub join_code: String,
+    /// The user name or user number that the user wants to log in with.
+    pub username: String,
+}
+
+/// The data that is sent to the user after successfully logging in to a classroom.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
+#[serde(tag = "type", rename_all_fields = "camelCase")]
+pub enum ClassroomLoginResponse {
+    Success(ClassroomClaims),
+    JoinCodeIncorrect { join_code: String },
+    MissingUser { user_number: i32 },
+}
+
+/// The data to construct a teacher classroom dashboard sent to the user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomTeacherDashboardData {
+    /// The metadata of the classroom. Does not contain the join-code.
+    pub metadata: ClassroomMetaData,
+    /// The collection of lessons in the classroom.
+    pub lessons: Vec<LessonWithTrees>,
+    /// The join-code of the classroom.
+    pub join_code: String,
+}
+
+/// The data to construct a student classroom dashboard sent to the user.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassroomStudentDashboardData {
+    /// The metadata of the classroom. Does not contain the join-code.
+    pub metadata: ClassroomMetaData,
+    /// The collection of lessons in the classroom visible to students in the classroom.
+    pub lessons: Vec<LessonWithTrees>,
 }
 
 /// The basic data of the lesson that is filled in by the user.
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct LessonAddData {
+    /// The name of the to-be lesson.
     pub name: String,
+    /// The description of the to-be lesson.
     #[serde(default)]
     pub description: String,
+    /// Whether the to-be lesson is published to students in the classroom.
     #[serde(default)]
     pub published: bool,
 }
@@ -115,19 +171,30 @@ impl Validated for LessonAddData {
     }
 }
 
-/// The data that is sent by the user to log in to a classroom.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow)]
+/// All data on lessons, except the order number and classroom id.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ClassroomUserLoginData {
-    pub join_code: String,
-    pub username: String,
+pub struct LessonMetaData {
+    /// The lesson id.
+    pub id: i32,
+    /// The position in the list of lessons.
+    pub order_number: i32,
+    /// The timestamp of the creation of the lesson.
+    pub created_at: DateTime<Utc>,
+    /// The name of the lesson.
+    pub name: String,
+    /// The description of the lesson.
+    pub description: String,
+    /// Whether the lesson is published to students in the classroom.
+    pub published: bool,
 }
 
-/// The data that is sent to the user after successfully logging in to a classroom.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
-#[serde(tag = "type", rename_all_fields = "camelCase")]
-pub enum ClassroomLoginResponse {
-    Success(ClassroomClaims),
-    JoinCodeIncorrect { join_code: String },
-    MissingUser { user_number: i32 },
+/// The data of the lesson along with its trees.
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, FromRow, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LessonWithTrees {
+    /// The metadata of the lesson.
+    pub metadata: LessonMetaData,
+    /// The collection of tree metadata's in the lesson.
+    pub trees: Vec<TreeMetadata>,
 }

@@ -4,8 +4,6 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { getPaginationParams, type PaginationOptions } from '$lib/pagination';
-import type { ClassroomListResponse } from './classrooms';
 import { apiCallPost, apiCallGet, apiCallPut, apiCallEmptyDelete } from './index';
 import type { Option } from './types';
 
@@ -111,15 +109,6 @@ export type PublicUserData = {
     email: Option<string>;
 };
 
-/** The data in the cookie */
-export type UserInfo = {
-    name: Username;
-    nickname: string;
-    /** This corresponds to userid of the current login. */
-    sub: UserId;
-    accountType: AccountType;
-};
-
 /** The data needed to change a user's password */
 export type ChangePasswordData = {
     oldPassword: string;
@@ -160,33 +149,9 @@ export function updateUser(
     return apiCallPutUser(`/me`, newData);
 }
 
-/**
- * Read the userinfo from the cookie.
- * If logged in return id & type and if not logged in return null.
- */
-export function getUserInfo(): UserInfo | null {
-    if (typeof document === 'undefined') return null;
-    const cookie = document.cookie.split('; ').find((row) => row.startsWith('user_info='));
-    if (!cookie) return null;
-    try {
-        return JSON.parse(decodeURIComponent(cookie.split('=')[1]));
-    } catch {
-        return null;
-    }
-}
-
 /** Change a user's password */
 export function changePassword(
     changePasswordData: ChangePasswordData
 ): Promise<ChangePasswordResponse> {
     return apiCallPutUser('/me/password', changePasswordData);
-}
-
-/** Gets all the classrooms of a user from the database */
-export function getAllOwnedClassrooms(
-    userId: UserId,
-    pageOptions: PaginationOptions
-): Promise<ClassroomListResponse> {
-    const params: string = getPaginationParams(pageOptions);
-    return apiCallGetUser(`/${userId}/classrooms?${params}`);
 }

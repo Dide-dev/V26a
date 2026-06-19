@@ -36,7 +36,7 @@
     import RootNodeAddButton from './RootNodeAddButton.svelte';
     import { branchColors } from '$lib/treePage';
     import CoAuthor from './CoAuthor.svelte';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
 
     let { id }: { id: TreeId } = $props();
 

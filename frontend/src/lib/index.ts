@@ -6,7 +6,7 @@
 
 // place files you want to import through the `$lib` alias in this folder.
 import { getLocale, localizeHref } from '$lib/paraglide/runtime';
-import { m } from '$lib/paraglide/messages.js';
+import type { Option } from '$lib/api-wrapper/types';
 
 // Must be used in any linking to other pages, like the 'a' html element.
 // This localizes and possibly adds a prefix to the path.
@@ -25,7 +25,13 @@ const localeToTimeFormatString = { nl: 'nl-Nl', en: 'en-GB' };
 // Note we will not support American time notation.
 export const timeFormatString = localeToTimeFormatString[getLocale()];
 
-export function booleanToString(value: boolean) {
-    if (value) return m.yes();
-    return m.no();
+export function booleanFromString(value: string): Option<boolean> {
+    switch (value) {
+        case 'true':
+            return true;
+        case 'false':
+            return false;
+        default:
+            return null;
+    }
 }

@@ -9,7 +9,6 @@
     import DeleteButton from './DeleteButton.svelte';
     import {
         getOwnUserData,
-        getUserInfo,
         updateUser,
         changePassword,
         type UserData,
@@ -23,6 +22,7 @@
         checkSpecialCharacter
     } from '$lib/passwords';
     import { m } from '$lib/paraglide/messages.js';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 

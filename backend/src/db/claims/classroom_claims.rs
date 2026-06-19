@@ -30,6 +30,9 @@ impl ClassroomClaims {
     ///
     /// Returns an [`InvalidSession`](ApiError::InvalidSession) if the session has expired.
     ///
+    /// Returns an [`ClassroomIdRetrievalError`](ApiError::ClassroomIdRetrievalError) if the
+    /// classroom id could not be retrieved from the api uri.
+    ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
     pub async fn get_claims(parts: &mut Parts) -> Result<ClassroomClaims, ApiError> {
@@ -139,25 +142,15 @@ impl ClassroomClaims {
     }
 }
 
-/// If the api call path contains `classrooms/{id}`, returns `id`.
-/// Otherwise, returns an `ApiError`.
+/// If the relative api call path starts with `/{id}/`, returns `id`.
+/// Otherwise, returns an [`ClassroomIdRetrievalError`](ApiError::ClassroomIdRetrievalError).
 fn get_classroom_id_from_uri(uri: &str) -> Result<i32, ApiError> {
-    let api_uri_part = "classrooms/";
-    // Find the classrooms string in the api call path
-    match uri.find(api_uri_part) {
-        Some(index) =>
-        // Check if the part after the classrooms string is parsable to an i32.
-        {
-            match uri[(index + api_uri_part.len())..]
-                .split('/')
-                .collect::<Vec<&str>>()[0]
-                .parse::<i32>()
-            {
-                Ok(num) => Ok(num),
-                Err(_) => Err(ApiError::ClassroomIdRetrievalError),
-            }
-        }
-        None => Err(ApiError::ClassroomIdRetrievalError),
+    let mut vec = uri.split('/').collect::<Vec<&str>>();
+    vec.retain(|&s| !s.is_empty() && s != "." && s != "..");
+
+    match vec[0].parse::<i32>() {
+        Ok(num) => Ok(num),
+        Err(_) => Err(ApiError::ClassroomIdRetrievalError),
     }
 }
 
@@ -209,7 +202,14 @@ mod tests {
 
     #[test]
     fn test_get_classroom_id_from_uri_pass() {
-        let uri = "/all/hail/Lorax/1/classrooms/33/";
+        // check if fn works with leading slash
+        let uri = "/33/all/hail/Lorax/1/";
+        let result = get_classroom_id_from_uri(uri);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 33);
+
+        // also check if fn works without leading slash
+        let uri = "33/all/hail/Lorax/1/";
         let result = get_classroom_id_from_uri(uri);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 33);
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_get_classroom_id_from_uri_fail() {
-        let uri = "/all/hail/Lorax/1/classrooms/thirtythree/";
+        let uri = "/thirtythree/all/hail/Lorax/1/";
         let result = get_classroom_id_from_uri(uri);
         assert!(result.is_err());
     }

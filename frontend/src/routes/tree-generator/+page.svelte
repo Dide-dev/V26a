@@ -20,8 +20,9 @@
         type TreeData
     } from '$lib/api-wrapper/trees';
     import { onMount } from 'svelte';
-    import { getOwnUserData, getUserInfo, type UserGetData } from '$lib/api-wrapper/users';
+    import { getOwnUserData, type UserGetData } from '$lib/api-wrapper/users';
     import Editor from '$lib/rich-text/Editor.svelte';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 

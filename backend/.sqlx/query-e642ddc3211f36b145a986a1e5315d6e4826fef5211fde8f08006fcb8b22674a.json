@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tags (name)\n         SELECT tag\n         FROM UNNEST($1::VARCHAR(32)[]) AS t(tag)\n         WHERE NOT EXISTS (\n              SELECT 1\n              FROM tags\n              WHERE LOWER(tags.name) = LOWER(t.tag)\n         )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "VarcharArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e642ddc3211f36b145a986a1e5315d6e4826fef5211fde8f08006fcb8b22674a"
+}
