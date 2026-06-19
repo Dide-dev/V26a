@@ -10,7 +10,7 @@
     import { getTreeWithCards, type TreeWithCards, duplicateTree } from '$lib/api-wrapper/trees';
     import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import editIcon from '$lib/assets/icons/edit.svg?raw';

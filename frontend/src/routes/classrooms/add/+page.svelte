@@ -14,7 +14,7 @@
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import { redirectLogin } from '$lib/api-wrapper';
-    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/users';
+    import { getUserInfo, type UserInfo } from '$lib/api-wrapper/sessions';
     import { m } from '$lib/paraglide/messages.js';
     import { page } from '$app/state';
 
@@ -49,14 +49,14 @@
         event.preventDefault();
         let classroomGenData: ClassroomGeneratedData = await addClassroom(classroomData);
 
-        await goto(appLink(`/classrooms/teacher-dashboard?id=${classroomGenData.id}`));
+        await goto(appLink(`/classrooms/dashboard/teacher?id=${classroomGenData.id}`));
     }
 </script>
 
 <div>
     <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
         <div>
-            <h1 class="page__title">{m.classroomAdd()}</h1>
+            <h1 class="page__title">{m.createClassroom()}</h1>
         </div>
         <div>
             <label for="name">
@@ -92,6 +92,6 @@
                 maxlength={maxInputLengths.description}
             ></textarea>
         </div>
-        <button type="submit" data-testid="add-button">{m.classroomAdd()}</button>
+        <button type="submit" data-testid="add-button">{m.createClassroom()}</button>
     </form>
 </div>

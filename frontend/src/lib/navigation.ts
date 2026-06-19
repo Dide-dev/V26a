@@ -54,8 +54,9 @@ export type NavLinkProps = {
 
 /**
  * Property defining the width of a nav-bar item. Possible values:
+ * - `'lg'` - Large width.
  * - `'md'` - Medium width.
  * - `'th'` - Thin width.
  * - `'xt'` - Extra thin width.
  */
-export type NavWidthProp = 'md' | 'th' | 'xt';
+export type NavWidthProp = 'lg' | 'md' | 'th' | 'xt';

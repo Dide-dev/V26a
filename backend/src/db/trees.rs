@@ -1218,7 +1218,7 @@ pub async fn get_queried_count(
     if !filters.tag.is_empty() {
         tree_list_query_tag_cte(&mut query, &filters.tag);
     }
-    query.push("SELECT COUNT(*)");
+    query.push("SELECT COUNT(DISTINCT (trees.id))");
     query.push(TREE_LIST_QUERY_JOINS);
 
     apply_tree_filters(&mut query, filters, claims)?;
@@ -1259,7 +1259,8 @@ pub async fn get_queried_list(
     }
     query.push(
         r#"
-    SELECT trees.*,
+    SELECT DISTINCT ON (trees.created_at, trees.id)
+        trees.*,
         users.name                                                     AS owner_name,
         subjects.name                                                  AS "subject_name?",
         languages.name                                                 AS language_name,

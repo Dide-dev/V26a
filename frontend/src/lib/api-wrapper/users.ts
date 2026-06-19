@@ -109,15 +109,6 @@ export type PublicUserData = {
     email: Option<string>;
 };
 
-/** The data in the cookie */
-export type UserInfo = {
-    name: Username;
-    nickname: string;
-    /** This corresponds to userid of the current login. */
-    sub: UserId;
-    accountType: AccountType;
-};
-
 /** The data needed to change a user's password */
 export type ChangePasswordData = {
     oldPassword: string;
@@ -156,21 +147,6 @@ export function updateUser(
     newData: UserData
 ): Promise<UserSuccess | UserEmailInvalid | UsernameInvalid> {
     return apiCallPutUser(`/me`, newData);
-}
-
-/**
- * Read the userinfo from the cookie.
- * If logged in return id & type and if not logged in return null.
- */
-export function getUserInfo(): UserInfo | null {
-    if (typeof document === 'undefined') return null;
-    const cookie = document.cookie.split('; ').find((row) => row.startsWith('user_info='));
-    if (!cookie) return null;
-    try {
-        return JSON.parse(decodeURIComponent(cookie.split('=')[1]));
-    } catch {
-        return null;
-    }
 }
 
 /** Change a user's password */

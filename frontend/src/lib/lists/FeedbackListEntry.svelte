@@ -6,10 +6,10 @@
 
 <!--
     @component
-    Render the data of a tree for in a list.
+    Render the data of a feedback entry for in a list.
 
     ## Params
-    - `tree: TreeMetadata` - The data of the tree to display.
+    - `feedback: FeedbackGetData` - The data of the feedback entry to display.
     - `expanded: boolean` - Bindable flag whether the entry displays all its contents.
 -->
 
