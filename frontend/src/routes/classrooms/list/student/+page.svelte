@@ -71,14 +71,14 @@
 </script>
 
 <div class="flex w-7/8 max-w-xl flex-col">
-    <h1 class="page__title">{m.classroomListStudent()}</h1>
+    <h1 class="page__title">{m.joinedClassrooms()}</h1>
     {#if classroomListResponse?.classrooms === null}
         <p>{m.loading()}</p>
     {:else if classroomListResponse?.classrooms.length === 0}
         <p class="mt-4 font-semibold italic">{m.noClassroomsFound()}</p>
         <div class="text-center">
             <button class="m-2 rounded-sm bg-emerald-500 p-1"
-                ><a href={appLink('/classrooms/join')}>{m.classroomJoin()}</a></button
+                ><a href={appLink('/classrooms/join')}>{m.joinClassroom()}</a></button
             >
         </div>
     {:else}
@@ -95,7 +95,7 @@
                         <ClassroomListEntry
                             {classroom}
                             isTeacher={false}
-                            bind:userInfo={allClassroomUserInfos}
+                            bind:allClassroomUserInfos
                             bind:expanded={entriesExpanded[i]}
                         />
                     {/each}

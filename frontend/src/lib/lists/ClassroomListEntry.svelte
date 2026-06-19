@@ -11,6 +11,7 @@
     ## Params
     - `classroom: ClassroomMetaData` - The data of the tree to display.
     - `isTeacher: boolean` - Whether the entry should link to a teacher dashboard.
+    - `allClassroomUserInfos`: AllClassroomUserInfos | null` - Necessary to display the assigned user number for the student list.
     - `expanded: boolean` - Bindable flag whether the entry displays all its contents.
 -->
 
@@ -26,20 +27,22 @@
     let {
         classroom,
         isTeacher,
-        userInfo = $bindable(),
+        allClassroomUserInfos = $bindable(),
         expanded = $bindable()
     }: {
         classroom: ClassroomMetaData;
         isTeacher: boolean;
-        userInfo: AllClassroomUserInfos | null;
+        allClassroomUserInfos: AllClassroomUserInfos | null;
         expanded: boolean;
     } = $props();
 
     function getNumber(classroomId: ClassroomId): number | string {
         // Will never happen unless user manually deletes his cookie
-        if (userInfo === null) return '';
+        if (allClassroomUserInfos === null) return '';
 
-        let classroomUserInfo = userInfo.claims.find((classroom) => classroom.id === classroomId);
+        let classroomUserInfo = allClassroomUserInfos.claims.find(
+            (classroom) => classroom.id === classroomId
+        );
         // Will never happen unless user manually changes his cookie
         if (classroomUserInfo === undefined) return '';
 

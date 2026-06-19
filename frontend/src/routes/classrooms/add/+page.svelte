@@ -56,7 +56,7 @@
 <div>
     <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
         <div>
-            <h1 class="page__title">{m.classroomAdd()}</h1>
+            <h1 class="page__title">{m.createClassroom()}</h1>
         </div>
         <div>
             <label for="name">
@@ -92,6 +92,6 @@
                 maxlength={maxInputLengths.description}
             ></textarea>
         </div>
-        <button type="submit" data-testid="add-button">{m.classroomAdd()}</button>
+        <button type="submit" data-testid="add-button">{m.createClassroom()}</button>
     </form>
 </div>

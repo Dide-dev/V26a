@@ -61,7 +61,7 @@
 <div>
     <form class={[formCompleted && 'completed']} onsubmit={handleSubmit}>
         <div>
-            <h1 class="page__title">{m.classroomJoin()}</h1>
+            <h1 class="page__title">{m.joinClassroom()}</h1>
         </div>
         <div>
             <label for="join-code">
@@ -97,7 +97,7 @@
                 required
             />
         </div>
-        <button type="submit" data-testid="join-button">{m.classroomJoin()}</button>
+        <button type="submit" data-testid="join-button">{m.joinClassroom()}</button>
         {#if joinCodeIncorrect}
             <p class="text__error">{m.classroomJoinCodeIncorrect()}</p>
         {:else if missingUser}

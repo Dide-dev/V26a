@@ -85,25 +85,25 @@
         let classroomsNav = new NavLink({
             defaultHref: '/classrooms/join',
             text: m.classrooms(),
-            props: { width: 'bg', localeSwitch: false }
+            props: { width: 'lg', localeSwitch: false }
         });
         if (userInfo !== null)
             classroomsNav.children.push({
                 href: '/classrooms/list/teacher',
-                text: m.classroomListTeacher()
+                text: m.myClassrooms()
             });
         classroomsNav.children.push({
             href: '/classrooms/list/student',
-            text: m.classroomListStudent()
+            text: m.joinedClassrooms()
         });
         if (userInfo !== null)
             classroomsNav.children.push({
                 href: '/classrooms/add',
-                text: m.classroomAdd()
+                text: m.createClassroom()
             });
         classroomsNav.children.push({
             href: '/classrooms/join',
-            text: m.classroomJoin()
+            text: m.joinClassroom()
         });
         result.push(classroomsNav);
 
