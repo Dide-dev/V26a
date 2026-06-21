@@ -7,14 +7,17 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::api_v1::users::{ChangePasswordResponse, UserResponse, VerificationCode};
+use crate::api_v1::users::{
+    ChangePasswordResponse, PasswordResetResponse, UserResponse, VerificationCode,
+};
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
 use crate::db_structs::users::{
-    PasswordChangeRequestBody, RegisterData, UserData, UserGetData, UserLanguage,
+    PasswordChangeRequestBody, PasswordResetBody, RegisterData, RequestPasswordResetBody, UserData,
+    UserGetData, UserLanguage,
 };
 use crate::tests::api_v1::{TestState, login, register, setup, setup_config, try_verify};
-use sqlx::PgPool;
+use sqlx::{PgPool, query_scalar};
 
 #[sqlx::test]
 async fn test_get_and_update_own_user_data(db: PgPool) {
@@ -183,7 +186,7 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
     login(&server, register_data.email.clone()).await;
 
     // Check that two sessions exist before password change.
-    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+    let sessions = query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
         .fetch_one(&db)
         .await
         .unwrap();
@@ -200,7 +203,7 @@ async fn test_password_change_invalidates_other_sessions(db: PgPool) {
         .assert_status_ok();
 
     // Checks that only one session is left. That means other sessions are invalidated.
-    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+    let sessions = query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
         .fetch_one(&db)
         .await
         .unwrap();
@@ -241,7 +244,7 @@ async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
     login(&server, register_data.email.clone()).await;
 
     // Checks two sessions exist before deletion.
-    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+    let sessions = query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
         .fetch_one(&db)
         .await
         .unwrap();
@@ -253,7 +256,7 @@ async fn test_delete_own_user_invalidates_all_sessions(db: PgPool) {
         .assert_status_ok();
 
     // Check that all sessions are invalidated. The amount of sessions should be equal to 0 then.
-    let sessions = sqlx::query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
+    let sessions = query_scalar!("SELECT COUNT(*) FROM sessions WHERE user_id = $1", user_id)
         .fetch_one(&db)
         .await
         .unwrap();
@@ -368,4 +371,143 @@ async fn test_update_pending_user(db: PgPool) {
 
     let response = response.json::<UserResponse>();
     assert_eq!(response, UserResponse::UsernameAlreadyUsed);
+}
+
+#[sqlx::test]
+async fn test_password_reset(db: PgPool) {
+    let test_state = setup(db);
+
+    let register_data = RegisterData::test_values();
+    let user_id = register(&test_state, &register_data).await;
+    let response = login(&test_state.server, register_data.email.clone())
+        .await
+        .assert_status_ok()
+        .json::<LoginResponse>();
+    assert!(response.succeeded);
+
+    let response = test_state
+        .server
+        .post("/users/reset-password-requests")
+        .json(&RequestPasswordResetBody {
+            email: register_data.email.clone(),
+        })
+        .await;
+    response.assert_status_ok();
+
+    let reset_code = {
+        let reset_password_requests = test_state.state.reset_password_requests.lock().await;
+        reset_password_requests
+            .iter()
+            .find(|(_, r)| r.user_id == user_id)
+            .unwrap()
+            .0
+            .clone()
+    };
+
+    let server = test_state.server;
+    let new_password = "NewP4sswordThatIWon'tForget!".to_owned();
+    let response = server
+        .put("/users/reset-password-requests")
+        .json(&PasswordResetBody {
+            code: reset_code,
+            new_password: new_password.clone(),
+        })
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<PasswordResetResponse>();
+    assert_eq!(response, PasswordResetResponse::Success);
+
+    // Log in with old password
+    let response = login(&server, register_data.email.clone())
+        .await
+        .json::<LoginResponse>();
+    assert!(!response.succeeded);
+
+    let response = server
+        .post("/auth")
+        .json(&LoginRequestBody {
+            email: register_data.email,
+            password: new_password,
+        })
+        .await;
+    response.assert_status_ok();
+}
+
+#[sqlx::test]
+async fn test_invalid_password_reset_code(db: PgPool) {
+    let test_state = setup(db);
+
+    let register_data = RegisterData::test_values();
+    register(&test_state, &register_data).await;
+
+    let response = test_state
+        .server
+        .post("/users/reset-password-requests")
+        .json(&RequestPasswordResetBody {
+            email: register_data.email,
+        })
+        .await;
+    response.assert_status_ok();
+
+    let before_reset_count = { test_state.state.reset_password_requests.lock().await.len() };
+
+    let response = test_state
+        .server
+        .put("/users/reset-password-requests")
+        .json(&PasswordResetBody {
+            code: "1".to_string(),
+            new_password: register_data.password,
+        })
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<PasswordResetResponse>();
+    assert_eq!(response, PasswordResetResponse::InvalidCode);
+
+    let after_pending_count = { test_state.state.reset_password_requests.lock().await.len() };
+    assert_eq!(before_reset_count, after_pending_count);
+}
+
+#[sqlx::test]
+async fn test_password_reset_unpruned(db: PgPool) {
+    let mut config = Config::load();
+    // Set reset password timer to -1 seconds so a pending reset is considered expired immediately.
+    // The task is not running so it will not be pruned from the state, but it should still be
+    // considered as expired.
+    config.reset_password_timer = -1;
+
+    let test_state = setup_config(db, &mut config, false);
+
+    let register_data = RegisterData::test_values();
+    let user_id = register(&test_state, &register_data).await;
+
+    let response = test_state
+        .server
+        .post("/users/reset-password-requests")
+        .json(&RequestPasswordResetBody {
+            email: register_data.email,
+        })
+        .await;
+    response.assert_status_ok();
+
+    let reset_code = {
+        let reset_password_requests = test_state.state.reset_password_requests.lock().await;
+        reset_password_requests
+            .iter()
+            .find(|(_, r)| r.user_id == user_id)
+            .unwrap()
+            .0
+            .clone()
+    };
+
+    let response = test_state
+        .server
+        .put("/users/reset-password-requests")
+        .json(&PasswordResetBody {
+            code: reset_code,
+            new_password: register_data.password,
+        })
+        .await;
+    response.assert_status_ok();
+    let response = response.json::<PasswordResetResponse>();
+    assert_eq!(response, PasswordResetResponse::InvalidCode);
 }

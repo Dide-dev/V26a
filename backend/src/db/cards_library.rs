@@ -3,7 +3,6 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-
 use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
@@ -25,11 +24,27 @@ use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
 pub async fn add_tags(
     db: &mut PgConnection,
     library_card_id: i32,
-    tags: &[String],
+    tags: Vec<String>,
 ) -> Result<(), ApiError> {
+    let (mut lower_tags, mut unique_tags) = (vec![], vec![]);
+    for tag in tags {
+        let tag_lower = tag.to_lowercase();
+        if !lower_tags.contains(&tag_lower) {
+            lower_tags.push(tag_lower);
+            unique_tags.push(tag);
+        }
+    }
+
     query!(
-        "INSERT INTO tags (name) SELECT UNNEST($1::VARCHAR(32)[]) ON CONFLICT DO NOTHING",
-        tags
+        "INSERT INTO tags (name)
+         SELECT tag
+         FROM UNNEST($1::VARCHAR(32)[]) AS t(tag)
+         WHERE NOT EXISTS (
+              SELECT 1
+              FROM tags
+              WHERE LOWER(tags.name) = LOWER(t.tag)
+         )",
+        &unique_tags
     )
     .execute(&mut *db)
     .await?;
@@ -37,14 +52,14 @@ pub async fn add_tags(
     // This needs to be queried separately because the previous query doesn't insert all of the tags
     // if there are duplicates.
     let tag_ids = query!(
-        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON name = tag_name",
-        tags
+        "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
+        &lower_tags
     )
     .fetch_all(&mut *db)
     .await?;
 
     query!(
-        "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id)",
+        "INSERT INTO library_cards_tags (library_card_id, tag_id) SELECT $1 AS library_card_id, tag_id FROM UNNEST($2::INTEGER[]) AS DATA(tag_id) ON CONFLICT DO NOTHING",
         library_card_id,
         &tag_ids.iter().map(|r| r.id).collect::<Vec<_>>()
     )
@@ -76,7 +91,7 @@ pub async fn cards_library_add(
     db: &mut PgConnection,
     owner_id: i32,
     title: &String,
-    tags: &[String],
+    tags: Vec<String>,
     card_text: &CardData,
 ) -> Result<i32, ApiError> {
     let library_card_id = query!(
@@ -92,13 +107,6 @@ pub async fn cards_library_add(
     .await?
     .id;
 
-    // Delete the old tags and add the new ones.
-    query!(
-        "DELETE FROM library_cards_tags WHERE library_card_id = $1",
-        library_card_id
-    )
-    .execute(&mut *db)
-    .await?;
     add_tags(db, library_card_id, tags).await?;
 
     Ok(library_card_id)
@@ -186,14 +194,18 @@ const CARD_LIST_QUERY_JOINS: &str = r"
     LEFT JOIN users ON users.id = library_cards.owner_id
 ";
 
-fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a Vec<String>) {
+fn list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a [String]) {
+    let tags = tags
+        .iter()
+        .map(|tag| tag.to_lowercase())
+        .collect::<Vec<_>>();
     query
         .push(
             r"
             WITH requested_tags AS (
                 SELECT id
                 FROM tags
-                WHERE name = ANY(",
+                WHERE LOWER(name) = ANY(",
         )
         .push_bind(tags)
         .push("))");
@@ -266,18 +278,18 @@ mod tests {
 
     #[sqlx::test]
     async fn test_cards_library_add(db: PgPool) {
-        let (owner_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let title = "title".to_owned();
-        let tags = vec!["tag1".to_owned(), "tag2".to_owned()];
+        let tags = vec!["tag1".to_owned(), "TAG1".to_owned(), "tag2".to_owned()];
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            owner_id,
+            claims.sub,
             &title,
-            &tags,
+            tags.clone(),
             &card_text,
         )
         .await
@@ -291,7 +303,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(found_card_data.owner_id, owner_id);
+        assert_eq!(found_card_data.owner_id, claims.sub);
         assert_eq!(found_card_data.title, title);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
@@ -306,7 +318,7 @@ mod tests {
                 .iter()
                 .map(|record| record.name.clone())
                 .collect::<Vec<_>>(),
-            tags
+            vec!["tag1".to_owned(), "tag2".to_owned()]
         );
     }
 
@@ -350,6 +362,27 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn test_tags_filter_case_insensitive() {
+        let mut query1 = QueryBuilder::<Postgres>::new("SELECT * FROM cards");
+        let mut query2 = QueryBuilder::<Postgres>::new("SELECT * FROM cards");
+
+        let lower_case_tags = CardFilters {
+            tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+            ..Default::default()
+        };
+
+        let upper_case_tags = CardFilters {
+            tags: vec!["TAG1".to_owned(), "TAG2".to_owned()],
+            ..Default::default()
+        };
+
+        list_query_tag_cte(&mut query1, &lower_case_tags.tags);
+        list_query_tag_cte(&mut query2, &upper_case_tags.tags);
+
+        assert_eq!(query1.sql(), query2.sql());
+    }
+
+    #[sqlx::test]
     async fn test_get_queried_cards_count(db: PgPool) {
         let empty_filters = CardFilters {
             ..Default::default()
@@ -361,16 +394,16 @@ mod tests {
         );
 
         // Add card to library
-        let (owner_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let _ = cards_library_add(
             get_connection_unwrap!(db),
-            owner_id,
+            claims.sub,
             &String::new(),
-            &[],
+            vec![],
             &card_text,
         )
         .await
@@ -394,10 +427,10 @@ mod tests {
         assert_eq!(empty_list, vec![]);
 
         // Add card to library
-        let (owner_id, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let owner_name = get_user_all_data(&db, owner_id)
+        let owner_name = get_user_all_data(&db, claims.sub)
             .await
             .unwrap()
             .updateable_data
@@ -409,9 +442,9 @@ mod tests {
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            owner_id,
+            claims.sub,
             &title,
-            &tags,
+            tags.clone(),
             &card_text,
         )
         .await

@@ -16,6 +16,7 @@
         password: ''
     });
     let loginFailed: boolean = $state(false);
+    let userDisabled: boolean = $state(false);
 
     let formCompleted: boolean = $derived(loginData.email !== '' && loginData.password !== '');
 
@@ -31,11 +32,17 @@
         event.preventDefault();
         let response = await login(loginData);
 
+        if (response.disabled) {
+            userDisabled = true;
+            return;
+        }
+
         if (!response.succeeded) {
             loginFailed = true;
             return;
         }
 
+        userDisabled = false;
         loginFailed = false;
 
         // Redirect to given url if valid
@@ -65,7 +72,7 @@
             </label>
             <input
                 id="email"
-                class={[loginFailed && 'error', 'input__text']}
+                class={[(loginFailed || userDisabled) && 'error', 'input__text']}
                 bind:value={loginData.email}
                 name="email"
                 type="email"
@@ -82,7 +89,7 @@
             </label>
             <input
                 id="password"
-                class={[loginFailed && 'error', 'input__text']}
+                class={[(loginFailed || userDisabled) && 'error', 'input__text']}
                 bind:value={loginData.password}
                 name="password"
                 type="password"
@@ -92,11 +99,17 @@
                 autocomplete="current-password"
                 required
             />
+            {#if userDisabled}
+                <p class="text__error">{m.disabledCredentials()}</p>
+            {/if}
+            {#if loginFailed}
+                <p class="text__error">{m.invalidCredentials()}</p>
+            {/if}
         </div>
-        <button type="submit">{m.login()}</button>
-        {#if loginFailed}
-            <p class="text__error">{m.invalidCredentials()}</p>
-        {/if}
+        <button class="mt-2" type="submit">{m.login()}</button>
         <a class="text__link mt-2 italic" href={appLink('/registration')}>{m.noAccount()}</a>
+        <a class="text__link italic" href={appLink('/forgot-password')}>
+            {m.forgotPassword()}
+        </a>
     </form>
 </div>

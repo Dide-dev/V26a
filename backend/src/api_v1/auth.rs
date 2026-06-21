@@ -4,15 +4,15 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::ArcState;
-use crate::api_v1::{extract_token, rate_limit_layer};
+use crate::api_v1::create_token;
 use crate::db::auth::get_user_credentials_by_email;
-use crate::db::session::{create_session, delete_session};
 use crate::db::users::{get_user, user_update_last_login};
 use crate::db_structs::Validated;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::session::{Claims, InfoCookieData};
+use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::errors::ApiError;
+use crate::ratelimits::LOGIN_RATELIMIT;
+use crate::{ArcState, get_connection};
 use axum::extract::State;
 use axum::routing::{delete, post};
 use axum::{Extension, Json, Router};
@@ -25,7 +25,7 @@ use utoipa::ToSchema;
 /// Creates an `Axum` [`Router`] for the auth category, combining its endpoints.
 pub fn auth() -> Router<ArcState> {
     Router::new()
-        .route("/", post(login).layer(rate_limit_layer(15, 30)))
+        .route("/", post(login).layer(LOGIN_RATELIMIT.to_layer()))
         .route("/", delete(logout))
 }
 
@@ -35,6 +35,8 @@ pub fn auth() -> Router<ArcState> {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct LoginResponse {
     pub succeeded: bool,
+    #[serde(default)]
+    pub disabled: bool,
 }
 
 #[utoipa::path(
@@ -51,14 +53,15 @@ pub struct LoginResponse {
 /// Login to an account if the given credentials are valid. It takes a [`LoginRequestBody`], and on success sets a session cookie.
 ///
 /// # Arguments
-/// `login_request` - The credentials provided to login, as [`LoginRequestBody`].
+/// `login_request` - The credentials provided to log in, as [`LoginRequestBody`].
 ///
 /// # Returns
-/// A [`LoginResponse`] which flags whether the combination of email and password is correct.
+/// A [`LoginResponse`] which flags whether the combination of email and password is correct, and if the user is enabled.
 /// If correct, it sets a `session` cookie with an opaque token and a non-HTTP `user_info` cookie.
 ///
 /// # Errors
-/// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException), [`TokenCreationException`](ApiError::TokenCreationException)
+/// May return a [`HashException`](ApiError::HashException), [`DatabaseException`](ApiError::DatabaseException),
+/// [`TokenCreationException`](ApiError::TokenCreationException), [`InvalidDataFound`](ApiError::InvalidDataFound),
 /// or [`SerdeException`](ApiError::SerdeException) instead.
 async fn login(
     jar: CookieJar,
@@ -69,33 +72,62 @@ async fn login(
     login_request.validate_inputs()?;
 
     let Some(credentials) = get_user_credentials_by_email(&db, login_request.email).await? else {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: false,
+            }),
+        ));
     };
+
+    if !credentials.enabled {
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: true,
+            }),
+        ));
+    }
 
     let password_valid = bcrypt::verify(login_request.password, credentials.password_hash.as_str())
         .map_err(|_| ApiError::HashException)?;
 
     if !password_valid {
-        return Ok((jar, Json(LoginResponse { succeeded: false })));
+        return Ok((
+            jar,
+            Json(LoginResponse {
+                succeeded: false,
+                disabled: false,
+            }),
+        ));
     }
 
     let user_data = get_user(&db, credentials.user_id).await?;
+
+    let session_duration = state.config.session_duration;
+    let (token, expires_at) = create_token(session_duration);
+    Claims::create_session(
+        get_connection!(db),
+        &token,
+        expires_at,
+        &credentials.user_id,
+    )
+    .await?;
+
     let user_info = InfoCookieData {
         name: user_data.data.name,
         nickname: user_data.data.nickname,
         sub: credentials.user_id,
         account_type: credentials.account_type,
     };
-
-    let session_duration = state.config.session_duration;
-    let token = create_session(&db, credentials.user_id, session_duration).await?;
-
     let user_info_serialised = serde_json::to_string(&user_info)?;
 
     // The properties of the cookies are important to get right.
     // `Secure`: This prevents the cookie from being sent in plaintext over HTTP, it will only be sent in requests over HTTPS.
     //           There is no reason to not set this property, now that every website is using HTTPS.
-    // `HttpOnly`: This prevents javascript from accessing the cookie.
+    // `HttpOnly`: This prevents JavaScript from accessing the cookie.
     // `Path`: The cookie is only sent along requests when the request path starts with this string.
     //         The cookie is also only available to the JavaScript when the webpage url starts with this string.
     // `MaxAge`: After this much time has passed, the browser will automatically delete the cookie.
@@ -120,7 +152,10 @@ async fn login(
 
     Ok((
         jar.add(cookie).add(user_info_cookie),
-        Json(LoginResponse { succeeded: true }),
+        Json(LoginResponse {
+            succeeded: true,
+            disabled: false,
+        }),
     ))
 }
 
@@ -143,15 +178,15 @@ async fn login(
 /// `jar` - The jar with the cookies (`user_info` & session).
 ///
 /// # Returns
-/// The cookie jar with its user sessions removed.
+/// The cookie jar with its user claims removed.
 ///
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
 async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
-    let token = extract_token(&jar)?;
+    let token = Claims::extract_token(&jar)?;
 
     // Invalidate the session.
-    delete_session(&db, &token).await?;
+    Claims::delete_session(&db, &token).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar

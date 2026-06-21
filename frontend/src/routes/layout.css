@@ -44,6 +44,18 @@
         margin-top: var(--spacing-text-small);
     }
 
+    .page__subheading {
+        font-size: var(--text-xl);
+        font-weight: var(--font-weight-bold);
+        margin-top: var(--spacing-text-minor);
+    }
+
+    .page__subsubheading {
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
+        margin-top: var(--spacing-text-minor);
+    }
+
     .text__link {
         color: var(--color-blue-600);
     }
@@ -215,8 +227,8 @@
             gap: var(--spacing);
         }
 
-        button[type='submit'],
-        button[type='reset'] {
+        button[type='submit']:not(.button__icon),
+        button[type='reset']:not(.button__icon) {
             padding: var(--spacing-padding-minor);
             border-radius: var(--radius-md);
             border-width: 2px;
@@ -227,6 +239,11 @@
             background-color: var(--color-neutral-400);
             border-color: currentColor;
             transition: all 200ms ease-in-out;
+
+            &.danger {
+                border-color: var(--color-red-700);
+                background-color: var(--color-red-100);
+            }
         }
 
         &.completed button[type='submit'],
@@ -236,9 +253,46 @@
             border-color: var(--color-neutral-600);
             cursor: pointer;
 
+            &.danger {
+                border-color: var(--color-red-700);
+                background-color: var(--color-red-100);
+            }
+
             &:hover {
                 color: var(--color-white);
                 background-color: var(--color-neutral-600);
+
+                &.danger {
+                    background-color: var(--color-red-700);
+                }
+            }
+        }
+    }
+
+    /* List formatting */
+    .list__container {
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        margin-bottom: var(--spacing-padding-normal);
+
+        border-bottom: 1px solid var(--color-neutral-200);
+
+        > .list__entry {
+            display: flex;
+            flex-direction: column;
+
+            width: 100%;
+            gap: var(--spacing-padding-minor);
+            padding: var(--spacing-padding-small);
+
+            border-top: 1px solid var(--color-neutral-200);
+            background-color: var(--color-neutral-50);
+            transition: background-color 200ms ease-in-out;
+
+            &:hover {
+                background-color: var(--color-neutral-100);
             }
         }
     }
@@ -307,15 +361,30 @@
         font-size: 1.125rem;
     }
 
-    p a {
-        color: var(--color-blue-600);
+    p {
+        a {
+            color: var(--color-blue-600);
 
-        &:hover {
-            text-decoration: underline;
+            &:hover {
+                text-decoration: underline;
+            }
+
+            &:active {
+                color: var(--color-blue-800);
+            }
         }
 
-        &:active {
-            color: var(--color-blue-800);
+        ul li,
+        ol li {
+            margin-left: 1.5rem;
+        }
+
+        ul > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: disc;
+        }
+
+        ol > li:not(:has(> ul:first-child, > ol:first-child)) {
+            list-style-type: decimal;
         }
     }
 
@@ -335,23 +404,11 @@
             position: absolute;
             inset-inline-start: 2px;
         }
+
         p {
             /*margin-left: 1.5rem;*/
             color: #444;
         }
-    }
-
-    ul li,
-    ol li {
-        margin-left: 1.5rem;
-    }
-
-    ul > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: disc;
-    }
-
-    ol > li:not(:has(> ul:first-child, > ol:first-child)) {
-        list-style-type: decimal;
     }
 
     hr {

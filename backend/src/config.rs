@@ -8,6 +8,7 @@
 //! For more details, see the '.env.example' file in the root of this repository.
 
 use crate::db_structs::mail::{Mailer, SmtpMailer};
+use crate::ratelimits::RatelimitOptions;
 use bcrypt::DEFAULT_COST;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env;
@@ -31,6 +32,8 @@ pub struct Config {
     pub session_duration: i64,
     /// This duration is in _seconds_.
     pub verification_timer: i64,
+    /// This duration is in _seconds_.
+    pub reset_password_timer: i64,
 
     /// Upload images directory
     pub upload_dir: String,
@@ -38,9 +41,7 @@ pub struct Config {
 
     pub mailer: Arc<dyn Mailer>,
 
-    /// Ratelimiter config (minute)
-    pub rate_limit_per_minute: u64,
-    pub rate_limit_burst_size: u32,
+    pub global_ratelimit: RatelimitOptions,
 }
 
 impl Config {
@@ -69,6 +70,7 @@ impl Config {
             s.parse()
                 .expect("Failed to parse environment variable BCRYPT_COST")
         });
+
         let session_duration = env::var("SESSION_EXPIRATION_SECONDS")
             .expect("Environment variable SESSION_EXPIRATION_SECONDS must be set")
             .parse()
@@ -77,16 +79,10 @@ impl Config {
             .unwrap_or("900".to_owned())
             .parse()
             .expect("Failed to parse environment variable VERIFICATION_TIMER_SECONDS");
-
-        let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
-            .unwrap_or("30".to_string())
-            .parse::<u64>()
-            .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
-
-        let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
-            .unwrap_or("40".to_string())
-            .parse::<u32>()
-            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
+        let reset_password_timer = env::var("RESET_PASSWORD_TIMER_SECONDS")
+            .unwrap_or("900".to_owned())
+            .parse()
+            .expect("Failed to parse environment variable RESET_PASSWORD_TIMER_SECONDS");
 
         let upload_dir = env::var("UPLOAD_DIR").unwrap_or("./uploads".to_string());
         let max_upload_size = env::var("MAX_UPLOAD_SIZE_MB")
@@ -95,12 +91,27 @@ impl Config {
             .expect("Failed to parse environment variable MAX_UPLOAD_SIZE_MB")
             * 1_048_576; // Mebibytes to bytes
 
+        let rate_limit_per_minute = env::var("RATE_LIMIT_PER_MINUTE")
+            .unwrap_or("500".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse RATE_LIMIT_PER_MINUTE");
+
+        let rate_limit_burst_size = env::var("RATE_LIMIT_BURST_SIZE")
+            .unwrap_or("1000".to_string())
+            .parse::<u32>()
+            .expect("Failed to parse RATE_LIMIT_BURST_SIZE");
+
         let smtp_server =
             env::var("SMTP_SERVER").expect("Environment variable SMTP_SERVER must be set");
         // builder_dangerous disables TLS and authentication, this is fine because we are only connecting to a localhost relay server.
         let transport =
             AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(smtp_server).build();
         let mailer = Arc::new(SmtpMailer { transport });
+
+        let global_ratelimit = RatelimitOptions {
+            refresh_rate: rate_limit_per_minute,
+            burst_size: rate_limit_burst_size,
+        };
 
         Self {
             listening_ip,
@@ -112,11 +123,11 @@ impl Config {
             bcrypt_cost,
             session_duration,
             verification_timer,
+            reset_password_timer,
             upload_dir,
             max_upload_size,
             mailer,
-            rate_limit_per_minute,
-            rate_limit_burst_size,
+            global_ratelimit,
         }
     }
 }

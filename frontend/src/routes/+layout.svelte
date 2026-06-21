@@ -6,17 +6,17 @@
 
 <script lang="ts">
     import './layout.css';
-    import favicon from '$lib/assets/favicon.svg';
+    import favicon from '$lib/assets/favicon.png';
     import { m } from '$lib/paraglide/messages.js';
     import Navigation from './Navigation.svelte';
     import { NavLink } from '$lib/navigation';
     import Footer from './Footer.svelte';
     import { FooterLink } from '$lib/footer';
-    import { getUserInfo } from '$lib/api-wrapper/users';
     import { afterNavigate } from '$app/navigation';
     import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime.js';
     import { page } from '$app/state';
     import { Tween } from 'svelte/motion';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
@@ -50,21 +50,22 @@
             })
         ];
 
+        // Trees
         if (userInfo === null) {
             result.push(
                 new NavLink({
-                    defaultHref: '/all-trees',
+                    defaultHref: '/trees',
                     text: m.allTrees()
                 })
             );
         } else {
             result.push(
                 new NavLink({
-                    defaultHref: '/all-trees',
+                    defaultHref: '/trees',
                     text: m.trees(),
                     children: [
                         {
-                            href: '/all-trees',
+                            href: '/trees',
                             text: m.allTrees()
                         },
                         {
@@ -76,37 +77,58 @@
                             text: m.createTree()
                         }
                     ]
-                }),
-                // Can be changed when additional front-end classroom functionalities are added.
+                })
+            );
+        }
+
+        // Classrooms
+        let classroomsNav = new NavLink({
+            defaultHref: '/classrooms/join',
+            text: m.classrooms(),
+            props: { width: 'lg', localeSwitch: false }
+        });
+        if (userInfo !== null)
+            classroomsNav.children.push({
+                href: '/classrooms/list/teacher',
+                text: m.myClassrooms()
+            });
+        classroomsNav.children.push({
+            href: '/classrooms/list/student',
+            text: m.joinedClassrooms()
+        });
+        if (userInfo !== null)
+            classroomsNav.children.push({
+                href: '/classrooms/add',
+                text: m.createClassroom()
+            });
+        classroomsNav.children.push({
+            href: '/classrooms/join',
+            text: m.joinClassroom()
+        });
+        result.push(classroomsNav);
+
+        // Admin
+        if (userInfo !== null && userInfo.accountType == 'admin') {
+            result.push(
                 new NavLink({
-                    defaultHref: '/classrooms/add',
-                    text: m.classroom(),
+                    defaultHref: '/user-list',
+                    text: m.admin(),
                     children: [
                         {
-                            href: '/classrooms/add',
-                            text: m.classroomAdd()
+                            href: '/user-list',
+                            text: m.userList()
+                        },
+                        {
+                            href: '/metadata-management',
+                            text: 'Metadata'
+                        },
+                        {
+                            href: '/admin-feedback',
+                            text: 'Feedback'
                         }
                     ]
                 })
             );
-            if (userInfo.accountType == 'admin') {
-                result.push(
-                    new NavLink({
-                        defaultHref: '/user-list',
-                        text: m.admin(),
-                        children: [
-                            {
-                                href: '/user-list',
-                                text: m.userList()
-                            },
-                            {
-                                href: '/admin-feedback',
-                                text: 'Feedback'
-                            }
-                        ]
-                    })
-                );
-            }
         }
 
         return result;
@@ -186,6 +208,10 @@
             text: m.privacy()
         }),
         new FooterLink({
+            href: '/conditions',
+            text: m.conditions()
+        }),
+        new FooterLink({
             href: '/colophon',
             text: m.colophon()
         }),
@@ -211,7 +237,7 @@
     let offset = $derived(offsets.reduce((acc, curr) => acc + curr.current, 0));
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head><link rel="icon" href={favicon} /><title>BOOM!</title></svelte:head>
 
 <Navigation {leftLinks} {rightLinks} bind:offsets />
 

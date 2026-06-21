@@ -114,10 +114,14 @@ export type TreeAddData = {
     treeStructure: TreeStructure;
 };
 
-export type Subject = {
-    id: number;
+export type SubjectData = {
     languageCode: string;
     name: string;
+};
+
+export type Subject = {
+    id: number;
+    data: SubjectData;
 };
 
 export type Language = {
@@ -149,12 +153,18 @@ export type TreeListResponse = {
 };
 
 export type FilterOptions = {
-    ownerId: Option<number>;
+    ownerName: Option<string>;
+    searchTerms: Option<string>;
     book: string[];
+    tag: string[];
+    languageCode: Option<string>;
+    subject: Option<string>;
     createdAfter: Option<Date>;
     createdBefore: Option<Date>;
     showOwnPrivate: Option<boolean>;
     editable: Option<boolean>;
+    /** Only for admins */
+    showPrivate: Option<boolean>;
 };
 
 /** Add a tree to the database. */
@@ -272,9 +282,29 @@ export function getAllLanguages(): Promise<Language[]> {
     return apiCallGetTree('/languages');
 }
 
+/** Add a new language. */
+export function addLanguage(language: Language): Promise<void> {
+    return apiCallPostTree('/languages', language);
+}
+
+/** Update an existing language. */
+export function updateLanguage(code: string, newName: string): Promise<void> {
+    return apiCallPutTree(`/languages/${code}`, newName);
+}
+
 /** Get the list of all subjects. */
 export function getAllSubjects(): Promise<Record<string, Subject[]>> {
     return apiCallGetTree('/subjects');
+}
+
+/** Add a new subject. */
+export function addSubject(subjectData: SubjectData): Promise<number> {
+    return apiCallPostTree('/subjects', subjectData);
+}
+
+/** Update an existing subject. */
+export function updateSubject(id: number, newData: SubjectData): Promise<void> {
+    return apiCallPutTree(`/subjects/${id}`, newData);
 }
 
 /** The minimum input lengths of the tree metadata fields. */

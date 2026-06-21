@@ -6,22 +6,25 @@
 
 #![cfg(test)]
 
-use crate::api_v1::classrooms::verify_classroom_permissions;
+use crate::api_v1::classrooms::teachers::verify_classroom_permissions;
 use crate::db_structs::classrooms::{
-    ClassroomData, ClassroomGeneratedData, ClassroomListResponse, LessonAddData,
+    ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse, ClassroomLoginResponse,
+    ClassroomUserLoginData, LessonAddData,
 };
-use crate::db_structs::session::Claims;
+use crate::db_structs::session::{AllClassroomClaims, Claims};
 use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
-use crate::tests::api_v1::{create_classroom, login, register, setup, setup_login};
+use crate::tests::api_v1::{
+    create_classroom, get_cookie_data, login, register, setup, setup_login,
+};
 use sqlx::PgPool;
 
 #[sqlx::test]
 async fn test_new_classroom(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -46,7 +49,7 @@ async fn test_new_classroom(db: PgPool) {
 async fn test_new_classroom_forbidden(db: PgPool) {
     let server = setup(db).server;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -56,10 +59,160 @@ async fn test_new_classroom_forbidden(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_get_classrooms(db: PgPool) {
+async fn test_classroom_login_same_classroom(db: PgPool) {
     let server = setup_login(db).await;
 
-    let classroom_add_data = ClassroomData {
+    let classroom_add_data = ClassroomAddData {
+        name: "Classroom".to_owned(),
+        description: String::new(),
+    };
+
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
+
+    response.assert_status_ok();
+    let classroom_created_data = response.json::<ClassroomGeneratedData>();
+
+    // ----- No cookie present, new user ----- //
+
+    let classroom_login_data = ClassroomUserLoginData {
+        join_code: classroom_created_data.join_code,
+        username: "Gelicenseerd radiozendamateur".to_owned(),
+    };
+
+    let response = server
+        .post("/classrooms/auth")
+        .json(&classroom_login_data)
+        .await;
+
+    response.assert_status_ok();
+
+    let classroom_login_response = response.json::<ClassroomLoginResponse>();
+    let classroom_login_response = match classroom_login_response {
+        ClassroomLoginResponse::Success(login_data) => login_data,
+        ClassroomLoginResponse::JoinCodeIncorrect { join_code } => {
+            panic!("Join code {join_code} incorrect")
+        }
+        ClassroomLoginResponse::MissingUser {
+            user_number: user_num,
+        } => {
+            panic!("User {user_num} does not exist in classroom")
+        }
+    };
+
+    let cookie = response.cookie("classroom_user_infos");
+    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+
+    assert_eq!(cookie_data.claims.len(), 1);
+
+    // ----- Cookie with same classroom id present, new user ----- //
+
+    let classroom_login_data2 = ClassroomUserLoginData {
+        join_code: classroom_login_data.join_code,
+        username: "Gelicenseerd radiozendamateur 2".to_owned(),
+    };
+
+    let response = server
+        .post("/classrooms/auth")
+        .json(&classroom_login_data2)
+        .await;
+
+    response.assert_status_ok();
+
+    let cookie = response.cookie("classroom_user_infos");
+    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+
+    assert_eq!(cookie_data.claims.len(), 1);
+
+    // ----- Cookie with same classroom id present, existing user ----- //
+
+    let classroom_login_data = ClassroomUserLoginData {
+        join_code: classroom_login_data2.join_code,
+        username: classroom_login_response.num.to_string(),
+    };
+
+    let response = server
+        .post("/classrooms/auth")
+        .json(&classroom_login_data)
+        .await;
+
+    response.assert_status_ok();
+
+    let cookie = response.cookie("classroom_user_infos");
+    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+
+    assert_eq!(cookie_data.claims.len(), 1);
+}
+
+#[sqlx::test]
+async fn test_classroom_login_multiple_sessions(db: PgPool) {
+    let server = setup_login(db).await;
+
+    // ----- First classroom ----- //
+
+    let classroom_add_data = ClassroomAddData {
+        name: "Classroom1".to_owned(),
+        description: String::new(),
+    };
+
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
+
+    response.assert_status_ok();
+    let classroom_created_data = response.json::<ClassroomGeneratedData>();
+
+    let classroom_login_data = ClassroomUserLoginData {
+        join_code: classroom_created_data.join_code,
+        username: "Gelicenseerd radiozendamateur".to_owned(),
+    };
+
+    let response = server
+        .post("/classrooms/auth")
+        .json(&classroom_login_data)
+        .await;
+
+    response.assert_status_ok();
+
+    let cookie = response.cookie("classroom_user_infos");
+    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+
+    assert_eq!(cookie_data.claims.len(), 1);
+
+    // ----- Create a number more classrooms ----- //
+
+    for i in 2..5 {
+        let classroom_add_data = ClassroomAddData {
+            name: format!("Classroom{i}"),
+            description: String::new(),
+        };
+
+        let response = server.post("/classrooms").json(&classroom_add_data).await;
+
+        response.assert_status_ok();
+        let classroom_created_data = response.json::<ClassroomGeneratedData>();
+
+        let classroom_login_data = ClassroomUserLoginData {
+            join_code: classroom_created_data.join_code,
+            username: "Gelicenseerd radiozendamateur".to_owned(),
+        };
+
+        let response = server
+            .post("/classrooms/auth")
+            .json(&classroom_login_data)
+            .await;
+
+        response.assert_status_ok();
+
+        let cookie = response.cookie("classroom_user_infos");
+        let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+
+        assert_eq!(cookie_data.claims.len(), i);
+    }
+}
+
+#[sqlx::test]
+async fn test_get_classrooms_teacher(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let classroom_add_data = ClassroomAddData {
         name: "Classroom".to_owned(),
         description: String::new(),
     };
@@ -67,7 +220,7 @@ async fn test_get_classrooms(db: PgPool) {
     let response = server.post("/classrooms").json(&classroom_add_data).await;
     response.assert_status_ok();
 
-    let response2 = server.get("/users/me/classrooms").await;
+    let response2 = server.get("/classrooms/teacher/list").await;
     response2.assert_status_ok();
 
     let classroom_list: ClassroomListResponse = response2.json();
@@ -76,10 +229,113 @@ async fn test_get_classrooms(db: PgPool) {
 }
 
 #[sqlx::test]
-async fn test_get_classrooms_unauthorized(db: PgPool) {
+async fn test_get_classrooms_teacher_unauthorized(db: PgPool) {
     let server = setup(db).server;
 
-    let response = server.get("/users/me/classrooms").await;
+    let response = server.get("/classrooms/teacher/list").await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_get_classrooms_student(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let classroom_add_data = ClassroomAddData {
+        name: "Classroom".to_owned(),
+        description: String::new(),
+    };
+
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
+    response.assert_status_ok();
+    let classroom_generated_data = response.json::<ClassroomGeneratedData>();
+
+    let classroom_login = ClassroomUserLoginData {
+        join_code: classroom_generated_data.join_code,
+        username: "Gelicenseerd radiozendamateur".to_owned(),
+    };
+
+    let response2 = server.post("/classrooms/auth").json(&classroom_login).await;
+    response2.assert_status_ok();
+
+    let response3 = server.get("/classrooms/student/list").await;
+    response3.assert_status_ok();
+
+    let classroom_list: ClassroomListResponse = response3.json();
+
+    assert_eq!(classroom_list.total_classrooms, 1);
+}
+
+#[sqlx::test]
+async fn test_get_classrooms_student_unauthorized(db: PgPool) {
+    let server = setup(db).server;
+
+    let response = server.get("/classrooms/student/list").await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_get_classroom_dashboard_teacher(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let classroom_add_data = ClassroomAddData {
+        name: "Classroom".to_owned(),
+        description: String::new(),
+    };
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
+    response.assert_status_ok();
+    let classroom_generated_data = response.json::<ClassroomGeneratedData>();
+
+    let response = server
+        .get(&format!(
+            "/classrooms/{0}/teacher/dashboard",
+            classroom_generated_data.id
+        ))
+        .await;
+    response.assert_status_ok();
+}
+
+#[sqlx::test]
+async fn test_get_classroom_dashboard_teacher_unauthorized(db: PgPool) {
+    let server = setup(db).server;
+
+    let response = server.get("/classrooms/0/teacher/dashboard").await;
+    response.assert_status_unauthorized();
+}
+
+#[sqlx::test]
+async fn test_get_classroom_dashboard_student(db: PgPool) {
+    let server = setup_login(db).await;
+
+    let classroom_add_data = ClassroomAddData {
+        name: "Classroom".to_owned(),
+        description: String::new(),
+    };
+    let response = server.post("/classrooms").json(&classroom_add_data).await;
+    response.assert_status_ok();
+    let classroom_generated_data = response.json::<ClassroomGeneratedData>();
+
+    let classroom_login = ClassroomUserLoginData {
+        join_code: classroom_generated_data.join_code,
+        username: "Gelicenseerd radiozendamateur".to_owned(),
+    };
+
+    let response = server.post("/classrooms/auth").json(&classroom_login).await;
+    response.assert_status_ok();
+
+    let response = server
+        .get(&format!(
+            "/classrooms/{0}/student/dashboard",
+            classroom_generated_data.id
+        ))
+        .await;
+    response.assert_status_ok();
+}
+
+#[sqlx::test]
+async fn test_get_classroom_dashboard_student_unauthorized(db: PgPool) {
+    let server = setup(db).server;
+
+    let response = server.get("/classrooms/0/student/dashboard").await;
     response.assert_status_unauthorized();
 }
 
@@ -142,7 +398,6 @@ async fn test_verify_classroom_permission_owner(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Author,
     };
 
@@ -158,7 +413,6 @@ async fn test_verify_classroom_permission_admin(db: PgPool) {
 
     let claims = Claims {
         sub: 1,
-        exp: i64::MAX,
         account_type: AccountType::Admin,
     };
 

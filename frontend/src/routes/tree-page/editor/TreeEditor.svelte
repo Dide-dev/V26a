@@ -9,17 +9,9 @@
  -->
 
 <script lang="ts">
-    import iconUndo from '$lib/assets/icons/undo.svg?raw';
-    import iconRedo from '$lib/assets/icons/redo.svg?raw';
-    import iconExternalLink from '$lib/assets/icons/externalLink.svg?raw';
     import { onMount } from 'svelte';
     import { m } from '$lib/paraglide/messages.js';
-    import {
-        getTreeWithCards,
-        type TreeData,
-        type TreeId,
-        type TreeLinkedData
-    } from '$lib/api-wrapper/trees';
+    import { getTreeWithCards, type TreeId, type TreeMetadata } from '$lib/api-wrapper/trees';
     import { appLink } from '$lib';
     import SubtreeEditor, { type DragState } from './SubtreeEditor.svelte';
     import {
@@ -30,18 +22,43 @@
         canUndo,
         canRedo
     } from './history.svelte';
-    import EditMetadata from './EditMetadata.svelte';
-    import type { SideBar } from './Sidebar.svelte';
-    import SidebarComponent from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
+    import SidebarComponent from './sidebar/Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
-    import { branchColors } from '$lib/treePage';
-    import CoAuthor from './CoAuthor.svelte';
-    import { getUserInfo } from '$lib/api-wrapper/users';
+    import { branchColors, duplicateThisTree } from '$lib/treePage';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
+    import TreeInformation from '../TreeInformation.svelte';
+    import {
+        ArrowUpRightFromSquareOutline,
+        CheckOutline,
+        FileCloneOutline,
+        LinkOutline,
+        LockSolid,
+        RedoOutline,
+        UndoOutline
+    } from 'flowbite-svelte-icons';
+    import { Tween } from 'svelte/motion';
+    import { cubicOut } from 'svelte/easing';
+    import { page } from '$app/state';
+    import Notices, { type Notice } from '$lib/Notices.svelte';
 
     let { id }: { id: TreeId } = $props();
 
     let userInfo = $state(getUserInfo());
-    let userAllowedToAuthorizeCo = $state(false);
+    let hasOwnerPermissions = $state(false);
+
+    let notices: Notice[] = $state([]);
+
+    const sideBarWidths = {
+        minimized: 76,
+        hovered: 300,
+        maximized: 620
+    };
+
+    let sideBarWidth = new Tween(sideBarWidths.minimized, {
+        duration: 400,
+        easing: cubicOut
+    });
 
     let dragState: DragState = $state(null);
     let scrollArea: Element | null = $state(null);
@@ -88,25 +105,40 @@
         return () => clearInterval(intervalId);
     });
 
+    $effect(() => {
+        switch (tree?.sidebar.kind) {
+            case 'Menu':
+                if (tree.sidebar.type === 'FullMenu') {
+                    sideBarWidth.target = sideBarWidths.hovered;
+                } else {
+                    sideBarWidth.target = sideBarWidths.minimized;
+                }
+                break;
+            default:
+                sideBarWidth.target = sideBarWidths.maximized;
+        }
+    });
+
     let tree: {
-        data: TreeData;
-        linkedData: TreeLinkedData;
+        metadata: TreeMetadata;
         history: TreeHistory;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
         sidebarElement: null | SidebarComponent;
     } | null = $state(null);
 
     onMount(async () => {
         const fetchedTree = await getTreeWithCards(id);
         tree = {
-            data: fetchedTree.metadata.data,
-            linkedData: fetchedTree.metadata.linkedData,
+            metadata: fetchedTree.metadata,
             history: initializeHistory(
                 fetchedTree.metadata.genData.id,
                 fetchedTree.structure,
                 fetchedTree.cards
             ),
-            sidebar: null,
+            sidebar: {
+                kind: 'Menu',
+                type: 'IconsOnly'
+            },
             sidebarElement: null
         };
 
@@ -114,16 +146,14 @@
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {
-            userAllowedToAuthorizeCo = true;
+            hasOwnerPermissions = true;
         }
     });
 
     function undoButtonClick() {
-        tree!.sidebar = null;
         undo(tree!.history);
     }
     function redoButtonClick() {
-        tree!.sidebar = null;
         redo(tree!.history);
     }
     // The undo & redo keyboard shortcuts.
@@ -141,72 +171,123 @@
             event.stopPropagation();
         }
     }
+
+    /** Copy link to tree viewer page to user's clipboard. */
+    function copyLink(event: Event) {
+        event.preventDefault();
+
+        navigator.clipboard.writeText(
+            `${page.url.protocol}//${page.url.hostname}/tree-page/viewer?id=${tree?.metadata.genData.id}`
+        );
+
+        notices.push({
+            text: m.linkCopied(),
+            icon: checkIcon,
+            textColor: 'var(--color-tree-610)',
+            backgroundColor: 'var(--color-tree-100)'
+        });
+    }
 </script>
 
-<div class="flex h-full w-full flex-col items-start">
-    {#if tree === null}
-        <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
-    {:else}
-        <h1 class="ml-1.5 text-3xl font-bold">{tree.data.title}</h1>
-        <p class="ml-1.5 pt-1 pb-1 text-sm font-bold text-gray-400">
-            {tree.data.description}
-        </p>
+{#if tree === null}
+    <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
+{:else}
+    <div class="grid h-full w-full" style={`grid-template-columns: 1fr ${sideBarWidth.current}px;`}>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+            class="overflow-x-auto"
+            onclick={() => {
+                tree!.sidebar = {
+                    kind: 'Menu',
+                    type: 'IconsOnly'
+                };
+            }}
+        >
+            <TreeInformation tree={tree.metadata}>
+                {#snippet titleSnippet()}
+                    <div class="flex gap-1">
+                        <h1
+                            class={[
+                                !tree?.metadata.data.published && 'text-neutral-500 italic',
+                                'page__title mt-0'
+                            ]}
+                            title={tree?.metadata.data.published ? '' : m.unpublishedTree()}
+                        >
+                            {tree?.metadata.data.title}
+                        </h1>
+                        {#if tree?.metadata.data.published}
+                            <button
+                                onclick={copyLink}
+                                aria-label="copy link"
+                                class="page__title mt-3 flex cursor-pointer items-center"
+                                title={m.copyLink()}
+                            >
+                                <LinkOutline class="h-7 w-7 shrink-0" />
+                            </button>
+                        {:else}
+                            <div
+                                class="page__title mt-3 flex items-center"
+                                title={m.unpublishedTree()}
+                            >
+                                <LockSolid class="h-7 w-7 shrink-0" />
+                            </div>
+                        {/if}
+                        <a
+                            href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
+                            aria-label="view"
+                            class="page__title mt-3 flex items-center"
+                            title={m.viewTree()}
+                        >
+                            <ArrowUpRightFromSquareOutline class="h-7 w-7 shrink-0" />
+                        </a>
+                        <button
+                            onclick={() => duplicateThisTree(tree!.metadata.genData.id)}
+                            aria-label="duplicate"
+                            class="page__title mt-3 flex cursor-pointer items-center"
+                            title={m.duplicateTree()}
+                        >
+                            <FileCloneOutline class="h-7 w-7 shrink-0" />
+                        </button>
+                    </div>
+                {/snippet}
+            </TreeInformation>
 
-        <div class="m-2 flex gap-2">
-            <EditMetadata
-                treeId={tree.history.treeId}
-                bind:prevTreeData={tree.data}
-                treeLinkedData={tree.linkedData}
-            />
-            <button
-                class={[
-                    'rounded-sm bg-emerald-500 p-1',
-                    canUndo(tree.history) && 'cursor-pointer stroke-black p-1',
-                    !canUndo(tree.history) && 'stroke-gray-500'
-                ]}
-                onclick={undoButtonClick}
-                title={m.undo()}
-            >
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html iconUndo}
-            </button>
-            <button
-                class={[
-                    'rounded-sm bg-emerald-500 p-1',
-                    canRedo(tree.history) && 'cursor-pointer stroke-black p-1',
-                    !canRedo(tree.history) && 'stroke-gray-500'
-                ]}
-                onclick={redoButtonClick}
-                title={m.redo()}
-            >
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html iconRedo}
-            </button>
-            {#if userAllowedToAuthorizeCo}
-                <CoAuthor treeId={tree.history.treeId} />
-            {/if}
-            <a
-                class="rounded-sm bg-emerald-500 p-1 *:inline"
-                href={appLink(`/tree-page/viewer?id=${tree.history.treeId}`)}
-                target="_blank"
-            >
-                {m.viewTree()}
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html iconExternalLink}
-            </a>
-        </div>
+            <div class="m-2 flex gap-2">
+                <button
+                    class={[
+                        'ml-1 flex cursor-pointer items-center justify-center rounded-md border-2 p-1',
+                        'border-gray-500 transition-colors duration-200 ease-in-out',
+                        canUndo(tree.history) && 'cursor-pointer bg-white hover:bg-neutral-200',
+                        !canUndo(tree.history) && 'bg-neutral-300'
+                    ]}
+                    onclick={undoButtonClick}
+                    title={m.undo()}
+                >
+                    <UndoOutline
+                        class={[!canUndo(tree.history) && 'text-neutral-700', 'h-6 w-6 shrink-0']}
+                    />
+                </button>
+                <button
+                    class={[
+                        'ml-1 flex cursor-pointer items-center justify-center rounded-md border-2 p-1',
+                        'border-gray-500 transition-colors duration-200 ease-in-out',
+                        canRedo(tree.history) && 'cursor-pointer bg-white hover:bg-neutral-200',
+                        !canRedo(tree.history) && 'bg-neutral-300'
+                    ]}
+                    onclick={redoButtonClick}
+                    title={m.redo()}
+                >
+                    <RedoOutline
+                        class={[!canRedo(tree.history) && 'text-neutral-700', 'h-6 w-6 shrink-0']}
+                    />
+                </button>
+            </div>
 
-        <div class="relative w-full">
             <!--
                 The padding on the bottom is to make the scrollbar not intersect with some buttons.
             -->
-            <div
-                bind:this={scrollArea}
-                class="m-1 flex overflow-x-auto pb-7"
-                style:min-height={tree.sidebar === null
-                    ? ''
-                    : `${tree.sidebarElement!.htmlHeight}px`}
-            >
+            <div bind:this={scrollArea} class="m-1 flex overflow-x-auto pb-7">
                 <div class="flex grow flex-col">
                     {#each tree.history.currentStructure.rootNodes as root, location (root)}
                         <SubtreeEditor
@@ -219,19 +300,32 @@
                     {/each}
                     <RootNodeAddButton history={tree.history} enabled={dragState === null} />
                 </div>
-                <div
-                    class="shrink-0"
-                    style:width={tree.sidebar === null ? '' : `${tree.sidebarElement!.htmlWidth}px`}
-                ></div>
             </div>
-            <SidebarComponent
-                bind:this={tree.sidebarElement}
-                bind:sidebar={tree.sidebar}
-                history={tree.history}
-            />
         </div>
-    {/if}
-</div>
+        <SidebarComponent
+            bind:this={tree.sidebarElement}
+            bind:sidebar={tree.sidebar}
+            history={tree.history}
+            {hasOwnerPermissions}
+            treeId={tree.history.treeId}
+            bind:prevTreeData={tree.metadata.data}
+            bind:notices
+            treeLinkedData={tree.metadata.linkedData}
+            onmouseenter={() => {
+                if (tree!.sidebar.kind === 'Menu' && dragState === null) {
+                    tree!.sidebar.type = 'FullMenu';
+                }
+            }}
+            onmouseleave={() => {
+                if (tree!.sidebar.kind === 'Menu') {
+                    tree!.sidebar.type = 'IconsOnly';
+                }
+            }}
+        />
+    </div>
+
+    <Notices bind:notices maxNumberOfNotices={3} />
+{/if}
 
 <!--
     We need to listen on the entire body to detect if drag & drop did not find target.
@@ -259,3 +353,15 @@
         }
     </style>
 {/if}
+
+{#snippet checkIcon()}
+    <CheckOutline class="h-5 w-5 shrink-0" />
+{/snippet}
+
+<style>
+    /* Remove any margins around the main element, such that the sidebar can grow the full height. */
+    :global(nav),
+    :global(footer) {
+        margin: 0;
+    }
+</style>

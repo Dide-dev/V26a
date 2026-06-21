@@ -29,6 +29,16 @@ pub struct UserData {
     pub language: UserLanguage,
 }
 
+impl UserData {
+    pub fn get_display_name(&self) -> String {
+        if self.nickname.trim().is_empty() {
+            self.name.clone()
+        } else {
+            self.nickname.clone()
+        }
+    }
+}
+
 impl Validated for UserData {
     /// # Errors
     /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
@@ -193,12 +203,12 @@ pub struct PendingRegisterData {
     pub expires: i64,
 }
 
-/// A trait that can be used to remove expired accounts from a [`HashMap`] containing [`PendingRegisterData`].
-pub trait PendingAccountsExt {
+/// A trait that can be implemented to remove expired data.
+pub trait RemoveExpired {
     fn remove_expired(&mut self);
 }
 
-impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
+impl RemoveExpired for HashMap<String, PendingRegisterData> {
     /// Removes pending accounts for which the expiration time has passed.
     ///
     /// This function mutates the [`HashMap`] in place.
@@ -212,6 +222,32 @@ impl PendingAccountsExt for HashMap<String, PendingRegisterData> {
         let diff = before_len - self.len();
         if diff != 0 {
             info!("Removed {diff} pending accounts from cache.");
+        }
+    }
+}
+
+/// Data belonging to a password change request (forgot password).
+/// Stores the user ID and when the change password link should expire.
+#[derive(Debug)]
+pub struct PasswordResetRequestData {
+    pub user_id: i32,
+    pub expires: i64,
+}
+
+impl RemoveExpired for HashMap<String, PasswordResetRequestData> {
+    /// Removes password change requests for which the expiration time has passed.
+    ///
+    /// This function mutates the [`HashMap`] in place.
+    fn remove_expired(&mut self) {
+        let before_len = self.len();
+
+        self.retain(|_, p| p.expires > Utc::now().timestamp());
+
+        // Subtraction with overflow is impossible, as there is a lock on the Map,
+        // and entries are only removed here.
+        let diff = before_len - self.len();
+        if diff != 0 {
+            info!("Removed {diff} password reset requests from cache.");
         }
     }
 }
@@ -303,6 +339,47 @@ pub struct UserListResponse {
     pub users: Vec<AllUsersGetData>,
 }
 
+/// The request body for a password reset request that contains the email to which the password change link should be sent to.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestPasswordResetBody {
+    pub email: String,
+}
+
+impl Validated for RequestPasswordResetBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns an [`EmailParseError`](ApiError::EmailParseError) if the email address could not be parsed by Lettre.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        parse_email(&self.email)?;
+
+        Ok(())
+    }
+}
+
+/// The request body for a password reset that contains the password reset code and the new password.
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PasswordResetBody {
+    pub code: String,
+    pub new_password: String,
+}
+
+impl Validated for PasswordResetBody {
+    /// # Errors
+    /// Returns [`InputLengthExceeded`](ApiError::InputLengthExceeded) when one of the inputs exceeds a maximum.
+    ///
+    /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
+    ///
+    /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
+    fn validate_inputs(&self) -> Result<(), ApiError> {
+        validate_password(&self.new_password, "newPassword")?;
+
+        Ok(())
+    }
+}
+
 /// The body for a password change request that contains the old password, and the new password.
 #[derive(Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -317,7 +394,7 @@ impl Validated for PasswordChangeRequestBody {
     ///
     /// Returns [`InputLengthNotMet`](ApiError::InputLengthNotMet) when one of the inputs does not meet a minimum.
     ///
-    /// Returns an [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
+    /// Returns [`IllegalPassword`](ApiError::IllegalPassword) if the password does not meet the minimum security requirements.
     fn validate_inputs(&self) -> Result<(), ApiError> {
         if self.old_password.chars().count() < PASSWORD_LOGIN_MIN_LENGTH {
             return Err(ApiError::InputLengthNotMet(
@@ -379,6 +456,9 @@ impl Display for UserLanguage {
 impl FromStr for UserLanguage {
     type Err = ApiError;
 
+    /// Parses a string s to return a value of type [`UserLanguage`].
+    /// If parsing succeeds, returns [`Ok(UserLanguage)`](UserLanguage),
+    /// otherwise when the string is ill-formatted returns an [`Err(InvalidDataFound)`](ApiError::InvalidDataFound).
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
             "nl" => Ok(UserLanguage::Nl),
@@ -408,6 +488,9 @@ impl Display for AccountType {
 impl FromStr for AccountType {
     type Err = ApiError;
 
+    /// Parses a string s to return a value of type [`AccountType`].
+    /// If parsing succeeds, returns [`Ok(AccountType)`](AccountType),
+    /// otherwise when the string is ill-formatted returns an [`Err(InvalidDataFound)`](ApiError::InvalidDataFound).
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
             "admin" => Ok(AccountType::Admin),
@@ -419,12 +502,15 @@ impl FromStr for AccountType {
 
 #[cfg(test)]
 mod tests {
-    use crate::db_structs::users::{PendingAccountsExt, PendingRegisterData, RegisterData};
+    use crate::db_structs::users::{
+        PasswordResetRequestData, PendingRegisterData, RegisterData, RemoveExpired, UserData,
+        UserLanguage,
+    };
     use chrono::Utc;
     use std::collections::HashMap;
 
     #[tokio::test]
-    async fn test_remove_expired() {
+    async fn test_remove_expired_registrations() {
         let mut pending_accounts = HashMap::<String, PendingRegisterData>::new();
         let register_data = RegisterData::test_values();
 
@@ -447,5 +533,67 @@ mod tests {
 
         assert!(!pending_accounts.contains_key("a"));
         assert!(pending_accounts.contains_key("b"));
+    }
+
+    #[tokio::test]
+    async fn test_remove_expired_password_resets() {
+        let mut pending_resets = HashMap::<String, PasswordResetRequestData>::new();
+
+        pending_resets.insert(
+            "a".to_owned(),
+            PasswordResetRequestData {
+                user_id: 0,
+                expires: 0,
+            },
+        );
+        pending_resets.insert(
+            "b".to_owned(),
+            PasswordResetRequestData {
+                user_id: 0,
+                expires: Utc::now().timestamp() + 60,
+            },
+        );
+
+        pending_resets.remove_expired();
+
+        assert!(!pending_resets.contains_key("a"));
+        assert!(pending_resets.contains_key("b"));
+    }
+
+    #[test]
+    fn test_get_display_name() {
+        assert_eq!(
+            UserData {
+                name: String::new(),
+                nickname: "Peter".to_string(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            }
+            .get_display_name(),
+            "Peter"
+        );
+        assert_eq!(
+            UserData {
+                name: "Lorax".to_string(),
+                nickname: " ".to_string(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            }
+            .get_display_name(),
+            "Lorax"
+        );
+        assert_eq!(
+            UserData {
+                name: "Lorax".to_string(),
+                nickname: "Santa_Claus".to_string(),
+                about_me: String::new(),
+                email_visible: false,
+                language: UserLanguage::Nl,
+            }
+            .get_display_name(),
+            "Santa_Claus"
+        );
     }
 }

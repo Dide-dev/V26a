@@ -40,8 +40,8 @@ vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
         getAllLanguages: vi.fn().mockResolvedValue(['Nederlands', 'English']),
         getAllSubjects: vi.fn().mockResolvedValue({
             nl: [
-                { id: 1, languageCode: 'nl', name: 'Nederlands' },
-                { id: 2, languageCode: 'nl', name: 'Wiskunde' }
+                { id: 1, data: { languageCode: 'nl', name: 'Nederlands' } },
+                { id: 2, data: { languageCode: 'nl', name: 'Wiskunde' } }
             ]
         }),
         updateTreeMetaData: vi.fn().mockResolvedValue(undefined)
@@ -59,24 +59,24 @@ beforeEach(() => {
 
 test('dropdown is hidden by default', () => {
     render(MetaData);
-    expect(screen.queryByTestId('metadata-popup')).toBeNull();
+    expect(screen.queryByTestId('metadata-menu')).toBeNull();
 });
 
 test('dropdown opens when edit metadata button is clicked', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await screen.findByText(m.editMetadata());
-    await user.click(screen.getByText(m.editMetadata()));
-    screen.getByTestId('metadata-popup');
+    const button = await screen.findByTestId('metadata-button');
+    await user.click(button);
+    screen.getByTestId('metadata-menu');
 });
 
 test('fields are prefilled with tree data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await screen.findByText(m.editMetadata());
-    await user.click(screen.getByText(m.editMetadata()));
+    const button = await screen.findByTestId('metadata-button');
+    await user.click(button);
     expect((screen.getByLabelText(m.bookName()) as HTMLInputElement).value).toBe('Monkey');
     expect((screen.getByLabelText(m.isbn()) as HTMLInputElement).value).toBe('9780439023481');
 });
@@ -85,13 +85,14 @@ test('cancel restores original values', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await screen.findByText(m.editMetadata());
-    await user.click(screen.getByText(m.editMetadata()));
+    let button = await screen.findByTestId('metadata-button');
+    await user.click(button);
     await user.clear(screen.getByLabelText(m.description()));
     await user.type(screen.getByLabelText(m.description()), 'Changed Description');
     await user.click(screen.getByText(m.cancel()));
 
-    await user.click(screen.getByText(m.editMetadata()));
+    button = await screen.findByTestId('metadata-button');
+    await user.click(button);
     expect((screen.getByLabelText(m.description()) as HTMLInputElement).value).toBe('gerdgreg');
 });
 
@@ -100,8 +101,8 @@ test('save calls updateTreeMetaData with correct data', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await screen.findByText(m.editMetadata());
-    await user.click(screen.getByText(m.editMetadata()));
+    const button = await screen.findByTestId('metadata-button');
+    await user.click(button);
     await user.clear(screen.getByLabelText(m.description()));
     await user.type(screen.getByLabelText(m.description()), 'New Apple');
     await user.click(screen.getByText(m.confirmChanges()));
@@ -116,21 +117,21 @@ test('dropdown closes after save', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await screen.findByText(m.editMetadata());
-    await user.click(screen.getByText(m.editMetadata()));
+    const button = await screen.findByTestId('metadata-button');
+    await user.click(button);
     // Change one of the fields so that the confirm button is enabled.
     await user.type(screen.getByLabelText(m.description()), 'Changed Description');
     await user.click(screen.getByText(m.confirmChanges()));
-    expect(screen.queryByTestId('metadata-popup')).toBeNull();
+    expect(screen.queryByTestId('metadata-menu')).toBeNull();
 });
 
 test('dropdown closes after cancel', async () => {
     const user = userEvent.setup();
     render(MetaData);
 
-    await screen.findByText(m.editMetadata());
-    await user.click(screen.getByText(m.editMetadata()));
+    const button = await screen.findByTestId('metadata-button');
+    await user.click(button);
     await user.click(screen.getByText(m.cancel()));
 
-    expect(screen.queryByTestId('metadata-popup')).toBeNull();
+    expect(screen.queryByTestId('metadata-menu')).toBeNull();
 });

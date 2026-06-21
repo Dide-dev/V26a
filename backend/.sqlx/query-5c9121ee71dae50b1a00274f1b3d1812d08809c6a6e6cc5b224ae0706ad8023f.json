@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM UNNEST($1::VARCHAR(32)[]) AS DATA(tag_name) JOIN tags ON LOWER(name) = tag_name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "VarcharArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5c9121ee71dae50b1a00274f1b3d1812d08809c6a6e6cc5b224ae0706ad8023f"
+}

@@ -6,21 +6,29 @@
 
 use crate::db::cards::{add_card, get_tree_cards, remove_card};
 use crate::db::trees::{
-    add_co_author, add_tree, db_get_tree_all_data, get_languages, get_queried_count,
-    get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree, is_structure_valid,
-    language_exists, remove_co_author, subject_exists, verify_tree_accessible_by_user,
+    add_co_author, add_language, add_subject, add_tree, db_get_tree_all_data, get_languages,
+    get_queried_count, get_queried_list, get_subjects, get_tree_owner, is_co_author_of_tree,
+    is_structure_valid, language_exists, remove_co_author, subject_exists, subject_id_exists,
+    verify_tree_accessible_by_user,
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
+use crate::db_structs::Validated;
+use crate::db_structs::cards::CardData;
 use crate::db_structs::pagination::OptionalPaginationOptions;
 use crate::db_structs::session::Claims;
 use crate::db_structs::trees::{
-    Language, Node, RootNode, Subject, TreeAddData, TreeData, TreeFilters, TreeListResponse,
-    TreeStructure, TreeWithCards,
+    Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeFilters,
+    TreeListResponse, TreeStructure, TreeWithCards,
 };
 use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::limits::TREE_TITLE_MAX_LENGTH;
+use crate::messages::Message;
+use crate::ratelimits::{
+    ADD_CARD_RATELIMIT, ADD_TREE_RATELIMIT, DUPLICATE_TREE_RATELIMIT, GET_EDIT_LOCK_RATELIMIT,
+    GET_TREE_LIST_RATELIMIT,
+};
 use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
@@ -29,30 +37,35 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::Query;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
-use utoipa::ToSchema;
-
-use crate::db_structs::Validated;
-use crate::db_structs::cards::CardData;
-use crate::messages::Message;
 use std::collections::HashMap;
+use utoipa::ToSchema;
 
 pub mod edit_lock;
 
 /// Creates an `Axum` [`Router`] for the trees category.
 pub fn trees() -> Router<ArcState> {
     Router::new()
-        .route("/", get(get_list).post(add_new_tree))
-        .route("/languages", get(get_all_languages))
-        .route("/subjects", get(get_all_subjects))
+        .route("/", get(get_list).layer(GET_TREE_LIST_RATELIMIT.to_layer()))
+        .route("/", post(add_new_tree).layer(ADD_TREE_RATELIMIT.to_layer()))
+        .route("/languages", get(get_all_languages).post(add_new_language))
+        .route("/languages/{code}", put(update_language))
+        .route("/subjects", get(get_all_subjects).post(add_new_subject))
+        .route("/subjects/{id}", put(update_subject))
         .route(
             "/{tree_id}",
             get(get_tree_with_cards)
                 .put(update_tree_data)
                 .delete(remove_tree),
         )
-        .route("/{tree_id}/duplicate", post(duplicate_tree))
+        .route(
+            "/{tree_id}/duplicate",
+            post(duplicate_tree).layer(DUPLICATE_TREE_RATELIMIT.to_layer()),
+        )
         .route("/{tree_id}/structure", put(update_tree_structure))
-        .route("/{tree_id}/cards", post(add_new_card))
+        .route(
+            "/{tree_id}/cards",
+            post(add_new_card).layer(ADD_CARD_RATELIMIT.to_layer()),
+        )
         .route("/{tree_id}/cards/{card_id}", delete(remove_card_from_tree))
         .route(
             "/{tree_id}/co-authors/{username}",
@@ -62,7 +75,8 @@ pub fn trees() -> Router<ArcState> {
             "/{tree_id}/edit-lock",
             // This endpoint requires to be wrapped in an [`axum::routing::any`],
             // see the docs of [`WebSocketUpgrade`](axum::extract::WebSocketUpgrade) for why.
-            axum::routing::any(edit_lock::acquire_edit_lock),
+            axum::routing::any(edit_lock::acquire_edit_lock)
+                .layer(GET_EDIT_LOCK_RATELIMIT.to_layer()),
         )
 }
 
@@ -104,6 +118,9 @@ pub fn trees() -> Router<ArcState> {
 /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in
 /// [`TreeAddData`] contains cards.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
     claims: Claims,
@@ -119,11 +136,11 @@ async fn add_new_tree(
         ));
     }
     if let Some(subject_id) = &tree_add_data.tree_data.subject_id
-        && !subject_exists(&mut *transaction, *subject_id).await?
+        && !subject_id_exists(&mut *transaction, *subject_id).await?
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
-    let id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
+    let id = add_tree(&mut transaction, tree_add_data, claims.sub).await?;
 
     transaction.commit().await?;
 
@@ -161,6 +178,9 @@ async fn add_new_tree(
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to remove
 /// the given tree.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_tree(
@@ -216,6 +236,9 @@ async fn remove_tree(
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards in the
 /// `Cards` table link to `tree_id`.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or a [`SerdeException`](ApiError::SerdeException) instead.
 async fn update_tree_structure(
     claims: Claims,
@@ -268,6 +291,9 @@ async fn update_tree_structure(
 ///
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree for the given `tree_id` referenced in `card_data`.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_card(
@@ -334,6 +360,9 @@ async fn add_new_card(
 ///
 /// Returns [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) if more than 9,999 cards are found
 /// which link to `tree_id`.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
 ///
 /// May return a [`SerdeException`](ApiError::SerdeException)
 /// or [`DatabaseException`](ApiError::DatabaseException) instead.
@@ -439,6 +468,9 @@ async fn update_structure_if_valid(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to change
 /// the tree for the given `tree_id`.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_tree_data(
     claims: Claims,
@@ -456,7 +488,7 @@ async fn update_tree_data(
         return Err(ApiError::MissingLanguage(new_data.language_code.clone()));
     }
     if let Some(subject_id) = &new_data.subject_id
-        && !subject_exists(&mut *transaction, *subject_id).await?
+        && !subject_id_exists(&mut *transaction, *subject_id).await?
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
@@ -504,13 +536,16 @@ async fn update_tree_data(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the tree is not published
 /// and the user is not its owner, or an admin.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
     claims: Option<Claims>,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims).await?;
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims.as_ref()).await?;
 
     let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?
@@ -604,6 +639,9 @@ pub async fn verify_tree_permissions(
 ///
 /// Returns [`InvalidPage`](ApiError::InvalidPage) if the requested page is empty.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or
 /// [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) instead.
 pub async fn get_list(
@@ -684,6 +722,9 @@ pub enum AuthorizeCoAuthorResponse {
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree to which the user is added as co-author does not exist.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn authorize_co_author(
     claims: Claims,
@@ -753,6 +794,9 @@ async fn authorize_co_author(
 ///
 /// Returns [`MissingTree`](ApiError::MissingTree) if the tree from which the user is removed as co-author does not exist.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn deauthorize_co_author(
     claims: Claims,
@@ -805,6 +849,118 @@ pub async fn get_all_languages(
 }
 
 #[utoipa::path(
+    post,
+    path = "/languages",
+    context_path = "/api/v1/trees",
+    request_body = Language,
+    responses(
+        (status = 200, description = "Successfully added a new language."),
+        (status = 400, description = "The language already exists."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Add a new language.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `language` - The language to add to the database, as [`Language`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`LanguageExists`](ApiError::LanguageExists) if the language already exists.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_new_language(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(language): Json<Language>,
+) -> Result<(), ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if language_exists(&mut *transaction, &language.code).await? {
+        return Err(ApiError::LanguageExists(language.code));
+    }
+
+    add_language(&mut *transaction, &language).await?;
+
+    transaction.commit().await?;
+    Ok(())
+}
+
+#[utoipa::path(
+    put,
+    path = "/languages/{code}",
+    context_path = "/api/v1/trees",
+    request_body = String,
+    responses(
+        (status = 200, description = "Successfully updated the language."),
+        (status = 400, description = "The language does not exist."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("code" = String, Path),
+    )
+)]
+/// Updates an existing language.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `code` - The code of the language to update.
+///
+/// `new_name` - The new name for the language.
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the given language code does not exist.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_language(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(code): Path<String>,
+    Json(new_name): Json<String>,
+) -> Result<(), ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if !language_exists(&mut *transaction, &code).await? {
+        return Err(ApiError::MissingLanguage(code));
+    }
+
+    db::trees::update_language(&mut *transaction, &code, &new_name).await?;
+
+    transaction.commit().await?;
+    Ok(())
+}
+
+#[utoipa::path(
     get,
     path = "/subjects",
     context_path = "/api/v1/trees",
@@ -827,6 +983,130 @@ pub async fn get_all_subjects(
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<HashMap<String, Vec<Subject>>>, ApiError> {
     Ok(Json(get_subjects(&db).await?))
+}
+
+#[utoipa::path(
+    post,
+    path = "/subjects",
+    context_path = "/api/v1/trees",
+    request_body = SubjectData,
+    responses(
+        (status = 200, description = "Successfully added a new subject."),
+        (status = 400, description = "The subject already exists or contains a non-existent language code."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+    )
+)]
+/// Add a new subject.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `subject` - The subject to add to the database, as [`SubjectData`].
+///
+/// # Returns
+/// The id of the newly added subject.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`SubjectExists`](ApiError::SubjectExists) if the subject already exists.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the new subject contains a non-existent
+/// language code.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn add_new_subject(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Json(subject_data): Json<SubjectData>,
+) -> Result<Json<i32>, ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if subject_exists(&mut *transaction, &subject_data).await? {
+        return Err(ApiError::SubjectExists(subject_data.name));
+    }
+    if !language_exists(&mut *transaction, &subject_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(subject_data.language_code));
+    }
+
+    let id = add_subject(&mut *transaction, &subject_data).await?;
+
+    transaction.commit().await?;
+    Ok(Json(id))
+}
+
+#[utoipa::path(
+    put,
+    path = "/subjects/{id}",
+    context_path = "/api/v1/trees",
+    request_body = SubjectData,
+    responses(
+        (status = 200, description = "Successfully updated the subject."),
+        (status = 400, description = "The subject does not exist or the new data contains a non-existent language code."),
+        (status = 500, description = "Internal server error."),
+    ),
+    params(
+        ("session" = Claims, Cookie),
+        ("id" = i32, Path),
+    )
+)]
+/// Updates an existing subject.
+///
+/// # Arguments
+/// `db` - A reference to the database connection to use for the query.
+///
+/// `id` - The id of the subject to update.
+///
+/// `new_data` - The new subject data, as [`SubjectData`].
+///
+/// # Returns
+/// Nothing.
+///
+/// # Errors
+/// Returns [`NoPermission`](ApiError::NoPermission) if the user is not an admin.
+///
+/// Returns [`MissingSubject`](ApiError::LanguageExists) if the given subject id does not exist.
+///
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the new subject data contains a non-existent
+/// language code.
+///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn update_subject(
+    claims: Claims,
+    Extension(db): Extension<PgPool>,
+    Path(id): Path<i32>,
+    Json(new_data): Json<SubjectData>,
+) -> Result<(), ApiError> {
+    if claims.account_type != AccountType::Admin {
+        return Err(ApiError::NoPermission);
+    }
+
+    let mut transaction = db.begin().await?;
+
+    if !subject_id_exists(&mut *transaction, id).await? {
+        return Err(ApiError::MissingSubject(id));
+    }
+    if !language_exists(&mut *transaction, &new_data.language_code).await? {
+        return Err(ApiError::MissingLanguage(new_data.language_code));
+    }
+
+    db::trees::update_subject(&mut *transaction, id, &new_data).await?;
+
+    transaction.commit().await?;
+    Ok(())
 }
 
 #[utoipa::path(
@@ -865,6 +1145,9 @@ pub async fn get_all_subjects(
 /// Returns [`NoPermission`](ApiError::NoPermission) if the user does not have permission to duplicate the tree
 /// for the given `tree_id`.
 ///
+/// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if the user's data in the database is
+/// invalid or corrupted.
+///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn duplicate_tree(
     claims: Claims,
@@ -896,7 +1179,7 @@ pub async fn duplicate_tree(
         tree_data: new_data,
         tree_structure: structure.clone(),
     };
-    let new_tree_id = add_tree(&mut transaction, &tree_add_data, claims.sub).await?;
+    let new_tree_id = add_tree(&mut transaction, tree_add_data, claims.sub).await?;
 
     let mut new_structure: Vec<RootNode> = Vec::with_capacity(structure.root_nodes.len());
     for root_node in structure.root_nodes {

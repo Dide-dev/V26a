@@ -21,7 +21,7 @@ use crate::ArcState;
 use crate::api_v1::users::{UserResponse, VerificationCode};
 use crate::config::Config;
 use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::classrooms::{ClassroomData, ClassroomGeneratedData};
+use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
 use crate::db_structs::mail::StubMailer;
 use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
 use crate::db_structs::users::RegisterData;
@@ -205,16 +205,13 @@ async fn register_admin(
 ///
 /// `email` - The user's email address.
 async fn login(test_server: &TestServer, email: String) -> TestResponse {
-    let response = test_server
+    test_server
         .post("/auth")
         .json(&LoginRequestBody {
             email,
             password: RegisterData::test_values().password,
         })
-        .await;
-    response.assert_status_ok();
-
-    response
+        .await
 }
 
 /// Sets up an API test server with the given mock database, creates an account and logs in.
@@ -230,6 +227,27 @@ async fn setup_login(db: PgPool) -> TestServer {
 
     let register_data = RegisterData::test_values();
     register(&test_state, &register_data).await;
+
+    let server = test_state.server;
+    login(&server, register_data.email).await;
+
+    server
+}
+
+/// Sets up an API test server with the given mock database, creates an admin account and logs in.
+///
+/// # Arguments
+/// `db` - A [`PgPool`] to use to create the [`TestServer`].
+///
+/// # Returns
+/// A [`TestServer`] that can handle all the API endpoints, including ones
+/// that require being logged in as admin, and saves cookies.
+async fn setup_admin(db: PgPool) -> TestServer {
+    let conn = crate::get_connection_unwrap!(db);
+    let test_state = setup(db);
+
+    let register_data = RegisterData::test_values();
+    register_admin(&test_state, &mut *conn, &register_data).await;
 
     let server = test_state.server;
     login(&server, register_data.email).await;
@@ -268,7 +286,7 @@ async fn create_tree(test_server: &TestServer) -> i32 {
 /// # Returns
 /// An i32 representing the classroom's id.
 async fn create_classroom(test_server: &TestServer) -> i32 {
-    let classroom_data = ClassroomData {
+    let classroom_data = ClassroomAddData {
         name: "Classroom".to_string(),
         description: "Classroom description".to_string(),
     };
@@ -279,6 +297,7 @@ async fn create_classroom(test_server: &TestServer) -> i32 {
 #[cfg(test)]
 mod tests {
     use crate::db_structs::session::InfoCookieData;
+    use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure};
     use crate::db_structs::users::{AccountType, RegisterData};
     use crate::get_connection_unwrap;
     use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
@@ -309,5 +328,38 @@ mod tests {
         let cookie = res.cookie("user_info");
         let user_info = get_cookie_data::<InfoCookieData>(&cookie);
         assert_eq!(user_info.account_type, AccountType::Admin);
+    }
+
+    #[sqlx::test]
+    async fn test_ratelimit(db: PgPool) {
+        let server = setup(db).server;
+
+        // Test strict ratelimit
+        let email = "not_registered@localhost".to_owned();
+        for _ in 1..=5 {
+            let res = login(&server, email.clone()).await;
+            res.assert_status_ok();
+        }
+        let res = login(&server, email).await;
+        res.assert_status_too_many_requests();
+
+        // Test lenient ratelimit
+        for _ in 1..=50 {
+            let res = server.get("/trees").await;
+            res.assert_status_ok();
+        }
+
+        // Test strict ratelimit on the same endpoint with a different method
+        let tree = TreeAddData {
+            tree_data: TreeData::default(),
+            tree_structure: TreeStructure { root_nodes: vec![] },
+        };
+        for _ in 1..=20 {
+            let res = server.post("/trees").json(&tree).await;
+            // Ratelimit takes priority over the check to see if the user is authorized.
+            res.assert_status_unauthorized();
+        }
+        let res = server.post("/trees").json(&tree).await;
+        res.assert_status_too_many_requests();
     }
 }

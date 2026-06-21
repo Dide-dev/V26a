@@ -16,7 +16,8 @@
         checkLowercase,
         checkUppercase,
         checkNumber,
-        checkSpecialCharacter
+        checkSpecialCharacter,
+        genPassword
     } from '$lib/passwords';
     import type { Snippet } from 'svelte';
 
@@ -102,25 +103,6 @@
 
     // Generate random example password
     const examplePassword = genPassword(12);
-
-    function genPassword(length: number): string {
-        const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
-        const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const numChars = '0123456789';
-        const specialChars = '?!@#$%&*()+=.,<>{}[]|_-';
-        const alphaChars = lowerChars + upperChars;
-        const allChars = lowerChars + upperChars + numChars + specialChars;
-
-        const randomIndex = Math.floor(Math.random() * alphaChars.length);
-        let password = alphaChars[randomIndex];
-
-        for (let i = 1; i < length; i++) {
-            const randomIndex = Math.floor(Math.random() * allChars.length);
-            password += allChars[randomIndex];
-        }
-
-        return password;
-    }
 </script>
 
 <div>
@@ -163,7 +145,7 @@
                         bind:value={formData.data.nickname}
                         name="name"
                         type="text"
-                        placeholder={m.examplePlaceholder({ value: m.exampleNickname() })}
+                        placeholder={m.examplePlaceholderOptional({ value: m.exampleNickname() })}
                         minlength={minInputLengths.nickname}
                         maxlength={maxInputLengths.nickname}
                         autocomplete="name"
@@ -282,6 +264,7 @@
                             </a>
                         {/snippet}
                     </ParaglideMessage>
+                    {m.checkSpam()}
                 </p>
             </div>
 

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.user_id, u.account_type, s.expires_at AS exp\n             FROM sessions s\n             JOIN users u ON u.id = s.user_id\n             WHERE s.token = $1 AND s.expires_at > NOW()",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "account_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "exp",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fbf6544e96fab68a475e4714908380da5a6605b0c8738e8aab63e9a0fedc4a30"
+}

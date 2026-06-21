@@ -8,10 +8,11 @@
     import iconEdit from '$lib/assets/icons/edit.svg?raw';
     import iconTrash from '$lib/assets/icons/trash.svg?raw';
     import iconMove from '$lib/assets/icons/move.svg?raw';
+    import iconUpload from '$lib/assets/icons/upload.svg?raw';
     import { m } from '$lib/paraglide/messages.js';
     import type { DragState } from './SubtreeEditor.svelte';
     import { doDeleteCard, followIndexNode, type TreeHistory } from './history.svelte';
-    import type { SideBar } from './Sidebar.svelte';
+    import type { SideBar } from './sidebar/Sidebar.svelte';
 
     /** Variables used to contain data about the entire tree that is needed for API calls. */
     let {
@@ -23,11 +24,14 @@
         history: TreeHistory;
         location: number[];
         dragState: null | DragState;
-        sidebar: null | SideBar;
+        sidebar: SideBar;
     } = $props();
 
     async function removeButtonClick() {
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
         await doDeleteCard(history, location);
     }
 
@@ -38,7 +42,10 @@
             mouseX: event.clientX,
             mouseY: event.clientY
         };
-        sidebar = null;
+        sidebar = {
+            kind: 'Menu',
+            type: 'IconsOnly'
+        };
     }
 
     let cardId = $derived.by(() => {
@@ -47,9 +54,23 @@
     });
     let card = $derived(history.currentCards[cardId]);
 
-    function editClick() {
+    function editClick(e: Event) {
+        e.stopPropagation();
+
         sidebar = {
+            kind: 'CardEditor',
             type: 'EditCard',
+            location,
+            editingVersion: $state.snapshot(card)
+        };
+    }
+
+    function uploadClick(e: Event) {
+        e.stopPropagation();
+
+        sidebar = {
+            kind: 'CardEditor',
+            type: 'UploadToLibrary',
             location,
             editingVersion: $state.snapshot(card)
         };
@@ -72,5 +93,9 @@
     <button class="cursor-pointer" title={m.deleteThisCard()} onclick={removeButtonClick}>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html iconTrash}
+    </button>
+    <button class="cursor-pointer" title={m.uploadThisCard()} onclick={uploadClick}>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        {@html iconUpload}
     </button>
 </div>

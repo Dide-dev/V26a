@@ -9,7 +9,6 @@
     import DeleteButton from './DeleteButton.svelte';
     import {
         getOwnUserData,
-        getUserInfo,
         updateUser,
         changePassword,
         type UserData,
@@ -23,6 +22,7 @@
         checkSpecialCharacter
     } from '$lib/passwords';
     import { m } from '$lib/paraglide/messages.js';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { redirectLogin } from '$lib/api-wrapper';
     import { page } from '$app/state';
 
@@ -415,6 +415,8 @@
                 <button type="submit" data-testid="confirm-button">{m.confirmChanges()}</button>
                 <button type="reset" onclick={handleCancel}>{m.cancel()}</button>
             </div>
+            <h2 class="page__heading">{m.danger()}</h2>
+            <em>{m.dangerSectionNotice()}</em>
             <div>
                 <DeleteButton />
             </div>
