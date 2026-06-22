@@ -6,8 +6,8 @@
 
 #![cfg(test)]
 
-use crate::db_structs::cards::CardData;
-use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure, TreeWithCards};
+use crate::structs::cards::CardData;
+use crate::structs::trees::{TreeAddData, TreeData, TreeStructure, TreeWithCards};
 use crate::tests::api_v1::setup_login;
 use sqlx::PgPool;
 use std::collections::BTreeMap;

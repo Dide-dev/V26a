@@ -3,9 +3,9 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::auth::UserCredentials;
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
+use crate::structs::auth::UserCredentials;
+use crate::structs::users::AccountType;
 use sqlx::{PgExecutor, query};
 use std::str::FromStr;
 

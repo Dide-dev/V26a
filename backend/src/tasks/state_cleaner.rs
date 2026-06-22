@@ -3,8 +3,8 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::users::RemoveExpired;
 use crate::state::ArcState;
+use crate::structs::users::RemoveExpired;
 use std::time::Duration;
 use tokio::time;
 use tracing::log::info;

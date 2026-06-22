@@ -51,7 +51,7 @@
         </div>
     </div>
     <p class="pt-2 pb-2">
-        and has been developed by the following students from the Bachelor Computer Science at
+        and has been developed by the following students from the bachelor Computer Science at
         Utrecht University within the Software Project course:
     </p>
     <div class="pb-2 text-center">
@@ -71,7 +71,7 @@
             href="https://www.uu.nl/staff/RTRadulescu"
             class="text__link"
             target="_blank"
-            rel="external">Roxana Radulescu</a
+            rel="external">Dr. Roxana Radulescu</a
         >.
     </p>
     <p>

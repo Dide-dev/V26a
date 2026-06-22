@@ -11,6 +11,7 @@
     ## Params
     - `tree: TreeMetadata` - The data of the tree to display.
     - `expanded: boolean` - Bindable flag whether the entry displays all its contents.
+    - `linkToEditor: boolean` - Whether the tree list entry links to the editor page.
 -->
 
 <script lang="ts">
@@ -38,11 +39,13 @@
     let {
         tree,
         expanded = $bindable(),
+        linkToEditor,
         handleDelete,
         usedForClassroom
     }: {
         tree: TreeMetadata;
         expanded: boolean;
+        linkToEditor: boolean;
         handleDelete: () => void;
         usedForClassroom: boolean;
     } = $props();
@@ -72,13 +75,17 @@
             <span class="flex gap-1 *:*:inline">
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
-                        href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
+                        href={appLink(`/trees/${tree.genData.id}${linkToEditor ? '/edit' : ''}`)}
                         target="_blank"
                         class={[
                             !tree.data.published && 'text-neutral-600 italic',
                             'line-clamp-1 w-fit flex-1 break-all text-ellipsis'
                         ]}
-                        title={tree.data.published ? m.viewTree() : m.unpublishedTree()}
+                        title={tree.data.published
+                            ? linkToEditor
+                                ? m.editTree()
+                                : m.viewTree()
+                            : m.unpublishedTree()}
                     >
                         <strong>{tree.data.title}</strong>
                     </a>
@@ -90,16 +97,16 @@
                 {/if}
                 <span class="font-semibold text-neutral-500">#{tree.genData.id}</span>
                 <a
-                    href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
+                    href={appLink(`/trees/${tree.genData.id}`)}
                     aria-label="open"
                     target="_blank"
                     title={m.viewTree()}
                 >
                     <ArrowUpRightFromSquareOutline class="mb-1 h-5 w-5 shrink-0" />
                 </a>
-                {#if userInfo?.sub === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '') || userInfo?.accountType === 'admin'}
+                {#if userInfo?.userId === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '') || userInfo?.accountType === 'admin'}
                     <a
-                        href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
+                        href={appLink(`/trees/${tree.genData.id}/edit`)}
                         aria-label="edit"
                         target="_blank"
                         title={m.editTree()}
@@ -118,7 +125,7 @@
                     </button>
                 {/if}
                 {#if !usedForClassroom}
-                    {#if userInfo?.sub === tree.genData.ownerId || userInfo?.accountType === 'admin'}
+                    {#if userInfo?.userId === tree.genData.ownerId || userInfo?.accountType === 'admin'}
                         <button
                             onclick={askDeleteConfirmation}
                             aria-label="delete"

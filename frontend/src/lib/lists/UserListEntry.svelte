@@ -32,7 +32,7 @@
             <span class="flex gap-1 *:*:inline">
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
-                        href={appLink(`/user-manager?id=${user.id}`)}
+                        href={appLink(`/admin/users/${user.id}`)}
                         target="_blank"
                         class={[
                             !user.enabled && 'text-neutral-600 italic',
@@ -50,7 +50,7 @@
                 {/if}
                 <span class="font-semibold text-neutral-500">#{user.id}</span>
                 <a
-                    href={appLink(`/user-manager?id=${user.id}`)}
+                    href={appLink(`/admin/users/${user.id}`)}
                     aria-label="edit"
                     target="_blank"
                     title={m.editUser()}

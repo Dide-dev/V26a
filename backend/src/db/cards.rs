@@ -4,8 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
+use crate::structs::cards::CardData;
 use sqlx::{PgConnection, PgExecutor, query, query_as};
 use std::collections::BTreeMap;
 

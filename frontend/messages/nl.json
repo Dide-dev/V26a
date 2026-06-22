@@ -227,7 +227,7 @@
     "classroomUserName": "Als dit je eerste login is in dit klaslokaal, vul dan je naam in. Vul anders je toegewezen nummer in.",
     "classroomJoinCodeIncorrect": "De join code is niet correct.",
     "classroomMissingUser": "Dit nummer is niet toegewezen aan een gebruiker in dit klaslokaal",
-    "usernumber": "Toegewezen #",
+    "usernumber": "Toegewezen nummer",
     "code": "Code",
     "owner": "Eigenaar",
     "copyCode": "Kopieer joincode",
@@ -242,7 +242,7 @@
     "heuristicTrees": "Heuristiekbomen",
     "pendingRegistrationTitle": "E-mailverificatie vereist",
     "pendingRegistrationBody": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}. Verifieer je account om in te loggen.",
-    "checkSpam": "Indien je de mail niet kan vinden, controleer alsjeblieft je spam.",
+    "checkSpam": "Indien je de mail niet kan vinden, controleer alsjeblieft je spambox.",
     "verificationSuccessTitle": "Account geverifieerd",
     "verificationSuccessBody": "Je account is geverifieerd, je kan nu inloggen.",
     "verificationFailureTitle": "Verificatie mislukt",
@@ -274,7 +274,7 @@
     "resetPassword": "Wachtwoord opnieuw instellen",
     "resetPasswordInstructions": "Indien je jouw wachtwoord bent vergeten, kan je het hier opnieuw instellen door het e-mailadres van je account in te vullen. Wij zullen je een e-mail sturen met verdere instructies.",
     "send": "Verzenden",
-    "resetPasswordRequestSent": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}. Volg de instructies in de mail om je wachtwoord opnieuw in te stellen.",
+    "resetPasswordRequestSent": "We hebben een e-mail gestuurd naar {#link}{mail}{/link}, als er een account bestaat met dat e-mailadres. Volg de instructies in de mail om je wachtwoord opnieuw in te stellen.",
     "setNewPassword": "Stel een nieuw wachtwoord in",
     "resetPasswordSuccessTitle": "Wachtwoord veranderd",
     "resetPasswordSuccessBody": "Je wachtwoord is veranderd, je kan deze nu gebruiken om in te loggen.",
@@ -283,5 +283,6 @@
     "cardLibrary": "Voeg kaart in uit kaartenbibliotheek",
     "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
     "uploadCard": "Upload naar de kaartenbibliotheek",
-    "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
+    "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek",
+    "confirmDeleteLibraryCard": "Weet je zeker dat je '{title}' van de kaartenbibliotheek wilt verwijderen?"
 }

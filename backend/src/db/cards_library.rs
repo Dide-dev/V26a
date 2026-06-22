@@ -3,9 +3,9 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
+use crate::structs::cards::{CardData, CardFilters, LibraryCardGetData};
+use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_scalar};
 
 /// Add a list of tags for a given library card in the database.
 ///
@@ -110,6 +110,56 @@ pub async fn cards_library_add(
     add_tags(db, library_card_id, tags).await?;
 
     Ok(library_card_id)
+}
+
+/// Removes a card from the cards library table.
+/// If the given `library_card_id` does not exist, this function will do nothing and return `Ok(())`.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `library_card_id` - The id of the library card to assign the tags to.
+///
+/// # Returns
+/// Nothing
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn cards_library_delete(
+    db: impl PgExecutor<'_>,
+    library_card_id: i32,
+) -> Result<(), ApiError> {
+    query!("DELETE FROM library_cards WHERE id=$1", library_card_id)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+
+/// Gets the owner associated with a given library card.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `library_card_id` - The id of the library card to get the owner from.
+///
+/// # Returns
+/// Returns `Some` owner id if it can be found, or `None` if no library card with given id exists.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn cards_library_get_owner(
+    db: impl PgExecutor<'_>,
+    library_card_id: i32,
+) -> Result<Option<i32>, ApiError> {
+    let owner_id = query_scalar!(
+        "SELECT owner_id FROM library_cards WHERE id=$1",
+        library_card_id
+    )
+    .fetch_optional(db)
+    .await?;
+
+    Ok(owner_id)
 }
 
 /// Get the amount of cards satisfying some filters.
@@ -278,7 +328,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_cards_library_add(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let title = "title".to_owned();
@@ -287,7 +337,7 @@ mod tests {
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &title,
             tags.clone(),
             &card_text,
@@ -303,7 +353,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(found_card_data.owner_id, claims.sub);
+        assert_eq!(found_card_data.owner_id, session.user_id);
         assert_eq!(found_card_data.title, title);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
@@ -394,14 +444,14 @@ mod tests {
         );
 
         // Add card to library
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let _ = cards_library_add(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &String::new(),
             vec![],
             &card_text,
@@ -427,10 +477,10 @@ mod tests {
         assert_eq!(empty_list, vec![]);
 
         // Add card to library
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let owner_name = get_user_all_data(&db, claims.sub)
+        let owner_name = get_user_all_data(&db, session.user_id)
             .await
             .unwrap()
             .updateable_data
@@ -442,7 +492,7 @@ mod tests {
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &title,
             tags.clone(),
             &card_text,
