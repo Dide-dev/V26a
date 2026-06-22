@@ -49,7 +49,7 @@
         event.preventDefault();
         let classroomGenData: ClassroomGeneratedData = await addClassroom(classroomData);
 
-        await goto(appLink(`/classrooms/dashboard/teacher?id=${classroomGenData.id}`));
+        await goto(appLink(`/classrooms/${classroomGenData.id}/edit`));
     }
 </script>
 
@@ -89,8 +89,7 @@
                     value: m.exampleClassroomDescription()
                 })}
                 minlength={minInputLengths.description}
-                maxlength={maxInputLengths.description}
-            ></textarea>
+                maxlength={maxInputLengths.description}></textarea>
         </div>
         <button type="submit" data-testid="add-button">{m.createClassroom()}</button>
     </form>

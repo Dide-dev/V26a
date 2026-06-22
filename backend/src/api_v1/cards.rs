@@ -6,10 +6,10 @@
 
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{get_tree_of_card, update_card};
-use crate::db_structs::Validated;
-use crate::db_structs::cards::CardData;
-use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
+use crate::structs::Validated;
+use crate::structs::cards::CardData;
+use crate::structs::session::Session;
 use crate::{ArcState, get_connection};
 use axum::extract::Path;
 use axum::routing::put;
@@ -33,14 +33,14 @@ pub fn cards() -> Router<ArcState> {
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("card_id" = i32, Path),
     )
 )]
 /// Update the contents of an existing card in the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `card_id` - The card to update.
 ///
@@ -63,7 +63,7 @@ pub fn cards() -> Router<ArcState> {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_existing_card(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(card_id): Path<i32>,
     Json(card_data): Json<CardData>,
@@ -73,7 +73,7 @@ async fn update_existing_card(
     let tree_id = get_tree_of_card(&db, card_id).await?;
 
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &session).await?;
 
     update_card(get_connection!(db), card_id, &card_data).await?;
 

@@ -6,9 +6,9 @@
 
 use crate::ArcState;
 use crate::db::images::{add_image, check_image_existence};
-use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::ratelimits::ADD_IMAGE_RATELIMIT;
+use crate::structs::session::Session;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::routing::post;
@@ -50,13 +50,13 @@ pub fn images() -> Router<ArcState> {
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Add an image to the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `body` - The uploaded image as [`Bytes`].
 ///
@@ -77,7 +77,7 @@ pub fn images() -> Router<ArcState> {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_image(
-    claims: Claims,
+    session: Session,
     State(state): State<ArcState>,
     Extension(db): Extension<PgPool>,
     body: Bytes,
@@ -107,7 +107,7 @@ async fn add_new_image(
 
     // Add the image metadata to the database in transaction.
     let mut transaction = db.begin().await?;
-    add_image(&mut *transaction, &filename, &hash, claims.sub).await?;
+    add_image(&mut *transaction, &filename, &hash, session.user_id).await?;
 
     // Write the image to the directory.
     tokio::fs::write(&filepath, &body)

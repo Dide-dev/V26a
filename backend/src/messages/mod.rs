@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::UserLanguage;
+use crate::structs::users::UserLanguage;
 
 mod en;
 mod nl;

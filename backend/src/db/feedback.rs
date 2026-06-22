@@ -4,9 +4,9 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::feedback::{FeedbackData, FeedbackGetData};
-use crate::db_structs::pagination::PaginationOptions;
 use crate::errors::ApiError;
+use crate::structs::feedback::{FeedbackData, FeedbackGetData};
+use crate::structs::pagination::PaginationOptions;
 use sqlx::{PgExecutor, query, query_as, query_scalar};
 
 /// Add feedback to the database.

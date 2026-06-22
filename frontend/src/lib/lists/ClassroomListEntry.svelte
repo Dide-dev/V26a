@@ -40,7 +40,7 @@
         // Will never happen unless user manually deletes his cookie
         if (allClassroomUserInfos === null) return '';
 
-        let classroomUserInfo = allClassroomUserInfos.claims.find(
+        let classroomUserInfo = allClassroomUserInfos.sessions.find(
             (classroom) => classroom.id === classroomId
         );
         // Will never happen unless user manually changes his cookie
@@ -56,9 +56,7 @@
             <span class="flex gap-1 *:*:inline">
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
-                        href={appLink(
-                            `/classrooms/dashboard/${isTeacher ? 'teacher' : 'student'}?id=${classroom.id}`
-                        )}
+                        href={appLink(`/classrooms/${classroom.id}${isTeacher ? '/edit' : ''}`)}
                         target="_blank"
                         class={['line-clamp-1 w-fit flex-1 break-all text-ellipsis']}
                         title={m.classroomDashboard()}

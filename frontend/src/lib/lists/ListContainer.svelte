@@ -86,8 +86,7 @@
     ]}
 >
     <div class="list-grid" style={`--filter-col-width: ${filterFraction.current}fr`}>
-        <div></div>
-        <div>
+        <div class="col-span-2">
             {@render title()}
             <div class="flex w-full flex-col items-center justify-center overflow-auto">
                 <div class="flex w-full flex-col">

@@ -20,11 +20,11 @@ mod users;
 use crate::ArcState;
 use crate::api_v1::users::{UserResponse, VerificationCode};
 use crate::config::Config;
-use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
-use crate::db_structs::mail::StubMailer;
-use crate::db_structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
-use crate::db_structs::users::RegisterData;
+use crate::structs::auth::LoginRequestBody;
+use crate::structs::classrooms::{ClassroomAddData, ClassroomGeneratedData};
+use crate::structs::mail::StubMailer;
+use crate::structs::trees::{RootNode, TreeAddData, TreeData, TreeStructure};
+use crate::structs::users::RegisterData;
 use axum::Extension;
 use axum_extra::extract::cookie::Cookie;
 use axum_test::{TestResponse, TestServer};
@@ -296,10 +296,10 @@ async fn create_classroom(test_server: &TestServer) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::db_structs::session::InfoCookieData;
-    use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure};
-    use crate::db_structs::users::{AccountType, RegisterData};
     use crate::get_connection_unwrap;
+    use crate::structs::session::InfoCookieData;
+    use crate::structs::trees::{TreeAddData, TreeData, TreeStructure};
+    use crate::structs::users::{AccountType, RegisterData};
     use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
     use sqlx::PgPool;
 

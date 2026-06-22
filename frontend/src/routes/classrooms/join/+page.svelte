@@ -42,9 +42,7 @@
             case 'Success':
                 joinCodeIncorrect = false;
                 missingUser = false;
-                await goto(
-                    appLink(`/classrooms/dashboard/student?id=${classroomLoginResponse.id}`)
-                );
+                await goto(appLink(`/classrooms/${classroomLoginResponse.id}`));
                 break;
             case 'JoinCodeIncorrect':
                 missingUser = false;

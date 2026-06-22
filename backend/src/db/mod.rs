@@ -4,18 +4,18 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-#[path = "claims/all_classroom_claims.rs"]
-pub mod all_classroom_claims;
+#[path = "session/all_classroom_sessions.rs"]
+pub mod all_classroom_sessions;
 pub mod auth;
 pub mod cards;
 pub mod cards_library;
-#[path = "claims/claims.rs"]
-pub mod claims;
-#[path = "claims/classroom_claims.rs"]
-pub mod classroom_claims;
+#[path = "session/classroom_session.rs"]
+pub mod classroom_session;
 pub mod classrooms;
 pub mod feedback;
 pub mod images;
+#[path = "session/session.rs"]
+pub mod session;
 pub mod trees;
 pub mod users;
 
@@ -51,29 +51,29 @@ macro_rules! get_connection_unwrap {
 pub mod test {
     use crate::db::classrooms::{add_lesson, generate_random_code};
     use crate::db::trees::parse_isbn;
-    use crate::db_structs::cards::CardData;
-    use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
-    use crate::db_structs::session::{Claims, ClassroomClaims};
-    use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
-    use crate::db_structs::users::{AccountType, RegisterData};
+    use crate::structs::cards::CardData;
+    use crate::structs::classrooms::{ClassroomAddData, LessonAddData};
+    use crate::structs::session::{ClassroomSession, Session};
+    use crate::structs::trees::{RootNode, TreeData, TreeStructure};
+    use crate::structs::users::{AccountType, RegisterData};
     use sqlx::{PgConnection, PgExecutor, query};
 
     /// Initialize a database with a user and a tree.
     ///
     /// # Returns
     /// A tuple containing the `user_id` as its first value and the `tree_id` as its second value.
-    pub async fn initialize_db(db: &mut PgConnection) -> (Claims, i32) {
-        let claims = initialize_basic_user(&mut *db).await;
-        let tree_id = initialize_empty_tree(&mut *db, claims.sub).await;
+    pub async fn initialize_db(db: &mut PgConnection) -> (Session, i32) {
+        let session = initialize_basic_user(&mut *db).await;
+        let tree_id = initialize_empty_tree(&mut *db, session.user_id).await;
 
-        (claims, tree_id)
+        (session, tree_id)
     }
 
     /// Initialize a user in the database.
     ///
     /// # Returns
     /// The `user_id` associated with the newly added user.
-    pub async fn initialize_basic_user(db: impl PgExecutor<'_>) -> Claims {
+    pub async fn initialize_basic_user(db: impl PgExecutor<'_>) -> Session {
         let user = query!(
             "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id",
             "test@email.com",
@@ -84,8 +84,8 @@ pub mod test {
         .await
         .unwrap();
 
-        Claims {
-            sub: user.id,
+        Session {
+            user_id: user.id,
             account_type: AccountType::Author,
         }
     }
@@ -94,7 +94,7 @@ pub mod test {
     ///
     /// # Returns
     /// The `user_id` associated with the newly added user.
-    pub async fn initialize_user(db: impl PgExecutor<'_>, register_data: &RegisterData) -> Claims {
+    pub async fn initialize_user(db: impl PgExecutor<'_>, register_data: &RegisterData) -> Session {
         let password_hash = bcrypt::hash(register_data.password.clone(), 4).unwrap();
 
         let user = query!(
@@ -111,8 +111,8 @@ pub mod test {
         .await
         .unwrap();
 
-        Claims {
-            sub: user.id,
+        Session {
+            user_id: user.id,
             account_type: AccountType::Author,
         }
     }
@@ -260,11 +260,11 @@ pub mod test {
         ).fetch_one(db).await.unwrap().id
     }
 
-    pub async fn put_user_in_classroom(db: impl PgExecutor<'_>, claims: &ClassroomClaims) {
+    pub async fn put_user_in_classroom(db: impl PgExecutor<'_>, session: &ClassroomSession) {
         query!("INSERT INTO classroom_users (classroom_id, id_within_classroom, name) VALUES ($1, $2, $3)",
-            claims.id,
-            claims.num,
-            claims.name,
+            session.id,
+            session.num,
+            session.name,
         )
         .execute(db).await.unwrap();
     }
