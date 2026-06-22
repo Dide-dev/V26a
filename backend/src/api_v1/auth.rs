@@ -7,11 +7,11 @@
 use crate::api_v1::create_token;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::users::{get_user, user_update_last_login};
-use crate::db_structs::Validated;
-use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::errors::ApiError;
 use crate::ratelimits::LOGIN_RATELIMIT;
+use crate::structs::Validated;
+use crate::structs::auth::LoginRequestBody;
+use crate::structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::{ArcState, get_connection};
 use axum::extract::State;
 use axum::routing::{delete, post};

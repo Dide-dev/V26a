@@ -4,8 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
+use crate::structs::users::AccountType;
 use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;

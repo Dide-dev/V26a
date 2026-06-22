@@ -5,15 +5,15 @@
 */
 
 use crate::api_v1::trees::verify_tree_permissions;
-use crate::db_structs::pagination::PaginationOptions;
-use crate::db_structs::session::Claims;
-use crate::db_structs::users::AccountType;
+use crate::structs::pagination::PaginationOptions;
+use crate::structs::session::Claims;
+use crate::structs::users::AccountType;
 use crate::{
-    db_structs::trees::{
+    errors::ApiError,
+    structs::trees::{
         Language, Subject, SubjectData, TreeAddData, TreeData, TreeFilters, TreeGeneratedData,
         TreeLinkedData, TreeMetadata, TreeStructure,
     },
-    errors::ApiError,
 };
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
@@ -1365,9 +1365,9 @@ mod tests {
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
         initialize_tree_with_data, initialize_user,
     };
-    use crate::db_structs::trees::{Node, RootNode};
-    use crate::db_structs::users::RegisterData;
     use crate::get_connection_unwrap;
+    use crate::structs::trees::{Node, RootNode};
+    use crate::structs::users::RegisterData;
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
 

@@ -7,14 +7,14 @@
 #![cfg(test)]
 
 use crate::api_v1::classrooms::teachers::verify_classroom_permissions;
-use crate::db_structs::classrooms::{
+use crate::errors::ApiError;
+use crate::get_connection_unwrap;
+use crate::structs::classrooms::{
     ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse, ClassroomLoginResponse,
     ClassroomUserLoginData, LessonAddData,
 };
-use crate::db_structs::session::{AllClassroomClaims, Claims};
-use crate::db_structs::users::{AccountType, RegisterData};
-use crate::errors::ApiError;
-use crate::get_connection_unwrap;
+use crate::structs::session::{AllClassroomClaims, Claims};
+use crate::structs::users::{AccountType, RegisterData};
 use crate::tests::api_v1::{
     create_classroom, get_cookie_data, login, register, setup, setup_login,
 };

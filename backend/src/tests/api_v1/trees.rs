@@ -11,15 +11,15 @@ use crate::api_v1::trees::AuthorizeCoAuthorResponse;
 use crate::api_v1::trees::edit_lock::{BackendMessage, FrontendMessage};
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::trees::is_co_author_of_tree;
-use crate::db_structs::cards::CardData;
-use crate::db_structs::session::Claims;
-use crate::db_structs::trees::{
+use crate::errors::ApiError;
+use crate::get_connection_unwrap;
+use crate::structs::cards::CardData;
+use crate::structs::session::Claims;
+use crate::structs::trees::{
     Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeListResponse,
     TreeMetadata, TreeStructure, TreeWithCards,
 };
-use crate::db_structs::users::{AccountType, RegisterData};
-use crate::errors::ApiError;
-use crate::get_connection_unwrap;
+use crate::structs::users::{AccountType, RegisterData};
 use crate::tests::api_v1::{
     create_tree, login, register, register_admin, setup, setup_admin, setup_config, setup_login,
 };

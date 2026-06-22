@@ -16,7 +16,7 @@ use axum_extra::extract::Query;
 use sqlx::PgPool;
 
 use crate::db::feedback::{get_all_feedback, get_feedback_count};
-use crate::db_structs::{
+use crate::structs::{
     Validated,
     feedback::FeedbackListResponse,
     session::Claims,
@@ -24,7 +24,7 @@ use crate::db_structs::{
 };
 
 use crate::api_v1::users::{check_email_used, check_username_used};
-use crate::db_structs::users::RemoveExpired;
+use crate::structs::users::RemoveExpired;
 use crate::{
     ArcState,
     api_v1::users::{ChangePasswordResponse, UserResponse},
@@ -32,9 +32,9 @@ use crate::{
         admin_update_user, get_user_all_data, get_user_count, get_user_list_by_page,
         update_password, user_id_exists,
     },
-    db_structs::pagination::OptionalPaginationOptions,
-    db_structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
     errors::ApiError,
+    structs::pagination::OptionalPaginationOptions,
+    structs::users::{AccountType, AdminPasswordChangeRequestBody, UserListResponse},
 };
 
 /// Checks if the user is an admin. This is used as a middleware in the `admin` function below.

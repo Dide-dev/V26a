@@ -10,15 +10,15 @@ use crate::db::classrooms::{
     get_classroom_metadata_from_id, get_lessons_with_tree_ids_from_classroom, get_name_by_number,
     validate_join_code,
 };
-use crate::db_structs::classrooms::{
-    ClassroomListResponse, ClassroomLoginResponse, ClassroomStudentDashboardData,
-    ClassroomUserLoginData,
-};
-use crate::db_structs::pagination::OptionalPaginationOptions;
-use crate::db_structs::session::{AllClassroomClaims, ClaimsType, ClassroomClaims};
 use crate::errors::ApiError;
 use crate::get_connection;
 use crate::state::ArcState;
+use crate::structs::classrooms::{
+    ClassroomListResponse, ClassroomLoginResponse, ClassroomStudentDashboardData,
+    ClassroomUserLoginData,
+};
+use crate::structs::pagination::OptionalPaginationOptions;
+use crate::structs::session::{AllClassroomClaims, ClaimsType, ClassroomClaims};
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
 use axum_extra::extract::cookie::Cookie;

@@ -3,8 +3,8 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
+use crate::structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_scalar};
 
 /// Add a list of tags for a given library card in the database.

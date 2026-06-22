@@ -7,11 +7,11 @@
 #![cfg(test)]
 
 use crate::api_v1::lessons::verify_lesson_permissions;
-use crate::db_structs::classrooms::LessonAddData;
-use crate::db_structs::session::Claims;
-use crate::db_structs::users::{AccountType, RegisterData};
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
+use crate::structs::classrooms::LessonAddData;
+use crate::structs::session::Claims;
+use crate::structs::users::{AccountType, RegisterData};
 use crate::tests::api_v1::{create_classroom, create_tree, login, register, setup, setup_login};
 use sqlx::PgPool;
 

@@ -51,11 +51,11 @@ macro_rules! get_connection_unwrap {
 pub mod test {
     use crate::db::classrooms::{add_lesson, generate_random_code};
     use crate::db::trees::parse_isbn;
-    use crate::db_structs::cards::CardData;
-    use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
-    use crate::db_structs::session::{Claims, ClassroomClaims};
-    use crate::db_structs::trees::{RootNode, TreeData, TreeStructure};
-    use crate::db_structs::users::{AccountType, RegisterData};
+    use crate::structs::cards::CardData;
+    use crate::structs::classrooms::{ClassroomAddData, LessonAddData};
+    use crate::structs::session::{Claims, ClassroomClaims};
+    use crate::structs::trees::{RootNode, TreeData, TreeStructure};
+    use crate::structs::users::{AccountType, RegisterData};
     use sqlx::{PgConnection, PgExecutor, query};
 
     /// Initialize a database with a user and a tree.

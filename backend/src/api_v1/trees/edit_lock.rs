@@ -18,9 +18,9 @@ use tokio::sync::oneshot::Receiver;
 use utoipa::ToSchema;
 
 use crate::{
-    db_structs::session::Claims,
     errors::ApiError,
     state::{ArcState, TreeEditLock},
+    structs::session::Claims,
 };
 
 #[utoipa::path(

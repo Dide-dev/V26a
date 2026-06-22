@@ -4,8 +4,8 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::session::{ClaimsType, ClassroomClaims};
 use crate::errors::ApiError;
+use crate::structs::session::{ClaimsType, ClassroomClaims};
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
@@ -162,8 +162,8 @@ mod tests {
         initialize_basic_user, initialize_classroom, put_classroom_token_in_db,
         put_user_in_classroom,
     };
-    use crate::db_structs::session::ClassroomClaims;
     use crate::get_connection_unwrap;
+    use crate::structs::session::ClassroomClaims;
     use sqlx::PgPool;
 
     #[sqlx::test]

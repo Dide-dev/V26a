@@ -9,12 +9,12 @@
 mod api_v1;
 mod config;
 mod db;
-mod db_structs;
 mod errors;
 mod limits;
 mod messages;
 mod ratelimits;
 mod state;
+mod structs;
 mod tasks;
 mod tests;
 

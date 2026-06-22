@@ -13,15 +13,6 @@ use crate::db::trees::{
 };
 use crate::db::users::get_user;
 use crate::db::users::get_user_by_name;
-use crate::db_structs::Validated;
-use crate::db_structs::cards::CardData;
-use crate::db_structs::pagination::OptionalPaginationOptions;
-use crate::db_structs::session::Claims;
-use crate::db_structs::trees::{
-    Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeFilters,
-    TreeListResponse, TreeStructure, TreeWithCards,
-};
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::limits::TREE_TITLE_MAX_LENGTH;
 use crate::messages::Message;
@@ -29,6 +20,15 @@ use crate::ratelimits::{
     ADD_CARD_RATELIMIT, ADD_TREE_RATELIMIT, DUPLICATE_TREE_RATELIMIT, GET_EDIT_LOCK_RATELIMIT,
     GET_TREE_LIST_RATELIMIT,
 };
+use crate::structs::Validated;
+use crate::structs::cards::CardData;
+use crate::structs::pagination::OptionalPaginationOptions;
+use crate::structs::session::Claims;
+use crate::structs::trees::{
+    Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeFilters,
+    TreeListResponse, TreeStructure, TreeWithCards,
+};
+use crate::structs::users::AccountType;
 use crate::{ArcState, db, get_connection};
 
 use axum::extract::Path;
@@ -106,13 +106,13 @@ pub fn trees() -> Router<ArcState> {
 /// The id assigned to the new tree.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::structs::trees::TreeData) in
 /// [`TreeAddData`] contains an invalid ISBN.
 ///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::structs::trees::TreeData) in
 /// [`TreeAddData`] contains a non-existent language.
 ///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::db_structs::trees::TreeData) in
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::structs::trees::TreeData) in
 /// [`TreeAddData`] contains a non-existent subject.
 ///
 /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in

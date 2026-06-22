@@ -10,17 +10,17 @@ use crate::db::classrooms::{
     get_classroom_metadata_from_id, get_classroom_owner_from_id,
     get_lessons_with_tree_ids_from_classroom,
 };
-use crate::db_structs::Validated;
-use crate::db_structs::classrooms::{
+use crate::errors::ApiError;
+use crate::get_connection;
+use crate::structs::Validated;
+use crate::structs::classrooms::{
     ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse, ClassroomTeacherDashboardData,
     LessonAddData,
 };
-use crate::db_structs::session::Claims;
-use crate::db_structs::users::AccountType;
-use crate::errors::ApiError;
-use crate::get_connection;
+use crate::structs::session::Claims;
+use crate::structs::users::AccountType;
 
-use crate::db_structs::pagination::OptionalPaginationOptions;
+use crate::structs::pagination::OptionalPaginationOptions;
 use axum::extract::Path;
 use axum::{Extension, Json};
 use axum_extra::extract::Query;

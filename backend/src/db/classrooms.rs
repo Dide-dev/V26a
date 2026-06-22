@@ -5,13 +5,13 @@
 */
 
 use crate::db::trees::get_queried_list;
-use crate::db_structs::classrooms::{
+use crate::errors::ApiError;
+use crate::structs::classrooms::{
     ClassroomAddData, ClassroomMetaData, LessonAddData, LessonMetaData, LessonWithTrees,
 };
-use crate::db_structs::pagination::PaginationOptions;
-use crate::db_structs::session::Claims;
-use crate::db_structs::trees::TreeFilters;
-use crate::errors::ApiError;
+use crate::structs::pagination::PaginationOptions;
+use crate::structs::session::Claims;
+use crate::structs::trees::TreeFilters;
 use rand::prelude::*;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 
@@ -649,9 +649,9 @@ mod tests {
         get_lessons_with_tree_ids_from_classroom, get_name_by_number, validate_join_code,
     };
     use crate::db::test::{initialize_classroom, initialize_db, initialize_lesson};
-    use crate::db_structs::classrooms::{ClassroomAddData, LessonAddData};
-    use crate::db_structs::pagination::PaginationOptions;
     use crate::get_connection_unwrap;
+    use crate::structs::classrooms::{ClassroomAddData, LessonAddData};
+    use crate::structs::pagination::PaginationOptions;
     use sqlx::{PgPool, query};
 
     #[sqlx::test]

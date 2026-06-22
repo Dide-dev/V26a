@@ -5,7 +5,7 @@
 */
 
 use crate::config::Config;
-use crate::db_structs::users::{PasswordResetRequestData, PendingRegisterData};
+use crate::structs::users::{PasswordResetRequestData, PendingRegisterData};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, oneshot};

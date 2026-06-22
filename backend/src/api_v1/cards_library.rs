@@ -10,13 +10,13 @@ use crate::db::cards_library::{
     cards_library_add, cards_library_delete, cards_library_get_owner, get_queried_cards_count,
     get_queried_cards_list,
 };
-use crate::db_structs::Validated;
-use crate::db_structs::cards::{CardFilters, LibraryCardAddData, LibraryCardGetData};
-use crate::db_structs::session::Claims;
-use crate::db_structs::users::AccountType;
 use crate::errors::ApiError;
 use crate::get_connection;
 use crate::state::ArcState;
+use crate::structs::Validated;
+use crate::structs::cards::{CardFilters, LibraryCardAddData, LibraryCardGetData};
+use crate::structs::session::Claims;
+use crate::structs::users::AccountType;
 use axum::extract::Path;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};

@@ -5,8 +5,8 @@
 */
 
 use crate::ArcState;
-use crate::db_structs::session::{AllClassroomClaims, Claims, ClassroomClaims};
 use crate::errors::ApiError;
+use crate::structs::session::{AllClassroomClaims, Claims, ClassroomClaims};
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 

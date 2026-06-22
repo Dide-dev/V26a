@@ -6,10 +6,10 @@
 
 use crate::api_v1::trees::verify_tree_permissions;
 use crate::db::cards::{get_tree_of_card, update_card};
-use crate::db_structs::Validated;
-use crate::db_structs::cards::CardData;
-use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
+use crate::structs::Validated;
+use crate::structs::cards::CardData;
+use crate::structs::session::Claims;
 use crate::{ArcState, get_connection};
 use axum::extract::Path;
 use axum::routing::put;

@@ -6,9 +6,9 @@
 
 use crate::ArcState;
 use crate::db::images::{add_image, check_image_existence};
-use crate::db_structs::session::Claims;
 use crate::errors::ApiError;
 use crate::ratelimits::ADD_IMAGE_RATELIMIT;
+use crate::structs::session::Claims;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::routing::post;

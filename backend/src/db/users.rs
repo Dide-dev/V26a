@@ -4,12 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::pagination::PaginationOptions;
-use crate::db_structs::users::{
+use crate::errors::ApiError;
+use crate::structs::pagination::PaginationOptions;
+use crate::structs::users::{
     AccountType, AdminGetUserData, AdminUpdateData, AllUsersGetData, PublicUserData, RegisterData,
     UserData, UserGeneralData, UserGetData, UserLanguage,
 };
-use crate::errors::ApiError;
 use bcrypt::hash;
 use sqlx::{PgConnection, PgExecutor, query, query_as, query_scalar};
 use std::str::FromStr;
@@ -486,8 +486,8 @@ mod tests {
     use super::*;
     use crate::db::auth::{get_user_credentials_by_email, get_user_credentials_by_id};
     use crate::db::test::{initialize_basic_user, initialize_user};
-    use crate::db_structs::users::{AccountType, RegisterData, UserData, UserLanguage};
     use crate::get_connection_unwrap;
+    use crate::structs::users::{AccountType, RegisterData, UserData, UserLanguage};
     use sqlx::PgPool;
 
     #[sqlx::test]

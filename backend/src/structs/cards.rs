@@ -4,12 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::Validated;
 use crate::errors::ApiError;
 use crate::limits::{
     CARD_BACK_MAX_LENGTH, CARD_BACK_MIN_LENGTH, CARD_FRONT_MAX_LENGTH, CARD_LIBRARY_TAG_MAX_LENGTH,
     CARD_LIBRARY_TAG_MIN_LENGTH, CARD_LIBRARY_TITLE_MAX_LENGTH, CARD_LIBRARY_TITLE_MIN_LENGTH,
 };
+use crate::structs::Validated;
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 

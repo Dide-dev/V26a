@@ -10,19 +10,19 @@ use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
     update_password, update_user, user_id_exists,
 };
-use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
-use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetBody, PasswordResetRequestData,
-    PendingRegisterData, PublicUserData, RegisterData, RemoveExpired, RequestPasswordResetBody,
-    UserData, UserGetData,
-};
-use crate::db_structs::{Validated, parse_email};
 use crate::errors::ApiError;
 use crate::messages::Message::{
     EmailVerificationBody, EmailVerificationSubject, PasswordResetMailBody,
     PasswordResetMailSubject,
 };
 use crate::ratelimits::{ADD_USER_RATELIMIT, RESET_PASSWORD_RATELIMIT, VERIFY_USER_RATELIMIT};
+use crate::structs::session::{Claims, ClaimsType, InfoCookieData};
+use crate::structs::users::{
+    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetBody, PasswordResetRequestData,
+    PendingRegisterData, PublicUserData, RegisterData, RemoveExpired, RequestPasswordResetBody,
+    UserData, UserGetData,
+};
+use crate::structs::{Validated, parse_email};
 use crate::{ArcState, get_connection};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};

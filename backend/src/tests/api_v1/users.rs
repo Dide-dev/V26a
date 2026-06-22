@@ -11,8 +11,8 @@ use crate::api_v1::users::{
     ChangePasswordResponse, PasswordResetResponse, UserResponse, VerificationCode,
 };
 use crate::config::Config;
-use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::users::{
+use crate::structs::auth::LoginRequestBody;
+use crate::structs::users::{
     PasswordChangeRequestBody, PasswordResetBody, RegisterData, RequestPasswordResetBody, UserData,
     UserGetData, UserLanguage,
 };

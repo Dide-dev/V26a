@@ -7,8 +7,8 @@
 //! This module parses all external configuration from environment variables.
 //! For more details, see the '.env.example' file in the root of this repository.
 
-use crate::db_structs::mail::{Mailer, SmtpMailer};
 use crate::ratelimits::RatelimitOptions;
+use crate::structs::mail::{Mailer, SmtpMailer};
 use bcrypt::DEFAULT_COST;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use std::env;
