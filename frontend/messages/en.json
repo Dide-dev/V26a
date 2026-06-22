@@ -285,5 +285,6 @@
     "cardLibrary": "Insert card from card library",
     "uploadThisCard": "Upload this card to the cards library",
     "uploadCard": "Upload to the cards library",
-    "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library"
+    "cardUploadedSuccessfully": "Card was successfully uploaded to the cards library",
+    "confirmDeleteLibraryCard": "Are you sure you want to remove '{title}' from the cards library?"
 }

@@ -283,5 +283,6 @@
     "cardLibrary": "Voeg kaart in uit kaartenbibliotheek",
     "uploadThisCard": "Upload deze kaart naar de kaartenbibliotheek",
     "uploadCard": "Upload naar de kaartenbibliotheek",
-    "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek"
+    "cardUploadedSuccessfully": "Kaart was succesvol geüpload naar de kaartenbibliotheek",
+    "confirmDeleteLibraryCard": "Weet je zeker dat je '{title}' van de kaartenbibliotheek wilt verwijderen?"
 }

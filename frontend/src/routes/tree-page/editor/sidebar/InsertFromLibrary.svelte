@@ -7,6 +7,7 @@
 <script lang="ts">
     import {
         type CardFilterOptions,
+        deleteCardFromLibrary,
         getFilteredList,
         type LibraryCardGetData
     } from '$lib/api-wrapper/cards_library';
@@ -20,6 +21,9 @@
     import { type Option } from '$lib/api-wrapper/types';
     import { branchColors } from '$lib/treePage';
     import { SvelteMap } from 'svelte/reactivity';
+    import iconTrash from '$lib/assets/icons/trash.svg?raw';
+    import Popup from '$lib/Popup.svelte';
+    import { getUserInfo } from '$lib/api-wrapper/sessions';
 
     let { sidebar = $bindable() }: { sidebar: CardSideBar | MenuSideBar } = $props();
 
@@ -36,13 +40,23 @@
     });
 
     let libraryCards: LibraryCardGetData[] = $state([]);
+    let libraryCardRemovePopup: null | LibraryCardGetData = $state(null);
 
     let malformedUsername: boolean = $state(false);
 
     let timeFormat = new Intl.DateTimeFormat(timeFormatString);
+    let userInfo = getUserInfo();
 
     async function updateLibrary() {
         libraryCards = await getFilteredList(cardFilterOptions);
+    }
+
+    async function doRemoveCard() {
+        if (libraryCardRemovePopup === null) return;
+
+        libraryCards.splice(libraryCards.indexOf(libraryCardRemovePopup), 1);
+        await deleteCardFromLibrary(libraryCardRemovePopup.cardId);
+        libraryCardRemovePopup = null;
     }
 
     function insertCard(libCard: LibraryCardGetData) {
@@ -115,6 +129,23 @@
     });
 </script>
 
+{#if libraryCardRemovePopup !== null}
+    <Popup>
+        <form
+            class="completed flex flex-col"
+            onsubmit={doRemoveCard}
+            onreset={() => (libraryCardRemovePopup = null)}
+        >
+            <p>{m.confirmDeleteLibraryCard({ title: libraryCardRemovePopup.title })}</p>
+
+            <div class="grid grid-cols-2 gap-1">
+                <button type="reset">{m.cancel()}</button>
+                <button type="submit" class="danger">{m.confirm()}</button>
+            </div>
+        </form>
+    </Popup>
+{/if}
+
 <h2 class="page__heading">{m.cardLibrary()}</h2>
 
 <Accordion flush multiple>
@@ -154,7 +185,18 @@
     <div class="flex w-full flex-row justify-between">
         <div class="flex flex-col gap-0.5">
             <strong>{libraryCard.title}</strong>
-            <em class="-mt-1">{m.madeBy()}: {libraryCard.ownerName}</em>
+            <em class="-mt-1 flex">
+                {m.madeBy()}: {libraryCard.ownerName}
+                {#if libraryCard.ownerName === userInfo?.name || userInfo?.accountType === 'admin'}
+                    <button
+                        class="cursor-pointer"
+                        onclick={() => (libraryCardRemovePopup = libraryCard)}
+                    >
+                        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                        {@html iconTrash}
+                    </button>
+                {/if}
+            </em>
         </div>
         <div class="text-right">
             <p class="font-semibold">
