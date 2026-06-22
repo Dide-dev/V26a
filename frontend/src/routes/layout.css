@@ -166,21 +166,6 @@
             animation: invalidInputClick linear 0.15s;
         }
 
-        .error.danger {
-            color: var(--color-black);
-            padding: var(--spacing-padding-minor);
-            border-radius: var(--radius-md);
-            border-width: 2px;
-            font-weight: var(--font-weight-bold);
-            font-size: var(--text-lg);
-            cursor: pointer;
-        }
-
-        .error.danger:hover {
-            background-color: var(--color-red-700);
-            border-color: var(--color-red-800);
-        }
-
         input + input {
             margin-top: var(--spacing-text-small);
         }
@@ -246,8 +231,8 @@
             }
         }
 
-        &.completed button[type='submit'],
-        button[type='reset'] {
+        &.completed button[type='submit']:not(.button__icon),
+        button[type='reset']:not(.button__icon) {
             color: var(--color-black);
             background-color: var(--color-neutral-200);
             border-color: var(--color-neutral-600);

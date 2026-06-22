@@ -85,7 +85,8 @@
         };
     }
 
-    function retry() {
+    function retry(e: Event) {
+        e.preventDefault();
         localState = { type: 'waiting' };
 
         // Artificial delay so that the user actually sees that there is a retry.
@@ -98,7 +99,8 @@
         return () => websocket.close();
     });
 
-    function sendForceMessage() {
+    function sendForceMessage(e: Event) {
+        e.preventDefault();
         let message: FrontendMessage = { type: 'force' };
         websocket.send(JSON.stringify(message));
     }
@@ -108,40 +110,8 @@
     <p class="w-full text-center text-green-800">{m.loadingTree()}</p>
 {/if}
 
-{#snippet forceKickSnippet(state: LocalStateLockFailed)}
-    {#if state.popupOpen ?? false}
-        <Popup>
-            <div class="flex max-w-md flex-col gap-2">
-                <p>
-                    <UserDisplay userId={state.activeUser} />
-                    {m.otherUserKickConfirm()}
-                </p>
-                <div class="flex justify-end gap-2">
-                    <button
-                        class="cursor-pointer rounded bg-red-300 p-1"
-                        onclick={sendForceMessage}
-                    >
-                        {m.forceKick()}
-                    </button>
-                    <button
-                        class="cursor-pointer rounded bg-green-300 p-1"
-                        onclick={() => {
-                            // This check is unnecessary, but typescript doesn't realize that.
-                            if (localState.type !== 'lockFailed') return;
-
-                            localState.popupOpen = false;
-                        }}
-                    >
-                        {m.cancel()}
-                    </button>
-                </div>
-            </div>
-        </Popup>
-    {/if}
-{/snippet}
-
 {#if localState.type !== 'lockAchieved' && localState.type !== 'waiting'}
-    <div class="m-3 flex max-w-md flex-col items-center gap-2">
+    <form class="completed m-3 flex max-w-md flex-col items-center gap-2">
         <p>
             {#if localState.type === 'kickedOutBy'}
                 {m.kickedBy()} <UserDisplay userId={localState.userId} />
@@ -151,8 +121,14 @@
                 <UserDisplay userId={localState.activeUser} /> {m.otherUserHasLock()}
             {/if}
         </p>
-        <div class="flex gap-2">
-            <button class="cursor-pointer rounded bg-blue-300 p-1" onclick={retry}>
+        <div
+            class={[
+                'grid gap-1',
+                localState.type !== 'lockFailed' && 'grid-cols-1',
+                localState.type === 'lockFailed' && 'grid-cols-2'
+            ]}
+        >
+            <button type="reset" onclick={retry}>
                 {#if localState.type === 'lockFailed'}
                     {m.retry()}
                 {:else}
@@ -161,9 +137,10 @@
             </button>
             {#if localState.type === 'lockFailed'}
                 <button
-                    class="cursor-pointer rounded bg-red-300 p-1"
-                    onclick={() => {
-                        // This check is unnecessary, but typescript doesn't realize that.
+                    type="submit"
+                    class="danger"
+                    onclick={(e: Event) => {
+                        e.preventDefault();
                         if (localState.type !== 'lockFailed') return;
 
                         localState.popupOpen = true;
@@ -174,9 +151,38 @@
                 {@render forceKickSnippet(localState)}
             {/if}
         </div>
-    </div>
+    </form>
 {/if}
 
 {#if localState.type === 'lockAchieved'}
     {@render children()}
 {/if}
+
+{#snippet forceKickSnippet(state: LocalStateLockFailed)}
+    {#if state.popupOpen ?? false}
+        <Popup>
+            <form class="completed flex max-w-md flex-col gap-2">
+                <p>
+                    <UserDisplay userId={state.activeUser} />
+                    {m.otherUserKickConfirm()}
+                </p>
+                <div class="grid grid-cols-2 gap-1">
+                    <button
+                        type="reset"
+                        onclick={(e: Event) => {
+                            e.preventDefault();
+                            if (localState.type !== 'lockFailed') return;
+
+                            localState.popupOpen = false;
+                        }}
+                    >
+                        {m.cancel()}
+                    </button>
+                    <button type="submit" class="danger" onclick={sendForceMessage}>
+                        {m.forceKick()}
+                    </button>
+                </div>
+            </form>
+        </Popup>
+    {/if}
+{/snippet}
