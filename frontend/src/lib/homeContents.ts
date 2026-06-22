@@ -94,7 +94,7 @@ export const homePageCards = {
                             'moet je eerst een account aanmaken op de ' +
                             `<a href=${appLink('/registration')} class="text__link">registratie</a>-pagina.`,
                         'Als je eenmaal bent ingelogd, kun je je begeven naar de ' +
-                            `<a href=${appLink('/tree-generator')} class="text__link">
+                            `<a href=${appLink('/trees/add')} class="text__link">
                                         boom-creatie</a>-pagina, ` +
                             'waarvandaan je, na het invullen van wat informatie over de boom, ' +
                             'wordt doorgeleid naar de <i>tree editor</i>.'
@@ -281,7 +281,7 @@ export const homePageCards = {
                         'To start creating heuristic trees, you must first register an account ' +
                             `on the <a href=${appLink('/registration')} class="text__link">registration</a>-page.`,
                         'Once you have logged in, you can navigate to the ' +
-                            `<a href=${appLink('/tree-generator')} class="text__link">
+                            `<a href=${appLink('/trees/add')} class="text__link">
                                         tree generator</a>-page ` +
                             'from where you will be sent to the tree editor, ' +
                             'after filling out some information on the tree.'

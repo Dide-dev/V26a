@@ -7,12 +7,12 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::session::{Claims, InfoCookieData};
-use crate::db_structs::users::{
+use crate::get_connection_unwrap;
+use crate::structs::auth::LoginRequestBody;
+use crate::structs::session::{InfoCookieData, Session};
+use crate::structs::users::{
     AccountType, AdminUpdateData, RegisterData, UserData, UserGeneralData, UserLanguage,
 };
-use crate::get_connection_unwrap;
 use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
 use sqlx::PgPool;
 
@@ -109,7 +109,7 @@ async fn test_logout_success(db: PgPool) {
     );
 
     // Check that the session is invalidated.
-    let session = Claims::get_session(&db, &token).await.unwrap();
+    let session = Session::retrieve_session(&db, &token).await.unwrap();
     assert!(session.is_none());
 }
 
@@ -137,7 +137,7 @@ async fn test_check_user_info_cookie_data_login(db: PgPool) {
 
     assert!(cookie_data.name.starts_with("John_Test"));
     assert_eq!(cookie_data.nickname, "");
-    assert_eq!(cookie_data.sub, user_id);
+    assert_eq!(cookie_data.user_id, user_id);
     assert_eq!(cookie_data.account_type, AccountType::Author);
 }
 
@@ -170,7 +170,7 @@ async fn test_check_user_info_cookie_data_update(db: PgPool) {
 
     assert_eq!(new_cookie_data.name, "Sidney");
     assert_eq!(new_cookie_data.nickname, "Cookie Monster");
-    assert_eq!(new_cookie_data.sub, original_cookie_data.sub);
+    assert_eq!(new_cookie_data.user_id, original_cookie_data.user_id);
     // The new duration can differ slightly, this is fine.
     assert!((original_max_age.whole_seconds() - new_max_age.whole_seconds()).abs() <= 2);
     assert_eq!(

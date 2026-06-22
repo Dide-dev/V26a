@@ -18,9 +18,9 @@ use tokio::sync::oneshot::Receiver;
 use utoipa::ToSchema;
 
 use crate::{
-    db_structs::session::Claims,
     errors::ApiError,
     state::{ArcState, TreeEditLock},
+    structs::session::Session,
 };
 
 #[utoipa::path(
@@ -41,7 +41,7 @@ use crate::{
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// If the user has permissions for the given `tree_id`,
@@ -53,7 +53,7 @@ use crate::{
 /// but they are there for linking to the messages that can be sent over the websocket.
 ///
 /// # Arguments
-/// `claims` - The claims of the user who sent this request.
+/// `session` - The session of the user who sent this request.
 ///
 /// `state` - State containing the `tree_edit_locks`.
 ///
@@ -69,13 +69,13 @@ use crate::{
 /// invalid or corrupted.
 pub async fn acquire_edit_lock(
     ws: WebSocketUpgrade,
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Path(tree_id): Path<i32>,
 ) -> Result<Response, ApiError> {
-    let user_id = claims.sub;
-    super::verify_tree_permissions(crate::get_connection!(db), tree_id, &claims).await?;
+    let user_id = session.user_id;
+    super::verify_tree_permissions(crate::get_connection!(db), tree_id, &session).await?;
 
     Ok(ws.on_upgrade(move |socket| handle_socket_without_lock(socket, state, tree_id, user_id)))
 }

@@ -5,15 +5,15 @@
 */
 
 use crate::api_v1::trees::verify_tree_permissions;
-use crate::db_structs::pagination::PaginationOptions;
-use crate::db_structs::session::Claims;
-use crate::db_structs::users::AccountType;
+use crate::structs::pagination::PaginationOptions;
+use crate::structs::session::Session;
+use crate::structs::users::AccountType;
 use crate::{
-    db_structs::trees::{
+    errors::ApiError,
+    structs::trees::{
         Language, Subject, SubjectData, TreeAddData, TreeData, TreeFilters, TreeGeneratedData,
         TreeLinkedData, TreeMetadata, TreeStructure,
     },
-    errors::ApiError,
 };
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
@@ -863,7 +863,7 @@ pub async fn is_structure_valid(
 fn apply_tree_filters<'a>(
     builder: &mut QueryBuilder<'a, Postgres>,
     filters: &'a TreeFilters,
-    claims: Option<&Claims>,
+    session: Option<&Session>,
 ) -> Result<(), ApiError> {
     let TreeFilters {
         owner_name,
@@ -880,8 +880,8 @@ fn apply_tree_filters<'a>(
         lesson_id,
     } = filters;
 
-    let is_admin = claims.is_some_and(|c| c.account_type == AccountType::Admin);
-    let option_user_id = claims.map(|c| c.sub);
+    let is_admin = session.is_some_and(|c| c.account_type == AccountType::Admin);
+    let option_user_id = session.map(|c| c.user_id);
 
     // Determine if there will be any filters to apply, if not, we should not continue with the
     // function as it would create an empty WHERE clause.
@@ -1213,7 +1213,7 @@ fn tree_list_query_tag_cte<'a>(query: &mut QueryBuilder<'a, Postgres>, tags: &'a
 pub async fn get_queried_count(
     db: impl PgExecutor<'_>,
     filters: &TreeFilters,
-    claims: Option<&Claims>,
+    session: Option<&Session>,
 ) -> Result<i64, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("");
     if !filters.tag.is_empty() {
@@ -1222,7 +1222,7 @@ pub async fn get_queried_count(
     query.push("SELECT COUNT(DISTINCT (trees.id))");
     query.push(TREE_LIST_QUERY_JOINS);
 
-    apply_tree_filters(&mut query, filters, claims)?;
+    apply_tree_filters(&mut query, filters, session)?;
 
     let trees_count: i64 = query.build_query_scalar().fetch_one(db).await?;
 
@@ -1252,7 +1252,7 @@ pub async fn get_queried_list(
     db: impl PgExecutor<'_>,
     page: &PaginationOptions,
     filters: &TreeFilters,
-    claims: Option<&Claims>,
+    session: Option<&Session>,
 ) -> Result<Vec<TreeMetadata>, ApiError> {
     let mut query = QueryBuilder::<Postgres>::new("");
     if !filters.tag.is_empty() {
@@ -1280,7 +1280,7 @@ pub async fn get_queried_list(
     );
     query.push(TREE_LIST_QUERY_JOINS);
 
-    apply_tree_filters(&mut query, filters, claims)?;
+    apply_tree_filters(&mut query, filters, session)?;
     query
         .push(
             // newest first
@@ -1316,7 +1316,7 @@ pub async fn get_queried_list(
 ///
 /// `tree_id` - The id of the tree.
 ///
-/// `claims` - The session cookie of the user, as an [`Option`]. The cookie is only necessary for attempting verification of private trees.
+/// `session` - The session cookie of the user, as an [`Option`]. The cookie is only necessary for attempting verification of private trees.
 ///
 /// # Returns
 /// Nothing.
@@ -1330,7 +1330,7 @@ pub async fn get_queried_list(
 pub async fn verify_tree_accessible_by_user(
     db: &mut PgConnection,
     tree_id: i32,
-    claims: Option<&Claims>,
+    session: Option<&Session>,
 ) -> Result<(), ApiError> {
     let mut transaction = db.begin().await?;
 
@@ -1346,11 +1346,11 @@ pub async fn verify_tree_accessible_by_user(
         return Ok(());
     }
 
-    let Some(claims) = claims else {
+    let Some(session) = session else {
         return Err(ApiError::MissingAuthentication);
     };
 
-    verify_tree_permissions(&mut transaction, tree_id, claims).await?;
+    verify_tree_permissions(&mut transaction, tree_id, session).await?;
 
     transaction.commit().await?;
 
@@ -1365,9 +1365,9 @@ mod tests {
         initialize_basic_user, initialize_card, initialize_db, initialize_empty_tree,
         initialize_tree_with_data, initialize_user,
     };
-    use crate::db_structs::trees::{Node, RootNode};
-    use crate::db_structs::users::RegisterData;
     use crate::get_connection_unwrap;
+    use crate::structs::trees::{Node, RootNode};
+    use crate::structs::users::RegisterData;
     use chrono::{TimeDelta, Utc};
     use sqlx::PgPool;
 
@@ -1561,7 +1561,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_tree(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             tags: vec!["tag1".to_string()],
@@ -1573,7 +1573,7 @@ mod tests {
             tree_structure: TreeStructure { root_nodes: vec![] },
         };
 
-        let tree_id = add_tree(get_connection_unwrap!(db), tree_add_data, claims.sub)
+        let tree_id = add_tree(get_connection_unwrap!(db), tree_add_data, session.user_id)
             .await
             .unwrap();
 
@@ -1583,7 +1583,7 @@ mod tests {
             .unwrap()
             .owner_id;
 
-        assert_eq!(found_owner_id, claims.sub);
+        assert_eq!(found_owner_id, session.user_id);
 
         let record = query!(
             "SELECT trees.title, trees.description, trees.language_code, trees.subject_id, COALESCE(books.title, '') AS book_name, COALESCE(books.author, '') AS book_author, COALESCE(books.edition, '') AS book_edition, trees.book_isbn, trees.book_chapter, trees.book_exercise, trees.assignment_text, trees.published, ARRAY(SELECT name FROM tags JOIN tree_tags ON tag_id = id WHERE tree_id = trees.id) AS tags
@@ -1652,7 +1652,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_update_tree_data(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         // Add a tree to the database
         let tree_data = TreeData {
@@ -1669,7 +1669,7 @@ mod tests {
             tree_data,
             tree_structure,
         };
-        let tree_id = add_tree(get_connection_unwrap!(db), tree_add_data, claims.sub)
+        let tree_id = add_tree(get_connection_unwrap!(db), tree_add_data, session.user_id)
             .await
             .unwrap();
 
@@ -1703,7 +1703,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_db_get_tree_all_data(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let tree_data = TreeData {
             published: true,
@@ -1719,7 +1719,7 @@ mod tests {
 
         let tree_id = initialize_tree_with_data(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &tree_data,
             &structure,
         )
@@ -1733,16 +1733,16 @@ mod tests {
 
         assert_eq!(tree_data, found_tree_metadata.data);
         assert_eq!(tree_id, found_tree_metadata.gen_data.id);
-        assert_eq!(claims.sub, found_tree_metadata.gen_data.owner_id);
+        assert_eq!(session.user_id, found_tree_metadata.gen_data.owner_id);
         assert_eq!(structure, found_tree_structure);
     }
 
     #[sqlx::test]
     async fn test_get_tree_owner(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         let found_owner_id = get_tree_owner(&db, tree_id).await.unwrap();
-        assert_eq!(found_owner_id, Some(claims.sub));
+        assert_eq!(found_owner_id, Some(session.user_id));
     }
 
     #[sqlx::test]
@@ -1822,8 +1822,8 @@ mod tests {
             no_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
-        let admin_claims = Claims {
-            sub: 123,
+        let admin_session = Session {
+            user_id: 123,
             account_type: AccountType::Admin,
         };
 
@@ -1842,7 +1842,7 @@ mod tests {
             editable: false,
             lesson_id: None,
         };
-        apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_claims)).unwrap();
+        apply_tree_filters(&mut all_filters_query, &all_filters, Some(&admin_session)).unwrap();
         assert_eq!(
             all_filters_query.sql(),
             "SELECT * FROM trees WHERE (published = true OR (owner_id = $1 OR EXISTS(\n                SELECT 1\n                FROM co_authors\n                WHERE co_authors.user_id = $2 AND co_authors.tree_id = trees.id))) AND (users.name = $3) AND (trees.search_vector @@ websearch_to_tsquery('dutch',$4)) AND (book_isbn = ANY($5)) AND trees.id IN (\n                SELECT tree_id\n                FROM tree_tags\n                WHERE tag_id IN (SELECT id FROM requested_tags)\n                GROUP BY tree_id\n                HAVING COUNT(DISTINCT tag_id) =\n                       (SELECT COUNT(*) FROM requested_tags)\n            ) AND (trees.language_code = $6) AND (subjects.name = $7) AND (trees.created_at >= $8) AND (trees.created_at <= $9)"
@@ -1863,8 +1863,8 @@ mod tests {
 
     #[test]
     fn test_apply_tree_filters_own_unpublished_trees() {
-        let user_claims = Claims {
-            sub: 123,
+        let user_session = Session {
+            user_id: 123,
             account_type: AccountType::Author,
         };
 
@@ -1894,7 +1894,7 @@ mod tests {
         apply_tree_filters(
             &mut show_own_private_with_id_query,
             &show_own_private_with_id_filters,
-            Some(&user_claims),
+            Some(&user_session),
         )
         .unwrap();
         assert_eq!(
@@ -1911,7 +1911,7 @@ mod tests {
         apply_tree_filters(
             &mut hide_own_private_with_id_query,
             &hide_own_private_with_id_filters,
-            Some(&user_claims),
+            Some(&user_session),
         )
         .unwrap();
         assert_eq!(
@@ -1922,12 +1922,12 @@ mod tests {
 
     #[test]
     fn test_apply_tree_filters_unpublished_trees() {
-        let user_claims = Claims {
-            sub: 123,
+        let user_session = Session {
+            user_id: 123,
             account_type: AccountType::Author,
         };
-        let admin_claims = Claims {
-            sub: 123,
+        let admin_session = Session {
+            user_id: 123,
             account_type: AccountType::Admin,
         };
 
@@ -1940,7 +1940,7 @@ mod tests {
         apply_tree_filters(
             &mut show_private_no_admin_query,
             &show_private_no_admin_filters,
-            Some(&user_claims),
+            Some(&user_session),
         )
         .unwrap();
         assert_eq!(
@@ -1948,19 +1948,20 @@ mod tests {
             "SELECT * FROM trees WHERE (published = true)"
         );
 
-        let mut show_private_no_claims_query = QueryBuilder::<Postgres>::new("SELECT * FROM trees");
+        let mut show_private_no_session_query =
+            QueryBuilder::<Postgres>::new("SELECT * FROM trees");
         let show_private_no_admin_filters = TreeFilters {
             show_private: true,
             ..Default::default()
         };
         apply_tree_filters(
-            &mut show_private_no_claims_query,
+            &mut show_private_no_session_query,
             &show_private_no_admin_filters,
             None,
         )
         .unwrap();
         assert_eq!(
-            show_private_no_claims_query.sql(),
+            show_private_no_session_query.sql(),
             "SELECT * FROM trees WHERE (published = true)"
         );
 
@@ -1972,7 +1973,7 @@ mod tests {
         apply_tree_filters(
             &mut show_private_admin_query,
             &show_private_admin_filters,
-            Some(&admin_claims),
+            Some(&admin_session),
         )
         .unwrap();
         assert_eq!(show_private_admin_query.sql(), "SELECT * FROM trees",);
@@ -1985,7 +1986,7 @@ mod tests {
         apply_tree_filters(
             &mut hide_private_admin_query,
             &hide_private_admin_filters,
-            Some(&admin_claims),
+            Some(&admin_session),
         )
         .unwrap();
         assert_eq!(
@@ -2017,7 +2018,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_queried_count(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -2037,19 +2038,19 @@ mod tests {
             0
         );
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(&claims))
+            get_queried_count(&db, &show_private_filters, Some(&session))
                 .await
                 .unwrap(),
             0
         );
 
-        initialize_empty_tree(get_connection_unwrap!(db), claims.sub).await;
+        initialize_empty_tree(get_connection_unwrap!(db), session.user_id).await;
         assert_eq!(
             get_queried_count(&db, &empty_filters, None).await.unwrap(),
             0
         );
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(&claims))
+            get_queried_count(&db, &show_private_filters, Some(&session))
                 .await
                 .unwrap(),
             1
@@ -2063,10 +2064,10 @@ mod tests {
         );
 
         for _ in 0..100 {
-            initialize_empty_tree(get_connection_unwrap!(db), claims.sub).await;
+            initialize_empty_tree(get_connection_unwrap!(db), session.user_id).await;
         }
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(&claims))
+            get_queried_count(&db, &show_private_filters, Some(&session))
                 .await
                 .unwrap(),
             101
@@ -2078,13 +2079,13 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &public_tree,
             &basic_structure,
         )
         .await;
         assert_eq!(
-            get_queried_count(&db, &show_private_filters, Some(&claims))
+            get_queried_count(&db, &show_private_filters, Some(&session))
                 .await
                 .unwrap(),
             102
@@ -2105,7 +2106,7 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &book_tree,
             &basic_structure,
         )
@@ -2119,7 +2120,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_queried_list(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
         let empty_filters = TreeFilters {
             ..Default::default()
         };
@@ -2147,21 +2148,21 @@ mod tests {
         };
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &private_tree,
             &basic_structure,
         )
         .await;
         initialize_tree_with_data(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &public_tree,
             &basic_structure,
         )
         .await;
 
         let private_tree_list =
-            get_queried_list(&db, &first_page, &show_private_filters, Some(&claims))
+            get_queried_list(&db, &first_page, &show_private_filters, Some(&session))
                 .await
                 .unwrap()
                 .into_iter()
@@ -2181,14 +2182,14 @@ mod tests {
         assert_eq!(public_tree_list, vec![public_tree.clone()]);
 
         let private_tree_list_one_item1 =
-            get_queried_list(&db, &one_item_page1, &show_private_filters, Some(&claims))
+            get_queried_list(&db, &one_item_page1, &show_private_filters, Some(&session))
                 .await
                 .unwrap()
                 .into_iter()
                 .map(|d| d.data)
                 .collect::<Vec<_>>();
         let private_tree_list_one_item2 =
-            get_queried_list(&db, &one_item_page2, &show_private_filters, Some(&claims))
+            get_queried_list(&db, &one_item_page2, &show_private_filters, Some(&session))
                 .await
                 .unwrap()
                 .into_iter()
@@ -2204,14 +2205,14 @@ mod tests {
             ..Default::default()
         };
         let future_tree_list =
-            get_queried_list(&db, &first_page, &future_filter, Some(&claims)).await;
+            get_queried_list(&db, &first_page, &future_filter, Some(&session)).await;
         assert_eq!(future_tree_list, Err(ApiError::InvalidPage));
         let recent_filter = TreeFilters {
             created_after: Some(Utc::now() - TimeDelta::seconds(2)),
             show_own_private: true,
             ..Default::default()
         };
-        let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(&claims))
+        let recent_tree_list = get_queried_list(&db, &first_page, &recent_filter, Some(&session))
             .await
             .unwrap()
             .into_iter()
@@ -2228,7 +2229,7 @@ mod tests {
             ..Default::default()
         };
         let ancient_tree_list =
-            get_queried_list(&db, &first_page, &ancient_filter, Some(&claims)).await;
+            get_queried_list(&db, &first_page, &ancient_filter, Some(&session)).await;
         assert_eq!(ancient_tree_list, Err(ApiError::InvalidPage));
         let existing_filter = TreeFilters {
             created_before: Some(Utc::now() + TimeDelta::seconds(2)),
@@ -2236,7 +2237,7 @@ mod tests {
             ..Default::default()
         };
         let existing_tree_list =
-            get_queried_list(&db, &first_page, &existing_filter, Some(&claims))
+            get_queried_list(&db, &first_page, &existing_filter, Some(&session))
                 .await
                 .unwrap()
                 .into_iter()
@@ -2258,12 +2259,12 @@ mod tests {
         };
         let book_tree_id = initialize_tree_with_data(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &book_tree,
             &basic_structure,
         )
         .await;
-        let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(&claims))
+        let book_tree_list = get_queried_list(&db, &first_page, &book_filter, Some(&session))
             .await
             .unwrap();
         let book_tree_data_list = book_tree_list
@@ -2346,46 +2347,46 @@ mod tests {
 
     #[sqlx::test]
     async fn test_tree_is_accessible(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&session))
                 .await;
         assert!(result.is_ok());
 
-        let claims = Claims {
-            sub: claims.sub + 1,
+        let session = Session {
+            user_id: session.user_id + 1,
             account_type: AccountType::Admin,
         };
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&session))
                 .await;
         assert!(result.is_ok());
 
-        let claims = Claims {
-            sub: claims.sub + 2,
+        let session = Session {
+            user_id: session.user_id + 2,
             account_type: AccountType::Author,
         };
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&session))
                 .await;
         assert!(result.is_err());
 
         let register_data = RegisterData::test_values();
-        let coauthor_claims = initialize_user(get_connection_unwrap!(db), &register_data).await;
-        add_co_author(&db, tree_id, coauthor_claims.sub)
+        let co_author_session = initialize_user(get_connection_unwrap!(db), &register_data).await;
+        add_co_author(&db, tree_id, co_author_session.user_id)
             .await
             .unwrap();
 
-        let claims = Claims {
-            sub: coauthor_claims.sub,
+        let session = Session {
+            user_id: co_author_session.user_id,
             account_type: AccountType::Author,
         };
 
         let result =
-            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&claims))
+            verify_tree_accessible_by_user(get_connection_unwrap!(db), tree_id, Some(&session))
                 .await;
         assert!(result.is_ok());
 

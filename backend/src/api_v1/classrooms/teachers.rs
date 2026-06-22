@@ -10,17 +10,17 @@ use crate::db::classrooms::{
     get_classroom_metadata_from_id, get_classroom_owner_from_id,
     get_lessons_with_tree_ids_from_classroom,
 };
-use crate::db_structs::Validated;
-use crate::db_structs::classrooms::{
+use crate::errors::ApiError;
+use crate::get_connection;
+use crate::structs::Validated;
+use crate::structs::classrooms::{
     ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse, ClassroomTeacherDashboardData,
     LessonAddData,
 };
-use crate::db_structs::session::Claims;
-use crate::db_structs::users::AccountType;
-use crate::errors::ApiError;
-use crate::get_connection;
+use crate::structs::session::Session;
+use crate::structs::users::AccountType;
 
-use crate::db_structs::pagination::OptionalPaginationOptions;
+use crate::structs::pagination::OptionalPaginationOptions;
 use axum::extract::Path;
 use axum::{Extension, Json};
 use axum_extra::extract::Query;
@@ -37,13 +37,13 @@ use sqlx::{PgExecutor, PgPool};
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie)
+        ("session" = Session, Cookie)
     )
 )]
 /// Adds a classroom to the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `classroom_add_data` - The data used to create the classroom, as [`ClassroomAddData`].
 ///
@@ -58,14 +58,14 @@ use sqlx::{PgExecutor, PgPool};
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn add_new_classroom(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Json(classroom_add_data): Json<ClassroomAddData>,
 ) -> Result<Json<ClassroomGeneratedData>, ApiError> {
     classroom_add_data.validate_inputs()?;
     let join_code = generate_random_code(get_connection!(db)).await?;
 
-    let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code).await?;
+    let id = add_classroom(&db, &classroom_add_data, session.user_id, &join_code).await?;
 
     Ok(Json(ClassroomGeneratedData { id, join_code }))
 }
@@ -81,14 +81,14 @@ pub(super) async fn add_new_classroom(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
 /// Get the list of all classrooms a teacher has access to.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
@@ -107,7 +107,7 @@ pub(super) async fn add_new_classroom(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn get_all_classrooms_as_teacher(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,
 ) -> Result<Json<ClassroomListResponse>, ApiError> {
@@ -115,7 +115,8 @@ pub(super) async fn get_all_classrooms_as_teacher(
 
     let mut transaction = db.begin().await?;
 
-    let classroom_count = get_classroom_count_from_owner_id(&mut *transaction, claims.sub).await?;
+    let classroom_count =
+        get_classroom_count_from_owner_id(&mut *transaction, session.user_id).await?;
     if classroom_count == 0 {
         return Ok(Json(ClassroomListResponse {
             total_classrooms: 0,
@@ -123,7 +124,8 @@ pub(super) async fn get_all_classrooms_as_teacher(
         }));
     }
 
-    let classrooms = get_all_classrooms_from_owner_id(&mut *transaction, claims.sub, &page).await?;
+    let classrooms =
+        get_all_classrooms_from_owner_id(&mut *transaction, session.user_id, &page).await?;
     transaction.commit().await?;
     let list = ClassroomListResponse {
         total_classrooms: i32::try_from(classroom_count)
@@ -146,14 +148,14 @@ pub(super) async fn get_all_classrooms_as_teacher(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("classroom_id" = i32, Path),
     )
 )]
 /// Retrieves all information necessary to construct the classroom student dashboard on the frontend.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the teacher.
+/// `session` - The session cookie of the teacher.
 ///
 /// `classroom_id` - The classroom id retrieved from the path.
 ///
@@ -172,15 +174,15 @@ pub(super) async fn get_all_classrooms_as_teacher(
 ///
 /// May also return a [`DatabaseException`](ApiError::DatabaseException).
 pub(super) async fn get_teacher_dashboard(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(classroom_id): Path<i32>,
 ) -> Result<Json<ClassroomTeacherDashboardData>, ApiError> {
-    verify_classroom_permissions(&db, classroom_id, &claims).await?;
+    verify_classroom_permissions(&db, classroom_id, &session).await?;
 
     let metadata = get_classroom_metadata_from_id(&db, classroom_id).await?;
     let lessons =
-        get_lessons_with_tree_ids_from_classroom(get_connection!(db), classroom_id, Some(&claims))
+        get_lessons_with_tree_ids_from_classroom(get_connection!(db), classroom_id, Some(&session))
             .await?;
     let join_code = get_classroom_join_code_from_id(&db, classroom_id).await?;
 
@@ -204,14 +206,14 @@ pub(super) async fn get_teacher_dashboard(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("classroom_id" = i32, Path),
     )
 )]
 /// Adds a lesson to the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `lesson_add_data` - The data for the lesson in the form of [`LessonAddData`].
 ///
@@ -232,14 +234,14 @@ pub(super) async fn get_teacher_dashboard(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn add_new_lesson(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(classroom_id): Path<i32>,
     Json(lesson_add_data): Json<LessonAddData>,
 ) -> Result<Json<i32>, ApiError> {
     lesson_add_data.validate_inputs()?;
     // Check if the classroom exists and the user is permitted to manage it.
-    verify_classroom_permissions(&db, classroom_id, &claims).await?;
+    verify_classroom_permissions(&db, classroom_id, &session).await?;
     let id = add_lesson(get_connection!(db), &lesson_add_data, classroom_id).await?;
 
     Ok(Json(id))
@@ -254,7 +256,7 @@ pub(super) async fn add_new_lesson(
 ///
 /// `classroom_id` - The id of the classroom whose ownership needs to be verified.
 ///
-/// `claims` - The session cookie of the user, used to verify ownership.
+/// `session` - The session cookie of the user, used to verify ownership.
 ///
 /// # Returns
 /// Nothing.
@@ -268,11 +270,11 @@ pub(super) async fn add_new_lesson(
 pub async fn verify_classroom_permissions(
     db: impl PgExecutor<'_>,
     classroom_id: i32,
-    claims: &Claims,
+    session: &Session,
 ) -> Result<(), ApiError> {
     let owner_id = get_classroom_owner_from_id(db, classroom_id).await?;
 
-    if claims.account_type == AccountType::Admin || claims.sub == owner_id {
+    if session.account_type == AccountType::Admin || session.user_id == owner_id {
         Ok(())
     } else {
         Err(ApiError::NoPermission)

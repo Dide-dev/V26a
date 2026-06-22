@@ -4,7 +4,7 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-import { apiCallPost, apiCallGet } from './index';
+import { apiCallPost, apiCallGet, apiCallEmptyDelete } from './index';
 import type { Option } from './types';
 import { isNullOrEmpty } from './trees';
 import type { Username } from '$lib/api-wrapper/users';
@@ -17,6 +17,10 @@ function apiCallPostCard(path: string, body: unknown) {
 
 function apiCallGetCard(path: string) {
     return apiCallGet(prefix + path);
+}
+
+function apiCallDeleteCard(path: string) {
+    return apiCallEmptyDelete(prefix + path);
 }
 
 export type CardId = number;
@@ -47,6 +51,14 @@ export type CardFilterOptions = {
 /** Add an existing card to the cards library */
 export function addCardToLibrary(card: LibraryCardAddData, cardId: CardId): Promise<LibraryCardId> {
     return apiCallPostCard(`/cards/${cardId}`, card);
+}
+
+/**
+ * Remove card from cards library.
+ * Note that the argument is the id of a *library card*, not the id of a normal card.
+ */
+export function deleteCardFromLibrary(libraryCardId: number): Promise<LibraryCardId> {
+    return apiCallDeleteCard(`/cards/${libraryCardId}`);
 }
 
 export function getFilterParams(filterOptions: CardFilterOptions): string {

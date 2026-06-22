@@ -68,7 +68,7 @@
             href="https://www.uu.nl/medewerkers/RTRadulescu"
             class="text__link"
             target="_blank"
-            rel="external">Roxana Radulescu</a
+            rel="external">Dr. Roxana Radulescu</a
         >.
     </p>
     <p>
