@@ -14,5 +14,5 @@ export const branchColors: BranchColor[] = ['cyan', 'tree', 'yellow', 'red', 'pi
 
 export async function duplicateThisTree(id: number) {
     const newTreeId = await duplicateTree(id);
-    window.open(appLink(`/tree-page/editor?id=${newTreeId}`));
+    window.open(appLink(`/trees/${newTreeId}/edit`));
 }
