@@ -21,7 +21,7 @@
         initializeHistory,
         canUndo,
         canRedo
-    } from './history.svelte';
+    } from './history.svelte.js';
     import type { SideBar } from './sidebar/Sidebar.svelte';
     import SidebarComponent from './sidebar/Sidebar.svelte';
     import RootNodeAddButton from './RootNodeAddButton.svelte';
@@ -176,9 +176,7 @@
     function copyLink(event: Event) {
         event.preventDefault();
 
-        navigator.clipboard.writeText(
-            `${page.url.protocol}//${page.url.hostname}/tree-page/viewer?id=${tree?.metadata.genData.id}`
-        );
+        navigator.clipboard.writeText(`${page.url.origin}/trees/${tree?.metadata.genData.id}`);
 
         notices.push({
             text: m.linkCopied(),
@@ -234,7 +232,7 @@
                             </div>
                         {/if}
                         <a
-                            href={appLink(`/tree-page/viewer?id=${tree!.metadata.genData.id}`)}
+                            href={appLink(`/trees/${tree!.metadata.genData.id}`)}
                             aria-label="view"
                             class="page__title mt-3 flex items-center"
                             title={m.viewTree()}

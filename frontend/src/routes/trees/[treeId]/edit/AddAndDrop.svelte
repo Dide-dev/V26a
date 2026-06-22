@@ -12,7 +12,7 @@
 <script lang="ts">
     import iconAdd from '$lib/assets/icons/add.svg?raw';
     import type { CardData } from '$lib/api-wrapper/cards';
-    import { doMove, type TreeHistory } from './history.svelte';
+    import { doMove, type TreeHistory } from './history.svelte.js';
     import type { DragState } from './SubtreeEditor.svelte';
     import type { SideBar } from './sidebar/Sidebar.svelte';
     import { lineOffset, svgWidth } from '../lineConstants';

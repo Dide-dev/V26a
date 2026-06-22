@@ -127,7 +127,7 @@
 {/snippet}
 
 <style>
-    @import './../../lib/theme.css';
+    @import '../../../lib/theme.css';
 
     @layer components {
         .card {

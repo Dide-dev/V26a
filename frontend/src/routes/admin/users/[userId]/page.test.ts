@@ -8,7 +8,6 @@ import { render, screen } from '@testing-library/svelte';
 import { test, vi, afterEach, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import PageComponent from './+page.svelte';
-import { page } from '$app/state';
 import { getUserInfo, type UserInfo } from '$lib/api-wrapper/sessions';
 import {
     type AdminUpdateData,
@@ -72,7 +71,11 @@ test('No submission without name', async () => {
     mockGetInfo.mockReturnValue(userInfo);
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     const nameInput = await screen.findByTestId('name');
     await user.clear(nameInput);
@@ -82,8 +85,6 @@ test('No submission without name', async () => {
 });
 
 test('Submission with full data', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -110,7 +111,11 @@ test('Submission with full data', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     const aboutMeInput = await screen.findByTestId('about-me');
     await user.type(aboutMeInput, 'Some interesting backstory');
@@ -130,8 +135,6 @@ test('Submission with full data', async () => {
 });
 
 test('New password without upper case letter shows error', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -158,7 +161,11 @@ test('New password without upper case letter shows error', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), '@ssword123');
     await user.type(screen.getByTestId('repeatPassword'), '@ssword123');
@@ -171,8 +178,6 @@ test('New password without upper case letter shows error', async () => {
 });
 
 test('New password without lower case letter shows error', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -199,7 +204,11 @@ test('New password without lower case letter shows error', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), '@SSWORD123');
     await user.type(screen.getByTestId('repeatPassword'), '@SSWORD123');
@@ -212,8 +221,6 @@ test('New password without lower case letter shows error', async () => {
 });
 
 test('New password without special character shows error', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -240,7 +247,11 @@ test('New password without special character shows error', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), 'Password123');
     await user.type(screen.getByTestId('repeatPassword'), 'Password123');
@@ -253,8 +264,6 @@ test('New password without special character shows error', async () => {
 });
 
 test('New password without number shows error', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -281,7 +290,11 @@ test('New password without number shows error', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), 'P@ssword');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword');
@@ -294,8 +307,6 @@ test('New password without number shows error', async () => {
 });
 
 test('Differing new password and repeat password shows error', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -322,7 +333,11 @@ test('Differing new password and repeat password shows error', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), 'P@ssword123!');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword321!');
@@ -335,8 +350,6 @@ test('Differing new password and repeat password shows error', async () => {
 });
 
 test('No submission without new password', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -362,7 +375,11 @@ test('No submission without new password', async () => {
         userId: 1
     });
 
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     const form = await screen.findByTestId('profile-form');
     expect(form.classList).not.toContain('completed');
@@ -371,8 +388,6 @@ test('No submission without new password', async () => {
 });
 
 test('No submission without repeat password', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -399,7 +414,11 @@ test('No submission without repeat password', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), 'P@ssword123!');
 
@@ -410,8 +429,6 @@ test('No submission without repeat password', async () => {
 });
 
 test('Submission when all password expectations have been met', async () => {
-    page.url.searchParams.set('id', '1');
-
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
@@ -442,7 +459,11 @@ test('Submission when all password expectations have been met', async () => {
     });
 
     const user = userEvent.setup();
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            userId: '1'
+        }
+    });
 
     await user.type(await screen.findByTestId('newPassword'), 'P@ssword123!');
     await user.type(screen.getByTestId('repeatPassword'), 'P@ssword123!');

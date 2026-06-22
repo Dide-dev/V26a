@@ -19,8 +19,10 @@
     import Notices, { type Notice } from '$lib/Notices.svelte';
     import { CheckOutline } from 'flowbite-svelte-icons';
 
+    let { params } = $props();
+
     let userInfo: UserInfo | null = $state(null);
-    let id: ClassroomId | null = $state(null);
+    let id: ClassroomId = $derived(Number(params.classroomId));
     let notices: Notice[] = $state([]);
 
     let classroomTeacherDashboardData: ClassroomTeacherDashboardData | null = $state(null);
@@ -31,15 +33,6 @@
             await redirectLogin(page.url);
             return;
         }
-
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
-            await goto(appLink('/classrooms/add'));
-            return;
-        }
-
-        id = Number(pageId);
 
         if (Number.isNaN(id)) {
             await goto(appLink('/classrooms/add'));

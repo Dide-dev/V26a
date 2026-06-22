@@ -6,25 +6,17 @@
 
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { page } from '$app/state';
     import { appLink } from '$lib';
     import { onMount } from 'svelte';
     import Lock from './Lock.svelte';
     import TreeEditor from './TreeEditor.svelte';
     import type { TreeId } from '$lib/api-wrapper/trees';
 
-    let id: TreeId | null = $state(null);
+    let { params } = $props();
+
+    let id: TreeId = $derived(Number(params.treeId));
 
     onMount(async () => {
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
-            await goto(appLink('/trees'));
-            return;
-        }
-
-        id = Number(pageId);
-
         if (Number.isNaN(id)) {
             await goto(appLink('/trees'));
             return;

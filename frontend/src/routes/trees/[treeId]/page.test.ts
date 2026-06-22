@@ -107,8 +107,11 @@ test('Page successfully loads tree', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.set('id', '4');
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            treeId: '4'
+        }
+    });
 
     await screen.findByText(tree.metadata.data.title);
 
@@ -124,7 +127,6 @@ test('shows Edit button when user is logged in', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.set('id', '4');
 
     vi.mocked(getUserInfo).mockReturnValue({
         accountType: 'author',
@@ -133,7 +135,11 @@ test('shows Edit button when user is logged in', async () => {
         nickname: ''
     });
 
-    render(PageComponent);
+    render(PageComponent, {
+        params: {
+            treeId: '4'
+        }
+    });
 
     await screen.findByTestId('edit-button');
 });

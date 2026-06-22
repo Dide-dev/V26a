@@ -56,9 +56,7 @@
             <span class="flex gap-1 *:*:inline">
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
-                        href={appLink(
-                            `/classrooms/dashboard/${isTeacher ? 'teacher' : 'student'}?id=${classroom.id}`
-                        )}
+                        href={appLink(`/classrooms/${classroom.id}${isTeacher ? '/edit' : ''}`)}
                         target="_blank"
                         class={['line-clamp-1 w-fit flex-1 break-all text-ellipsis']}
                         title={m.classroomDashboard()}

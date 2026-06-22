@@ -14,7 +14,7 @@
         doRootNodeDelete,
         type TreeHistory,
         doRootNodeEdit
-    } from './history.svelte';
+    } from './history.svelte.js';
     import RootNodeTextarea from './RootNodeTextarea.svelte';
     import { m } from '$lib/paraglide/messages';
 

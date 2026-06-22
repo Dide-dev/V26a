@@ -7,7 +7,7 @@
 <script lang="ts">
     import { m } from '$lib/paraglide/messages.js';
     import type { FilterOptions } from '$lib/api-wrapper/trees';
-    import TreeList from '../trees/TreeList.svelte';
+    import TreeList from '../TreeList.svelte';
 
     let filterOptions: FilterOptions = $state({
         ownerName: null,

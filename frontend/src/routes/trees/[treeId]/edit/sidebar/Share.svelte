@@ -48,9 +48,7 @@
     function copyLink(event: Event) {
         event.preventDefault();
 
-        navigator.clipboard.writeText(
-            localizeHref(`${page.url.origin}/tree-page/viewer?id=${treeId}`)
-        );
+        navigator.clipboard.writeText(localizeHref(`${page.url.origin}/trees/${treeId}`));
 
         notices.push({
             text: m.linkCopied(),

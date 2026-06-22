@@ -27,17 +27,15 @@
     import { appLink, timeFormatString } from '$lib';
     import { onMount } from 'svelte';
 
-    let id: number = $state(0);
+    let { params } = $props();
+
+    let id: number = $derived(Number(params.userId));
     let userDataPromise: Promise<AdminGetUserData> = $state(new Promise(() => {}));
 
     onMount(async () => {
-        const pageId = page.url.searchParams.get('id');
-        if (!pageId) {
-            await goto(appLink('/'));
-        }
-        id = Number(pageId);
         if (Number.isNaN(id)) {
             await goto(appLink('/'));
+            return;
         }
         userDataPromise = getUserAllData(id);
     });
@@ -104,20 +102,6 @@
 
     async function handleSubmit(event: SubmitEvent, userData: AdminUpdateData) {
         event.preventDefault();
-
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
-            await goto(appLink('/'));
-            return;
-        }
-
-        let id = Number(pageId);
-
-        if (Number.isNaN(id)) {
-            await goto(appLink('/'));
-            return;
-        }
 
         if (!formChanged) {
             return;

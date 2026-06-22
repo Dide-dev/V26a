@@ -5,34 +5,28 @@
 -->
 
 <script lang="ts">
-    import SubtreeViewer from '../SubtreeViewer.svelte';
+    import SubtreeViewer from './SubtreeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/api-wrapper/trees';
-    import { page } from '$app/state';
     import { m } from '$lib/paraglide/messages.js';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { branchColors, duplicateThisTree } from '$lib/treePage';
-    import TreeInformation from '../TreeInformation.svelte';
+    import TreeInformation from './TreeInformation.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
     import { EditOutline, FileCloneOutline } from 'flowbite-svelte-icons';
+
+    let { params } = $props();
 
     let tree: TreeWithCards | null = $state(null);
     let userAllowedToEdit = $state(false);
     let userInfo = getUserInfo();
 
     onMount(async () => {
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
-            await goto(appLink('/all-trees'));
-            return;
-        }
-
-        let id = Number(pageId);
+        let id = Number(params.treeId);
 
         if (Number.isNaN(id)) {
-            await goto(appLink('/all-trees'));
+            await goto(appLink('/trees'));
             return;
         }
 
@@ -59,7 +53,7 @@
                     {#if userAllowedToEdit}
                         <div class="flex flex-col justify-center">
                             <a
-                                href={appLink(`/tree-page/editor?id=${tree!.metadata.genData.id}`)}
+                                href={appLink(`/trees/${tree!.metadata.genData.id}/edit`)}
                                 class="page__title mt-3"
                                 data-testid="edit-button"
                                 title={m.editTree()}

@@ -9,7 +9,7 @@
     Render a pop-up allowing the user to add new lessons to a classroom.
 
     ## Params
-    - `classroomId` - The id of the classroom to which the lesson will be added, corresponding to the classroom dashboard currently open.
+    - `classroomId` - The id of the classroom to which the lesson will be added, corresponding to the classroom [classroom_id] currently open.
 -->
 
 <script lang="ts">

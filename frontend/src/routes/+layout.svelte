@@ -69,11 +69,11 @@
                             text: m.allTrees()
                         },
                         {
-                            href: '/my-trees',
+                            href: '/trees/me',
                             text: m.myTrees()
                         },
                         {
-                            href: '/tree-generator',
+                            href: '/trees/add',
                             text: m.createTree()
                         }
                     ]
@@ -87,43 +87,43 @@
             text: m.classrooms(),
             props: { width: 'lg', localeSwitch: false }
         });
-        if (userInfo !== null)
-            classroomsNav.children.push({
-                href: '/classrooms/list/teacher',
-                text: m.myClassrooms()
-            });
-        classroomsNav.children.push({
-            href: '/classrooms/list/student',
-            text: m.joinedClassrooms()
-        });
-        if (userInfo !== null)
-            classroomsNav.children.push({
-                href: '/classrooms/add',
-                text: m.createClassroom()
-            });
         classroomsNav.children.push({
             href: '/classrooms/join',
             text: m.joinClassroom()
         });
+        classroomsNav.children.push({
+            href: '/classrooms/student',
+            text: m.joinedClassrooms()
+        });
+        if (userInfo !== null) {
+            classroomsNav.children.push({
+                href: '/classrooms/teacher',
+                text: m.myClassrooms()
+            });
+            classroomsNav.children.push({
+                href: '/classrooms/add',
+                text: m.createClassroom()
+            });
+        }
         result.push(classroomsNav);
 
         // Admin
         if (userInfo !== null && userInfo.accountType == 'admin') {
             result.push(
                 new NavLink({
-                    defaultHref: '/user-list',
+                    defaultHref: '/admin/users',
                     text: m.admin(),
                     children: [
                         {
-                            href: '/user-list',
+                            href: '/admin/users',
                             text: m.userList()
                         },
                         {
-                            href: '/metadata-management',
+                            href: '/admin/metadata',
                             text: 'Metadata'
                         },
                         {
-                            href: '/admin-feedback',
+                            href: '/admin/feedback',
                             text: 'Feedback'
                         }
                     ]
@@ -139,7 +139,7 @@
         if (userInfo !== null) {
             result = [
                 new NavLink({
-                    defaultHref: '/profile',
+                    defaultHref: '/me',
                     text: m.account(),
                     props: {
                         width: 'th',
@@ -147,7 +147,7 @@
                     },
                     children: [
                         {
-                            href: '/profile',
+                            href: '/me',
                             text: m.profile()
                         },
                         {

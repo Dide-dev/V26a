@@ -9,8 +9,7 @@
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { m } from '$lib/paraglide/messages.js';
-    import { page } from '$app/state';
-    import LessonList from '../LessonList.svelte';
+    import LessonList from './LessonList.svelte';
     import {
         type ClassroomId,
         type ClassroomStudentDashboardData,
@@ -18,26 +17,19 @@
     } from '$lib/api-wrapper/classrooms';
     import { getClassroomUserInfo, type ClassroomUserInfo } from '$lib/api-wrapper/sessions';
 
+    let { params } = $props();
+
     let classroomUserInfo: ClassroomUserInfo | null = $state(null);
-    let id: ClassroomId | null = $state(null);
+    let id: ClassroomId = $derived(Number(params.classroomId));
     let classroomStudentDashboardData: ClassroomStudentDashboardData | null = $state(null);
 
     onMount(async () => {
-        const pageId = page.url.searchParams.get('id');
-
-        if (!pageId) {
-            await goto(appLink('/classrooms/join'));
-            return;
-        }
-
-        id = Number(pageId);
-
         if (Number.isNaN(id)) {
             await goto(appLink('/classrooms/join'));
             return;
         }
 
-        classroomUserInfo = await getClassroomUserInfo(id);
+        classroomUserInfo = getClassroomUserInfo(id);
 
         if (classroomUserInfo === null) {
             await goto(appLink('/classrooms/join'));

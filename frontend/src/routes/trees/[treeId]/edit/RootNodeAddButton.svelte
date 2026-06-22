@@ -11,7 +11,7 @@
 
 <script lang="ts">
     import iconAdd from '$lib/assets/icons/add.svg?raw';
-    import { doRootNodeAdd, type TreeHistory } from './history.svelte';
+    import { doRootNodeAdd, type TreeHistory } from './history.svelte.js';
     import RootNodeTextarea from './RootNodeTextarea.svelte';
 
     let {
