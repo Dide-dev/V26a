@@ -142,7 +142,7 @@
             sidebarElement: null
         };
 
-        const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.sub;
+        const isOwner = fetchedTree.metadata.genData.ownerId === userInfo?.userId;
         const isAdmin = userInfo?.accountType === 'admin';
 
         if (isOwner || isAdmin) {

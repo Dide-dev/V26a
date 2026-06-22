@@ -4,12 +4,12 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::{Validated, parse_email, validate_password};
 use crate::errors::ApiError;
 use crate::limits::{
     PASSWORD_LOGIN_MIN_LENGTH, USER_ABOUT_ME_MAX_LENGTH, USER_NAME_MAX_LENGTH,
     USER_NAME_MIN_LENGTH, USER_NICKNAME_MAX_LENGTH, USER_NICKNAME_MIN_LENGTH,
 };
+use crate::structs::{Validated, parse_email, validate_password};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -502,7 +502,7 @@ impl FromStr for AccountType {
 
 #[cfg(test)]
 mod tests {
-    use crate::db_structs::users::{
+    use crate::structs::users::{
         PasswordResetRequestData, PendingRegisterData, RegisterData, RemoveExpired, UserData,
         UserLanguage,
     };

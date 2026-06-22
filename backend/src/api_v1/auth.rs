@@ -7,11 +7,11 @@
 use crate::api_v1::create_token;
 use crate::db::auth::get_user_credentials_by_email;
 use crate::db::users::{get_user, user_update_last_login};
-use crate::db_structs::Validated;
-use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
 use crate::errors::ApiError;
 use crate::ratelimits::LOGIN_RATELIMIT;
+use crate::structs::Validated;
+use crate::structs::auth::LoginRequestBody;
+use crate::structs::session::{InfoCookieData, Session, SessionType};
 use crate::{ArcState, get_connection};
 use axum::extract::State;
 use axum::routing::{delete, post};
@@ -108,7 +108,7 @@ async fn login(
 
     let session_duration = state.config.session_duration;
     let (token, expires_at) = create_token(session_duration);
-    Claims::create_session(
+    Session::create_session(
         get_connection!(db),
         &token,
         expires_at,
@@ -169,7 +169,7 @@ async fn login(
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Logs out a user and deletes their session on the backend.
@@ -178,15 +178,15 @@ async fn login(
 /// `jar` - The jar with the cookies (`user_info` & session).
 ///
 /// # Returns
-/// The cookie jar with its user claims removed.
+/// The cookie jar with its user session removed.
 ///
 /// # Errors
 /// May return a [`MissingAuthentication`](ApiError::MissingAuthentication), [`DatabaseException`](ApiError::DatabaseException).
 async fn logout(jar: CookieJar, Extension(db): Extension<PgPool>) -> Result<CookieJar, ApiError> {
-    let token = Claims::extract_token(&jar)?;
+    let token = Session::extract_token(&jar)?;
 
     // Invalidate the session.
-    Claims::delete_session(&db, &token).await?;
+    Session::delete_session(&db, &token).await?;
 
     // Unset the cookie, "remove" sets the time of the cookie in the past.
     Ok(jar

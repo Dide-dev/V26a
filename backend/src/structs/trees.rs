@@ -5,8 +5,6 @@
 */
 
 use crate::db::cards::duplicate_card;
-use crate::db_structs::Validated;
-use crate::db_structs::cards::CardData;
 use crate::errors::ApiError;
 use crate::limits::{
     TREE_ASSIGNMENT_MAX_LENGTH, TREE_BOOK_CHAPTER_MAX_LENGTH, TREE_BOOK_EDITION_MAX_LENGTH,
@@ -14,6 +12,8 @@ use crate::limits::{
     TREE_BOOK_NAME_MAX_LENGTH, TREE_DESCRIPTION_MAX_LENGTH, TREE_TAG_MAX_LENGTH,
     TREE_TAG_MIN_LENGTH, TREE_TITLE_MAX_LENGTH, TREE_TITLE_MIN_LENGTH,
 };
+use crate::structs::Validated;
+use crate::structs::cards::CardData;
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{FromRow, PgConnection, Row};

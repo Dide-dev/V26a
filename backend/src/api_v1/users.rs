@@ -10,19 +10,19 @@ use crate::db::users::{
     add_user, delete_user, get_user, get_user_by_email, get_user_by_name, get_user_public_data,
     update_password, update_user, user_id_exists,
 };
-use crate::db_structs::session::{Claims, ClaimsType, InfoCookieData};
-use crate::db_structs::users::{
-    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetBody, PasswordResetRequestData,
-    PendingRegisterData, PublicUserData, RegisterData, RemoveExpired, RequestPasswordResetBody,
-    UserData, UserGetData,
-};
-use crate::db_structs::{Validated, parse_email};
 use crate::errors::ApiError;
 use crate::messages::Message::{
     EmailVerificationBody, EmailVerificationSubject, PasswordResetMailBody,
     PasswordResetMailSubject,
 };
 use crate::ratelimits::{ADD_USER_RATELIMIT, RESET_PASSWORD_RATELIMIT, VERIFY_USER_RATELIMIT};
+use crate::structs::session::{InfoCookieData, Session, SessionType};
+use crate::structs::users::{
+    DeleteOwnedTrees, PasswordChangeRequestBody, PasswordResetBody, PasswordResetRequestData,
+    PendingRegisterData, PublicUserData, RegisterData, RemoveExpired, RequestPasswordResetBody,
+    UserData, UserGetData,
+};
+use crate::structs::{Validated, parse_email};
 use crate::{ArcState, get_connection};
 use axum::extract::{Path, State};
 use axum::routing::{get, post, put};
@@ -242,13 +242,13 @@ async fn verify(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Get a user's own data from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// # Returns
 /// The user's data as [`UserGetData`].
@@ -261,10 +261,10 @@ async fn verify(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_own_user_data(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
 ) -> Result<Json<UserGetData>, ApiError> {
-    get_user(&db, claims.sub).await.map(Json)
+    get_user(&db, session.user_id).await.map(Json)
 }
 
 #[utoipa::path(
@@ -312,13 +312,13 @@ async fn get_public_user_data(
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Update a user's own data in the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `new_data` - The new data of the user, as [`UserData`].
 ///
@@ -336,7 +336,7 @@ async fn get_public_user_data(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_user_data(
     jar: CookieJar,
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(new_data): Json<UserData>,
@@ -349,23 +349,30 @@ async fn update_user_data(
     // Remove pending accounts in case they have not been pruned yet.
     pending_accounts.remove_expired();
 
-    if check_username_used(&db, &pending_accounts, &new_data.name, Some(claims.sub)).await? {
+    if check_username_used(
+        &db,
+        &pending_accounts,
+        &new_data.name,
+        Some(session.user_id),
+    )
+    .await?
+    {
         return Ok((jar, Json(UserResponse::UsernameAlreadyUsed)));
     }
 
-    update_user(&db, claims.sub, &new_data).await?;
+    update_user(&db, session.user_id, &new_data).await?;
 
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
-        sub: claims.sub,
-        account_type: claims.account_type,
+        sub: session.user_id,
+        account_type: session.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
 
     let expires_at = query!(
         "SELECT expires_at FROM sessions WHERE token = $1",
-        Claims::extract_token(&jar)?
+        Session::extract_token(&jar)?
     )
     .fetch_one(&db)
     .await?
@@ -382,7 +389,7 @@ async fn update_user_data(
     Ok((
         jar,
         Json(UserResponse::Success {
-            user_id: claims.sub,
+            user_id: session.user_id,
         }),
     ))
 }
@@ -405,7 +412,7 @@ pub struct ChangePasswordResponse {
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Changes a user's own password in the database.
@@ -427,7 +434,7 @@ pub struct ChangePasswordResponse {
 /// May return a [`HashException`](ApiError::HashException), [`InvalidDataFound`](ApiError::InvalidDataFound) or
 /// [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn change_password(
-    claims: Claims,
+    session: Session,
     jar: CookieJar,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
@@ -435,7 +442,7 @@ async fn change_password(
 ) -> Result<Json<ChangePasswordResponse>, ApiError> {
     password_change_request.validate_inputs()?;
 
-    let credentials = get_user_credentials_by_id(&db, claims.sub)
+    let credentials = get_user_credentials_by_id(&db, session.user_id)
         .await?
         .ok_or(ApiError::DatabaseException)?;
 
@@ -451,16 +458,16 @@ async fn change_password(
 
     update_password(
         &db,
-        claims.sub,
+        session.user_id,
         &password_change_request.new_password,
         state.config.bcrypt_cost,
     )
     .await?;
 
-    let token = Claims::extract_token(&jar)?;
+    let token = Session::extract_token(&jar)?;
 
     // All other sessions of the account are invalidated if password is changed.
-    Claims::delete_all_sessions_except(&db, &token, &claims.sub).await?;
+    Session::delete_all_sessions_except(&db, &token, &session.user_id).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
@@ -622,7 +629,7 @@ async fn reset_password(
     entry.remove();
 
     // All other sessions of the account are invalidated if password is changed.
-    Claims::delete_all_sessions(&db, &user_id).await?;
+    Session::delete_all_sessions(&db, &user_id).await?;
 
     Ok(Json(PasswordResetResponse::Success))
 }
@@ -638,13 +645,13 @@ async fn reset_password(
     ),
     params(
         ("deleteOwnedTrees" = DeleteOwnedTrees, Query),
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Delete the logged-in user from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `deleteOwnedTrees` - Delete all the trees of the user.
 ///
@@ -662,20 +669,20 @@ async fn reset_password(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn delete_user_data(
     jar: CookieJar,
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Query(delete): Query<DeleteOwnedTrees>,
 ) -> Result<CookieJar, ApiError> {
     let mut transaction = db.begin().await?;
 
-    if !user_id_exists(&mut *transaction, claims.sub).await? {
-        return Err(ApiError::MissingUser(claims.sub));
+    if !user_id_exists(&mut *transaction, session.user_id).await? {
+        return Err(ApiError::MissingUser(session.user_id));
     }
 
-    delete_user(&mut transaction, claims.sub, delete.delete_owned_trees).await?;
+    delete_user(&mut transaction, session.user_id, delete.delete_owned_trees).await?;
 
     // Invalidate all the sessions based on userid.
-    Claims::delete_all_sessions(&mut *transaction, &claims.sub).await?;
+    Session::delete_all_sessions(&mut *transaction, &session.user_id).await?;
 
     transaction.commit().await?;
 

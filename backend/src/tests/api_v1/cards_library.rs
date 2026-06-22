@@ -6,10 +6,10 @@
 
 #![cfg(test)]
 
-use crate::db_structs::cards::{CardData, LibraryCardAddData, LibraryCardGetData};
-use crate::db_structs::trees::{TreeAddData, TreeData, TreeStructure};
-use crate::db_structs::users::RegisterData;
 use crate::errors::ApiError;
+use crate::structs::cards::{CardData, LibraryCardAddData, LibraryCardGetData};
+use crate::structs::trees::{TreeAddData, TreeData, TreeStructure};
+use crate::structs::users::RegisterData;
 use crate::tests::api_v1::{create_tree, login, register, setup, setup_login};
 use sqlx::PgPool;
 

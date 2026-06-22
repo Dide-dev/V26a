@@ -94,7 +94,7 @@ pub fn parse_email(email: &str) -> Result<Address, ApiError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db_structs::users::{RegisterData, UserData, UserLanguage};
+    use crate::structs::users::{RegisterData, UserData, UserLanguage};
     #[test]
     fn test_validate_password() {
         // The default values are valid.

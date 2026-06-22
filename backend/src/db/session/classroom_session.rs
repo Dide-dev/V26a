@@ -4,27 +4,27 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::session::{ClaimsType, ClassroomClaims};
 use crate::errors::ApiError;
+use crate::structs::session::{ClassroomSession, SessionType};
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
 use sqlx::{PgConnection, PgExecutor, PgPool, query};
 
-impl ClaimsType for ClassroomClaims {
+impl SessionType for ClassroomSession {
     fn get_cookie_name() -> &'static str {
         "classroom_sessions"
     }
 }
 
-impl ClassroomClaims {
-    /// Used in `FromRequestParts` for `ClassroomClaims` to retrieve the `ClassroomClaims`.
+impl ClassroomSession {
+    /// Used in `FromRequestParts` for `ClassroomSession` to retrieve the `ClassroomSession`.
     ///
     /// # Arguments
     /// `parts` - a [`&mut Parts`](Parts).
     ///
     /// # Returns
-    /// Returns the [`ClassroomClaims`] if there is a non-expired session.
+    /// Returns the [`ClassroomSession`] if there is a non-expired session.
     ///
     /// Returns a [`MissingAuthentication`](ApiError::MissingAuthentication) if no token was found.
     ///
@@ -35,7 +35,7 @@ impl ClassroomClaims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    pub async fn get_claims(parts: &mut Parts) -> Result<ClassroomClaims, ApiError> {
+    pub async fn get_session(parts: &mut Parts) -> Result<ClassroomSession, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -48,12 +48,12 @@ impl ClassroomClaims {
         // Extract the token from the cookie jar.
         let token = Self::extract_token(&jar)?;
 
-        ClassroomClaims::get_session(db, &token, classroom_id)
+        ClassroomSession::retrieve_session(db, &token, classroom_id)
             .await?
             .ok_or(ApiError::InvalidSession)
     }
 
-    /// Fetch the claims associated with a classroom sessions token.
+    /// Fetch the session associated with a classroom sessions token.
     ///
     /// # Arguments
     /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -63,17 +63,17 @@ impl ClassroomClaims {
     /// `classroom_id` - The id of the classroom retrieved from the api uri.
     ///
     /// # Returns
-    /// Returns [`Ok(Some(ClassroomClaims))`](ClassroomClaims) containing the user id and account type.
+    /// Returns [`Ok(Some(ClassroomSession))`](ClassroomSession) containing the user id and account type.
     ///
     /// Returns [`Ok(None)`](None) if the token could not be found or has expired.
     ///
     /// # Errors
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub async fn get_session(
+    pub async fn retrieve_session(
         db: impl PgExecutor<'_>,
         token: &str,
         classroom_id: i32,
-    ) -> Result<Option<ClassroomClaims>, ApiError> {
+    ) -> Result<Option<ClassroomSession>, ApiError> {
         if token.is_empty() {
             return Ok(None);
         }
@@ -90,8 +90,8 @@ impl ClassroomClaims {
             .fetch_optional(db)
             .await?;
 
-        let claims = match row {
-            Some(row) => Some(ClassroomClaims {
+        let session = match row {
+            Some(row) => Some(ClassroomSession {
                 id: row.classroom_id,
                 num: row.id_within_classroom,
                 name: row.name,
@@ -99,12 +99,12 @@ impl ClassroomClaims {
             None => None,
         };
 
-        Ok(claims)
+        Ok(session)
     }
 
     /// Create a session for a classroom user for one classroom and insert it into the database.
     ///
-    /// Workings for `ClassroomClaims`: Connects it to an existing token.
+    /// Workings for `ClassroomSession`: Connects it to an existing token.
     /// Important: will overwrite an existing session for a user if the combination of
     /// token and classroom id already exist.
     ///
@@ -157,47 +157,47 @@ fn get_classroom_id_from_uri(uri: &str) -> Result<i32, ApiError> {
 #[cfg(test)]
 mod tests {
     use crate::api_v1::create_token;
-    use crate::db::classroom_claims::get_classroom_id_from_uri;
+    use crate::db::classroom_session::get_classroom_id_from_uri;
     use crate::db::test::{
         initialize_basic_user, initialize_classroom, put_classroom_token_in_db,
         put_user_in_classroom,
     };
-    use crate::db_structs::session::ClassroomClaims;
     use crate::get_connection_unwrap;
+    use crate::structs::session::ClassroomSession;
     use sqlx::PgPool;
 
     #[sqlx::test]
     async fn test_create_and_get_session(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let session = initialize_basic_user(&db).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
 
         let (token, expires_at) = create_token(3600);
         put_classroom_token_in_db(&db, &token).await;
 
-        let claims = ClassroomClaims {
+        let session = ClassroomSession {
             id: classroom_id,
             num: 1,
             name: "slachtoffer".to_owned(),
         };
 
-        put_user_in_classroom(&db, &claims).await;
+        put_user_in_classroom(&db, &session).await;
 
-        ClassroomClaims::create_session(
+        ClassroomSession::create_session(
             get_connection_unwrap!(db),
             &token,
             expires_at,
-            &(claims.id, claims.num),
+            &(session.id, session.num),
         )
         .await
         .unwrap();
 
-        let retrieved_claims = ClassroomClaims::get_session(&db, &token, classroom_id)
+        let retrieved_session = ClassroomSession::retrieve_session(&db, &token, classroom_id)
             .await
             .unwrap()
             .unwrap();
 
-        // Validates if the user is in claims, meaning the session is returned if it is true.
-        assert_eq!(retrieved_claims, claims);
+        // Validates if the user is in session, meaning the session is returned if it is true.
+        assert_eq!(retrieved_session, session);
     }
 
     #[test]

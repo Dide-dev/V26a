@@ -3,14 +3,14 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::Validated;
-use crate::db_structs::session::ClassroomClaims;
-use crate::db_structs::trees::TreeMetadata;
 use crate::errors::ApiError;
 use crate::limits::{
     CLASSROOM_DESCRIPTION_MAX_LENGTH, CLASSROOM_TITLE_MAX_LENGTH, CLASSROOM_TITLE_MIN_LENGTH,
     LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH, LESSON_TITLE_MIN_LENGTH,
 };
+use crate::structs::Validated;
+use crate::structs::session::ClassroomSession;
+use crate::structs::trees::TreeMetadata;
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
@@ -106,7 +106,7 @@ pub struct ClassroomUserLoginData {
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum ClassroomLoginResponse {
-    Success(ClassroomClaims),
+    Success(ClassroomSession),
     JoinCodeIncorrect { join_code: String },
     MissingUser { user_number: i32 },
 }

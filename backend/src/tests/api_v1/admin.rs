@@ -7,13 +7,13 @@
 #![cfg(test)]
 
 use crate::api_v1::users::UserResponse;
-use crate::db_structs::users::AdminGetUserData;
+use crate::structs::users::AdminGetUserData;
 use crate::{
-    db_structs::users::{
+    get_connection_unwrap,
+    structs::users::{
         AccountType, AdminPasswordChangeRequestBody, AdminUpdateData, RegisterData,
         UserGeneralData, UserListResponse,
     },
-    get_connection_unwrap,
     tests::api_v1::{login, register, register_admin, setup},
 };
 use sqlx::{PgPool, query_scalar};
