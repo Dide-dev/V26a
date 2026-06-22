@@ -76,7 +76,7 @@
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
                         href={appLink(
-                            `/tree-page/${linkToEditor ? 'editor' : 'viewer'}?id=${tree.genData.id}`
+                            `/trees/${tree.genData.id}/${linkToEditor ? 'edit' : ''}`
                         )}
                         target="_blank"
                         class={[
@@ -99,7 +99,7 @@
                 {/if}
                 <span class="font-semibold text-neutral-500">#{tree.genData.id}</span>
                 <a
-                    href={appLink(`/tree-page/viewer?id=${tree.genData.id}`)}
+                    href={appLink(`/trees/${tree.genData.id}`)}
                     aria-label="open"
                     target="_blank"
                     title={m.viewTree()}
@@ -108,7 +108,7 @@
                 </a>
                 {#if userInfo?.sub === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '') || userInfo?.accountType === 'admin'}
                     <a
-                        href={appLink(`/tree-page/editor?id=${tree.genData.id}`)}
+                        href={appLink(`/trees/${tree.genData.id}/edit`)}
                         aria-label="edit"
                         target="_blank"
                         title={m.editTree()}
