@@ -18,16 +18,19 @@
     import TreeFilters from '$lib/lists/TreeFilters.svelte';
     import { page } from '$app/state';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
-    import { booleanFromString } from '$lib';
+    import { appLink, booleanFromString } from '$lib';
     import { replaceState } from '$app/navigation';
+    import { PlusOutline } from 'flowbite-svelte-icons';
 
     let {
         filterOptions,
         titleText,
+        linkToEditor = false,
         onlyOwnTrees = false
     }: {
         filterOptions: FilterOptions;
         titleText: string;
+        linkToEditor?: boolean;
         onlyOwnTrees?: boolean;
     } = $props();
 
@@ -143,7 +146,18 @@
     handleApplyFilters={applyFilters}
 >
     {#snippet title()}
-        <h1 class="page__title">{titleText}</h1>
+        <h1 class="page__title flex gap-2 *:*:inline">
+            {titleText}
+            <a
+                title={m.addTree()}
+                aria-label={m.addTree()}
+                class="mr-2.5 cursor-pointer transition-all duration-200 ease-in-out hover:bg-neutral-200"
+                href={appLink(`/tree-generator`)}
+                target="_blank"
+            >
+                <PlusOutline class="h-7 w-7 shrink-0" />
+            </a>
+        </h1>
     {/snippet}
     {#if treeListResponse?.trees === null}
         <p>{m.loading()}</p>
@@ -155,6 +169,7 @@
                 <TreeListEntry
                     {tree}
                     bind:expanded={entriesExpanded[i]}
+                    {linkToEditor}
                     {handleDelete}
                     usedForClassroom={false}
                 />

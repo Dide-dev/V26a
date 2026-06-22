@@ -19,7 +19,7 @@
         <div>
             <img src={uuLogo} alt="Logo Utrecht University" class="mx-auto mb-4" />
             <p>
-                <b>Rogier Bos</b><br />Freudenthal Institute<br /><a
+                <b>Dr. Rogier Bos</b><br />Freudenthal Institute<br /><a
                     href="https://www.uu.nl/staff/RDBos"
                     class="text__link"
                     target="_blank"
@@ -40,8 +40,8 @@
                 class="mx-auto mb-4"
             />
             <p>
-                <b>Theo van den Boogaart</b><br />Archimedes Institute, lectorate Mathematical and
-                analytical skills of professionals<br /><a
+                <b>Dr. Theo van den Boogaart</b><br />Archimedes Institute, lectorate Mathematical
+                and analytical skills of professionals<br /><a
                     href="mailto:theo.vandenbogaart@hu.nl"
                     class="text__link"
                     target="_blank"
@@ -51,8 +51,8 @@
         </div>
     </div>
     <p class="pt-2 pb-2">
-        and has been developed by the following students from the Bachelor Computer Science at
-        Utrecht University within the Software Project course:
+        and has been developed by the following students from the BSc Computer Science at Utrecht
+        University within the Software Project course:
     </p>
     <div class="pb-2 text-center">
         <p>Sander Bertram</p>
@@ -71,7 +71,7 @@
             href="https://www.uu.nl/staff/RTRadulescu"
             class="text__link"
             target="_blank"
-            rel="external">Roxana Radulescu</a
+            rel="external">Dr. Roxana Radulescu</a
         >.
     </p>
     <p>

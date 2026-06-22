@@ -20,7 +20,7 @@
         <div>
             <img src={uuLogo} alt="Logo Universiteit Utrecht" class="mx-auto mb-4" />
             <p>
-                <b>Rogier Bos</b><br />Freudenthal Instituut<br /><a
+                <b>Dr. Rogier Bos</b><br />Freudenthal Instituut<br /><a
                     href="https://www.uu.nl/medewerkers/RDBos"
                     class="text__link"
                     target="_blank"
@@ -37,7 +37,7 @@
         <div>
             <img src={huLogo} alt="Logo Hogeschool Utrecht" class="mx-auto mb-4" />
             <p>
-                <b>Theo van den Boogaart</b><br />Archimedes Instituut, leerstoel Wiskundige en
+                <b>Dr. Theo van den Boogaart</b><br />Archimedes Instituut, leerstoel Wiskundige en
                 analytische vaardigheden van professionals<br /><a
                     href="mailto:theo.vandenbogaart@hu.nl"
                     class="text__link"
@@ -48,8 +48,8 @@
         </div>
     </div>
     <p class="pt-2 pb-2">
-        en ontwikkeld door de volgende studenten van de bachelor Informatica aan de Universiteit
-        Utrecht binnen het Software Project vak:
+        en ontwikkeld door de volgende studenten van de BSc Informatica aan de Universiteit Utrecht
+        binnen het Software Project vak:
     </p>
     <div class="pb-2 text-center">
         <p>Sander Bertram</p>
@@ -68,7 +68,7 @@
             href="https://www.uu.nl/medewerkers/RTRadulescu"
             class="text__link"
             target="_blank"
-            rel="external">Roxana Radulescu</a
+            rel="external">Dr. Roxana Radulescu</a
         >.
     </p>
     <p>

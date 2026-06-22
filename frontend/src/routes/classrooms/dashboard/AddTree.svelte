@@ -17,7 +17,7 @@
     import { getTreeWithCards, type TreeId, type TreeWithCards } from '$lib/api-wrapper/trees';
     import { m } from '$lib/paraglide/messages';
     import Popup from '$lib/Popup.svelte';
-    import iconAdd from '$lib/assets/icons/add.svg?raw';
+    import { PlusOutline } from 'flowbite-svelte-icons';
 
     let { lessonId, onTreeAdded }: { lessonId: LessonId; onTreeAdded: () => Promise<void> } =
         $props();
@@ -88,8 +88,7 @@
         addTreeButtonClick();
     }}
 >
-    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-    {@html iconAdd}
+    <PlusOutline class="h-5 w-5 shrink-0" />
 </button>
 
 <!--
