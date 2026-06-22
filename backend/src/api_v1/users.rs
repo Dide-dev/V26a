@@ -365,7 +365,7 @@ async fn update_user_data(
     let new_user_info_cookie = InfoCookieData {
         name: new_data.name,
         nickname: new_data.nickname,
-        sub: session.user_id,
+        user_id: session.user_id,
         account_type: session.account_type,
     };
     let new_user_info = serde_json::to_string(&new_user_info_cookie)?;
