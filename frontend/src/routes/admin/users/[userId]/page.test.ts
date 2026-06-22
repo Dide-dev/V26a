@@ -62,7 +62,7 @@ test('No submission without name', async () => {
 
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -97,7 +97,7 @@ test('Submission with full data', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -147,7 +147,7 @@ test('New password without upper case letter shows error', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -190,7 +190,7 @@ test('New password without lower case letter shows error', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -233,7 +233,7 @@ test('New password without special character shows error', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -276,7 +276,7 @@ test('New password without number shows error', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -319,7 +319,7 @@ test('Differing new password and repeat password shows error', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -362,7 +362,7 @@ test('No submission without new password', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -400,7 +400,7 @@ test('No submission without repeat password', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -441,7 +441,7 @@ test('Submission when all password expectations have been met', async () => {
     };
     mockAdminGetUserData(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
