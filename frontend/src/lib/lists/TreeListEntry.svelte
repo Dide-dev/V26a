@@ -76,7 +76,7 @@
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
                         href={appLink(
-                            `/trees/${tree.genData.id}/${linkToEditor ? 'edit' : ''}`
+                            `/trees/${tree.genData.id}${linkToEditor ? '/edit' : ''}`
                         )}
                         target="_blank"
                         class={[
