@@ -244,8 +244,7 @@
                 inputsChanged.descriptionChanged = true;
             }}
             minlength={minInputLengths.description}
-            maxlength={maxInputLengths.description}
-        ></textarea>
+            maxlength={maxInputLengths.description}></textarea>
     </div>
     <div class="*:max-h-text-area">
         <label for="assignment">{m.assignment()}</label>

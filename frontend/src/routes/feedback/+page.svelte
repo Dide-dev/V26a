@@ -77,8 +77,7 @@
                 placeholder={m.yourFeedback()}
                 required
                 maxLength={maxInputLengths.feedback}
-                minLength={minInputLengths.feedback}
-            ></textarea>
+                minLength={minInputLengths.feedback}></textarea>
             {#if successfulSubmission}
                 <p class="text__success" data-testid="submission-success">
                     {m.successfulFeedbackSubmission()}

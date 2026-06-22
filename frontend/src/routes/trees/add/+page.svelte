@@ -118,8 +118,7 @@
                 data-testid="description"
                 placeholder={m.examplePlaceholderOptional({ value: m.exampleDescription() })}
                 minlength={minInputLengths.description}
-                maxlength={maxInputLengths.description}
-            ></textarea>
+                maxlength={maxInputLengths.description}></textarea>
         </div>
         <div>
             <label for="tags">{m.tags()}</label>

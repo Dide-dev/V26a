@@ -36,6 +36,5 @@
     rows={height !== 'full' ? height : null}
     maxlength={maxLength}
     bind:value={valueText}
-    {placeholder}
-></textarea>
+    {placeholder}></textarea>
 <p class="text-xs">{valueText.length}/{maxLength}</p>

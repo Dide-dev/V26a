@@ -89,8 +89,7 @@
                     value: m.exampleClassroomDescription()
                 })}
                 minlength={minInputLengths.description}
-                maxlength={maxInputLengths.description}
-            ></textarea>
+                maxlength={maxInputLengths.description}></textarea>
         </div>
         <button type="submit" data-testid="add-button">{m.createClassroom()}</button>
     </form>

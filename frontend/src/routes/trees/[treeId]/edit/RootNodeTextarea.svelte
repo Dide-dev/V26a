@@ -60,7 +60,6 @@
 
             editFinish();
         }}
-        maxlength="48"
-    ></textarea>
+        maxlength="48"></textarea>
     <button class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-white">{m.save()}</button>
 </div>
