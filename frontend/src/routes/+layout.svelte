@@ -134,7 +134,7 @@
         return result;
     });
     let rightLinks: NavLink[] = $derived.by(() => {
-        let result: NavLink[] = [];
+        let result: NavLink[];
 
         if (userInfo !== null) {
             result = [

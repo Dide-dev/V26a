@@ -307,8 +307,7 @@
                     data-testid="about-me"
                     oninput={() => {
                         inputsChanged.aboutMeChanged = true;
-                    }}
-                ></textarea>
+                    }}></textarea>
             </div>
             <h2 class="page__heading">{m.accountSettings()}</h2>
             <div>
