@@ -5,7 +5,7 @@
 */
 use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
-use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query};
+use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_scalar};
 
 /// Add a list of tags for a given library card in the database.
 ///
@@ -110,6 +110,56 @@ pub async fn cards_library_add(
     add_tags(db, library_card_id, tags).await?;
 
     Ok(library_card_id)
+}
+
+/// Removes a card from the cards library table.
+/// If the given `library_card_id` does not exist, this function will do nothing and return `Ok(())`.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `library_card_id` - The id of the library card to assign the tags to.
+///
+/// # Returns
+/// Nothing
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn cards_library_delete(
+    db: impl PgExecutor<'_>,
+    library_card_id: i32,
+) -> Result<(), ApiError> {
+    query!("DELETE FROM library_cards WHERE id=$1", library_card_id)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+
+/// Gets the owner associated with a given library card.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
+///
+/// `library_card_id` - The id of the library card to get the owner from.
+///
+/// # Returns
+/// Returns `Some` owner id if it can be found, or `None` if no library card with given id exists.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn cards_library_get_owner(
+    db: impl PgExecutor<'_>,
+    library_card_id: i32,
+) -> Result<Option<i32>, ApiError> {
+    let owner_id = query_scalar!(
+        "SELECT owner_id FROM library_cards WHERE id=$1",
+        library_card_id
+    )
+    .fetch_optional(db)
+    .await?;
+
+    Ok(owner_id)
 }
 
 /// Get the amount of cards satisfying some filters.
