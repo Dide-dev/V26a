@@ -106,7 +106,7 @@
                 >
                     <ArrowUpRightFromSquareOutline class="mb-1 h-5 w-5 shrink-0" />
                 </a>
-                {#if userInfo?.sub === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '') || userInfo?.accountType === 'admin'}
+                {#if userInfo?.userId === tree.genData.ownerId || tree.linkedData.coAuthors.includes(userInfo?.name ?? '') || userInfo?.accountType === 'admin'}
                     <a
                         href={appLink(`/trees/${tree.genData.id}/edit`)}
                         aria-label="edit"
@@ -127,7 +127,7 @@
                     </button>
                 {/if}
                 {#if !usedForClassroom}
-                    {#if userInfo?.sub === tree.genData.ownerId || userInfo?.accountType === 'admin'}
+                    {#if userInfo?.userId === tree.genData.ownerId || userInfo?.accountType === 'admin'}
                         <button
                             onclick={askDeleteConfirmation}
                             aria-label="delete"

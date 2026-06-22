@@ -32,7 +32,7 @@
 
         tree = await getTreeWithCards(id);
 
-        const isOwner = tree.metadata.genData.ownerId === userInfo?.sub;
+        const isOwner = tree.metadata.genData.ownerId === userInfo?.userId;
         const isAdmin = userInfo?.accountType === 'admin';
         const isCoAuthor = tree.metadata.linkedData.coAuthors.includes(userInfo?.name ?? '');
 

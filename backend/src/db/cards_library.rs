@@ -3,8 +3,8 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use crate::errors::ApiError;
+use crate::structs::cards::{CardData, CardFilters, LibraryCardGetData};
 use sqlx::{PgConnection, PgExecutor, Postgres, QueryBuilder, query, query_scalar};
 
 /// Add a list of tags for a given library card in the database.
@@ -328,7 +328,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_cards_library_add(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let title = "title".to_owned();
@@ -337,7 +337,7 @@ mod tests {
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &title,
             tags.clone(),
             &card_text,
@@ -353,7 +353,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(found_card_data.owner_id, claims.sub);
+        assert_eq!(found_card_data.owner_id, session.user_id);
         assert_eq!(found_card_data.title, title);
         assert_eq!(found_card_data.front, card_text.front);
         assert_eq!(found_card_data.back, card_text.back);
@@ -444,14 +444,14 @@ mod tests {
         );
 
         // Add card to library
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
         let card_text = get_card_text(&db, card_id).await.unwrap();
 
         let _ = cards_library_add(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &String::new(),
             vec![],
             &card_text,
@@ -477,10 +477,10 @@ mod tests {
         assert_eq!(empty_list, vec![]);
 
         // Add card to library
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
         let card_id = initialize_card(&db, tree_id).await;
 
-        let owner_name = get_user_all_data(&db, claims.sub)
+        let owner_name = get_user_all_data(&db, session.user_id)
             .await
             .unwrap()
             .updateable_data
@@ -492,7 +492,7 @@ mod tests {
 
         let card_lib_id = cards_library_add(
             get_connection_unwrap!(db),
-            claims.sub,
+            session.user_id,
             &title,
             tags.clone(),
             &card_text,

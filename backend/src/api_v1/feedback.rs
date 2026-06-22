@@ -6,10 +6,10 @@
 
 use crate::ArcState;
 use crate::db::feedback::add_feedback;
-use crate::db_structs::Validated;
-use crate::db_structs::feedback::FeedbackData;
 use crate::errors::ApiError;
 use crate::ratelimits::PROVIDE_FEEDBACK_RATELIMIT;
+use crate::structs::Validated;
+use crate::structs::feedback::FeedbackData;
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use sqlx::PgPool;

@@ -3,9 +3,9 @@
     Utrecht University within the Software Project course.
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
-use crate::db_structs::{Validated, parse_email};
 use crate::errors::ApiError;
 use crate::limits::{FEEDBACK_MAX_LENGTH, FEEDBACK_MIN_LENGTH};
+use crate::structs::{Validated, parse_email};
 use sqlx::types::chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 

@@ -40,7 +40,7 @@
         // Will never happen unless user manually deletes his cookie
         if (allClassroomUserInfos === null) return '';
 
-        let classroomUserInfo = allClassroomUserInfos.claims.find(
+        let classroomUserInfo = allClassroomUserInfos.sessions.find(
             (classroom) => classroom.id === classroomId
         );
         // Will never happen unless user manually changes his cookie

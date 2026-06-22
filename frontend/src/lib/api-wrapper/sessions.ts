@@ -12,7 +12,7 @@ export type UserInfo = {
     name: Username;
     nickname: string;
     /** This corresponds to userid of the current login. */
-    sub: UserId;
+    userId: UserId;
     accountType: AccountType;
 };
 
@@ -24,7 +24,7 @@ export type ClassroomUserInfo = {
 
 /** The data in the classroom cookie */
 export type AllClassroomUserInfos = {
-    claims: ClassroomUserInfo[];
+    sessions: ClassroomUserInfo[];
 };
 
 /**
@@ -67,7 +67,7 @@ export function getClassroomUserInfo(classroomId: ClassroomId): ClassroomUserInf
         const allClassroomUserInfos: AllClassroomUserInfos = JSON.parse(
             decodeURIComponent(cookie.split('=')[1])
         );
-        for (const classroomUserInfo of allClassroomUserInfos.claims) {
+        for (const classroomUserInfo of allClassroomUserInfos.sessions) {
             if (classroomUserInfo.id == classroomId) return classroomUserInfo;
         }
         return null;

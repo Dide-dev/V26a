@@ -60,7 +60,7 @@ test('No submission without name', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -92,7 +92,7 @@ test('Submission with full data', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -136,7 +136,7 @@ test('New password without upper case letter shows error', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -177,7 +177,7 @@ test('New password without lower case letter shows error', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -218,7 +218,7 @@ test('New password without special character shows error', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -259,7 +259,7 @@ test('New password without number shows error', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -300,7 +300,7 @@ test('Differing new password and repeat password shows error', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -341,7 +341,7 @@ test('No submission without old password', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -380,7 +380,7 @@ test('No submission without new password', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -418,7 +418,7 @@ test('No submission without repeat password', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -457,7 +457,7 @@ test('No submission when old and new password are the same', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'
@@ -498,7 +498,7 @@ test('Submission when all password expectations have been met', async () => {
     const mockGetUser = getOwnUserData as MockedFunction<typeof getOwnUserData>;
     mockGetUser.mockResolvedValue(userData);
     const userInfo: UserInfo = {
-        sub: 1,
+        userId: 1,
         name: 'John',
         nickname: '',
         accountType: 'author'

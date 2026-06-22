@@ -4,10 +4,10 @@
     © Copyright Utrecht University (Department of Information and Computing Sciences)
 */
 
-use crate::db_structs::users::AccountType;
-use crate::db_structs::{Validated, parse_email};
 use crate::errors::ApiError;
 use crate::limits::PASSWORD_LOGIN_MIN_LENGTH;
+use crate::structs::users::AccountType;
+use crate::structs::{Validated, parse_email};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

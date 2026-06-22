@@ -7,12 +7,12 @@
 #![cfg(test)]
 
 use crate::api_v1::auth::LoginResponse;
-use crate::db_structs::auth::LoginRequestBody;
-use crate::db_structs::session::{Claims, InfoCookieData};
-use crate::db_structs::users::{
+use crate::get_connection_unwrap;
+use crate::structs::auth::LoginRequestBody;
+use crate::structs::session::{InfoCookieData, Session};
+use crate::structs::users::{
     AccountType, AdminUpdateData, RegisterData, UserData, UserGeneralData, UserLanguage,
 };
-use crate::get_connection_unwrap;
 use crate::tests::api_v1::{get_cookie_data, login, register, register_admin, setup};
 use sqlx::PgPool;
 
@@ -109,7 +109,7 @@ async fn test_logout_success(db: PgPool) {
     );
 
     // Check that the session is invalidated.
-    let session = Claims::get_session(&db, &token).await.unwrap();
+    let session = Session::retrieve_session(&db, &token).await.unwrap();
     assert!(session.is_none());
 }
 
