@@ -32,7 +32,7 @@
 
         await removeTree(treeId);
 
-        await goto(appLink('/my-trees'));
+        await goto(appLink('/trees/me'));
     }
 
     function oncancel(event: Event) {

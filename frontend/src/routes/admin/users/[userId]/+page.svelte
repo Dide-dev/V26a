@@ -140,7 +140,7 @@
             throw new Error('ERROR: Unexpected output from API.');
         }
 
-        await goto(appLink('/user-list'));
+        await goto(appLink('/admin/users'));
     }
 
     async function handlePasswordChange(id: number) {
@@ -182,7 +182,7 @@
     async function handleCancel(e: Event) {
         e.preventDefault();
 
-        await goto(appLink('/user-list'));
+        await goto(appLink('/admin/users'));
     }
 </script>
 

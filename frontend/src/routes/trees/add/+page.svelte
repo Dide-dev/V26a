@@ -83,7 +83,7 @@
         newData.tags = result;
 
         const treeId = await addTree(newData);
-        await goto(appLink(`/tree-page/editor?id=${treeId}`));
+        await goto(appLink(`/trees/${treeId}/edit`));
     }
 </script>
 

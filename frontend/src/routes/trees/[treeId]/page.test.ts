@@ -8,7 +8,6 @@ import { render, screen } from '@testing-library/svelte';
 import { expect, test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import PageComponent from './+page.svelte';
-import { page } from '$app/state';
 import type {
     RootNode,
     Node,
@@ -149,9 +148,14 @@ test('does not show Edit button when user is not logged in', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    page.url.searchParams.set('id', '4');
 
     vi.mocked(getUserInfo).mockReturnValue(null);
+
+    render(PageComponent, {
+        params: {
+            treeId: '4'
+        }
+    });
 
     await expect(() => screen.findByTestId('edit-button')).rejects.toThrow();
 });

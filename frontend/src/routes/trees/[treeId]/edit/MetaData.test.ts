@@ -49,10 +49,6 @@ vi.mock('$lib/api-wrapper/trees', async (importOriginal) => {
 });
 
 // mock state
-vi.mock('$app/state', () => ({
-    page: { url: { searchParams: { get: () => '1' } } }
-}));
-
 beforeEach(() => {
     Element.prototype.getAnimations = () => [];
 });
