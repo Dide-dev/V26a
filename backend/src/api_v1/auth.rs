@@ -119,7 +119,7 @@ async fn login(
     let user_info = InfoCookieData {
         name: user_data.data.name,
         nickname: user_data.data.nickname,
-        sub: credentials.user_id,
+        user_id: credentials.user_id,
         account_type: credentials.account_type,
     };
     let user_info_serialised = serde_json::to_string(&user_info)?;

@@ -27,7 +27,7 @@ pub struct Session {
 pub struct InfoCookieData {
     pub name: String,
     pub nickname: String,
-    pub sub: i32,
+    pub user_id: i32,
     pub account_type: AccountType,
 }
 
