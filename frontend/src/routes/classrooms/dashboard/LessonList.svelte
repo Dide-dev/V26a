@@ -44,7 +44,13 @@
             {/snippet}
 
             {#each lesson.trees as tree (tree.genData.id)}
-                <TreeListEntry {tree} expanded={false} {handleDelete} usedForClassroom={true} />
+                <TreeListEntry
+                    {tree}
+                    expanded={false}
+                    linkToEditor={false}
+                    {handleDelete}
+                    usedForClassroom={true}
+                />
             {/each}
         </AccordionItem>
     {/each}
