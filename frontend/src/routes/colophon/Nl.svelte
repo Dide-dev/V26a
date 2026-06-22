@@ -48,8 +48,8 @@
         </div>
     </div>
     <p class="pt-2 pb-2">
-        en ontwikkeld door de volgende studenten van de bachelor Informatica aan de Universiteit Utrecht
-        binnen het Software Project vak:
+        en ontwikkeld door de volgende studenten van de bachelor Informatica aan de Universiteit
+        Utrecht binnen het Software Project vak:
     </p>
     <div class="pb-2 text-center">
         <p>Sander Bertram</p>

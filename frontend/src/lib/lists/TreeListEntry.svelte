@@ -75,9 +75,7 @@
             <span class="flex gap-1 *:*:inline">
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
-                        href={appLink(
-                            `/trees/${tree.genData.id}${linkToEditor ? '/edit' : ''}`
-                        )}
+                        href={appLink(`/trees/${tree.genData.id}${linkToEditor ? '/edit' : ''}`)}
                         target="_blank"
                         class={[
                             !tree.data.published && 'text-neutral-600 italic',

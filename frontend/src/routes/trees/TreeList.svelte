@@ -152,7 +152,7 @@
                 title={m.addTree()}
                 aria-label={m.addTree()}
                 class="mr-2.5 cursor-pointer transition-all duration-200 ease-in-out hover:bg-neutral-200"
-                href={appLink(`/tree-generator`)}
+                href={appLink(`/trees/add`)}
                 target="_blank"
             >
                 <PlusOutline class="h-7 w-7 shrink-0" />

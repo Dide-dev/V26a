@@ -40,8 +40,8 @@
                 class="mx-auto mb-4"
             />
             <p>
-                <b>Theo van den Boogaart</b><br />Archimedes Institute, lectorate Mathematical
-                and analytical skills of professionals<br /><a
+                <b>Theo van den Boogaart</b><br />Archimedes Institute, lectorate Mathematical and
+                analytical skills of professionals<br /><a
                     href="mailto:theo.vandenbogaart@hu.nl"
                     class="text__link"
                     target="_blank"
@@ -51,8 +51,8 @@
         </div>
     </div>
     <p class="pt-2 pb-2">
-        and has been developed by the following students from the bachelor Computer Science at Utrecht
-        University within the Software Project course:
+        and has been developed by the following students from the bachelor Computer Science at
+        Utrecht University within the Software Project course:
     </p>
     <div class="pb-2 text-center">
         <p>Sander Bertram</p>
