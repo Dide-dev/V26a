@@ -9,7 +9,7 @@ use crate::limits::{
     LESSON_DESCRIPTION_MAX_LENGTH, LESSON_TITLE_MAX_LENGTH, LESSON_TITLE_MIN_LENGTH,
 };
 use crate::structs::Validated;
-use crate::structs::session::ClassroomClaims;
+use crate::structs::session::ClassroomSession;
 use crate::structs::trees::TreeMetadata;
 use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -106,7 +106,7 @@ pub struct ClassroomUserLoginData {
 #[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize, ToSchema)]
 #[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum ClassroomLoginResponse {
-    Success(ClassroomClaims),
+    Success(ClassroomSession),
     JoinCodeIncorrect { join_code: String },
     MissingUser { user_number: i32 },
 }

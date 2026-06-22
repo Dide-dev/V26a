@@ -19,7 +19,7 @@ use crate::db::feedback::{get_all_feedback, get_feedback_count};
 use crate::structs::{
     Validated,
     feedback::FeedbackListResponse,
-    session::Claims,
+    session::Session,
     users::{AdminGetUserData, AdminUpdateData},
 };
 
@@ -39,11 +39,11 @@ use crate::{
 
 /// Checks if the user is an admin. This is used as a middleware in the `admin` function below.
 async fn check_if_admin(
-    claims: Claims,
+    session: Session,
     request: Request,
     next: Next,
 ) -> Result<Response, ApiError> {
-    match claims.account_type {
+    match session.account_type {
         AccountType::Admin => {
             let response = next.run(request).await;
             Ok(response)
@@ -74,7 +74,7 @@ pub fn admin(state: ArcState) -> Router<ArcState> {
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
@@ -129,14 +129,14 @@ async fn get_all_user_data(
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("user_id" = i32, Path),
     )
 )]
 /// Update a user's data in the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `user_id` - The user for whom to update their data.
 ///
@@ -184,7 +184,7 @@ async fn update_user_data(
     admin_update_user(&mut *transaction, user_id, &new_data).await?;
 
     if !new_data.enabled {
-        Claims::delete_all_sessions(&mut *transaction, &user_id).await?;
+        Session::delete_all_sessions(&mut *transaction, &user_id).await?;
     }
 
     transaction.commit().await?;
@@ -204,7 +204,7 @@ async fn update_user_data(
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("user_id" = i32, Path),
     )
 )]
@@ -241,7 +241,7 @@ async fn change_password(
     .await?;
 
     // All sessions of the account are invalidated if password is changed.
-    Claims::delete_all_sessions(&db, &user_id).await?;
+    Session::delete_all_sessions(&db, &user_id).await?;
 
     Ok(Json(ChangePasswordResponse { succeeded: true }))
 }
@@ -258,7 +258,7 @@ async fn change_password(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("user_id" = i32, Path),
     )
 )]
@@ -302,7 +302,7 @@ async fn get_user_data(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]

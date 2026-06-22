@@ -23,7 +23,7 @@ use crate::ratelimits::{
 use crate::structs::Validated;
 use crate::structs::cards::CardData;
 use crate::structs::pagination::OptionalPaginationOptions;
-use crate::structs::session::Claims;
+use crate::structs::session::Session;
 use crate::structs::trees::{
     Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeFilters,
     TreeListResponse, TreeStructure, TreeWithCards,
@@ -92,13 +92,13 @@ pub fn trees() -> Router<ArcState> {
         (status = 500, description = "Internal server error.")
     ),
     params(
-        ("session" = Claims, Cookie)
+        ("session" = Session, Cookie)
     )
 )]
 /// Add a tree to the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `sessions` - The session cookie of the user.
 ///
 /// `tree_add_data` - The data used to initialize the tree, as [`TreeAddData`].
 ///
@@ -123,7 +123,7 @@ pub fn trees() -> Router<ArcState> {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_tree(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Json(tree_add_data): Json<TreeAddData>,
 ) -> Result<Json<i32>, ApiError> {
@@ -140,7 +140,7 @@ async fn add_new_tree(
     {
         return Err(ApiError::MissingSubject(*subject_id));
     }
-    let id = add_tree(&mut transaction, tree_add_data, claims.sub).await?;
+    let id = add_tree(&mut transaction, tree_add_data, session.user_id).await?;
 
     transaction.commit().await?;
 
@@ -159,14 +159,14 @@ async fn add_new_tree(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
     )
 )]
 /// Remove a tree together with its cards from the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `tree_id` - Tree to remove.
 ///
@@ -184,11 +184,11 @@ async fn add_new_tree(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_tree(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<(), ApiError> {
-    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &session).await?;
 
     db::trees::remove_tree(&db, tree_id).await
 }
@@ -206,14 +206,14 @@ async fn remove_tree(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
     )
 )]
 /// Update the structure of an existing tree in the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `new_structure` - The new structure, as [`TreeStructure`].
 /// Overwrites the current structure.
@@ -241,13 +241,13 @@ async fn remove_tree(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or a [`SerdeException`](ApiError::SerdeException) instead.
 async fn update_tree_structure(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
     Json(new_structure): Json<TreeStructure>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &session).await?;
 
     let mut transaction = db.begin().await?;
 
@@ -270,14 +270,14 @@ async fn update_tree_structure(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
     )
 )]
 /// Add a card to the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `tree_id` - The tree to add the card to.
 ///
@@ -297,14 +297,14 @@ async fn update_tree_structure(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_new_card(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
     Json(card_data): Json<CardData>,
 ) -> Result<Json<i32>, ApiError> {
     card_data.validate_inputs()?;
     // Check whether the tree of which a card is being updated exists and is owned by the user.
-    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &session).await?;
 
     let id = add_card(&db, tree_id, &card_data).await?;
 
@@ -324,7 +324,7 @@ async fn add_new_card(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
         ("card_id" = i32, Path),
     )
@@ -335,7 +335,7 @@ async fn add_new_card(
 /// if the provided new structure is still valid when the card is removed.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `new_structure` - The new tree structure, as [`TreeStructure`], not containing the deleted card.
 ///
@@ -367,13 +367,13 @@ async fn add_new_card(
 /// May return a [`SerdeException`](ApiError::SerdeException)
 /// or [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn remove_card_from_tree(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path((tree_id, card_id)): Path<(i32, i32)>,
     Json(new_structure): Json<TreeStructure>,
 ) -> Result<(), ApiError> {
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+    verify_tree_permissions(get_connection!(db), tree_id, &session).await?;
 
     let mut transaction = db.begin().await?;
 
@@ -440,14 +440,14 @@ async fn update_structure_if_valid(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
     )
 )]
 /// Update the data of an existing tree in the database.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `tree_id` - The tree to update.
 ///
@@ -473,7 +473,7 @@ async fn update_structure_if_valid(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn update_tree_data(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
     Json(new_data): Json<TreeData>,
@@ -482,7 +482,7 @@ async fn update_tree_data(
     let mut transaction = db.begin().await?;
 
     // Verify the tree's existence and the user's permissions.
-    verify_tree_permissions(&mut transaction, tree_id, &claims).await?;
+    verify_tree_permissions(&mut transaction, tree_id, &session).await?;
 
     if !language_exists(&mut *transaction, &new_data.language_code).await? {
         return Err(ApiError::MissingLanguage(new_data.language_code.clone()));
@@ -512,14 +512,14 @@ async fn update_tree_data(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
     )
 )]
 /// Request all data of a specific tree together with all of its cards.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user, as an [`Option`]. Necessary if the user
+/// `session` - The session cookie of the user, as an [`Option`]. Necessary if the user
 /// is retrieving an unpublished tree.
 ///
 /// `tree_id` - The tree to retrieve data from.
@@ -541,11 +541,11 @@ async fn update_tree_data(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
-    claims: Option<Claims>,
+    session: Option<Session>,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    verify_tree_accessible_by_user(get_connection!(db), tree_id, claims.as_ref()).await?;
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, session.as_ref()).await?;
 
     let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
         .await?
@@ -570,7 +570,7 @@ async fn get_tree_with_cards(
 ///
 /// `tree_id` - The tree of which the ownerships gets verified.
 ///
-/// `claims` - The claims of the user who sent this request.
+/// `session` - The session of the user who sent this request.
 ///
 /// # Returns
 /// Nothing.
@@ -585,16 +585,16 @@ async fn get_tree_with_cards(
 pub async fn verify_tree_permissions(
     db: &mut PgConnection,
     tree_id: i32,
-    claims: &Claims,
+    session: &Session,
 ) -> Result<(), ApiError> {
     // Check whether the tree exists.
     let owner_id = get_tree_owner(&mut *db, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    if claims.account_type == AccountType::Admin
-        || claims.sub == owner_id
-        || is_co_author_of_tree(db, &tree_id, &claims.sub).await?
+    if session.account_type == AccountType::Admin
+        || session.user_id == owner_id
+        || is_co_author_of_tree(db, &tree_id, &session.user_id).await?
     {
         Ok(())
     } else {
@@ -612,7 +612,7 @@ pub async fn verify_tree_permissions(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Option<Claims>, Cookie),
+        ("session" = Option<Session>, Cookie),
         ("page" = OptionalPaginationOptions, Query),
         ("filters" = TreeFilters, Query),
     )
@@ -620,7 +620,7 @@ pub async fn verify_tree_permissions(
 /// Retrieve the list of all trees satisfying the given filters at a given page of a given size.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user, as an [`Option`]. Only necessary if the query filter
+/// `session` - The session cookie of the user, as an [`Option`]. Only necessary if the query filter
 /// `showOwnPrivate` is set to `true`.
 ///
 /// `db` - A reference to the database connection to use for the query.
@@ -645,7 +645,7 @@ pub async fn verify_tree_permissions(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) or
 /// [`DatabaseMemoryCap`](ApiError::DatabaseMemoryCap) instead.
 pub async fn get_list(
-    claims: Option<Claims>,
+    session: Option<Session>,
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,
     Query(filters): Query<TreeFilters>,
@@ -654,14 +654,14 @@ pub async fn get_list(
 
     let mut transaction = db.begin().await?;
 
-    let trees_count = get_queried_count(&mut *transaction, &filters, claims.as_ref()).await?;
+    let trees_count = get_queried_count(&mut *transaction, &filters, session.as_ref()).await?;
     if trees_count == 0 {
         return Ok(Json(TreeListResponse {
             total_trees: 0,
             trees: Vec::new(),
         }));
     }
-    let trees = get_queried_list(&mut *transaction, &page, &filters, claims.as_ref()).await?;
+    let trees = get_queried_list(&mut *transaction, &page, &filters, session.as_ref()).await?;
 
     transaction.commit().await?;
 
@@ -698,7 +698,7 @@ pub enum AuthorizeCoAuthorResponse {
     params(
         ("tree_id" = i32, Path),
         ("username" = String, Path),
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Add a user to a tree to make them a co-author.
@@ -706,7 +706,7 @@ pub enum AuthorizeCoAuthorResponse {
 /// Only the owner of the given tree or an admin can add a user to become a co-author of the tree.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `tree_id` - The id of the tree for which a co-author will be added.
 ///
@@ -727,7 +727,7 @@ pub enum AuthorizeCoAuthorResponse {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn authorize_co_author(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path((tree_id, username)): Path<(i32, String)>,
 ) -> Result<Json<AuthorizeCoAuthorResponse>, ApiError> {
@@ -736,7 +736,7 @@ async fn authorize_co_author(
         .ok_or(ApiError::MissingTree(tree_id))?;
 
     // A user can only add a co-author to their own tree, unless they are an admin.
-    if claims.sub != owner_id && claims.account_type != AccountType::Admin {
+    if session.user_id != owner_id && session.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -767,7 +767,7 @@ async fn authorize_co_author(
     params(
         ("tree_id" = i32, Path),
         ("username" = String, Path),
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Remove a co-author from a tree.
@@ -780,7 +780,7 @@ async fn authorize_co_author(
 /// because the owner of tree can never become a co-author.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `tree_id` - The id of the tree for which a co-author will be removed.
 ///
@@ -799,7 +799,7 @@ async fn authorize_co_author(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn deauthorize_co_author(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path((tree_id, username)): Path<(i32, String)>,
 ) -> Result<(), ApiError> {
@@ -808,7 +808,7 @@ async fn deauthorize_co_author(
         .ok_or(ApiError::MissingTree(tree_id))?;
 
     // A user can only remove a co-author to their own tree, unless they are an admin.
-    if claims.sub != owner_id && claims.account_type != AccountType::Admin {
+    if session.user_id != owner_id && session.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -859,7 +859,7 @@ pub async fn get_all_languages(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Add a new language.
@@ -882,11 +882,11 @@ pub async fn get_all_languages(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_new_language(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Json(language): Json<Language>,
 ) -> Result<(), ApiError> {
-    if claims.account_type != AccountType::Admin {
+    if session.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -913,7 +913,7 @@ pub async fn add_new_language(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("code" = String, Path),
     )
 )]
@@ -939,12 +939,12 @@ pub async fn add_new_language(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_language(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(code): Path<String>,
     Json(new_name): Json<String>,
 ) -> Result<(), ApiError> {
-    if claims.account_type != AccountType::Admin {
+    if session.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -996,7 +996,7 @@ pub async fn get_all_subjects(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
     )
 )]
 /// Add a new subject.
@@ -1022,11 +1022,11 @@ pub async fn get_all_subjects(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn add_new_subject(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Json(subject_data): Json<SubjectData>,
 ) -> Result<Json<i32>, ApiError> {
-    if claims.account_type != AccountType::Admin {
+    if session.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -1056,7 +1056,7 @@ pub async fn add_new_subject(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("id" = i32, Path),
     )
 )]
@@ -1085,12 +1085,12 @@ pub async fn add_new_subject(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn update_subject(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(id): Path<i32>,
     Json(new_data): Json<SubjectData>,
 ) -> Result<(), ApiError> {
-    if claims.account_type != AccountType::Admin {
+    if session.account_type != AccountType::Admin {
         return Err(ApiError::NoPermission);
     }
 
@@ -1122,7 +1122,7 @@ pub async fn update_subject(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("tree_id" = i32, Path),
     )
 
@@ -1130,7 +1130,7 @@ pub async fn update_subject(
 /// Duplicates a tree.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `tree_id` - Tree to duplicate.
 ///
@@ -1150,7 +1150,7 @@ pub async fn update_subject(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub async fn duplicate_tree(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<i32>, ApiError> {
@@ -1161,11 +1161,11 @@ pub async fn duplicate_tree(
         .ok_or(ApiError::MissingTree(tree_id))?;
 
     if !metadata.data.published {
-        verify_tree_permissions(get_connection!(db), tree_id, &claims).await?;
+        verify_tree_permissions(get_connection!(db), tree_id, &session).await?;
     }
     let mut new_data = metadata.data;
     new_data.published = false;
-    let this_user = get_user(&db, claims.sub).await?;
+    let this_user = get_user(&db, session.user_id).await?;
     new_data.title = format!(
         "{} {}",
         Message::CopyOf.localized(&this_user.data.language),
@@ -1179,7 +1179,7 @@ pub async fn duplicate_tree(
         tree_data: new_data,
         tree_structure: structure.clone(),
     };
-    let new_tree_id = add_tree(&mut transaction, tree_add_data, claims.sub).await?;
+    let new_tree_id = add_tree(&mut transaction, tree_add_data, session.user_id).await?;
 
     let mut new_structure: Vec<RootNode> = Vec::with_capacity(structure.root_nodes.len());
     for root_node in structure.root_nodes {

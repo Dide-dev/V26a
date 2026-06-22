@@ -10,7 +10,7 @@ use crate::structs::classrooms::{
     ClassroomAddData, ClassroomMetaData, LessonAddData, LessonMetaData, LessonWithTrees,
 };
 use crate::structs::pagination::PaginationOptions;
-use crate::structs::session::Claims;
+use crate::structs::session::Session;
 use crate::structs::trees::TreeFilters;
 use rand::prelude::*;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
@@ -580,8 +580,8 @@ pub async fn add_existing_tree_to_lesson(
 ///
 /// `classroom_id` - The classroom id to get the data for.
 ///
-/// `claims` - An option to indicate whether or not unpublished lessons should be included
-/// (for teachers, add [`Some(Claims)`](Claims); for students, add [`None`]).
+/// `session` - An option to indicate whether unpublished lessons should be included
+/// (for teachers, add [`Some(Session)`](Session); for students, add [`None`]).
 ///
 /// # Returns
 /// Returns a [`Vec<LessonWithTrees>`](LessonWithTrees) that contains the lesson metadata and the
@@ -592,7 +592,7 @@ pub async fn add_existing_tree_to_lesson(
 pub async fn get_lessons_with_tree_ids_from_classroom(
     db: &mut PgConnection,
     classroom_id: i32,
-    claims: Option<&Claims>,
+    session: Option<&Session>,
 ) -> Result<Vec<LessonWithTrees>, ApiError> {
     let all_lesson_metadata = query!(
         "SELECT id, name, order_number, description, published, created_at
@@ -608,7 +608,7 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
     let mut all_lessons: Vec<LessonWithTrees> = Vec::new();
 
     for row in all_lesson_metadata {
-        if claims.is_none() && !row.published {
+        if session.is_none() && !row.published {
             continue;
         }
 
@@ -627,7 +627,7 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
             ..Default::default()
         };
 
-        let lesson_trees = get_queried_list(&mut *db, &page, &filter, claims)
+        let lesson_trees = get_queried_list(&mut *db, &page, &filter, session)
             .await
             .unwrap_or(Vec::new());
 
@@ -656,7 +656,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_classroom(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
@@ -667,7 +667,7 @@ mod tests {
             .await
             .unwrap();
 
-        let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let id = add_classroom(&db, &classroom_add_data, session.user_id, &join_code)
             .await
             .unwrap();
 
@@ -687,7 +687,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_validate_join_code(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let join_code = "TESTIN";
 
@@ -698,7 +698,7 @@ mod tests {
             description: "This is a test classroom".to_owned(),
         };
 
-        let id = add_classroom(&db, &classroom_add_data, claims.sub, join_code)
+        let id = add_classroom(&db, &classroom_add_data, session.user_id, join_code)
             .await
             .unwrap();
 
@@ -710,7 +710,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_new_user_to_classroom(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
@@ -721,7 +721,7 @@ mod tests {
             .await
             .unwrap();
 
-        let id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let id = add_classroom(&db, &classroom_add_data, session.user_id, &join_code)
             .await
             .unwrap();
 
@@ -740,7 +740,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_all_classrooms_from_owner_id(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
@@ -751,15 +751,16 @@ mod tests {
             .await
             .unwrap();
 
-        let classroom_id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let classroom_id = add_classroom(&db, &classroom_add_data, session.user_id, &join_code)
             .await
             .unwrap();
 
         let pagination_options = PaginationOptions::new(1, 5, 1000, 500).unwrap();
 
-        let classrooms = get_all_classrooms_from_owner_id(&db, claims.sub, &pagination_options)
-            .await
-            .unwrap();
+        let classrooms =
+            get_all_classrooms_from_owner_id(&db, session.user_id, &pagination_options)
+                .await
+                .unwrap();
         let found_join_code = get_classroom_join_code_from_id(&db, classrooms[0].id)
             .await
             .unwrap();
@@ -768,23 +769,23 @@ mod tests {
         assert_eq!(join_code, found_join_code);
         assert_eq!(classroom_add_data.name, classrooms[0].name);
         assert_eq!(classroom_add_data.description, classrooms[0].description);
-        assert_eq!(claims.sub, classrooms[0].owner_id);
+        assert_eq!(session.user_id, classrooms[0].owner_id);
     }
 
     #[sqlx::test]
     async fn test_get_classroom_count_from_owner_id(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
         assert_eq!(
-            get_classroom_count_from_owner_id(&db, claims.sub)
+            get_classroom_count_from_owner_id(&db, session.user_id)
                 .await
                 .unwrap(),
             0
         );
 
-        initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
 
         assert_eq!(
-            get_classroom_count_from_owner_id(&db, claims.sub)
+            get_classroom_count_from_owner_id(&db, session.user_id)
                 .await
                 .unwrap(),
             1
@@ -793,7 +794,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_all_classrooms_from_ids(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
 
         let classroom_add_data = ClassroomAddData {
             name: "Classroom".to_owned(),
@@ -804,7 +805,7 @@ mod tests {
             .await
             .unwrap();
 
-        let classroom_id = add_classroom(&db, &classroom_add_data, claims.sub, &join_code)
+        let classroom_id = add_classroom(&db, &classroom_add_data, session.user_id, &join_code)
             .await
             .unwrap();
 
@@ -821,22 +822,22 @@ mod tests {
         assert_eq!(join_code, found_join_code);
         assert_eq!(classroom_add_data.name, classrooms[0].name);
         assert_eq!(classroom_add_data.description, classrooms[0].description);
-        assert_eq!(claims.sub, classrooms[0].owner_id);
+        assert_eq!(session.user_id, classrooms[0].owner_id);
     }
 
     #[sqlx::test]
     async fn test_get_classroom_count_from_ids(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
         assert_eq!(
-            get_classroom_count_from_owner_id(&db, claims.sub)
+            get_classroom_count_from_owner_id(&db, session.user_id)
                 .await
                 .unwrap(),
             0
         );
 
-        let id1 = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
-        let id2 = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
-        let id3 = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let id1 = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let id2 = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let id3 = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
 
         assert_eq!(
             get_classroom_count_from_ids(&db, &vec![id1, id2, id3])
@@ -848,19 +849,19 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_classroom_owner(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
 
         let found_owner_id = get_classroom_owner_from_id(&db, classroom_id)
             .await
             .unwrap();
-        assert_eq!(found_owner_id, claims.sub);
+        assert_eq!(found_owner_id, session.user_id);
     }
 
     #[sqlx::test]
     async fn test_add_lesson(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
 
         let lesson_add_data = LessonAddData {
             name: "Lesson".to_string(),
@@ -898,8 +899,8 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_existing_tree_to_lesson(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
         let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_id).await;
 
         add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
@@ -920,14 +921,14 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_lessons_without_tree_ids_from_classroom_teacher(db: PgPool) {
-        let (claims, _) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let (session, _) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
         let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_id).await;
 
         let lesson = get_lessons_with_tree_ids_from_classroom(
             get_connection_unwrap!(db),
             classroom_id,
-            Some(&claims),
+            Some(&session),
         )
         .await
         .unwrap();
@@ -939,8 +940,8 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_lessons_with_tree_ids_from_classroom_teacher(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
         let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_id).await;
 
         add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
@@ -950,7 +951,7 @@ mod tests {
         let lesson = get_lessons_with_tree_ids_from_classroom(
             get_connection_unwrap!(db),
             classroom_id,
-            Some(&claims),
+            Some(&session),
         )
         .await
         .unwrap();
@@ -963,8 +964,8 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_lessons_with_tree_ids_from_classroom_student(db: PgPool) {
-        let (claims, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
-        let classroom_id = initialize_classroom(get_connection_unwrap!(db), claims.sub).await;
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_id = initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
         let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_id).await;
 
         add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)

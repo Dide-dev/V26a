@@ -13,7 +13,7 @@ use crate::structs::classrooms::{
     ClassroomAddData, ClassroomGeneratedData, ClassroomListResponse, ClassroomLoginResponse,
     ClassroomUserLoginData, LessonAddData,
 };
-use crate::structs::session::{AllClassroomClaims, Claims};
+use crate::structs::session::{AllClassroomSessions, Session};
 use crate::structs::users::{AccountType, RegisterData};
 use crate::tests::api_v1::{
     create_classroom, get_cookie_data, login, register, setup, setup_login,
@@ -100,9 +100,9 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     };
 
     let cookie = response.cookie("classroom_user_infos");
-    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+    let cookie_data = get_cookie_data::<AllClassroomSessions>(&cookie);
 
-    assert_eq!(cookie_data.claims.len(), 1);
+    assert_eq!(cookie_data.sessions.len(), 1);
 
     // ----- Cookie with same classroom id present, new user ----- //
 
@@ -119,9 +119,9 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     response.assert_status_ok();
 
     let cookie = response.cookie("classroom_user_infos");
-    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+    let cookie_data = get_cookie_data::<AllClassroomSessions>(&cookie);
 
-    assert_eq!(cookie_data.claims.len(), 1);
+    assert_eq!(cookie_data.sessions.len(), 1);
 
     // ----- Cookie with same classroom id present, existing user ----- //
 
@@ -138,9 +138,9 @@ async fn test_classroom_login_same_classroom(db: PgPool) {
     response.assert_status_ok();
 
     let cookie = response.cookie("classroom_user_infos");
-    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+    let cookie_data = get_cookie_data::<AllClassroomSessions>(&cookie);
 
-    assert_eq!(cookie_data.claims.len(), 1);
+    assert_eq!(cookie_data.sessions.len(), 1);
 }
 
 #[sqlx::test]
@@ -172,9 +172,9 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
     response.assert_status_ok();
 
     let cookie = response.cookie("classroom_user_infos");
-    let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+    let cookie_data = get_cookie_data::<AllClassroomSessions>(&cookie);
 
-    assert_eq!(cookie_data.claims.len(), 1);
+    assert_eq!(cookie_data.sessions.len(), 1);
 
     // ----- Create a number more classrooms ----- //
 
@@ -202,9 +202,9 @@ async fn test_classroom_login_multiple_sessions(db: PgPool) {
         response.assert_status_ok();
 
         let cookie = response.cookie("classroom_user_infos");
-        let cookie_data = get_cookie_data::<AllClassroomClaims>(&cookie);
+        let cookie_data = get_cookie_data::<AllClassroomSessions>(&cookie);
 
-        assert_eq!(cookie_data.claims.len(), i);
+        assert_eq!(cookie_data.sessions.len(), i);
     }
 }
 
@@ -396,13 +396,13 @@ async fn test_verify_classroom_permission_owner(db: PgPool) {
     let server = setup_login(db.clone()).await;
     let classroom_id: i32 = create_classroom(&server).await;
 
-    let claims = Claims {
-        sub: 1,
+    let session = Session {
+        user_id: 1,
         account_type: AccountType::Author,
     };
 
     let result =
-        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &claims).await;
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &session).await;
     assert!(result.is_ok());
 }
 
@@ -411,12 +411,12 @@ async fn test_verify_classroom_permission_admin(db: PgPool) {
     let server = setup_login(db.clone()).await;
     let classroom_id: i32 = create_classroom(&server).await;
 
-    let claims = Claims {
-        sub: 1,
+    let session = Session {
+        user_id: 1,
         account_type: AccountType::Admin,
     };
 
     let result =
-        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &claims).await;
+        verify_classroom_permissions(get_connection_unwrap!(db), classroom_id, &session).await;
     assert!(result.is_ok());
 }

@@ -10,7 +10,7 @@ use crate::api_v1::lessons::verify_lesson_permissions;
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::structs::classrooms::LessonAddData;
-use crate::structs::session::Claims;
+use crate::structs::session::Session;
 use crate::structs::users::{AccountType, RegisterData};
 use crate::tests::api_v1::{create_classroom, create_tree, login, register, setup, setup_login};
 use sqlx::PgPool;
@@ -97,27 +97,27 @@ async fn test_verify_lesson_permissions(db: PgPool) {
         .await;
     let lesson_id: i32 = response.json();
 
-    let claims = Claims {
-        sub: user_id,
+    let session = Session {
+        user_id,
         account_type: AccountType::Author,
     };
 
-    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &claims).await;
+    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &session).await;
     assert!(result.is_ok());
 
-    let claims = Claims {
-        sub: user_id + 1,
+    let session = Session {
+        user_id: user_id + 1,
         account_type: AccountType::Admin,
     };
 
-    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &claims).await;
+    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &session).await;
     assert!(result.is_ok());
 
-    let claims = Claims {
-        sub: user_id + 2,
+    let session = Session {
+        user_id: user_id + 2,
         account_type: AccountType::Author,
     };
 
-    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &claims).await;
+    let result = verify_lesson_permissions(get_connection_unwrap!(db), lesson_id, &session).await;
     assert!(result.is_err());
 }

@@ -10,7 +10,7 @@ use crate::db::trees::verify_tree_accessible_by_user;
 use crate::errors::ApiError;
 use crate::get_connection;
 use crate::state::ArcState;
-use crate::structs::session::Claims;
+use crate::structs::session::Session;
 use axum::extract::Path;
 use axum::routing::post;
 use axum::{Extension, Router};
@@ -33,7 +33,7 @@ pub fn lessons() -> Router<ArcState> {
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = Claims, Cookie),
+        ("session" = Session, Cookie),
         ("lesson_id" = i32, Path),
         ("tree_id" = i32, Path),
     )
@@ -41,7 +41,7 @@ pub fn lessons() -> Router<ArcState> {
 /// Adds an existing tree to a lesson.
 ///
 /// # Arguments
-/// `claims` - The session cookie of the user.
+/// `session` - The session cookie of the user.
 ///
 /// `lesson_id` - The id of the lesson to which the tree needs to be added.
 ///
@@ -64,12 +64,12 @@ pub fn lessons() -> Router<ArcState> {
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn add_tree_to_lesson(
-    claims: Claims,
+    session: Session,
     Extension(db): Extension<PgPool>,
     Path((lesson_id, tree_id)): Path<(i32, i32)>,
 ) -> Result<(), ApiError> {
-    verify_lesson_permissions(get_connection!(db), lesson_id, &claims).await?;
-    verify_tree_accessible_by_user(get_connection!(db), tree_id, Some(&claims)).await?;
+    verify_lesson_permissions(get_connection!(db), lesson_id, &session).await?;
+    verify_tree_accessible_by_user(get_connection!(db), tree_id, Some(&session)).await?;
     add_existing_tree_to_lesson(get_connection!(db), lesson_id, tree_id).await?;
 
     Ok(())
@@ -82,7 +82,7 @@ async fn add_tree_to_lesson(
 /// # Arguments
 /// `lesson_id` - The id of the classroom whose ownership needs to be verified.
 ///
-/// `claims` - The session cookie of the user, used to verify ownership.
+/// `session` - The session cookie of the user, used to verify ownership.
 ///
 /// # Returns
 /// Nothing.
@@ -96,13 +96,13 @@ async fn add_tree_to_lesson(
 pub async fn verify_lesson_permissions(
     db: &mut PgConnection,
     lesson_id: i32,
-    claims: &Claims,
+    session: &Session,
 ) -> Result<(), ApiError> {
     let classroom_id = get_classroom_from_lesson(&mut *db, lesson_id)
         .await?
         .ok_or(ApiError::MissingLesson(lesson_id))?;
 
-    verify_classroom_permissions(&mut *db, classroom_id, claims).await?;
+    verify_classroom_permissions(&mut *db, classroom_id, session).await?;
 
     Ok(())
 }

@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, oneshot};
 
-/// This needs to be a wrapper type, so that the `api_v1/claims` can
-/// implement `FromRequestParts<ArcState>` for the different optional claims.
+/// This needs to be a wrapper type, so that the `api_v1/session` can
+/// implement `FromRequestParts<ArcState>` for the different optional sessions.
 /// It is also useful for if we want to change this to not put the State in an arc,
 /// or if we want to rename it.
 ///

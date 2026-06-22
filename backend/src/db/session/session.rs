@@ -5,7 +5,7 @@
 */
 
 use crate::errors::ApiError;
-use crate::structs::session::{Claims, ClaimsType};
+use crate::structs::session::{Session, SessionType};
 use crate::structs::users::AccountType;
 use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
@@ -13,20 +13,20 @@ use chrono::{DateTime, Utc};
 use sqlx::{PgConnection, PgExecutor, PgPool, query};
 use std::str::FromStr;
 
-impl ClaimsType for Claims {
+impl SessionType for Session {
     fn get_cookie_name() -> &'static str {
         "session"
     }
 }
 
-impl Claims {
-    /// Used in `FromRequestParts` for `Claims` to retrieve the `Claims`.
+impl Session {
+    /// Used in `FromRequestParts` for `Session` to retrieve the `Session`.
     ///
     /// # Arguments
     /// `parts` - a [`&mut Parts`](Parts).
     ///
     /// # Returns
-    /// Returns the [`Claims`] if there is a non-expired session.
+    /// Returns the [`Session`] if there is a non-expired session.
     ///
     /// Returns a [`MissingAuthentication`](ApiError::MissingAuthentication) if no token was found.
     ///
@@ -34,7 +34,7 @@ impl Claims {
     ///
     /// # Errors
     /// May also return a [`DatabaseException`](ApiError::DatabaseException).
-    pub async fn get_claims(parts: &mut Parts) -> Result<Claims, ApiError> {
+    pub async fn get_session(parts: &mut Parts) -> Result<Session, ApiError> {
         let jar = CookieJar::from_headers(&parts.headers);
         let db = parts
             .extensions
@@ -42,14 +42,14 @@ impl Claims {
             .ok_or(ApiError::DatabaseException)?;
 
         // Extract the token from the cookie jar.
-        let token = Claims::extract_token(&jar)?;
+        let token = Session::extract_token(&jar)?;
 
-        Claims::get_session(db, &token)
+        Session::retrieve_session(db, &token)
             .await?
             .ok_or(ApiError::InvalidSession)
     }
 
-    /// Fetch the claims associated with a session token.
+    /// Fetch the session associated with a session token.
     ///
     /// # Arguments
     /// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](sqlx::PgConnection).
@@ -57,7 +57,7 @@ impl Claims {
     /// `token` - The opaque session token from the session cookie.
     ///
     /// # Returns
-    /// Returns [`Ok(Some(Claims))`](Claims) containing the user id and account type.
+    /// Returns [`Ok(Some(Session))`](Session) containing the user id and account type.
     ///
     /// Returns [`Ok(None)`](None) if the token could not be found or has expired.
     ///
@@ -65,10 +65,10 @@ impl Claims {
     /// Returns [`InvalidDataFound`](ApiError::InvalidDataFound) if some data in the database is invalid or corrupted.
     ///
     /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
-    pub async fn get_session(
+    pub async fn retrieve_session(
         db: impl PgExecutor<'_>,
         token: &str,
-    ) -> Result<Option<Claims>, ApiError> {
+    ) -> Result<Option<Session>, ApiError> {
         let row = query!(
             "SELECT s.user_id, u.account_type, s.expires_at AS exp
              FROM sessions s
@@ -79,15 +79,15 @@ impl Claims {
         .fetch_optional(db)
         .await?;
 
-        let claims = match row {
-            Some(row) => Some(Claims {
-                sub: row.user_id,
+        let session = match row {
+            Some(row) => Some(Session {
+                user_id: row.user_id,
                 account_type: AccountType::from_str(&row.account_type)?,
             }),
             None => None,
         };
 
-        Ok(claims)
+        Ok(session)
     }
 
     /// Create a new session for a user and insert it into the database.
@@ -196,27 +196,40 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_session(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let (token, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token, expires_at, &claims.sub)
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
+
+        let retrieved_session = Session::retrieve_session(&db, &token)
             .await
+            .unwrap()
             .unwrap();
 
-        let retrieved_claims = Claims::get_session(&db, &token).await.unwrap().unwrap();
-
-        // Validates if the user is in claims, meaning the session is returned if it is true.
-        assert_eq!(retrieved_claims, claims);
+        // Validates if the user is in session, meaning the session is returned if it is true.
+        assert_eq!(retrieved_session, session);
     }
 
     #[sqlx::test]
     async fn test_create_session(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let (token, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token, expires_at, &claims.sub)
-            .await
-            .unwrap();
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
 
         let row = query!(
             "SELECT token, user_id, expires_at FROM sessions WHERE token = $1",
@@ -227,72 +240,99 @@ mod tests {
         .unwrap();
 
         // Checks if the corresponding token and userid are present in the rows of the session table.
-        assert_eq!(row.user_id, claims.sub);
+        assert_eq!(row.user_id, session.user_id);
     }
 
     #[sqlx::test]
     async fn test_delete_session(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let (token, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token, expires_at, &claims.sub)
-            .await
-            .unwrap();
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
 
-        Claims::delete_session(&db, &token).await.unwrap();
+        Session::delete_session(&db, &token).await.unwrap();
 
-        let claims: Option<Claims> = Claims::get_session(&db, &token).await.unwrap();
+        let session: Option<Session> = Session::retrieve_session(&db, &token).await.unwrap();
 
-        assert!(claims.is_none());
+        assert!(session.is_none());
     }
 
     #[sqlx::test]
     async fn test_delete_all_sessions_user(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let (token, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token, expires_at, &claims.sub)
-            .await
-            .unwrap();
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
         let (token, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token, expires_at, &claims.sub)
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
+
+        Session::delete_all_sessions(&db, &session.user_id)
             .await
             .unwrap();
 
-        Claims::delete_all_sessions(&db, &claims.sub).await.unwrap();
+        let session1 = Session::retrieve_session(&db, "token-1").await.unwrap();
+        let session2 = Session::retrieve_session(&db, "token-2").await.unwrap();
 
-        let claims1 = Claims::get_session(&db, "token-1").await.unwrap();
-        let claims2 = Claims::get_session(&db, "token-2").await.unwrap();
-
-        // Deleting multiple claims would result in multiple rows being empty.
-        assert!(claims1.is_none());
-        assert!(claims2.is_none());
+        // Deleting multiple sessions would result in multiple rows being empty.
+        assert!(session1.is_none());
+        assert!(session2.is_none());
     }
 
     #[sqlx::test]
     async fn test_delete_all_sessions_except(db: PgPool) {
-        let claims = initialize_basic_user(&db).await;
+        let session = initialize_basic_user(&db).await;
 
         let (token1, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token1, expires_at, &claims.sub)
-            .await
-            .unwrap();
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token1,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
         let (token2, expires_at) = create_token(3600);
-        Claims::create_session(get_connection_unwrap!(db), &token2, expires_at, &claims.sub)
+        Session::create_session(
+            get_connection_unwrap!(db),
+            &token2,
+            expires_at,
+            &session.user_id,
+        )
+        .await
+        .unwrap();
+
+        Session::delete_all_sessions_except(&db, &token1, &session.user_id)
             .await
             .unwrap();
 
-        Claims::delete_all_sessions_except(&db, &token1, &claims.sub)
-            .await
-            .unwrap();
-
-        let claims1 = Claims::get_session(&db, &token1).await.unwrap();
-        let claims2 = Claims::get_session(&db, &token2).await.unwrap();
+        let session1 = Session::retrieve_session(&db, &token1).await.unwrap();
+        let session2 = Session::retrieve_session(&db, &token2).await.unwrap();
 
         // This session is the exception and should not be deleted.
-        assert!(claims1.is_some());
+        assert!(session1.is_some());
 
         // This session should be deleted.
-        assert!(claims2.is_none());
+        assert!(session2.is_none());
     }
 }

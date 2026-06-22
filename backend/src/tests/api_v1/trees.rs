@@ -14,7 +14,7 @@ use crate::db::trees::is_co_author_of_tree;
 use crate::errors::ApiError;
 use crate::get_connection_unwrap;
 use crate::structs::cards::CardData;
-use crate::structs::session::Claims;
+use crate::structs::session::Session;
 use crate::structs::trees::{
     Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeListResponse,
     TreeMetadata, TreeStructure, TreeWithCards,
@@ -1153,12 +1153,12 @@ async fn test_verify_tree_permission_owner(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let claims = Claims {
-        sub: 1,
+    let session = Session {
+        user_id: 1,
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &session).await;
 
     assert!(result.is_ok());
 }
@@ -1169,12 +1169,12 @@ async fn test_verify_tree_permission_admin(db: PgPool) {
 
     let tree_id: i32 = create_tree(&server).await;
 
-    let claims = Claims {
-        sub: 1,
+    let session = Session {
+        user_id: 1,
         account_type: AccountType::Admin,
     };
 
-    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &claims).await;
+    let result = verify_tree_permissions(get_connection_unwrap!(db), tree_id, &session).await;
 
     assert!(result.is_ok());
 }
@@ -1199,12 +1199,12 @@ async fn test_verify_tree_permission_co_author(db: PgPool) {
         ))
         .await;
 
-    let claims = Claims {
-        sub: 1,
+    let session = Session {
+        user_id: 1,
         account_type: AccountType::Author,
     };
 
-    let result = verify_tree_permissions(conn, tree_id, &claims).await;
+    let result = verify_tree_permissions(conn, tree_id, &session).await;
 
     assert!(result.is_ok());
 }

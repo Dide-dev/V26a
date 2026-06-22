@@ -6,19 +6,19 @@
 
 use crate::ArcState;
 use crate::errors::ApiError;
-use crate::structs::session::{AllClassroomClaims, Claims, ClassroomClaims};
+use crate::structs::session::{AllClassroomSessions, ClassroomSession, Session};
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
-impl FromRequestParts<ArcState> for Claims {
+impl FromRequestParts<ArcState> for Session {
     type Rejection = ApiError;
 
-    /// Get [`Claims`] from a user's cookies.
+    /// Get [`Session`] from a user's cookies.
     ///
     /// # Example
-    /// Passing `claims: `[`Claims`] into an axum function will automatically call this function.
+    /// Passing `session: `[`Session`] into an axum function will automatically call this function.
     /// ```rs
-    /// async fn protected(claims: Claims) -> Result<(), ApiError> {
+    /// async fn protected(session: Session) -> Result<(), ApiError> {
     /// ...
     /// }
     /// ```
@@ -36,25 +36,25 @@ impl FromRequestParts<ArcState> for Claims {
         parts: &mut Parts,
         _state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        Claims::get_claims(parts).await
+        Session::get_session(parts).await
     }
 }
 
-impl FromRequestParts<ArcState> for Option<Claims> {
+impl FromRequestParts<ArcState> for Option<Session> {
     type Rejection = ApiError;
 
-    /// Get optional [`Claims`] from a user's cookies.
+    /// Get optional [`Session`] from a user's cookies.
     ///
     /// # Example
-    /// Passing `optional_claims: `[`Option<Claims>`](Claims) into an axum function will automatically call this function.
+    /// Passing `optional_session: `[`Option<Session>`](Session) into an axum function will automatically call this function.
     /// ```rs
-    /// async fn semi_protected(optional_claims: Option<Claims>) -> Result<(), ApiError> {
+    /// async fn semi_protected(optional_session: Option<Session>) -> Result<(), ApiError> {
     /// ...
     /// }
     /// ```
     ///
     /// # Returns
-    /// Some([`Claims`]) if the user is authenticated.
+    /// Some([`Session`]) if the user is authenticated.
     ///
     /// None if one of the following is true:
     /// - The user does not have a session cookie
@@ -65,19 +65,19 @@ impl FromRequestParts<ArcState> for Option<Claims> {
         parts: &mut Parts,
         state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(Claims::from_request_parts(parts, state).await.ok())
+        Ok(Session::from_request_parts(parts, state).await.ok())
     }
 }
 
-impl FromRequestParts<ArcState> for ClassroomClaims {
+impl FromRequestParts<ArcState> for ClassroomSession {
     type Rejection = ApiError;
 
-    /// Get [`ClassroomClaims`] from a user's cookies.
+    /// Get [`ClassroomSession`] from a user's cookies.
     ///
     /// # Example
-    /// Passing `claims: `[`ClassroomClaims`] into an axum function will automatically call this function.
+    /// Passing `session: `[`ClassroomSession`] into an axum function will automatically call this function.
     /// ```rs
-    /// async fn protected(claims: ClassroomClaims) -> Result<(), ApiError> {
+    /// async fn protected(session: ClassroomSession) -> Result<(), ApiError> {
     /// ...
     /// }
     /// ```
@@ -92,25 +92,25 @@ impl FromRequestParts<ArcState> for ClassroomClaims {
         parts: &mut Parts,
         _state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        ClassroomClaims::get_claims(parts).await
+        ClassroomSession::get_session(parts).await
     }
 }
 
-impl FromRequestParts<ArcState> for Option<ClassroomClaims> {
+impl FromRequestParts<ArcState> for Option<ClassroomSession> {
     type Rejection = ApiError;
 
-    /// Get optional [`ClassroomClaims`] from a user's cookies.
+    /// Get optional [`ClassroomSession`] from a user's cookies.
     ///
     /// # Example
-    /// Passing `optional_claims: `[`Option<ClassroomClaims>`](ClassroomClaims) into an axum function will automatically call this function.
+    /// Passing `optional_session: `[`Option<ClassroomSession>`](ClassroomSession) into an axum function will automatically call this function.
     /// ```rs
-    /// async fn semi_protected(optional_claims: Option<ClassroomClaims>) -> Result<(), ApiError> {
+    /// async fn semi_protected(optional_session: Option<ClassroomSession>) -> Result<(), ApiError> {
     /// ...
     /// }
     /// ```
     ///
     /// # Returns
-    /// Some([`ClassroomClaims`]) if the user is authenticated.
+    /// Some([`ClassroomSession`]) if the user is authenticated.
     ///
     /// None if one of the following is true:
     /// - The user does not have a session cookie
@@ -120,19 +120,21 @@ impl FromRequestParts<ArcState> for Option<ClassroomClaims> {
         parts: &mut Parts,
         state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(ClassroomClaims::from_request_parts(parts, state).await.ok())
+        Ok(ClassroomSession::from_request_parts(parts, state)
+            .await
+            .ok())
     }
 }
 
-impl FromRequestParts<ArcState> for AllClassroomClaims {
+impl FromRequestParts<ArcState> for AllClassroomSessions {
     type Rejection = ApiError;
 
-    /// Get [`AllClassroomClaims`] from a user's cookies.
+    /// Get [`AllClassroomSessions`] from a user's cookies.
     ///
     /// # Example
-    /// Passing `claims: `[`AllClassroomClaims`] into an axum function will automatically call this function.
+    /// Passing `session: `[`AllClassroomSessions`] into an axum function will automatically call this function.
     /// ```rs
-    /// async fn protected(claims: AllClassroomClaims) -> Result<(), ApiError> {
+    /// async fn protected(session: ClassroomSessions) -> Result<(), ApiError> {
     /// ...
     /// }
     /// ```
@@ -147,25 +149,25 @@ impl FromRequestParts<ArcState> for AllClassroomClaims {
         parts: &mut Parts,
         _state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        AllClassroomClaims::get_claims(parts).await
+        AllClassroomSessions::get_session(parts).await
     }
 }
 
-impl FromRequestParts<ArcState> for Option<AllClassroomClaims> {
+impl FromRequestParts<ArcState> for Option<AllClassroomSessions> {
     type Rejection = ApiError;
 
-    /// Get optional [`AllClassroomClaims`] from a user's cookies.
+    /// Get optional [`AllClassroomSessions`] from a user's cookies.
     ///
     /// # Example
-    /// Passing `optional_claims: `[`Option<AllClassroomClaims>`](AllClassroomClaims) into an axum function will automatically call this function.
+    /// Passing `optional_session: `[`Option<ClassroomSessions>`](AllClassroomSessions) into an axum function will automatically call this function.
     /// ```rs
-    /// async fn semi_protected(optional_claims: Option<AllClassroomClaims>) -> Result<(), ApiError> {
+    /// async fn semi_protected(optional_session: Option<ClassroomSessions>) -> Result<(), ApiError> {
     /// ...
     /// }
     /// ```
     ///
     /// # Returns
-    /// Some([`AllClassroomClaims`]) if the user is authenticated.
+    /// Some([`AllClassroomSessions`]) if the user is authenticated.
     ///
     /// None if one of the following is true:
     /// - The user does not have a session cookie
@@ -175,7 +177,7 @@ impl FromRequestParts<ArcState> for Option<AllClassroomClaims> {
         parts: &mut Parts,
         state: &ArcState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(AllClassroomClaims::from_request_parts(parts, state)
+        Ok(AllClassroomSessions::from_request_parts(parts, state)
             .await
             .ok())
     }

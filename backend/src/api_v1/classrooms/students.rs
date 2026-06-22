@@ -18,7 +18,7 @@ use crate::structs::classrooms::{
     ClassroomUserLoginData,
 };
 use crate::structs::pagination::OptionalPaginationOptions;
-use crate::structs::session::{AllClassroomClaims, ClaimsType, ClassroomClaims};
+use crate::structs::session::{AllClassroomSessions, ClassroomSession, SessionType};
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
 use axum_extra::extract::cookie::Cookie;
@@ -37,7 +37,7 @@ use time::Duration;
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("classroom_sessions" = AllClassroomClaims, Cookie)
+        ("all_classroom_sessions" = AllClassroomSessions, Cookie)
     )
 )]
 /// Logs a user in to a classroom. The user in the front end fills in a join code and a username.
@@ -48,7 +48,7 @@ use time::Duration;
 /// # Arguments
 /// `jar` - The collection of cookies of the user.
 ///
-/// `all_classroom_claims` - Retrieves the collection of classroom sessions the user already has, if they exist.
+/// `all_classroom_sessions` - Retrieves the collection of classroom sessions the user already has, if they exist.
 ///
 /// `classroom_login_data` - The credentials provided to log in, as [`ClassroomUserLoginData`].
 /// Contains the join code and a username.
@@ -67,7 +67,7 @@ use time::Duration;
 /// - [`SerdeException`](ApiError::SerdeException)
 pub(super) async fn classroom_login(
     jar: CookieJar,
-    all_classroom_claims: Option<AllClassroomClaims>,
+    all_classroom_sessions: Option<AllClassroomSessions>,
     Extension(db): Extension<PgPool>,
     State(state): State<ArcState>,
     Json(classroom_login_data): Json<ClassroomUserLoginData>,
@@ -111,30 +111,30 @@ pub(super) async fn classroom_login(
     let config = &state.config;
     let session_duration = config.session_duration;
 
-    let new_classroom_claims = ClassroomClaims {
+    let new_classroom_session = ClassroomSession {
         id: classroom_id,
         num,
         name: name.clone(),
     };
 
-    // Get the updated or created classroom claims
-    let (all_classroom_claims, token) = get_classroom_claims_create_session(
+    // Get the updated or created classroom session
+    let (all_classroom_sessions, token) = get_classroom_session_create_session(
         &jar,
         &db,
-        all_classroom_claims,
-        new_classroom_claims.clone(),
+        all_classroom_sessions,
+        new_classroom_session.clone(),
         session_duration,
     )
     .await?;
 
     // Create the user info
-    let user_info = serde_json::to_string(&all_classroom_claims)?;
+    let user_info = serde_json::to_string(&all_classroom_sessions)?;
 
     // Age of a cookie (same for the two cookies)
     let time = Duration::seconds(config.session_duration);
 
     // Create classroom_sessions cookie.
-    let cookie = Cookie::build((AllClassroomClaims::get_cookie_name(), token))
+    let cookie = Cookie::build((AllClassroomSessions::get_cookie_name(), token))
         .path("/api")
         .secure(true)
         .max_age(time)
@@ -151,7 +151,7 @@ pub(super) async fn classroom_login(
     // This also overwrites any cookies with the same name already in the jar.
     Ok((
         jar.add(cookie).add(user_cookie),
-        Json(ClassroomLoginResponse::Success(new_classroom_claims)),
+        Json(ClassroomLoginResponse::Success(new_classroom_session)),
     ))
 }
 
@@ -159,47 +159,47 @@ pub(super) async fn classroom_login(
 /// It checks if there are already valid active classroom sessions for the user.
 /// If they exist, then add or replace a new session for the user, utilizing the same token.
 /// Else, create a new token and add the new session to it.
-async fn get_classroom_claims_create_session(
+async fn get_classroom_session_create_session(
     jar: &CookieJar,
     db: &PgPool,
-    all_classroom_claims: Option<AllClassroomClaims>,
-    classroom_claims: ClassroomClaims,
+    all_classroom_sessions: Option<AllClassroomSessions>,
+    classroom_session: ClassroomSession,
     session_duration: i64,
-) -> Result<(AllClassroomClaims, String), ApiError> {
-    if let Some(mut all_classroom_claims) = all_classroom_claims {
-        let token = AllClassroomClaims::extract_token(jar)?;
+) -> Result<(AllClassroomSessions, String), ApiError> {
+    if let Some(mut all_classroom_sessions) = all_classroom_sessions {
+        let token = AllClassroomSessions::extract_token(jar)?;
         let expires_at = Utc::now() + chrono::Duration::seconds(session_duration);
 
-        ClassroomClaims::create_session(
+        ClassroomSession::create_session(
             get_connection!(db),
             &token,
             expires_at,
-            &(classroom_claims.id, classroom_claims.num),
+            &(classroom_session.id, classroom_session.num),
         )
         .await?;
 
-        all_classroom_claims
-            .claims
-            .retain(|claims| claims.id != classroom_claims.id);
-        all_classroom_claims.claims.push(classroom_claims);
+        all_classroom_sessions
+            .sessions
+            .retain(|session| session.id != classroom_session.id);
+        all_classroom_sessions.sessions.push(classroom_session);
 
-        Ok((all_classroom_claims, token))
+        Ok((all_classroom_sessions, token))
     } else {
         // Create the authorization token.
         let (token, expires_at) = create_token(session_duration);
-        let all_classroom_claims = AllClassroomClaims {
-            claims: vec![classroom_claims],
+        let all_classroom_sessions = AllClassroomSessions {
+            sessions: vec![classroom_session],
         };
 
-        AllClassroomClaims::create_session(
+        AllClassroomSessions::create_session(
             get_connection!(db),
             &token,
             expires_at,
-            &all_classroom_claims.claims,
+            &all_classroom_sessions.sessions,
         )
         .await?;
 
-        Ok((all_classroom_claims, token))
+        Ok((all_classroom_sessions, token))
     }
 }
 
@@ -214,14 +214,14 @@ async fn get_classroom_claims_create_session(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = AllClassroomClaims, Cookie),
+        ("all_classroom_sessions" = AllClassroomSessions, Cookie),
         ("page" = OptionalPaginationOptions, Query),
     )
 )]
 /// Get the list of all classrooms a student has access to.
 ///
 /// # Arguments
-/// `all_classroom_claims` - The session cookie of the user.
+/// `all_classroom_sessions` - The session cookie of the user.
 ///
 /// `page` - The requested page, given as [`OptionalPaginationOptions`] through a query.
 ///
@@ -237,7 +237,7 @@ async fn get_classroom_claims_create_session(
 ///
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 pub(super) async fn get_all_classrooms_as_student(
-    all_classroom_claims: AllClassroomClaims,
+    all_classroom_sessions: AllClassroomSessions,
     Extension(db): Extension<PgPool>,
     Query(page): Query<OptionalPaginationOptions>,
 ) -> Result<Json<ClassroomListResponse>, ApiError> {
@@ -245,8 +245,8 @@ pub(super) async fn get_all_classrooms_as_student(
 
     let mut transaction = db.begin().await?;
 
-    let ids = all_classroom_claims
-        .claims
+    let ids = all_classroom_sessions
+        .sessions
         .into_iter()
         .map(|c| c.id)
         .collect();
@@ -282,14 +282,14 @@ pub(super) async fn get_all_classrooms_as_student(
         (status = 500, description = "Internal server error."),
     ),
     params(
-        ("session" = ClassroomClaims, Cookie),
+        ("session" = ClassroomSession, Cookie),
         ("classroom_id" = i32, Path),
     )
 )]
 /// Retrieves all information necessary to construct the classroom student dashboard on the frontend.
 ///
 /// # Arguments
-/// `_claims` - The student classroom session, to make sure the student has access to this classroom.
+/// `_session` - The student classroom session, to make sure the student has access to this classroom.
 ///
 /// `classroom_id` - The classroom id retrieved from the path.
 ///
@@ -306,7 +306,7 @@ pub(super) async fn get_all_classrooms_as_student(
 ///
 /// May also return a [`DatabaseException`](ApiError::DatabaseException).
 pub(super) async fn get_student_dashboard(
-    _claims: ClassroomClaims,
+    _session: ClassroomSession,
     Extension(db): Extension<PgPool>,
     Path(classroom_id): Path<i32>,
 ) -> Result<Json<ClassroomStudentDashboardData>, ApiError> {
