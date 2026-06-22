@@ -18,6 +18,7 @@
     import ListContainer from '$lib/lists/ListContainer.svelte';
     import ClassroomListEntry from '$lib/lists/ClassroomListEntry.svelte';
     import { appLink } from '$lib';
+    import { PlusOutline } from 'flowbite-svelte-icons';
 
     // This cannot be done with the {#await ...} in svelte,
     // because then updating it browser-side for classroom deletion is not possible.
@@ -69,39 +70,41 @@
     let entriesExpanded = $state(Array.from({ length: 10 }, () => false));
 </script>
 
-<div class="flex w-7/8 max-w-xl flex-col">
-    <div class="flex w-full flex-col items-center justify-center overflow-auto">
-        <ListContainer
-            bind:currentPage
-            {totalPages}
-            {handlePageChange}
-            bind:pageSize
-            {handlePageSizeChange}
-        >
-            {#snippet title()}
-                <h1 class="page__title">{m.myClassrooms()}</h1>
-            {/snippet}
-            {#if classroomListResponse?.classrooms === null}
-                <p>{m.loading()}</p>
-            {:else if classroomListResponse?.classrooms.length === 0}
-                <p class="mt-4 font-semibold italic">{m.noClassroomsFound()}</p>
-                <div class="text-center">
-                    <button class="m-2 rounded-sm bg-emerald-500 p-1"
-                        ><a href={appLink('/classrooms/add')}>{m.createClassroom()}</a></button
-                    >
-                </div>
-            {:else}
-                <div class="list__container">
-                    {#each classroomListResponse?.classrooms as classroom, i (classroom.id)}
-                        <ClassroomListEntry
-                            {classroom}
-                            isTeacher={true}
-                            allClassroomUserInfos={null}
-                            bind:expanded={entriesExpanded[i]}
-                        />
-                    {/each}
-                </div>
-            {/if}
-        </ListContainer>
-    </div>
-</div>
+<ListContainer
+    bind:currentPage
+    {totalPages}
+    {handlePageChange}
+    bind:pageSize
+    {handlePageSizeChange}
+>
+    {#snippet title()}
+        <h1 class="page__title flex gap-2 *:*:inline">
+            {m.myClassrooms()}
+            <a
+                title={m.addTree()}
+                aria-label={m.addTree()}
+                class="mr-2.5 cursor-pointer transition-all duration-200 ease-in-out hover:bg-neutral-200"
+                href={appLink(`/classrooms/add`)}
+                target="_blank"
+            >
+                <PlusOutline class="h-7 w-7 shrink-0" />
+            </a>
+        </h1>
+    {/snippet}
+    {#if classroomListResponse?.classrooms === null}
+        <p>{m.loading()}</p>
+    {:else if classroomListResponse?.classrooms.length === 0}
+        <p class="mt-4 font-semibold italic">{m.noClassroomsFound()}</p>
+    {:else}
+        <div class="list__container">
+            {#each classroomListResponse?.classrooms as classroom, i (classroom.id)}
+                <ClassroomListEntry
+                    {classroom}
+                    isTeacher={true}
+                    allClassroomUserInfos={null}
+                    bind:expanded={entriesExpanded[i]}
+                />
+            {/each}
+        </div>
+    {/if}
+</ListContainer>

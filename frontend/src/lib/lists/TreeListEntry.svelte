@@ -11,6 +11,7 @@
     ## Params
     - `tree: TreeMetadata` - The data of the tree to display.
     - `expanded: boolean` - Bindable flag whether the entry displays all its contents.
+    - `linkToEditor: boolean` - Whether the tree list entry links to the editor page.
 -->
 
 <script lang="ts">
@@ -38,11 +39,13 @@
     let {
         tree,
         expanded = $bindable(),
+        linkToEditor,
         handleDelete,
         usedForClassroom
     }: {
         tree: TreeMetadata;
         expanded: boolean;
+        linkToEditor: boolean;
         handleDelete: () => void;
         usedForClassroom: boolean;
     } = $props();
@@ -72,13 +75,17 @@
             <span class="flex gap-1 *:*:inline">
                 <AnimatedUnderline --weight-underline="calc(var(--spacing) / 2)">
                     <a
-                        href={appLink(`/trees/${tree.genData.id}`)}
+                        href={appLink(`/trees/${tree.genData.id}${linkToEditor ? '/edit' : ''}`)}
                         target="_blank"
                         class={[
                             !tree.data.published && 'text-neutral-600 italic',
                             'line-clamp-1 w-fit flex-1 break-all text-ellipsis'
                         ]}
-                        title={tree.data.published ? m.viewTree() : m.unpublishedTree()}
+                        title={tree.data.published
+                            ? linkToEditor
+                                ? m.editTree()
+                                : m.viewTree()
+                            : m.unpublishedTree()}
                     >
                         <strong>{tree.data.title}</strong>
                     </a>

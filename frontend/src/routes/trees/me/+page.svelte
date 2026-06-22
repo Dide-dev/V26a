@@ -24,4 +24,4 @@
     });
 </script>
 
-<TreeList {filterOptions} titleText={m.myTrees()} onlyOwnTrees={true} />
+<TreeList {filterOptions} titleText={m.myTrees()} linkToEditor={true} onlyOwnTrees={true} />
