@@ -40,7 +40,7 @@
                 class="mx-auto mb-4"
             />
             <p>
-                <b>Theo van den Boogaart</b><br />Archimedes Institute, lectorate Mathematical and
+                <b>Theo van den Bogaart</b><br />Archimedes Institute, lectorate Mathematical and
                 analytical skills of professionals<br /><a
                     href="mailto:theo.vandenbogaart@hu.nl"
                     class="text__link"

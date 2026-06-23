@@ -16,7 +16,7 @@ export const homePageCards = {
             title: 'Werken aan probleemaanpak met heuristiekbomen',
             color: 'var(--color-tree-100)',
             plainContents: [
-                'Heuristiekbomen bieden hulpen bij het aanpakken van problemen. Een heuristiekboom ' +
+                'Heuristiekbomen bieden hulp bij het aanpakken van problemen. Een heuristiekboom ' +
                     'raadplegen is beter dan het antwoordmodel erbij te pakken, omdat de heuristiekboom ' +
                     'zich richt op het leren van heuristieken, concepten, technieken, ' +
                     'en metacognitieve vaardigheden.',
