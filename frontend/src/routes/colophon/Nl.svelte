@@ -37,7 +37,7 @@
         <div>
             <img src={huLogo} alt="Logo Hogeschool Utrecht" class="mx-auto mb-4" />
             <p>
-                <b>Theo van den Boogaart</b><br />Archimedes Instituut, leerstoel Wiskundige en
+                <b>Theo van den Bogaart</b><br />Archimedes Instituut, leerstoel Wiskundige en
                 analytische vaardigheden van professionals<br /><a
                     href="mailto:theo.vandenbogaart@hu.nl"
                     class="text__link"
