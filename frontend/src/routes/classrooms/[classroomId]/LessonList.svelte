@@ -43,15 +43,17 @@
                 </div>
             {/snippet}
 
-            {#each lesson.trees as tree (tree.genData.id)}
-                <TreeListEntry
-                    {tree}
-                    expanded={false}
-                    linkToEditor={false}
-                    {handleDelete}
-                    usedForClassroom={true}
-                />
-            {/each}
+            <div class="list__container max-w-3xl">
+                {#each lesson.trees as tree (tree.genData.id)}
+                    <TreeListEntry
+                        {tree}
+                        expanded={false}
+                        linkToEditor={false}
+                        {handleDelete}
+                        usedForClassroom={true}
+                    />
+                {/each}
+            </div>
         </AccordionItem>
     {/each}
 </Accordion>

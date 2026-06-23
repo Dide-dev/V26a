@@ -46,7 +46,7 @@
     }
 </script>
 
-<div class="flex w-7/8 max-w-xl flex-col">
+<div class="flex w-5/8 flex-col">
     {#if classroomStudentDashboardData === null}
         <p class="w-full text-center text-green-800">{m.loadingDashboard()}</p>
     {:else}
@@ -60,10 +60,27 @@
             </p>
         {/if}
 
-        <LessonList
-            lessons={classroomStudentDashboardData.lessons}
-            isTeacher={false}
-            onTreeAdded={reloadDashboard}
-        />
+        <div class="grid grid-cols-[1fr_160px] gap-4">
+            <div>
+                <LessonList
+                    lessons={classroomStudentDashboardData.lessons}
+                    isTeacher={false}
+                    onTreeAdded={reloadDashboard}
+                />
+            </div>
+
+            <aside class="space-y-4">
+                <div class="rounded border p-3">
+                    <p class="text-sm text-neutral-500">{m.usernumber()}</p>
+                    <div class="flex items-center justify-between">
+                        <code class="font-mono">{classroomUserInfo!.num}</code>
+                    </div>
+                    <p class="text-sm text-neutral-500">{m.name()}</p>
+                    <div class="flex items-center justify-between">
+                        <code class="font-mono">{classroomUserInfo!.name}</code>
+                    </div>
+                </div>
+            </aside>
+        </div>
     {/if}
 </div>

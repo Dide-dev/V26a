@@ -284,7 +284,7 @@
             }}
         />
         {#if malformedUsername}
-            <p class="text__error">{m.allowedRegex({ field: m.names() })}</p>
+            <p class="text__error">{m.allowedRegex({ field: m.usernames() })}</p>
         {/if}
     </div>
 {/snippet}

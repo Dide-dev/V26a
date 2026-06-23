@@ -114,7 +114,7 @@
                 </div>
                 <div>
                     <label for="name">
-                        {m.name()} *
+                        {m.username()} *
                     </label>
                     <input
                         id="name"
@@ -129,7 +129,7 @@
                         autocomplete="username"
                         required
                         pattern="[a-zA-Z0-9._\-]*"
-                        title={m.allowedRegex({ field: m.names() })}
+                        title={m.allowedRegex({ field: m.usernames() })}
                     />
                     {#if usernameAlreadyExists}
                         <p class="text__error" data-testid="error">{m.usernameAlreadyExists()}</p>

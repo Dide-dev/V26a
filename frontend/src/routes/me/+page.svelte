@@ -243,7 +243,7 @@
                 {/if}
             </div>
             <div>
-                <label for="name">{m.name()}</label>
+                <label for="name">{m.username()}</label>
                 <div class="input__container">
                     <input
                         id="name"
@@ -264,7 +264,7 @@
                         }}
                         required
                         pattern="[a-zA-Z0-9._\-]*"
-                        title={m.allowedRegex({ field: m.names() })}
+                        title={m.allowedRegex({ field: m.usernames() })}
                     />
                 </div>
                 {#if usernameAlreadyExists}
