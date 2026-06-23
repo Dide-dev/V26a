@@ -97,7 +97,7 @@ export type TreeGeneratedData = {
 };
 
 export type TreeLinkedData = {
-    ownerName: Option<Username>;
+    ownerName: Username;
     subjectName: Option<string>;
     languageName: string;
     coAuthors: Username[];

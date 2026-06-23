@@ -10,7 +10,7 @@
 
 <div>
     <h1 class="page__title pb-1">Voorwaarden</h1>
-    <p class="pb-2 italic *:*:inline">Laatst geupdatet: 9 juni 2026</p>
+    <p class="pb-2 italic *:*:inline">Laatst bijgewerkt: 9 juni 2026</p>
 
     <h1 class="page__heading">Artikel 1 - Definities</h1>
     <p class="pb-1.5">In deze voorwaarden wordt verstaan onder:</p>
