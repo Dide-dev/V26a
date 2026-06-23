@@ -263,6 +263,8 @@
                             inputsChanged.nameChanged = true;
                         }}
                         required
+                        pattern="[a-zA-Z0-9._\-]*"
+                        title={m.allowedRegex({ field: m.names() })}
                     />
                 </div>
                 {#if usernameAlreadyExists}
