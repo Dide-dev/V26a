@@ -52,7 +52,7 @@ test('No submission without name', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -88,7 +88,7 @@ test('Submission with full data', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -124,7 +124,7 @@ test('Submission with full data', async () => {
     const expectedUpdateData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: 'Some interesting backstory'
         },
@@ -138,7 +138,7 @@ test('New password without upper case letter shows error', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -181,7 +181,7 @@ test('New password without lower case letter shows error', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -224,7 +224,7 @@ test('New password without special character shows error', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -267,7 +267,7 @@ test('New password without number shows error', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -310,7 +310,7 @@ test('Differing new password and repeat password shows error', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -353,7 +353,7 @@ test('No submission without new password', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -391,7 +391,7 @@ test('No submission without repeat password', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
@@ -432,7 +432,7 @@ test('Submission when all password expectations have been met', async () => {
     const userData: AdminUpdateData = {
         email: 'john@test.com',
         data: {
-            name: 'John Test',
+            name: 'John_Test',
             nickname: 'Johnny',
             aboutMe: ''
         },
