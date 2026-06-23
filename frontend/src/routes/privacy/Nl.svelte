@@ -10,7 +10,7 @@
 
 <div>
     <h1 class="page__title pb-1">Privacybeleid</h1>
-    <p class="pb-2 italic *:*:inline">Laatst geupdatet: 8 juni 2026</p>
+    <p class="pb-2 italic *:*:inline">Laatst bijgewerkt: 8 juni 2026</p>
     <p class="pb-1.5">
         Freudenthal Instituut, gevestigd aan Princetonplein 5, 3584 CC UTRECHT, is verantwoordelijk
         voor de verwerking van persoonsgegevens zoals weergegeven in deze privacyverklaring.
