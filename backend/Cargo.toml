@@ -4,46 +4,48 @@
 
 [package]
 name = "ht-backend"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 
 [dependencies]
-async-trait = "0.1.89"
-axum = { version = "0.8.8", features = ["multipart", "macros", "ws"] }
-axum-extra = { version = "0.12.5", features = [
+async-trait = "0.1"
+axum = { version = "0.8", default-features = false, features = ["ws"] }
+axum-extra = { version = "0.12", features = [
     "typed-header",
     "cookie",
     "query",
 ] }
-bcrypt = "0.18"
-chrono = { version = "0.4.44", features = ["serde"] }
-dotenvy = "0.15.7"
-governor = "0.10.4"
-infer = "0.19.0"
-lettre = { version = "0.11.21", default-features = false, features = ["builder", "smtp-transport", "tokio1"] }
-percent-encoding = "2.3.2"
-rand = "0.10.1"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-sha2 = "0.11.0"
-sqlx = { version = "0.8", features = [
+bcrypt = "0.19"
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+governor = "0.10"
+infer = "0.19"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1"] }
+percent-encoding = "2.3"
+rand = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.11"
+sqlx = { version = "0.8", default-features = false, features = [
+    "migrate",
+    "json",
     "runtime-tokio",
     "postgres",
     "chrono",
     "macros",
 ] }
-tempfile = "3.27.0"
-time = "0.3.47"
-tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
+time = "0.3"
+tokio = { version = "1.52", default-features = false, features = ["rt-multi-thread"] }
 tower_governor = { version = "0.8", features = ["axum"] }
-tower-http = { version = "0.6.8", features = ["fs", "trace"] }
+tower-http = { version = "0.7", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-utoipa = { version = "5.4.0", features = ["chrono"] }
-utoipa-swagger-ui = { version = "9", features = ["axum"] }
-utoipauto = "0.2.0"
-tower = "0.5.3"
-uuid = { version = "1.23.0", features = ["v4"] }
+utoipa = { version = "5.5", features = ["chrono"] }
+utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
+utoipauto = "0.2"
+tower = "0.5"
+uuid = { version = "1.23", features = ["v4"] }
 
 [dev-dependencies]
-axum-test = { version = "20.0.0", features = ["ws"] }
+axum-test = { version = "20.1", features = ["ws"] }
+tempfile = "3.27"
