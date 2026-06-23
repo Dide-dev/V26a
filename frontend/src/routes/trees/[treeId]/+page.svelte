@@ -8,13 +8,13 @@
     import SubtreeViewer from './SubtreeViewer.svelte';
     import { onMount } from 'svelte';
     import { getTreeWithCards, type TreeWithCards } from '$lib/api-wrapper/trees';
-    import { m } from '$lib/paraglide/messages.js';
+    import { copyLink, m } from '$lib/paraglide/messages.js';
     import { goto } from '$app/navigation';
     import { appLink } from '$lib';
     import { branchColors, duplicateThisTree } from '$lib/treePage';
     import TreeInformation from './TreeInformation.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
-    import { EditOutline, FileCloneOutline } from 'flowbite-svelte-icons';
+    import { EditOutline, FileCloneOutline, LinkOutline, LockSolid } from 'flowbite-svelte-icons';
 
     let { params } = $props();
 
@@ -50,6 +50,20 @@
             {#snippet titleSnippet()}
                 <div class="flex gap-1">
                     <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
+                    {#if tree?.metadata.data.published}
+                        <button
+                            onclick={copyLink}
+                            aria-label="copy link"
+                            class="page__title mt-3 flex cursor-pointer items-center"
+                            title={m.copyLink()}
+                        >
+                            <LinkOutline class="h-7 w-7 shrink-0" />
+                        </button>
+                    {:else}
+                        <div class="page__title mt-3 flex items-center" title={m.unpublishedTree()}>
+                            <LockSolid class="h-7 w-7 shrink-0" />
+                        </div>
+                    {/if}
                     {#if userAllowedToEdit}
                         <div class="flex flex-col justify-center">
                             <a
