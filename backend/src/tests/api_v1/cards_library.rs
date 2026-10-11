@@ -136,5 +136,5 @@ async fn test_library_card_delete(db: PgPool) {
     response.assert_status_ok();
 
     let library_card_get_data: Vec<LibraryCardGetData> = server.get("/library/cards").await.json();
-    assert!(library_card_get_data.is_empty());
+    assert_eq!(library_card_get_data, []);
 }
