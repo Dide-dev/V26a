@@ -3,7 +3,8 @@
 # © Copyright Utrecht University (Department of Information and Computing Sciences
 
 # -- Setup / caching --
-FROM docker.io/library/rust:1.94 AS base
+# Version must be kept in sync with /backend/rust-toolchain.toml.
+FROM docker.io/library/rust:1.99.0 AS base
 
 WORKDIR /app
 
