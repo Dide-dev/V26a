@@ -1,0 +1,4 @@
+[toolchain]
+# Version must be kept in sync with Containerfile and backend GitHub-workflow versions.
+channel = "1.99.0"
+components = ["rustfmt", "clippy"]

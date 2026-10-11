@@ -49,7 +49,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+        # Version must be kept in sync with /backend/rust-toolchain.toml.
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.0
+          components: rustfmt, clippy
       #     https://github.com/actions/cache/blob/main/examples.md#rust---cargo
       #     This seems to be ignoring the working-directory flag above.. Having added the "backend/" made building faster
       - name: Cache Rust artifacts for faster CI
