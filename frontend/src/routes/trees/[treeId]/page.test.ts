@@ -7,7 +7,6 @@
 import { render, screen } from '@testing-library/svelte';
 import { expect, test, vi, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
-import PageComponent from './+page.svelte';
 import type {
     RootNode,
     Node,
@@ -21,6 +20,7 @@ import type {
 import type { CardData, CardId } from '$lib/api-wrapper/cards';
 import { getTreeWithCards } from '$lib/api-wrapper/trees';
 import { getUserInfo } from '$lib/api-wrapper/sessions';
+import TreePageWrapper from './TreePageWrapper.svelte';
 
 // Mock the logging check.
 vi.mock('$lib/api-wrapper/sessions', () => ({
@@ -106,7 +106,7 @@ test('Page successfully loads tree', async () => {
 
     const mockGetTree = getTreeWithCards as MockedFunction<typeof getTreeWithCards>;
     mockGetTree.mockResolvedValue(tree);
-    render(PageComponent, {
+    render(TreePageWrapper, {
         params: {
             treeId: '4'
         }
@@ -134,7 +134,7 @@ test('shows Edit button when user is logged in', async () => {
         nickname: ''
     });
 
-    render(PageComponent, {
+    render(TreePageWrapper, {
         params: {
             treeId: '4'
         }
@@ -151,7 +151,7 @@ test('does not show Edit button when user is not logged in', async () => {
 
     vi.mocked(getUserInfo).mockReturnValue(null);
 
-    render(PageComponent, {
+    render(TreePageWrapper, {
         params: {
             treeId: '4'
         }

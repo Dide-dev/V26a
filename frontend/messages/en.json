@@ -42,6 +42,8 @@
     "serverDisconnected": "Server disconnected!",
     "otherUserHasLock": "is currently editing this tree! You can force them out, but there could be unsaved changes.",
     "otherUserKickConfirm": "is currently editing this tree! Are you sure you want to kick them? There could be unsaved changes that will be lost.",
+    "maximizeScreen": "Full screen (F)",
+    "minimizeScreen": "Exit full screen (Esc)",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "deleteRootnode": "Remove this branch",
