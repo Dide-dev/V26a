@@ -17,6 +17,8 @@
     import { page } from '$app/state';
     import { Tween } from 'svelte/motion';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
+    import { onMount } from 'svelte';
+    import { setUIState, UIState } from '$lib/context/ui.svelte';
 
     let { children } = $props();
     let userInfo = $state(getUserInfo());
@@ -235,17 +237,36 @@
 
     let offsets: Tween<number>[] = $state([]);
     let offset = $derived(offsets.reduce((acc, curr) => acc + curr.current, 0));
+
+    const uiState = new UIState();
+    setUIState(uiState);
+
+    onMount(() => {
+        uiState.minimize();
+    });
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /><title>BOOM!</title></svelte:head>
 
-<Navigation {leftLinks} {rightLinks} bind:offsets />
+{#if uiState.visible}
+    <Navigation {leftLinks} {rightLinks} bind:offsets />
+{/if}
 
 <main style="margin-top: {offset}px;" class="flex-auto">
     {@render children()}
 </main>
 
-<svelte:window onerror={handleWindowError} onunhandledrejection={handleError} />
+<svelte:window
+    onkeydown={(event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            uiState.minimize();
+        } else if (event.key === 'f') {
+            uiState.toggle();
+        }
+    }}
+    onerror={handleWindowError}
+    onunhandledrejection={handleError}
+/>
 
 {#if errors.length > 0}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -262,7 +283,9 @@
     </div>
 {/if}
 
-<Footer links={footerLinks} />
+{#if uiState.visible}
+    <Footer links={footerLinks} />
+{/if}
 
 <!-- Necessary to have svelte-kit load in the pages of the other locales. -->
 <div class="hidden">

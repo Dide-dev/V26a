@@ -70,7 +70,7 @@ async fn test_get_no_feedback(db: PgPool) {
 
     let requested_feedback: FeedbackListResponse = response.json();
     assert_eq!(requested_feedback.feedback_total, 0);
-    assert!(requested_feedback.feedback.is_empty());
+    assert_eq!(requested_feedback.feedback, []);
 }
 
 #[sqlx::test]
