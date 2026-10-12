@@ -13,12 +13,34 @@
     import { appLink } from '$lib';
     import { branchColors } from '$lib/treePage';
     import TreeInformation from '../TreeInformation.svelte';
-    import { ArrowLeftOutline } from 'flowbite-svelte-icons';
+    import { AdjustmentsHorizontalOutline, ArrowLeftOutline } from 'flowbite-svelte-icons';
     import { getUIState } from '$lib/context/ui.svelte';
+    import { cubicOut } from 'svelte/easing';
+    import { Tween } from 'svelte/motion';
+    import { defaultPostItSizes, PostItSize } from './postItSizes';
 
     let { params } = $props();
 
     let tree: TreeWithCards | null = $state(null);
+
+    let showOptions = $state(false);
+    let optionFraction = new Tween(0, {
+        duration: 200,
+        easing: cubicOut
+    });
+
+    let postItSizeFreeRange = $state(false);
+    let postItSizeStatus = $state(1);
+
+    function getPostItSize() {
+        if (!postItSizeFreeRange && postItSizeStatus >= defaultPostItSizes.length) {
+            return new PostItSize({});
+        }
+
+        return postItSizeFreeRange
+            ? new PostItSize({ width: postItSizeStatus, height: postItSizeStatus })
+            : defaultPostItSizes[postItSizeStatus];
+    }
 
     const uiState = getUIState();
 
@@ -42,22 +64,82 @@
     {:else}
         <TreeInformation tree={tree.metadata}>
             {#snippet titleSnippet()}
-                <div class="flex gap-1">
-                    <div class="flex flex-col justify-center">
-                        <a
-                            onclick={() => {
-                                uiState.minimize();
-                            }}
-                            href={appLink(`/trees/${tree!.metadata.genData.id}`)}
-                            aria-label="return"
-                            class:cursor-pointer={true}
-                            class="page__title mt-3"
-                            title={m.return()}
-                        >
-                            <ArrowLeftOutline class="shrink-0 h-7 w-7" />
-                        </a>
+                <div
+                    class="title-grid w-full"
+                    style="--options-row-height: {optionFraction.current}fr"
+                >
+                    <div class="flex gap-1">
+                        <div class="flex flex-col justify-center">
+                            <a
+                                onclick={() => {
+                                    uiState.minimize();
+                                }}
+                                href={appLink(`/trees/${tree!.metadata.genData.id}`)}
+                                aria-label="return"
+                                class:cursor-pointer={true}
+                                class="page__title mt-3"
+                                title={m.return()}
+                            >
+                                <ArrowLeftOutline class="shrink-0 h-7 w-7" />
+                            </a>
+                        </div>
+                        <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
+                        <div class="flex flex-col justify-center">
+                            <button
+                                onclick={() => {
+                                    showOptions = !showOptions;
+
+                                    optionFraction.target = showOptions ? 1 : 0;
+                                }}
+                                aria-label="return"
+                                class:cursor-pointer={true}
+                                class="page__title mt-3"
+                                title={m.options()}
+                            >
+                                <AdjustmentsHorizontalOutline class="shrink-0 h-7 w-7" />
+                            </button>
+                        </div>
                     </div>
-                    <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
+                    <div class="overflow-y-hidden overflow-x-auto">
+                        <form
+                            class={[
+                                !showOptions && optionFraction.current === 0 && 'hidden',
+                                'flex flex-col pl-1.5 from-white to-neutral-50 bg-linear-180 mb-2 rounded-b-md border-neutral-200 border-2 border-t-0'
+                            ]}
+                        >
+                            <div class="checkbox__container">
+                                <input
+                                    type="checkbox"
+                                    id="free-range-checkbox"
+                                    class="input__checkbox"
+                                    bind:checked={postItSizeFreeRange}
+                                    onchange={() => {
+                                        console.log('dit werkt!');
+                                        if (postItSizeFreeRange) {
+                                            postItSizeStatus =
+                                                defaultPostItSizes[postItSizeStatus].width;
+                                        } else {
+                                            postItSizeStatus = 1;
+                                        }
+                                    }}
+                                />
+                                <label for="free-range-checkbox">{m.postItPresetCheckbox()}</label>
+                            </div>
+                            <div class="input__container">
+                                <label for="card-width-slider">
+                                    {m.postItSize()}: {getPostItSize()}
+                                </label>
+                                <input
+                                    type="range"
+                                    id="card-width-slider"
+                                    min={postItSizeFreeRange ? 30 : 0}
+                                    max={postItSizeFreeRange ? 150 : defaultPostItSizes.length - 1}
+                                    class="accent-tree-700 w-1/2"
+                                    bind:value={postItSizeStatus}
+                                />
+                            </div>
+                        </form>
+                    </div>
                 </div>
             {/snippet}
         </TreeInformation>
@@ -68,12 +150,14 @@
                     node={root}
                     cards={tree.cards}
                     color={branchColors[i % branchColors.length]}
+                    cardSize={getPostItSize()}
                 />
             {/each}
         </div>
     {/if}
 </div>
 
+<!-- Return to regular view upon exiting full-screen. -->
 <svelte:window
     onkeydown={(event: KeyboardEvent) => {
         if (event.key === 'Escape' || event.key === 'f') {
@@ -81,3 +165,15 @@
         }
     }}
 />
+
+<style>
+    .title-grid {
+        display: grid;
+        grid-auto-flow: column;
+        overflow: hidden;
+        align-items: start;
+
+        gap: var(--spacing-padding-small);
+        grid-template-rows: 0.4fr var(--options-row-height);
+    }
+</style>

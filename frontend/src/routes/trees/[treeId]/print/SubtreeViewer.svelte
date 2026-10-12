@@ -21,15 +21,18 @@
     import SubtreeViewer from './SubtreeViewer.svelte';
     import LineDrawings from '../LineDrawer.svelte';
     import type { BranchColor } from '$lib/treePage';
+    import { PostItSize } from './postItSizes';
 
     let {
         node,
         cards,
-        color
+        color,
+        cardSize
     }: {
         node: RootNode | Node;
         cards: Record<CardId, CardData>;
         color: BranchColor;
+        cardSize: PostItSize;
     } = $props();
 </script>
 
@@ -49,14 +52,14 @@
         <!-- Standard Node -->
         <!-- The 'flex' here prevents some weird vertical whitespace -->
         <div class="mb-2 flex">
-            <CardViewer card={cards[node.cardId]} {color} />
+            <CardViewer card={cards[node.cardId]} {color} {cardSize} />
         </div>
     {/if}
 
     <LineDrawings alwaysFullWidth={false}>
         <!-- Here the html gets recursive as we render the 'node.children' -->
         {#each node.children as child_node (child_node)}
-            <SubtreeViewer node={child_node} {cards} {color} />
+            <SubtreeViewer node={child_node} {cards} {color} {cardSize} />
         {/each}
     </LineDrawings>
 </div>
