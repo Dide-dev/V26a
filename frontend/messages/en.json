@@ -44,6 +44,8 @@
     "otherUserKickConfirm": "is currently editing this tree! Are you sure you want to kick them? There could be unsaved changes that will be lost.",
     "maximizeScreen": "Full screen (F)",
     "minimizeScreen": "Exit full screen (Esc)",
+    "printMode": "Go to the print version of this tree",
+    "return": "Go back",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "deleteRootnode": "Remove this branch",

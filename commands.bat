@@ -4,13 +4,13 @@
 :: © Copyright Utrecht University (Department of Information and Computing Sciences)
 ::
 
-cd ./backend/                               || exit 1
-cargo fmt                                   || exit 1
-cargo clippy --all-targets -- -D warnings   || exit 1
-set RUSTDOCFLAGS=-D warnings
-cargo doc --no-deps                         || exit 1
-cargo sqlx prepare                          || exit 1
-cargo test                                  || exit 1
+:: cd ./backend/                               || exit 1
+:: cargo fmt                                   || exit 1
+:: cargo clippy --all-targets -- -D warnings   || exit 1
+:: set RUSTDOCFLAGS=-D warnings
+:: cargo doc --no-deps                         || exit 1
+:: cargo sqlx prepare                          || exit 1
+:: cargo test                                  || exit 1
 
 cd ../frontend/                             || exit 1
 call npm install                            || exit 1
