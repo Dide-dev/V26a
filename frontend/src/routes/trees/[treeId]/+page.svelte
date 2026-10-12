@@ -18,7 +18,8 @@
         EditOutline,
         ExpandOutline,
         FileCloneOutline,
-        MinimizeOutline
+        MinimizeOutline,
+        PrinterOutline
     } from 'flowbite-svelte-icons';
     import { getUIState } from '$lib/context/ui.svelte';
 
@@ -99,6 +100,17 @@
                                 <MinimizeOutline class="h-7 w-7 shrink-0" />
                             {/if}
                         </button>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <a
+                            href={appLink(`/trees/${tree!.metadata.genData.id}/print`)}
+                            aria-label="print"
+                            class:cursor-pointer={true}
+                            class="page__title mt-3"
+                            title={m.printMode()}
+                        >
+                            <PrinterOutline class="shrink-0 h-7 w-7" />
+                        </a>
                     </div>
                 </div>
             {/snippet}

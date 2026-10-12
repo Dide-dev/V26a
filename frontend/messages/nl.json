@@ -44,6 +44,8 @@
     "otherUserKickConfirm": "is op dit moment deze boom aan het bewerken! Weet je zeker dat je hen eruit wilt gooien? Er kunnen onopgeslagen veranderingen verloren gaan.",
     "maximizeScreen": "Volledig scherm (F)",
     "minimizeScreen": "Verlaat volledig scherm (Esc)",
+    "printMode": "Ga naar de printversie van deze boom",
+    "return": "Keer terug",
     "moveUp": "Verplaats omhoog",
     "moveDown": "Verplaats naar beneden",
     "deleteRootnode": "Verwijder deze tak",
