@@ -17,13 +17,16 @@
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
     import type { CardData } from '$lib/api-wrapper/cards';
     import type { BranchColor } from '$lib/treePage';
+    import type { PostItSize } from './postItSizes';
 
     let {
         card,
-        color
+        color,
+        cardSize
     }: {
         card: CardData;
         color: BranchColor;
+        cardSize: PostItSize;
     } = $props();
 
     let frontColor = $derived(`var(--color-${color}-300)`);
@@ -33,21 +36,15 @@
 
 <div class="flex flex-col">
     <p
-        style="--background-color: {frontColor}; --border-color: {cardBorderColor};}"
-        class={[
-            'min-h-card-height-md w-card-width-lg',
-            'card border-b-0 rounded-b-none overflow-x-auto overflow-y-hidden p-1 text-center wrap-anywhere'
-        ]}
+        style="--background-color: {frontColor}; --border-color: {cardBorderColor}; width: {cardSize.width}mm;"
+        class="min-h-card-height-md card border-b-0 rounded-b-none overflow-x-auto overflow-y-hidden p-1 text-center wrap-anywhere"
     >
         {card.front}
     </p>
-    <div class="min-h-card-width-lg">
+    <div style="min-height: {cardSize.height}mm;">
         <p
-            style="--background-color: {backColor}; --border-color: {cardBorderColor};}"
-            class={[
-                'min-h-card-height-md w-card-width-lg',
-                'card rounded-t-none overflow-x-auto overflow-y-hidden p-1 text-left wrap-anywhere'
-            ]}
+            style="--background-color: {backColor}; --border-color: {cardBorderColor}; width: {cardSize.width}mm;"
+            class="card rounded-t-none overflow-y-hidden p-1 text-left wrap-anywhere"
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html markdownToFinalHtml(card.back)}
