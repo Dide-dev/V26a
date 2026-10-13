@@ -13,7 +13,12 @@
     import { appLink } from '$lib';
     import { branchColors } from '$lib/treePage';
     import TreeInformation from '../TreeInformation.svelte';
-    import { AdjustmentsHorizontalOutline, ArrowLeftOutline } from 'flowbite-svelte-icons';
+    import { Kbd } from 'flowbite-svelte';
+    import {
+        AdjustmentsHorizontalOutline,
+        ArrowLeftOutline,
+        InfoCircleOutline
+    } from 'flowbite-svelte-icons';
     import { getUIState } from '$lib/context/ui.svelte';
     import { cubicOut } from 'svelte/easing';
     import { Tween } from 'svelte/motion';
@@ -23,11 +28,41 @@
 
     let tree: TreeWithCards | null = $state(null);
 
-    let showOptions = $state(false);
-    let optionFraction = new Tween(0, {
+    type MenuOptions = {
+        state: 'options' | 'info' | '';
+        lastState: 'options' | 'info' | '';
+    };
+
+    let menu: MenuOptions = $state({
+        state: '',
+        lastState: ''
+    });
+    let menuFraction = new Tween(0, {
         duration: 200,
         easing: cubicOut
     });
+
+    function openOptions() {
+        if (menu.state === 'info') {
+            menu.state = 'options';
+            return;
+        }
+
+        menuFraction.target = menu.state === 'options' ? 0 : 1;
+        menu.state = menu.state === 'options' ? '' : 'options';
+        menu.lastState = 'options';
+    }
+
+    function openInfo() {
+        if (menu.state === 'options') {
+            menu.state = 'info';
+            return;
+        }
+
+        menuFraction.target = menu.state === 'info' ? 0 : 1;
+        menu.state = menu.state === 'info' ? '' : 'info';
+        menu.lastState = 'info';
+    }
 
     let postItSizeFreeRange = $state(false);
     let postItSizeStatus = $state(1);
@@ -66,7 +101,7 @@
             {#snippet titleSnippet()}
                 <div
                     class="title-grid w-full"
-                    style="--options-row-height: {optionFraction.current}fr"
+                    style="--options-row-height: {menuFraction.current}fr"
                 >
                     <div class="flex gap-1">
                         <div class="flex flex-col justify-center">
@@ -86,11 +121,7 @@
                         <h1 class="page__title mt-0">{tree?.metadata.data.title}</h1>
                         <div class="flex flex-col justify-center">
                             <button
-                                onclick={() => {
-                                    showOptions = !showOptions;
-
-                                    optionFraction.target = showOptions ? 1 : 0;
-                                }}
+                                onclick={openOptions}
                                 aria-label="return"
                                 class:cursor-pointer={true}
                                 class="page__title mt-3"
@@ -99,45 +130,68 @@
                                 <AdjustmentsHorizontalOutline class="shrink-0 h-7 w-7" />
                             </button>
                         </div>
+                        <div class="flex flex-col justify-center">
+                            <button
+                                onclick={openInfo}
+                                aria-label="return"
+                                class:cursor-pointer={true}
+                                class="page__title mt-3"
+                                title={m.information()}
+                            >
+                                <InfoCircleOutline class="shrink-0 h-7 w-7" />
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-y-hidden overflow-x-auto">
                         <form
                             class={[
-                                !showOptions && optionFraction.current === 0 && 'hidden',
+                                menu.state === '' && menuFraction.current === 0 && 'hidden',
                                 'flex flex-col pl-1.5 from-white to-neutral-50 bg-linear-180 mb-2 rounded-b-md border-neutral-200 border-2 border-t-0'
                             ]}
                         >
-                            <div class="checkbox__container">
-                                <input
-                                    type="checkbox"
-                                    id="free-range-checkbox"
-                                    class="input__checkbox"
-                                    bind:checked={postItSizeFreeRange}
-                                    onchange={() => {
-                                        console.log('dit werkt!');
-                                        if (postItSizeFreeRange) {
-                                            postItSizeStatus =
-                                                defaultPostItSizes[postItSizeStatus].width;
-                                        } else {
-                                            postItSizeStatus = 1;
-                                        }
-                                    }}
-                                />
-                                <label for="free-range-checkbox">{m.postItPresetCheckbox()}</label>
-                            </div>
-                            <div class="input__container">
-                                <label for="card-width-slider">
-                                    {m.postItSize()}: {getPostItSize()}
-                                </label>
-                                <input
-                                    type="range"
-                                    id="card-width-slider"
-                                    min={postItSizeFreeRange ? 30 : 0}
-                                    max={postItSizeFreeRange ? 150 : defaultPostItSizes.length - 1}
-                                    class="accent-tree-700 w-1/2"
-                                    bind:value={postItSizeStatus}
-                                />
-                            </div>
+                            {#if menu.state === 'options' || (menu.state === '' && menu.lastState === 'options')}
+                                <div class="checkbox__container">
+                                    <input
+                                        type="checkbox"
+                                        id="free-range-checkbox"
+                                        class="input__checkbox"
+                                        bind:checked={postItSizeFreeRange}
+                                        onchange={() => {
+                                            console.log('dit werkt!');
+                                            if (postItSizeFreeRange) {
+                                                postItSizeStatus =
+                                                    defaultPostItSizes[postItSizeStatus].width;
+                                            } else {
+                                                postItSizeStatus = 1;
+                                            }
+                                        }}
+                                    />
+                                    <label for="free-range-checkbox"
+                                        >{m.postItPresetCheckbox()}</label
+                                    >
+                                </div>
+                                <div class="input__container">
+                                    <label for="card-width-slider">
+                                        {m.postItSize()}: {getPostItSize()}
+                                    </label>
+                                    <input
+                                        type="range"
+                                        id="card-width-slider"
+                                        min={postItSizeFreeRange ? 30 : 0}
+                                        max={postItSizeFreeRange
+                                            ? 150
+                                            : defaultPostItSizes.length - 1}
+                                        class="accent-tree-700 w-1/2"
+                                        bind:value={postItSizeStatus}
+                                    />
+                                </div>
+                            {:else if menu.state === 'info' || (menu.state === '' && menu.lastState === 'info')}
+                                <p class="pb-1.5">
+                                    {m.printScreenInfo1()}
+                                    <Kbd>Ctrl</Kbd> + <Kbd>P</Kbd>
+                                    {m.printScreenInfo2()}
+                                </p>
+                            {/if}
                         </form>
                     </div>
                 </div>

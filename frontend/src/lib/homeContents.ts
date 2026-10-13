@@ -160,6 +160,21 @@ export const homePageCards = {
                     ]
                 },
                 {
+                    heading: 'Hoe druk ik een heuristiekboom af?',
+                    content: [
+                        'Vanaf de weergave-pagina van een boom kun je op de print-knop naast de titel ' +
+                            'klikken. Deze leidt je naar een versimpelde versie van de pagina, ' +
+                            'waar je de breedte van de kaartjes kunt instellen voor een passend ' +
+                            'post-it formaat.',
+                        'Zodra je dat correct hebt ingesteld, kun je de pagina afdrukken (naar pdf) ' +
+                            'door de toetsen <i>Ctrl + P</i> in te drukken, en de stappen in het ' +
+                            'dialoogvenster te volgen. Hierbij kun je uit verschillende formaten papier ' +
+                            'kiezen, en kiezen de achtergronden van de kaartjes wit te laten.',
+                        'Let er bij het printen op dat je het optie- en informatie-menu bovenaan ' +
+                            'de pagina hebt gesloten, en dat de schaal bij het printen op 100 blijft staan.'
+                    ]
+                },
+                {
                     heading: 'Welk onderzoek ligt er achter het gebruik van heuristiekbomen?',
                     content: [
                         'De afgelopen jaren zijn er aan de Universiteit Utrecht en Hogeschool Utrecht ' +
@@ -343,6 +358,20 @@ export const homePageCards = {
                             `the '${m.publish()}'-button, to publish the tree.`,
                         'After your tree has been published, you can also copy the link to ' +
                             'your tree, from this menu.'
+                    ]
+                },
+                {
+                    heading: 'How do I print a heuristic tree?',
+                    content: [
+                        'On the viewer page of a tree, you can press the print-button next to the title, ' +
+                            'which will lead you to a simplified version of the page, where you can ' +
+                            'adjust the size of the cards to match  your preferred post-it size.',
+                        'Once this has been set correctly, you can print the page (to a pdf) by pressing ' +
+                            '<i>Ctrl + P</i>, and following the steps in the dialogue window.' +
+                            'Here you can choose between different sizes of paper sheets, ' +
+                            'and decide to leave the background of the cards blank.',
+                        'Before printing, make sure you have collapsed the options/information-menu, ' +
+                            'and the scale is (still) set to 100.'
                     ]
                 },
                 {
