@@ -29,21 +29,20 @@
         cardSize: PostItSize;
     } = $props();
 
-    let frontColor = $derived(`var(--color-${color}-300)`);
-    let backColor = $derived(`var(--color-${color}-100)`);
-    let cardBorderColor = $derived(`var(--color-${color}-dim-350)`);
+    let primaryColor = $derived(`var(--color-${color}-100)`);
+    let secondaryColor = $derived(`var(--color-${color}-dim-350)`);
 </script>
 
-<div class="flex flex-col">
+<div class="flex flex-col" style="width: {cardSize.width}mm;">
     <p
-        style="--background-color: {frontColor}; --border-color: {cardBorderColor}; width: {cardSize.width}mm;"
+        style="--background-color: {secondaryColor}; --border-color: {secondaryColor};"
         class="min-h-card-height-md card border-b-0 rounded-b-none overflow-x-auto overflow-y-hidden p-1 text-center wrap-anywhere"
     >
         {card.front}
     </p>
     <div style="min-height: {cardSize.height}mm;">
         <p
-            style="--background-color: {backColor}; --border-color: {cardBorderColor}; width: {cardSize.width}mm;"
+            style="--background-color: {primaryColor}; --border-color: {secondaryColor};"
             class="card rounded-t-none overflow-y-hidden p-1 text-left wrap-anywhere"
         >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
