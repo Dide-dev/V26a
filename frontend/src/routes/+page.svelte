@@ -8,7 +8,6 @@
     import { getLocale } from '$lib/paraglide/runtime';
     import { m } from '$lib/paraglide/messages.js';
     import { AccordionItem, Accordion } from 'flowbite-svelte';
-    import { onMount } from 'svelte';
     import AnimatedUnderline from '$lib/AnimatedUnderline.svelte';
     import { homePageCards } from '$lib/homeContents';
 
@@ -27,8 +26,6 @@
         heading: string;
         content: PlainContent[];
     };
-
-    onMount(() => {});
 </script>
 
 <div class="flex w-full justify-center">

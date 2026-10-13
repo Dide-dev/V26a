@@ -14,13 +14,22 @@
     import { branchColors, duplicateThisTree } from '$lib/treePage';
     import TreeInformation from './TreeInformation.svelte';
     import { getUserInfo } from '$lib/api-wrapper/sessions';
-    import { EditOutline, FileCloneOutline } from 'flowbite-svelte-icons';
+    import {
+        EditOutline,
+        ExpandOutline,
+        FileCloneOutline,
+        MinimizeOutline,
+        PrinterOutline
+    } from 'flowbite-svelte-icons';
+    import { getUIState } from '$lib/context/ui.svelte';
 
     let { params } = $props();
 
     let tree: TreeWithCards | null = $state(null);
     let userAllowedToEdit = $state(false);
     let userInfo = getUserInfo();
+
+    const uiState = getUIState();
 
     onMount(async () => {
         let id = Number(params.treeId);
@@ -75,6 +84,34 @@
                             </button>
                         </div>
                     {/if}
+                    <div class="flex flex-col justify-center">
+                        <button
+                            onclick={() => {
+                                uiState.toggle();
+                            }}
+                            aria-label={uiState.visible ? 'maximize' : 'minimize'}
+                            class:cursor-pointer={true}
+                            class="page__title mt-3"
+                            title={uiState.visible ? m.maximizeScreen() : m.minimizeScreen()}
+                        >
+                            {#if uiState.visible}
+                                <ExpandOutline class="h-6 w-6 shrink-0" />
+                            {:else}
+                                <MinimizeOutline class="h-7 w-7 shrink-0" />
+                            {/if}
+                        </button>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <a
+                            href={appLink(`/trees/${tree!.metadata.genData.id}/print`)}
+                            aria-label="print"
+                            class:cursor-pointer={true}
+                            class="page__title mt-3"
+                            title={m.printMode()}
+                        >
+                            <PrinterOutline class="shrink-0 h-7 w-7" />
+                        </a>
+                    </div>
                 </div>
             {/snippet}
         </TreeInformation>

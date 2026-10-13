@@ -106,13 +106,13 @@ pub fn trees() -> Router<ArcState> {
 /// The id assigned to the new tree.
 ///
 /// # Errors
-/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`](crate::structs::trees::TreeData) in
+/// Returns [`InvalidIsbn`](ApiError::InvalidIsbn) if the [`TreeData`] in
 /// [`TreeAddData`] contains an invalid ISBN.
 ///
-/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`](crate::structs::trees::TreeData) in
+/// Returns [`MissingLanguage`](ApiError::MissingLanguage) if the [`TreeData`] in
 /// [`TreeAddData`] contains a non-existent language.
 ///
-/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`](crate::structs::trees::TreeData) in
+/// Returns [`MissingSubject`](ApiError::MissingSubject) if the [`TreeData`] in
 /// [`TreeAddData`] contains a non-existent subject.
 ///
 /// Returns [`NonEmptyStructure`](ApiError::NonEmptyStructure) if the [`TreeStructure`] in

@@ -147,7 +147,7 @@ mod tests {
 
         let found_feedback_data = get_all_feedback(&db, &page).await.unwrap();
 
-        assert!(found_feedback_data.len() == 1);
+        assert_eq!(found_feedback_data.len(), 1);
 
         let found_feedback = &found_feedback_data[0];
 
