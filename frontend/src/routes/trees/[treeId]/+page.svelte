@@ -22,12 +22,16 @@
         PrinterOutline
     } from 'flowbite-svelte-icons';
     import { getUIState } from '$lib/context/ui.svelte';
+    import { MediaQuery } from 'svelte/reactivity';
 
     let { params } = $props();
 
     let tree: TreeWithCards | null = $state(null);
     let userAllowedToEdit = $state(false);
     let userInfo = getUserInfo();
+
+    /** Query whether the window is large or small. 'true' if large, and 'false' if not. */
+    const windowIsLarge = new MediaQuery('min-width: 48rem');
 
     const uiState = getUIState();
 
@@ -101,17 +105,19 @@
                             {/if}
                         </button>
                     </div>
-                    <div class="flex flex-col justify-center">
-                        <a
-                            href={appLink(`/trees/${tree!.metadata.genData.id}/print`)}
-                            aria-label="print"
-                            class:cursor-pointer={true}
-                            class="page__title mt-3"
-                            title={m.printMode()}
-                        >
-                            <PrinterOutline class="shrink-0 h-7 w-7" />
-                        </a>
-                    </div>
+                    {#if windowIsLarge.current}
+                        <div class="flex flex-col justify-center">
+                            <a
+                                href={appLink(`/trees/${tree!.metadata.genData.id}/print`)}
+                                aria-label="print"
+                                class:cursor-pointer={true}
+                                class="page__title mt-3"
+                                title={m.printMode()}
+                            >
+                                <PrinterOutline class="shrink-0 h-7 w-7" />
+                            </a>
+                        </div>
+                    {/if}
                 </div>
             {/snippet}
         </TreeInformation>

@@ -36,11 +36,11 @@
 <div class="flex flex-col" style="width: {cardSize.width}mm;">
     <p
         style="--background-color: {secondaryColor}; --border-color: {secondaryColor};"
-        class="min-h-card-height-md card border-b-0 rounded-b-none overflow-x-auto overflow-y-hidden p-1 text-center wrap-anywhere"
+        class="card border-b-0 rounded-b-none overflow-x-auto overflow-y-hidden p-1 pb-card-height-md text-center wrap-anywhere"
     >
         {card.front}
     </p>
-    <div style="min-height: {cardSize.height}mm;">
+    <div style="min-height: calc({cardSize.height}mm - var(--spacing-card-height-md));">
         <p
             style="--background-color: {primaryColor}; --border-color: {secondaryColor};"
             class="card rounded-t-none overflow-y-hidden p-1 text-left wrap-anywhere"
