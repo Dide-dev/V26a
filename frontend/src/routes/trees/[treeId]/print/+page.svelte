@@ -198,6 +198,10 @@
             {/snippet}
         </TreeInformation>
 
+        <p class="absolute top-1 right-2 underline">
+            https://heuristiekboom.nl{appLink(`/trees/${tree!.metadata.genData.id}`)}
+        </p>
+
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
             {#each tree.structure.rootNodes as root, i (root)}
                 <SubtreeViewer
