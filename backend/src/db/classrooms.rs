@@ -10,7 +10,7 @@ use crate::structs::classrooms::{
     ClassroomAddData, ClassroomMetaData, LessonAddData, LessonMetaData, LessonWithTrees,
 };
 use crate::structs::pagination::PaginationOptions;
-use crate::structs::session::Session;
+use crate::structs::session::{ClassroomSession, Session};
 use crate::structs::trees::TreeFilters;
 use rand::prelude::*;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
@@ -637,6 +637,82 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
         });
     }
     Ok(all_lessons)
+}
+
+/// Retrieve all classrooms which have a certain tree in one of its lessons.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree.
+///
+/// # Returns
+/// A [`Vec<i32>`] containing the id's of all classrooms which contain the tree.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_classrooms_with_tree(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+) -> Result<Vec<i32>, ApiError> {
+    let classrooms = query!(
+        "SELECT id FROM classrooms WHERE EXISTS
+            (SELECT * FROM lessons LEFT JOIN lesson_trees ON lessons.id = lesson_trees.lesson_id
+             WHERE classroom_id = classrooms.id AND tree_id = $1)",
+        tree_id
+    )
+    .fetch_all(db)
+    .await?
+    .iter()
+    .map(|r| r.id)
+    .collect();
+
+    Ok(classrooms)
+}
+
+/// Create or update a usage session for a tree in any number of classrooms.
+///
+/// # Arguments
+/// `db` - A connection to the database.
+///
+/// `tree_id` - The tree that has been opened.
+///
+/// `classroom_sessions` - The classroom sessions of the user, which contain the given tree.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn create_classroom_usage_sessions(
+    db: impl PgExecutor<'_>,
+    tree_id: &i32,
+    classroom_sessions: Vec<ClassroomSession>,
+) -> Result<(), ApiError> {
+    if classroom_sessions.is_empty() {
+        return Ok(());
+    }
+
+    let classroom_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.id).collect();
+    let classroom_user_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.num).collect();
+
+    query!(
+        "
+        INSERT INTO classroom_tree_usage_sessions AS t
+            (classroom_id, classroom_user_id, tree_id)
+        SELECT u.classroom_id,
+               u.classroom_user_id,
+               $1
+        FROM UNNEST($2::int[], $3::int[])
+            AS u(classroom_id, classroom_user_id)
+        ON CONFLICT (classroom_id, classroom_user_id, tree_id)
+            DO UPDATE SET times_opened = t.times_opened + 1
+        ",
+        tree_id,
+        &classroom_ids,
+        &classroom_user_ids,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
 }
 
 #[cfg(test)]

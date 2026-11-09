@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO classroom_tree_usage_sessions AS t\n            (classroom_id, classroom_user_id, tree_id)\n        SELECT u.classroom_id,\n               u.classroom_user_id,\n               $1\n        FROM UNNEST($2::int[], $3::int[])\n            AS u(classroom_id, classroom_user_id)\n        ON CONFLICT (classroom_id, classroom_user_id, tree_id)\n            DO UPDATE SET times_opened = t.times_opened + 1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4Array",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a052e9b06a8e8f468c6ed0abfcbe2dbeb75b248aafa1c78e3a028d0598c98c1f"
+}

@@ -23,7 +23,7 @@ use crate::ratelimits::{
 use crate::structs::Validated;
 use crate::structs::cards::CardData;
 use crate::structs::pagination::OptionalPaginationOptions;
-use crate::structs::session::Session;
+use crate::structs::session::{AllClassroomSessions, Session};
 use crate::structs::trees::{
     Language, Node, RootNode, Subject, SubjectData, TreeAddData, TreeData, TreeFilters,
     TreeListResponse, TreeStructure, TreeWithCards,
@@ -31,6 +31,7 @@ use crate::structs::trees::{
 use crate::structs::users::AccountType;
 use crate::{ArcState, db, get_connection};
 
+use crate::db::classrooms::{create_classroom_usage_sessions, get_classrooms_with_tree};
 use axum::extract::Path;
 use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
@@ -513,6 +514,7 @@ async fn update_tree_data(
     ),
     params(
         ("session" = Session, Cookie),
+        ("all_classroom_sessions" = AllClassroomSessions, Cookie),
         ("tree_id" = i32, Path),
     )
 )]
@@ -542,16 +544,33 @@ async fn update_tree_data(
 /// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
 async fn get_tree_with_cards(
     session: Option<Session>,
+    all_classroom_sessions: Option<AllClassroomSessions>,
     Extension(db): Extension<PgPool>,
     Path(tree_id): Path<i32>,
 ) -> Result<Json<TreeWithCards>, ApiError> {
-    verify_tree_accessible_by_user(get_connection!(db), tree_id, session.as_ref()).await?;
+    let mut tx = db.begin().await?;
 
-    let (metadata, structure) = db_get_tree_all_data(get_connection!(db), tree_id)
+    verify_tree_accessible_by_user(&mut tx, tree_id, session.as_ref()).await?;
+
+    let (metadata, structure) = db_get_tree_all_data(&mut tx, tree_id)
         .await?
         .ok_or(ApiError::MissingTree(tree_id))?;
 
-    let tree_cards = get_tree_cards(&db, tree_id).await?;
+    let tree_cards = get_tree_cards(&mut *tx, tree_id).await?;
+
+    // Update usage statistics
+    if let Some(all_classroom_sessions) = all_classroom_sessions {
+        let classrooms_with_tree = get_classrooms_with_tree(&mut *tx, tree_id).await?;
+        let relevant_classroom_sessions = all_classroom_sessions
+            .sessions
+            .into_iter()
+            .filter(|cs| classrooms_with_tree.contains(&cs.id))
+            .collect::<Vec<_>>();
+
+        create_classroom_usage_sessions(&mut *tx, &tree_id, relevant_classroom_sessions).await?;
+    }
+
+    tx.commit().await?;
 
     Ok(Json(TreeWithCards {
         metadata,
