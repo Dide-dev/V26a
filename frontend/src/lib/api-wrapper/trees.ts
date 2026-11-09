@@ -211,6 +211,11 @@ export function getTreeWithCards(treeId: TreeId): Promise<TreeWithCards> {
     return apiCallGetTree(`/${treeId}`);
 }
 
+/** Record a card being opened. */
+export function recordCardOpening(treeId: TreeId, cardId: CardId, timestamp: Date): Promise<void> {
+    return apiCallGetTree(`/${treeId}/cards/${cardId}?timestamp=${timestamp}`);
+}
+
 /** Update the metadata of a specific tree. */
 export function updateTreeMetaData(treeId: TreeId, newTreeData: TreeData): Promise<void> {
     return apiCallPutTree(`/${treeId}`, newTreeData);

@@ -12,6 +12,7 @@ use crate::structs::classrooms::{
 use crate::structs::pagination::PaginationOptions;
 use crate::structs::session::{ClassroomSession, Session};
 use crate::structs::trees::TreeFilters;
+use chrono::{DateTime, Utc};
 use rand::prelude::*;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 
@@ -706,6 +707,55 @@ pub async fn create_classroom_usage_sessions(
             DO UPDATE SET times_opened = t.times_opened + 1
         ",
         tree_id,
+        &classroom_ids,
+        &classroom_user_ids,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+/// Record that a user opened a card, for classroom statistics.
+///
+/// # Arguments
+/// `db` - A connection to the database.
+///
+/// `card_id` - Card being opened.
+///
+/// `classroom_sessions` - The classroom sessions of the user, which contain the tree containing the
+/// given card.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn log_card_opened(
+    db: impl PgExecutor<'_>,
+    card_id: &i32,
+    timestamp: &DateTime<Utc>,
+    classroom_sessions: Vec<ClassroomSession>,
+) -> Result<(), ApiError> {
+    if classroom_sessions.is_empty() {
+        return Ok(());
+    }
+
+    let classroom_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.id).collect();
+    let classroom_user_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.num).collect();
+
+    query!(
+        "
+        INSERT INTO classroom_cards_usages AS t
+            (classroom_id, classroom_user_id, card_id, first_opened_at)
+        SELECT u.classroom_id,
+               u.classroom_user_id,
+               $1,
+               $2
+        FROM UNNEST($3::int[], $4::int[])
+            AS u(classroom_id, classroom_user_id)
+        ON CONFLICT (classroom_id, classroom_user_id, card_id)
+            DO NOTHING
+        ",
+        card_id,
+        timestamp,
         &classroom_ids,
         &classroom_user_ids,
     )

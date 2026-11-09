@@ -550,6 +550,12 @@ pub struct TreeFilters {
     pub lesson_id: Option<i32>,
 }
 
+#[derive(serde::Deserialize, ToSchema, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenCardRecordQuery {
+    pub timestamp: DateTime<Utc>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
