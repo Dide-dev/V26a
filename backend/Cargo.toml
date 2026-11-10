@@ -40,9 +40,9 @@ tower_governor = { version = "0.8", features = ["axum"] }
 tower-http = { version = "0.7", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-utoipa = { version = "5.5", features = ["chrono"] }
-utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
-utoipauto = "0.2"
+utoipa = { version = "6.0.0", features = ["chrono"] }
+utoipa-swagger-ui = { version = "10.0.2", features = ["axum"] }
+utoipauto = "0.3.1"
 tower = "0.5"
 uuid = { version = "1.23", features = ["v4"] }
 

@@ -10,8 +10,9 @@ use crate::structs::classrooms::{
     ClassroomAddData, ClassroomMetaData, LessonAddData, LessonMetaData, LessonWithTrees,
 };
 use crate::structs::pagination::PaginationOptions;
-use crate::structs::session::Session;
+use crate::structs::session::{ClassroomSession, Session};
 use crate::structs::trees::TreeFilters;
+use chrono::{DateTime, Utc};
 use rand::prelude::*;
 use sqlx::{Connection, PgConnection, PgExecutor, query, query_scalar};
 
@@ -639,19 +640,152 @@ pub async fn get_lessons_with_tree_ids_from_classroom(
     Ok(all_lessons)
 }
 
+/// Retrieve all classrooms which have a certain tree in one of its lessons.
+///
+/// # Arguments
+/// `db` - Either a [`&PgPool`](sqlx::PgPool) or a [`&mut PgConnection`](PgConnection).
+///
+/// `tree_id` - The id of the tree.
+///
+/// # Returns
+/// A [`Vec<i32>`] containing the id's of all classrooms which contain the tree.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn get_classrooms_with_tree(
+    db: impl PgExecutor<'_>,
+    tree_id: i32,
+) -> Result<Vec<i32>, ApiError> {
+    let classrooms = query!(
+        "SELECT id FROM classrooms WHERE EXISTS
+            (SELECT * FROM lessons LEFT JOIN lesson_trees ON lessons.id = lesson_trees.lesson_id
+             WHERE classroom_id = classrooms.id AND tree_id = $1)",
+        tree_id
+    )
+    .fetch_all(db)
+    .await?
+    .iter()
+    .map(|r| r.id)
+    .collect();
+
+    Ok(classrooms)
+}
+
+/// Create or update a usage session for a tree in any number of classrooms.
+///
+/// # Arguments
+/// `db` - A connection to the database.
+///
+/// `tree_id` - The tree that has been opened.
+///
+/// `classroom_sessions` - The classroom sessions of the user, which contain the given tree.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn create_classroom_usage_sessions(
+    db: impl PgExecutor<'_>,
+    tree_id: &i32,
+    classroom_sessions: Vec<ClassroomSession>,
+) -> Result<(), ApiError> {
+    if classroom_sessions.is_empty() {
+        return Ok(());
+    }
+
+    let classroom_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.id).collect();
+    let classroom_user_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.num).collect();
+
+    query!(
+        "
+        INSERT INTO classroom_tree_usage_sessions AS t
+            (classroom_id, classroom_user_id, tree_id)
+        SELECT u.classroom_id,
+               u.classroom_user_id,
+               $1
+        FROM UNNEST($2::int[], $3::int[])
+            AS u(classroom_id, classroom_user_id)
+        ON CONFLICT (classroom_id, classroom_user_id, tree_id)
+            DO UPDATE SET times_opened = t.times_opened + 1
+        ",
+        tree_id,
+        &classroom_ids,
+        &classroom_user_ids,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+/// Record that a user opened a card, for classroom statistics.
+///
+/// # Arguments
+/// `db` - A connection to the database.
+///
+/// `card_id` - Card being opened.
+///
+/// `timestamp` - Time at which the card was opened.
+///
+/// `classroom_sessions` - The classroom sessions of the user, which contain the tree containing the
+/// given card.
+///
+/// # Errors
+/// May return a [`DatabaseException`](ApiError::DatabaseException) instead.
+pub async fn log_card_opened(
+    db: impl PgExecutor<'_>,
+    card_id: &i32,
+    timestamp: &DateTime<Utc>,
+    classroom_sessions: Vec<ClassroomSession>,
+) -> Result<(), ApiError> {
+    if classroom_sessions.is_empty() {
+        return Ok(());
+    }
+
+    let classroom_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.id).collect();
+    let classroom_user_ids: Vec<i32> = classroom_sessions.iter().map(|cs| cs.num).collect();
+
+    query!(
+        "
+        INSERT INTO classroom_cards_usages
+            (classroom_id, classroom_user_id, card_id, first_opened_at)
+        SELECT u.classroom_id,
+               u.classroom_user_id,
+               $1,
+               $2
+        FROM UNNEST($3::int[], $4::int[])
+            AS u(classroom_id, classroom_user_id)
+        ON CONFLICT (classroom_id, classroom_user_id, card_id)
+            DO NOTHING
+        ",
+        card_id,
+        timestamp,
+        &classroom_ids,
+        &classroom_user_ids,
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::db::cards::add_card;
     use crate::db::classrooms::{
         add_classroom, add_existing_tree_to_lesson, add_lesson, add_new_user_to_classroom,
-        generate_random_code, get_all_classrooms_from_ids, get_all_classrooms_from_owner_id,
-        get_classroom_count_from_ids, get_classroom_count_from_owner_id,
-        get_classroom_join_code_from_id, get_classroom_owner_from_id,
-        get_lessons_with_tree_ids_from_classroom, get_name_by_number, validate_join_code,
+        create_classroom_usage_sessions, generate_random_code, get_all_classrooms_from_ids,
+        get_all_classrooms_from_owner_id, get_classroom_count_from_ids,
+        get_classroom_count_from_owner_id, get_classroom_join_code_from_id,
+        get_classroom_owner_from_id, get_classrooms_with_tree,
+        get_lessons_with_tree_ids_from_classroom, get_name_by_number, log_card_opened,
+        validate_join_code,
     };
     use crate::db::test::{initialize_classroom, initialize_db, initialize_lesson};
     use crate::get_connection_unwrap;
+    use crate::structs::cards::CardData;
     use crate::structs::classrooms::{ClassroomAddData, LessonAddData};
     use crate::structs::pagination::PaginationOptions;
+    use crate::structs::session::ClassroomSession;
+    use chrono::{TimeZone, Utc};
     use sqlx::{PgPool, query};
 
     #[sqlx::test]
@@ -981,5 +1115,160 @@ mod tests {
         .unwrap();
 
         assert_eq!(lesson.len(), 0);
+    }
+
+    #[sqlx::test]
+    async fn test_get_classrooms_with_tree(db: PgPool) {
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let _classroom_without_tree_id =
+            initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let classroom_with_tree_id =
+            initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_with_tree_id).await;
+
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
+            .await
+            .unwrap();
+
+        let classroom_ids = get_classrooms_with_tree(&db, tree_id).await.unwrap();
+
+        assert_eq!(classroom_ids, vec![classroom_with_tree_id]);
+    }
+
+    #[sqlx::test]
+    async fn test_create_classroom_usage_sessions(db: PgPool) {
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let classroom_1_id =
+            initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_1_id).await;
+
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
+            .await
+            .unwrap();
+
+        let classroom_1_num =
+            add_new_user_to_classroom(get_connection_unwrap!(db), classroom_1_id, "Test")
+                .await
+                .unwrap();
+
+        let classroom_2_id =
+            initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_2_id).await;
+
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
+            .await
+            .unwrap();
+
+        let classroom_2_num =
+            add_new_user_to_classroom(get_connection_unwrap!(db), classroom_2_id, "Test")
+                .await
+                .unwrap();
+
+        let classroom_sessions = vec![
+            ClassroomSession {
+                id: classroom_1_id,
+                num: classroom_1_num,
+                name: "Test".to_owned(),
+            },
+            ClassroomSession {
+                id: classroom_2_id,
+                num: classroom_2_num,
+                name: "Test".to_owned(),
+            },
+        ];
+
+        create_classroom_usage_sessions(&db, &tree_id, classroom_sessions.clone())
+            .await
+            .unwrap();
+
+        let result = query!(
+            "SELECT * FROM classroom_tree_usage_sessions
+                WHERE tree_id = $1",
+            tree_id,
+        )
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+        assert_eq!(result.len(), classroom_sessions.len());
+    }
+
+    #[sqlx::test]
+    async fn test_log_card_opened(db: PgPool) {
+        let (session, tree_id) = initialize_db(get_connection_unwrap!(db)).await;
+        let card_id = add_card(
+            &db,
+            tree_id,
+            &CardData {
+                front: "front".to_owned(),
+                back: "back".to_owned(),
+            },
+        )
+        .await
+        .unwrap();
+        let classroom_1_id =
+            initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_1_id).await;
+
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
+            .await
+            .unwrap();
+
+        let classroom_1_num =
+            add_new_user_to_classroom(get_connection_unwrap!(db), classroom_1_id, "Test")
+                .await
+                .unwrap();
+
+        let classroom_2_id =
+            initialize_classroom(get_connection_unwrap!(db), session.user_id).await;
+        let lesson_id = initialize_lesson(get_connection_unwrap!(db), classroom_2_id).await;
+
+        add_existing_tree_to_lesson(get_connection_unwrap!(db), lesson_id, tree_id)
+            .await
+            .unwrap();
+
+        let classroom_2_num =
+            add_new_user_to_classroom(get_connection_unwrap!(db), classroom_2_id, "Test")
+                .await
+                .unwrap();
+
+        let classroom_sessions = vec![
+            ClassroomSession {
+                id: classroom_1_id,
+                num: classroom_1_num,
+                name: "Test".to_owned(),
+            },
+            ClassroomSession {
+                id: classroom_2_id,
+                num: classroom_2_num,
+                name: "Test".to_owned(),
+            },
+        ];
+
+        let timestamp = Utc.timestamp_nanos(1_000_000_000_000_000);
+
+        log_card_opened(&db, &card_id, &timestamp, classroom_sessions.clone())
+            .await
+            .unwrap();
+
+        let open_times = query!(
+            "SELECT * FROM classroom_cards_usages
+                WHERE card_id = $1",
+            card_id,
+        )
+        .fetch_all(&db)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.first_opened_at)
+        .collect::<Vec<_>>();
+
+        assert_eq!(
+            open_times,
+            classroom_sessions
+                .iter()
+                .map(|_| timestamp)
+                .collect::<Vec<_>>()
+        );
     }
 }

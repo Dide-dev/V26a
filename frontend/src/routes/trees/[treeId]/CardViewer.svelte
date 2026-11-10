@@ -19,16 +19,21 @@
 
 <script lang="ts">
     import { markdownToFinalHtml } from '$lib/rich-text/markdown';
-    import type { CardData } from '$lib/api-wrapper/cards';
+    import type { CardData, CardId } from '$lib/api-wrapper/cards';
     import type { BranchColor } from '$lib/treePage';
     import { Tween } from 'svelte/motion';
+    import { recordCardOpening, type TreeId } from '$lib/api-wrapper/trees';
 
     let {
+        treeId,
+        cardId,
         card,
         color,
         distanceFromRevealed = $bindable(),
         outOfFocus
     }: {
+        treeId: TreeId;
+        cardId: CardId;
         card: CardData;
         color: BranchColor;
         distanceFromRevealed: number;
@@ -36,6 +41,7 @@
     } = $props();
 
     function makeRevealed() {
+        recordCardOpening(treeId, cardId, new Date());
         distanceFromRevealed = 0;
     }
 

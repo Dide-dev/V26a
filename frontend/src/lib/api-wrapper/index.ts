@@ -14,16 +14,19 @@ const prefix = '/api/v1/';
 /** This function is for the rest of the api-wrapper to call upon, do not call from UI! */
 export async function apiCallGet(path: string) {
     const response = await fetch(prefix + path, {
-        method: 'GET',
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        headers: { Accept: 'application/json' }
+        method: 'GET'
     });
 
     if (!(await checkResponse(response))) {
         return;
     }
 
-    return await response.json();
+    // Only return if some content is sent back
+    if (response.headers.get('Content-Type') === 'application/json') {
+        return await response.json();
+    } else {
+        return null;
+    }
 }
 
 /** This function is for the rest of the api-wrapper to call upon, do not call from UI! */

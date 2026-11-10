@@ -125,6 +125,7 @@
         <div class="m-1 flex w-full grow flex-col overflow-x-auto pt-6">
             {#each tree.structure.rootNodes as root, i (root)}
                 <SubtreeViewer
+                    treeId={tree.metadata.genData.id}
                     node={root}
                     cards={tree.cards}
                     color={branchColors[i % branchColors.length]}

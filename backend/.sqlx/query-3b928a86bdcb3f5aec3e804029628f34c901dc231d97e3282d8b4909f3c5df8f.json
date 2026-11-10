@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM classrooms WHERE EXISTS\n            (SELECT * FROM lessons LEFT JOIN lesson_trees ON lessons.id = lesson_trees.lesson_id\n             WHERE classroom_id = classrooms.id AND tree_id = $1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3b928a86bdcb3f5aec3e804029628f34c901dc231d97e3282d8b4909f3c5df8f"
+}

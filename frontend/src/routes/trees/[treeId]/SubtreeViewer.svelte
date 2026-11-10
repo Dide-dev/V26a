@@ -9,6 +9,7 @@
     Render a sub-tree with its children.
 
     ## Params
+    - `treeId: TreeId` - Id of the tree.
     - `node: RootNode | Node` - The contents of the current node, and its children.
     - `cards: Record<CardId, CardData>` - The contents of all cards.
     - `color: BranchColor` - The name of the color.
@@ -19,7 +20,7 @@
 
 <script lang="ts">
     import type { CardData, CardId } from '$lib/api-wrapper/cards';
-    import type { Node, RootNode } from '$lib/api-wrapper/trees';
+    import type { Node, RootNode, TreeId } from '$lib/api-wrapper/trees';
     import CardViewer from './CardViewer.svelte';
     import SubtreeViewer from './SubtreeViewer.svelte';
     import LineDrawings from './LineDrawer.svelte';
@@ -28,12 +29,14 @@
     import { m } from '$lib/paraglide/messages.js';
 
     let {
+        treeId,
         node,
         cards,
         color,
         distanceFromRevealed = 0,
         isRevealed = $bindable(false)
     }: {
+        treeId: TreeId;
         node: RootNode | Node;
         cards: Record<CardId, CardData>;
         color: BranchColor;
@@ -86,7 +89,14 @@
         <!-- Standard Node -->
         <!-- The 'flex' here prevents some weird vertical whitespace -->
         <div class="mb-2 flex">
-            <CardViewer bind:distanceFromRevealed card={cards[node.cardId]} {color} {outOfFocus} />
+            <CardViewer
+                bind:distanceFromRevealed
+                {treeId}
+                cardId={node.cardId}
+                card={cards[node.cardId]}
+                {color}
+                {outOfFocus}
+            />
         </div>
     {/if}
 
@@ -95,6 +105,7 @@
             <!-- Here the html gets recursive as we render the 'node.children' -->
             {#each node.children as child_node, i (child_node)}
                 <SubtreeViewer
+                    {treeId}
                     node={child_node}
                     {cards}
                     {color}
