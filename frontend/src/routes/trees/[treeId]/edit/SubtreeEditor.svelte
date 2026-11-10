@@ -14,10 +14,11 @@
     import RootNodeEditor from './RootNodeEditor.svelte';
     import SubtreeViewer from '../SubtreeViewer.svelte';
     import LineDrawer from '../LineDrawer.svelte';
-    import type { Node, RootNode } from '$lib/api-wrapper/trees';
+    import type { Node, RootNode, TreeId } from '$lib/api-wrapper/trees';
     import type { BranchColor } from '$lib/treePage';
 
     let {
+        treeId,
         history = $bindable(),
         location,
         /**
@@ -29,6 +30,7 @@
         sidebar = $bindable(),
         color
     }: {
+        treeId: TreeId;
         history: TreeHistory;
         location: number[];
         fakeNode?: boolean;
@@ -146,6 +148,7 @@
             style="left: {dragState.mouseX}px; top: {dragState.mouseY}px;"
         >
             <SubtreeViewer
+                {treeId}
                 node={node!}
                 cards={history.currentCards}
                 {color}
@@ -203,6 +206,7 @@
                 {#if child.isFake}
                     <!-- This is the new dummy card currently being created -->
                     <SubtreeEditor
+                        {treeId}
                         fakeNode={true}
                         bind:history
                         location={[...location, child.index]}
@@ -212,6 +216,7 @@
                     />
                 {:else}
                     <SubtreeEditor
+                        {treeId}
                         bind:history
                         location={[...location, child.index]}
                         bind:dragState={dragStateChildrenGetChildren, dragStateChildrenSet}

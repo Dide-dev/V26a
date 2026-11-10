@@ -289,6 +289,7 @@
                 <div class="flex grow flex-col">
                     {#each tree.history.currentStructure.rootNodes as root, location (root)}
                         <SubtreeEditor
+                            treeId={tree.metadata.genData.id}
                             bind:history={tree.history}
                             location={[location]}
                             bind:dragState
